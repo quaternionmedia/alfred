@@ -38,6 +38,8 @@ def getCaptions(link):
         caption = caption.generate_srt_captions()
         # with open('cap.txt', 'w') as f:
         #     f.write(caption)
-        return clean_up(caption.split('\n'))
+        caption = clean_up(caption.split('\n'))
+        caption = [c+' ' for c in caption]
+        return ''.join(caption)
     else:
         print('no captions found :(')
