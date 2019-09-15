@@ -28,3 +28,12 @@ def archive(link):
     run(cmd, shell=True)
     # remove(f'{title}.mp4')
     # remove(f'{title}.webm')
+
+def getCaptions(link):
+    yt = YouTube(link)
+
+    caption = yt.captions.get_by_language_code('en')
+    if caption:
+        print(caption.generate_srt_captions())
+    else:
+        print('no captions found :(')
