@@ -1,6 +1,7 @@
 from pytube import YouTube
 from subprocess import run
 from os import remove
+from srt import clean_up
 
 def archive(link):
     # get video meta
@@ -34,6 +35,9 @@ def getCaptions(link):
 
     caption = yt.captions.get_by_language_code('en')
     if caption:
-        print(caption.generate_srt_captions())
+        caption = caption.generate_srt_captions()
+        # with open('cap.txt', 'w') as f:
+        #     f.write(caption)
+        return clean_up(caption.split('\n'))
     else:
         print('no captions found :(')
