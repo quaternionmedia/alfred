@@ -22,6 +22,8 @@ ffmpeg \
     -i $VSOURCE \
       -vcodec libx264 \
         -b:a 256k \
-  -threads 16 \
+  -threads 8 \
   -t $DURATION \
-  $LOCATION/$NAME.mp4
+  $LOCATION/$NAME.mp4 \
+  -t $DURATION \
+  -pix_fmt yuv420p -f sdl "$NAME - $DURATION"
