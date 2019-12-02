@@ -1,0 +1,14 @@
+{
+  "name": "alfred",
+  "version": "0.1.0",
+  "description": "online video management",
+  "main": "index.js",
+  "repository": "git@github.com:quaternionmedia/alfred.git",
+  "author": "Harpo <harpo@harpo.me>",
+  "license": "MIT",
+  "dependencies": {
+    "interactjs": "^1.7.2",
+    "mithril": "^2.0.4"
+  },
+  "devDependencies": {}
+}
