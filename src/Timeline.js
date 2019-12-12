@@ -30,6 +30,24 @@ var Clip = {
         }
       },
     })
+    clip.on('resizemove', (event) => {
+      let { x, y } = event.target.dataset
+      x = parseFloat(x) || 0
+      y = parseFloat(y) || 0
+      Object.assign(event.target.style, {
+        width: `${event.rect.width}px`,
+        height: `${event.rect.height}px`,
+        transform: `translate(${event.deltaRect.left}px, ${event.deltaRect.top}px)`
+      })
+
+      Object.assign(event.target.dataset, { x, y })
+    })
+    clip.resizable({
+      edges: {
+        left: true,
+        right: true,
+      }
+    })
   },
   view: (vnode) => {
     return m('.clip', 'clip' + clips++)
