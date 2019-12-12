@@ -9,3 +9,5 @@
 and
 
 `python3 api.py`
+
+then open http://localhost:8000
