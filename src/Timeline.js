@@ -19,7 +19,7 @@ var Clip = {
       autoscroll: true,
       listeners: {
         move: (event) => {
-          var target = event.target
+          let target = event.target
           var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx
           var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy
           // p.x += event.dx
@@ -31,16 +31,19 @@ var Clip = {
       },
     })
     clip.on('resizemove', (event) => {
-      let { x, y } = event.target.dataset
-      x = parseFloat(x) || 0
-      y = parseFloat(y) || 0
-      Object.assign(event.target.style, {
-        width: `${event.rect.width}px`,
-        height: `${event.rect.height}px`,
-        transform: `translate(${event.deltaRect.left}px, ${event.deltaRect.top}px)`
-      })
+      let target = event.target
+      // let { x, y } = event.target.dataset
+      var x = (parseFloat(target.getAttribute('data-x')) || 0)
+      var y = (parseFloat(target.getAttribute('data-y')) || 0)
+      // console.log('x,y: ', x, y)
 
-      Object.assign(event.target.dataset, { x, y })
+      target.style.width  = event.rect.width + 'px';
+      x += event.deltaRect.left;
+      target.style.webkitTransform = target.style.transform =
+        'translate(' + x + 'px,' + y + 'px)';
+
+    target.setAttribute('data-x', x);
+    target.textContent = event.rect.width + '×' + event.rect.height;
     })
     clip.resizable({
       edges: {
