@@ -3,16 +3,16 @@ import interact from 'interactjs'
 
 var clips = 0
 var p = {x: 0, y: 0}
-
+var scale = 100
 var Clip = {
-  edl: [],
   oninit: (vnode) => {
   },
   oncreate: (vnode) => {
     // vnode.state.inpoint =
   },
   view: (vnode) => {
-    return m('.clip', 'clip' + clips++)
+    return m(`.clip#${vnode.attrs.name}`, vnode.attrs.description)
+      // {data-x: vnode.attrs.inpoint/scale, data-y: vnode.attrs.outpoint/scale})
   }
 }
 
@@ -56,7 +56,7 @@ var Timeline = {
         'translate(' + x + 'px,' + y + 'px)';
 
     target.setAttribute('data-x', x);
-    target.textContent = event.rect.width + '×' + event.rect.height;
+    target.textContent = `${event.rect.width}×${event.rect.height}\nx: ${x}\ny: ${y}`;
     })
     clip.resizable({
       edges: {
@@ -77,7 +77,7 @@ var Timeline = {
     return m('#timeline', [
       // m(Clip)
       Timeline.edl.map((c) => {
-        return m(Clip, c)
+        return m(Clip, {name: c[0], inpoint: c[1], outpoint: c[2], duration: c[3], description: c[4]})
 
       })
     ])
