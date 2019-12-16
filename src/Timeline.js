@@ -5,7 +5,20 @@ var clips = 0
 var p = {x: 0, y: 0}
 
 var Clip = {
+  edl: [],
+  oninit: (vnode) => {
+  },
   oncreate: (vnode) => {
+    // vnode.state.inpoint =
+  },
+  view: (vnode) => {
+    return m('.clip', 'clip' + clips++)
+  }
+}
+
+var Timeline = {
+  edl: [],
+  oninit: (vnode) => {
     const clip = interact('.clip')
     clip.draggable({
       inertia: true,
@@ -51,19 +64,24 @@ var Clip = {
         right: true,
       }
     })
+
+  },
+  oncreate: (vnode) => {
+      m.request('/edl').then((e) => {
+      Timeline.edl = e
+      console.log(Timeline.edl)
+    })
+
   },
   view: (vnode) => {
-    return m('.clip', 'clip' + clips++)
-  }
-}
-
-var Timeline = {
-
-  view: (vnode) => {
     return m('#timeline', [
-      m(Clip)
+      // m(Clip)
+      Timeline.edl.map((c) => {
+        return m(Clip, c)
+
+      })
     ])
-  }
+  },
 }
 
 module.exports = {

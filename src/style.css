@@ -8,12 +8,13 @@
   margin: 10%;
   background-color: #29e;
   color: white;
-  border-radius: 0.75em;
+  border-radius: 2em;
+  box-sizing: border-box;
   padding: 4%;
   touch-action: none;
   user-select: none;
   -webkit-transform: translate(0px, 0px);
-          transform: translate(0px, 0px);
+  transform: translate(0px, 0px);
 }
 
 .sliders {
