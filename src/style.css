@@ -1,20 +1,22 @@
 .timeline {
   width: 100%;
-  height: 50%;
+  max-height: 50%;
+  display: flex;
 }
 .clip {
-  width: 10%;
-  min-height: 6.5em;
-  margin: 10%;
+  width: 300px;
+  max-height: 3em;
+  margin: 3px;
   background-color: #29e;
   color: white;
   border-radius: 2em;
   box-sizing: border-box;
-  padding: 4%;
+  padding: .5%;
   touch-action: none;
   user-select: none;
   -webkit-transform: translate(0px, 0px);
   transform: translate(0px, 0px);
+  transition: all 1s ease-out;
 }
 
 .sliders {
@@ -80,4 +82,27 @@
   line-height:1em;
   margin-left: -1em;
   text-align: center;
+}
+
+.gu-mirror {
+  position: fixed !important;
+  margin: 0 !important;
+  z-index: 9999 !important;
+  opacity: 0.8;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=80)";
+  filter: alpha(opacity=80);
+}
+.gu-hide {
+  display: none !important;
+}
+.gu-unselectable {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+.gu-transit {
+  opacity: 0.2;
+  -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=20)";
+  filter: alpha(opacity=20);
 }
