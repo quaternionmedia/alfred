@@ -108,7 +108,7 @@ var Timeline = {
     // })
 
     clip.on('resizemove', (event) => {
-
+      state.resizing(true)
       let target = event.target
       // let { x, y } = event.target.dataset
       var x = (parseFloat(target.getAttribute('data-x')) || 0)
@@ -141,7 +141,20 @@ var Timeline = {
   },
   oncreate: (vnode) => {
     // dragula([vnode.dom], dragOpts)
-    Sortable.create(vnode.dom)
+    new Sortable(vnode.dom, {
+      swapThreshold: 0.50,
+      animation: 150,
+      // ghostClass: 'blue-background-class',
+      ghostClass: 'ghost',
+      forceFallback: true,
+      // delay: 100,
+      filter: (e) => {
+        var cursor = e.target.style.cursor;
+        console.log('filter: ', e, cursor)
+        return cursor == 'ew-resize'
+      }
+
+    })
       m.request('/edl').then((e) => {
       Timeline.edl = e
       console.log(Timeline.edl)

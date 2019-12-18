@@ -7,19 +7,21 @@
 .clip {
   display:inline-block;
   position: relative;
-  width: 300px;
-  max-height: 3em;
-  margin: 1px;
+  /* width: 300px;
+  max-height: 3em; */
+  margin: 3px;
   background-color: #29e;
   color: white;
   border-radius: 1em;
   box-sizing: border-box;
-  padding: 5%;
+  padding: 3%;
   touch-action: none;
   user-select: none;
   -webkit-transform: translate(0px, 0px);
   transform: translate(0px, 0px);
   transition: all 1s ease-out;
+  height: 1em;
+  overflow: hidden
 }
 .handle {
     background-color: #727272;
@@ -179,4 +181,8 @@
   border-radius: 20px;
   width: 200px;
   height 100px;
+}
+.ghost {
+  opacity: .5;
+  background: #BBBBBB;
 }
