@@ -1,26 +1,79 @@
 import m from 'mithril'
 import interact from 'interactjs'
-import dragula from 'dragula'
+// import dragula from 'dragula'
+// var resizable = require("./resizable")
+import Sortable from 'sortablejs'
 var state = require("./Globals").state
+
 
 var clips = 0
 var p = {x: 0, y: 0}
 var scale = 10
-var dragOpts = {
-  moves: (el, source, handle, sibling) => {
-    return !state.resizing()
-    // return false
-  }
-}
+// var dragOpts = {
+  // invalid: (el, handle) => {
+  //   console.log(el, handle, handle.classList.contains('handle'))
+  //   if (handle.classList.contains('handle')) {
+  //     return true
+  //   } else {
+  //     return false
+  //   }
+  // }
 
-var Clip = {
-  oninit: (vnode) => {
-  },
-  oncreate: (vnode) => {
+  // cursorChecker: (action, interactable, element, interacting) => {
+  //   console.log(action, interactable, element, interacting, state.resizing())
+  //   if (action.edges) {
+  //   state.resizing(true)
+  // } else {
+  //   state.resizing(false)
+  // }
+    // return false
+  // }
+// }
+//
+// function startResizing(e) {
+//   let el = e.toElement.offsetParent
+//   console.log('resizing', e, el)
+//    el.style.width = (e.clientX - el.offsetLeft) + 'px';
+//    // el.style.width += e.movementX
+//    // this.style.height = (e.clientY - this.offsetTop) + 'px';
+// }
+// function stopResizing(e) {
+//   let el = e.toElement.offsetParent
+//     document.removeEventListener('mousemove', startResizing, false);
+//     document.removeEventListener('mouseup', stopResizing, false);
+// }
+
+class Clip {
+  // constructor(vnode) {
+    // this.dom = vnode.dom
+    // console.log('clip init', vnode)
+
+
+    // this.initialiseResize()
+  // }
+
+//
+// initialiseResize(e) {
+//   let el = e.toElement
+//   let p = el.offsetParent
+//   console.log('initialized resizer', e, el, p)
+//   document.addEventListener('mousemove', startResizing, false);
+//   document.addEventListener('mouseup', stopResizing, false);
+// }
+
+  oninit(vnode) {
+  }
+  oncreate(vnode) {
+    this.dom = vnode.dom
+    // console.log('created!', this.dom)
+    // this.initialiseResize(vnode)
     // vnode.state.inpoint =
-  },
-  view: (vnode) => {
-    return m(`.clip#${vnode.attrs.name}`, {'data-x': vnode.attrs.inpoint/scale, 'data-duration': vnode.attrs.duration/scale}, vnode.attrs.description)
+  }
+  view(vnode) {
+    return m(`.clip#${vnode.attrs.name}`, {'data-x': vnode.attrs.inpoint/scale, 'data-duration': vnode.attrs.duration/scale, innerHTML: vnode.attrs.description}, [
+      // m('.handle lh', {onmousedown: this.initialiseResize}),
+      // m('.handle rh', {onmousedown: this.initialiseResize})
+    ])
       // {data-x: vnode.attrs.inpoint/scale, data-y: vnode.attrs.outpoint/scale})
   }
 }
@@ -59,13 +112,13 @@ var Timeline = {
       let target = event.target
       // let { x, y } = event.target.dataset
       var x = (parseFloat(target.getAttribute('data-x')) || 0)
-      // var y = (parseFloat(target.getAttribute('data-y')) || 0)
+      var y = (parseFloat(target.getAttribute('data-y')) || 0)
       // console.log('x,y: ', x, y)
 
       target.style.width  = event.rect.width + 'px';
       x += event.deltaRect.left;
       // target.style.webkitTransform = target.style.transform =
-      //   'translate(' + x + 'px)';
+      //   `translate(${x}px,${y}px)`;
 
     target.setAttribute('data-x', x);
     // target.textContent = `${event.rect.width}×${event.rect.height}\nx: ${x}\ny: ${y}`;
@@ -87,7 +140,8 @@ var Timeline = {
 
   },
   oncreate: (vnode) => {
-    dragula([vnode.dom], dragOpts)
+    // dragula([vnode.dom], dragOpts)
+    Sortable.create(vnode.dom)
       m.request('/edl').then((e) => {
       Timeline.edl = e
       console.log(Timeline.edl)

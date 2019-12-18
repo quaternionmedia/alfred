@@ -1,22 +1,41 @@
 .timeline {
   width: 100%;
   max-height: 50%;
-  display: flex;
+  /* display: flex; */
+  display: -webkit-inline-box;
 }
 .clip {
+  display:flex;
+  position: relative;
   width: 300px;
   max-height: 3em;
-  margin: 3px;
+  margin: 1px;
   background-color: #29e;
   color: white;
-  border-radius: 2em;
+  border-radius: 1em;
   box-sizing: border-box;
-  padding: .5%;
+  padding: 5%;
   touch-action: none;
   user-select: none;
   -webkit-transform: translate(0px, 0px);
   transform: translate(0px, 0px);
   transition: all 1s ease-out;
+}
+.handle {
+    background-color: #727272;
+    width: 10px;
+    height: 10px;
+    position:absolute;
+    bottom: 0;
+  }
+.rh {
+    right: 0;
+    cursor: se-resize;
+}
+.lh {
+    left: 0;
+    cursor: sw-resize;
+
 }
 
 .sliders {
@@ -105,4 +124,11 @@
   opacity: 0.2;
   -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=20)";
   filter: alpha(opacity=20);
+}
+
+.sortable {
+  padding: 1em;
+  border-radius: 20px;
+  width: 200px;
+  height 100px;
 }

@@ -16,7 +16,7 @@ def saveEdl(edl):
     with open('edl.edl', 'w') as f:
         for clip in edl:
             clip = clip.split(',')
-            print(clip)
+            # print(clip)
             f.write(f'file videos/{clip[0]}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
 def renderEdl(edl):
     print(bash(['ffmpeg', '-f', 'concat', '-i', 'edl.edl', '-c', 'copy', 'videos/output.mp4']).stdout)
@@ -38,7 +38,7 @@ app = FastAPI()
 def returnEdl():
     edl = []
     for clip in getEdl():
-        print(clip, type(clip))
+        # print(clip, type(clip))
         clip = clip.split(',')
         edl.append([clip[0],
             seconds(clip[1]),
