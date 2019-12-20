@@ -19,7 +19,7 @@
   user-select: none;
   -webkit-transform: translate(0px, 0px);
   transform: translate(0px, 0px);
-  transition: all 1s ease-out;
+  /* transition: all 1s ease-out; */
   height: 1em;
   overflow: hidden
 }
@@ -177,10 +177,11 @@
 }
 
 .sortable {
-  padding: 1em;
+  display: inline;
+  padding: 10%;
   border-radius: 20px;
   width: 200px;
-  height 100px;
+  /* height: 100px; */
 }
 .ghost {
   opacity: .5;
