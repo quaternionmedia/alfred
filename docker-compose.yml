@@ -1,12 +1,30 @@
-version: '3'
+version: '3.3'
+
+networks:
+  web:
+    external:
+      name: web
 
 services:
   dev:
-    build: .
+    build: ./builder/
     image: parceldock
-    ports:
-      - "1234:1234"
-      - "1235:1235"
+    #    ports:
+            #      - "1234:1234"
+            #      - "1235:1235"
     volumes:
       - .:/app/
       - ./dist/:/app/dist/
+  api:
+    build: ./api/
+    image: alfred_api
+    volumes:
+      - './api/api.py:/app/main.py'
+      - './dist/:/app/dist/'
+    networks:
+      - web
+    labels:
+      - traefik.http.routers.alfred.rule=Host(`alfred.quaternion.media`)
+      - traefik.http.routers.alfred.tls=true
+      - traefik.http.routers.alfred.tls.certresolver=le
+      - traefik.http.routers.alfred.entrypoints=websecure 

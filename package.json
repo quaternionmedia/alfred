@@ -8,9 +8,11 @@
   "license": "MIT",
   "dependencies": {
     "dragula": "^3.7.2",
-    "interactjs": "^1.7.2",
+    "interactjs": "^1.7.3",
     "mithril": "^2.0.4",
     "sortablejs": "^1.10.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "cssnano": "^4.1.10"
+  }
 }
