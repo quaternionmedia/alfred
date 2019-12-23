@@ -7,7 +7,6 @@ var state = require("./Globals").state
 
 var clips = 0
 var p = {x: 0, y: 0}
-var scale = 10
 
 class Clip {
   constructor(vnode) {
@@ -34,15 +33,17 @@ class Clip {
       // target.style.webkitTransform = target.style.transform =
       //   `translate(${x}px,${y}px)`;
 
-    // target.setAttribute('data-x', x);
     var midpoint = target.offsetLeft + target.offsetWidth / 2
     console.log('event: ', event) //event.delta.x, midpoint)
-    if (event.page.x < midpoint) {
-      vnode.state.inpoint += event.deltaRect.left
-      console.log('changing inpoint', vnode)
-    } else {
-      vnode.state.outpoint += event.deltaRect.right
-      console.log('changing outpoint', event.deltaRect, midpoint)
+    if (event.edges.left) {
+      vnode.state.inpoint += event.dx
+      // vnode.state.inpoint += event.client.x - event.rect.left
+      console.log('changing inpoint', vnode, event)
+      target.setAttribute('inpoint', vnode.state.inpoint)
+    } else if (event.edges.right) {
+      vnode.state.outpoint += event.dx
+      console.log('changing outpoint', event.deltaRect, midpoint, event)
+      target.setAttribute('outpoint', vnode.state.outpoint)
     }
     target.innerHTML= `${vnode.state.description} - [${vnode.state.inpoint}, ${vnode.state.outpoint}]`
     // m.redraw()
@@ -63,16 +64,19 @@ class Clip {
     })
   }
   view(vnode) {
-    return m(`.clip#${vnode.attrs.name}`, {'data-x': vnode.state.inpoint/scale, 'data-duration': vnode.attrs.duration/scale, innerHTML: `${vnode.state.description} - [${vnode.state.inpoint}, ${vnode.state.outpoint}]`, inpoint: vnode.state.inpoint, outpoint: vnode.state.outpoint}, [
-      // m('.handle lh', {onmousedown: this.initialiseResize}),
-      // m('.handle rh', {onmousedown: this.initialiseResize})
-    ])
+    return m(`.clip#${vnode.attrs.name}`, {
+      'data-x': vnode.state.inpoint/state.scale(),
+      // 'data-duration': vnode.attrs.duration/scale,
+      innerHTML: `${vnode.state.description} - [${vnode.state.inpoint}, ${vnode.state.outpoint}]`,
+      inpoint: vnode.state.inpoint,
+      outpoint: vnode.state.outpoint,
+      style: {
+        width: vnode.attrs.outpoint - vnode.attrs.inpoint,
+      },
+      }, [
+      ])
       // {data-x: vnode.attrs.inpoint/scale, data-y: vnode.attrs.outpoint/scale})
   }
-  // onupdate(vnode) {
-  //   console.log('updating', vnode.attrs.inpoint, vnode.attrs.outpoint)
-  //   vnode.dom.innerHTML= `${vnode.attrs.description} - [${vnode.attrs.inpoint}, ${vnode.attrs.outpoint}]`
-  // }
 }
 
 var Timeline = {
