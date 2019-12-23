@@ -1,0 +1,17 @@
+version: '3.3'
+
+networks:
+  web:
+    external:
+      name: web
+
+services:
+  api:
+    networks:
+      - web
+    labels:
+      - traefik.http.routers.alfred.rule=Host(`alfred.quaternion.media`)
+      - traefik.http.routers.alfred.tls=true
+      - traefik.http.routers.alfred.tls.certresolver=le
+      - traefik.http.routers.alfred.entrypoints=websecure
+      
