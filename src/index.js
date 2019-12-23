@@ -11,7 +11,7 @@ var Al = {
       m(Slider),
       m(Timeline),
       // m(resizable),
-      m(sortable),
+      // m(sortable),
     ]
   }
 }
