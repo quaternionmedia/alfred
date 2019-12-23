@@ -9,8 +9,9 @@ def seconds(t):
     return sum(x * int(s) for x, s in zip([3600, 60, 1], t.split(":")))
 
 def getEdl():
-    url = 'https://docs.google.com/spreadsheets/d/1SsnasrOJWoKMXZiLiPYkRp2yRcB_IagqkAcMRoiMgSY/export?&format=csv' # #gid=278206009
-    return urlopen(url).read().decode().split('\r\n')[1:]
+#    return urlopen(url).read().decode().split('\r\n')[1:]
+    with open('edl.csv', 'r') as f:
+        return f.read().split('\n')[1:]
 def saveEdl(edl):
     # [filename, inpoint, outpoint, duration, description]
     with open('edl.edl', 'w') as f:
