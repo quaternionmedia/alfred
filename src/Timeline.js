@@ -3,10 +3,35 @@ import interact from 'interactjs'
 // import dragula from 'dragula'
 import Sortable from 'sortablejs'
 var state = require("./Globals").state
+function seconds(t) {
+  t = t.split(":")
+  console.log('splitting', t)
+  var v = 3600*parseInt(t[0]) + 60*parseInt(t[1]) + parseInt(t[2])
+  console.log('v', v)
+  return v
+}
+// import csvStringToArray from "./parseCsv"
+const csvStringToArray = strData =>
+{
+    const objPattern = new RegExp(("(\\,|\\r?\\n|\\r|^)(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\\,\\r\\n]*))"),"gi");
+    let arrMatches = null, arrData = [[]];
+    while (arrMatches = objPattern.exec(strData)){
+        if (arrMatches[1].length && arrMatches[1] !== ",")arrData.push([]);
+        arrData[arrData.length - 1].push(arrMatches[2] ?
+            arrMatches[2].replace(new RegExp( "\"\"", "g" ), "\"") :
+            arrMatches[3]);
+    }
+    arrData = arrData.slice(1)
 
-
-var clips = 0
-var p = {x: 0, y: 0}
+    for (var i = 0; i < arrData.length; i++) {
+      arrData[i] = arrData[i].map(col => col.includes(":") && !col.includes("M") ? seconds(col) : col
+      )
+    }
+    console.log(arrData)
+  // )
+    // return arrData.includes(":") ? seconds(arrData) : arrData;
+    return arrData
+}
 
 class Clip {
   constructor(vnode) {
@@ -71,7 +96,7 @@ class Clip {
       inpoint: vnode.state.inpoint,
       outpoint: vnode.state.outpoint,
       style: {
-        width: vnode.attrs.outpoint - vnode.attrs.inpoint,
+        width: vnode.state.outpoint - vnode.state.inpoint,
       },
       }, [
       ])
@@ -99,8 +124,9 @@ var Timeline = {
       }
 
     })
-      m.request('/edl').then((e) => {
-      Timeline.edl = e
+      m.request('/edl.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
+        console.log(e)
+      Timeline.edl = csvStringToArray(e.body)
       console.log(Timeline.edl)
     })
 
