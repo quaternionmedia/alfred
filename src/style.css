@@ -33,6 +33,9 @@
 .monitor {
   text-align: right;
 }
+.head {
+  display: flex;
+}
 
 .sliders {
   padding: 1.5em

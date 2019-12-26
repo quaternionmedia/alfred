@@ -1,29 +1,40 @@
 import m from 'mithril'
 var state = require("./Globals").state
-
-export default class Monitor {
-  constructor(vnode) {
-    this.src = vnode.attrs.src
-  }
-  oncreate(vnode) {
-    this.dom = vnode.dom
-    document.addEventListener('keyup', event => {
-  if (event.code === 'Space') {
-    console.log('space', vnode)
-    if (vnode.dom.paused) {
-      vnode.dom.play()
-    } else {
-      vnode.dom.pause()
+var Mon = {
+  dom: null,
+}
+module.exports = {
+  dom: null,
+  seek: (t) => {
+    if (Mon.dom) {
+      Mon.dom.currentTime = t
     }
-    state.paused(vnode.dom.paused)
-  }
-})
-  }
-  view(vnode) {
+  },
+  oncreate: (vnode) => {
+    Mon.dom = vnode.dom
+    document.addEventListener('keyup', event => {
+      if (event.code === 'Space') {
+        console.log('space', vnode)
+        if (vnode.dom.paused) {
+          vnode.dom.play()
+        } else {
+          vnode.dom.pause()
+        }
+        state.paused(vnode.dom.paused)
+      }
+    })
+    vnode.dom.addEventListener('timeupdate', (e) => {
+      console.log('time: ', e)
+      state.time(e.target.currentTime)
+    })
+  },
+  view: (vnode) => {
     return m('video#monitor.monitor', {
-        src: this.src,
-        controls: true,
-        preload: true,
-      })
+      src: vnode.attrs.src,
+      controls: true,
+      preload: true,
+      volume: state.volume(),
+      currentTime: state.time(),
+    })
   }
 }

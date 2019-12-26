@@ -6,9 +6,15 @@ var state = require("./Globals").state
 
 // import csvStringToArray from "./parseCsv"
 const csvStringToArray = require('./parseCsv').csvStringToArray
+
 var Timeline = {
-  edl: [],
+  // edl: [],
   oninit: (vnode) => {
+    m.request('/edl.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
+      // console.log(e)
+    state.edl(csvStringToArray(e.body))
+    // console.log(Timeline.edl)
+    })
 
   },
   oncreate: (vnode) => {
@@ -26,17 +32,12 @@ var Timeline = {
       }
 
     })
-      m.request('/edl.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
-        // console.log(e)
-      Timeline.edl = csvStringToArray(e.body)
-      // console.log(Timeline.edl)
-    })
 
   },
   view: (vnode) => {
     return m('#timeline.timeline', [
       // m(Clip)
-      Timeline.edl.map((c) => {
+      state.edl().map((c) => {
         return m(Clip, {name: c[0], inpoint: c[1], outpoint: c[2], duration: c[3], description: c[4]})
 
       })
