@@ -2,6 +2,6 @@
 var Stream = require("mithril/stream")
 
 exports.state = {
-  resizing: Stream(false),
+  paused: Stream(true),
   scale: Stream(10),
 }
