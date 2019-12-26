@@ -46,29 +46,21 @@ class Clip {
   oncreate(vnode) {
     const clip = interact(vnode.dom)
     clip.on('resizemove', (event) => {
-      state.resizing(true)
       let target = event.target
-      target.style.width  = event.rect.width + 'px';
-      // let { x, y } = event.target.dataset
-      // var x = (parseFloat(target.getAttribute('data-x')) || 0)
-      // var y = (parseFloat(target.getAttribute('data-y')) || 0)
-      // console.log('x,y: ', x, y)
-
-      // x += event.deltaRect.left;
-      // target.style.webkitTransform = target.style.transform =
-      //   `translate(${x}px,${y}px)`;
-
-    var midpoint = target.offsetLeft + target.offsetWidth / 2
-    console.log('event: ', event) //event.delta.x, midpoint)
-    if (event.edges.left) {
+    // console.log('event: ', event) //event.delta.x, )
+    var w = parseInt(target.style.width)
+    // console.log( w - (vnode.state.outpoint - vnode.state.inpoint), event.rect.width, vnode.state.outpoint, vnode.state.inpoint, w)
+    if (event.edges.left && ( vnode.state.outpoint > vnode.state.inpoint + event.dx)) {
+      // target.style.width  = event.rect.width + 'px';
+      target.style.width = w - event.dx + 'px'
       vnode.state.inpoint += event.dx
-      // vnode.state.inpoint += event.client.x - event.rect.left
-      console.log('changing inpoint', vnode, event)
       target.setAttribute('inpoint', vnode.state.inpoint)
-    } else if (event.edges.right) {
+      // console.log('changing inpoint', vnode, event)
+    } else if (event.edges.right && (vnode.state.outpoint + event.dx > vnode.state.inpoint)) {
+      target.style.width  = w + event.dx + 'px';
       vnode.state.outpoint += event.dx
-      console.log('changing outpoint', event.deltaRect, midpoint, event)
       target.setAttribute('outpoint', vnode.state.outpoint)
+      // console.log('changing outpoint', event.deltaRect, event)
     }
     target.innerHTML= `${vnode.state.description} - [${vnode.state.inpoint}, ${vnode.state.outpoint}]`
     // m.redraw()
@@ -90,7 +82,7 @@ class Clip {
   }
   view(vnode) {
     return m(`.clip#${vnode.attrs.name}`, {
-      'data-x': vnode.state.inpoint/state.scale(),
+      'data-x': vnode.state.inpoint, // /state.scale(),
       // 'data-duration': vnode.attrs.duration/scale,
       innerHTML: `${vnode.state.description} - [${vnode.state.inpoint}, ${vnode.state.outpoint}]`,
       inpoint: vnode.state.inpoint,
@@ -125,9 +117,9 @@ var Timeline = {
 
     })
       m.request('/edl.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
-        console.log(e)
+        // console.log(e)
       Timeline.edl = csvStringToArray(e.body)
-      console.log(Timeline.edl)
+      // console.log(Timeline.edl)
     })
 
   },
