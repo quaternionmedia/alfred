@@ -1,13 +1,13 @@
 import m from "mithril";
 var Slider = require("./Slider")
 var Timeline = require("./Timeline")
-var resizable = require("./resizable")
-var sortable = require("./sortable")
+import Monitor from './Monitor'
 
 var Al = {
   view: (vnode) => {
     return [
-      m('#main', 'hello!'),
+      m('#main', 'Alfred. The serverless video editor'),
+      m(Monitor, {src: 'videos/19-100k.mp4'}),
       m(Slider),
       m(Timeline),
       // m(resizable),
