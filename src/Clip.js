@@ -7,7 +7,7 @@ export default class Clip {
     this.inpoint = vnode.attrs.inpoint
     this.outpoint = vnode.attrs.outpoint
     this.description = vnode.attrs.description
-    console.log('clip init', vnode, this.inpoint, this.outpoint)
+    // console.log('clip init', vnode, this.inpoint, this.outpoint)
     }
 
   oninit(vnode) {

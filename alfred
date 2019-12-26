@@ -1,5 +1,7 @@
 #!/bin/sh
+echo
 shuf -n 1 quotes.csv
+echo
 if [ $1 = "dev" ] || [ -z $1 ]; then
 if [-n]; then shift; fi
 echo "Alfred! running dev $1"
