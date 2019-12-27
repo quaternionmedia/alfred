@@ -34,7 +34,7 @@
   text-align: right;
 }
 .head {
-  display: flex;
+  display: inline-flex;
 }
 
 .sliders {

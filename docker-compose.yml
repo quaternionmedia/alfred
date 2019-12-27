@@ -13,4 +13,4 @@ services:
     volumes:
       - './api/api.py:/app/main.py'
       - './dist/:/app/dist/'
-      - './videos/:/app/dist/videos/'
+      - './videos/:/app/videos/'

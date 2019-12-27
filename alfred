@@ -3,7 +3,8 @@ echo
 shuf -n 1 quotes.csv
 echo
 if [ $1 = "dev" ] || [ -z $1 ]; then
-if [-n]; then shift; fi
+if [ !-z ]; then shift; fi
+
 echo "Alfred! running dev $1"
 docker-compose -f docker-compose.yml -f dev.yml up $1
 

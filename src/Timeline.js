@@ -27,12 +27,12 @@ var Timeline = {
       // delay: 100,
       filter: (e) => {
         var cursor = e.target.style.cursor;
-        console.log('filter: ', e, cursor)
+        // console.log('filter: ', e, cursor)
         return cursor == 'ew-resize'
       }
 
     })
-
+    
   },
   view: (vnode) => {
     return m('#timeline.timeline', [
