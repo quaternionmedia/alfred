@@ -22,7 +22,7 @@ export var Timeline = {
         clips[i].attributes.filename.value,
         clips[i].attributes.inpoint.value,
         clips[i].attributes.outpoint.value,
-        clips[i].attributes.outpoint.value-clips[i].attributes.inpoint.value,
+        clips[i].attributes.outpoint.value - clips[i].attributes.inpoint.value,
         clips[i].attributes.description.value
       ])
     }
