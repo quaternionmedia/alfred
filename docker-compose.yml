@@ -12,5 +12,6 @@ services:
     image: alfred_api
     volumes:
       - './api/api.py:/app/main.py'
+      - './api/partial.py:/app/partial.py'
       - './dist/:/app/dist/'
       - './videos/:/app/videos/'

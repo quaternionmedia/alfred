@@ -1,7 +1,9 @@
-from fastapi import FastAPI, Path, Body
+from fastapi import FastAPI, Path, Body, Header
 from starlette.staticfiles import StaticFiles
+from starlette.responses import Response
+from partial import PartialFileResponse
 from uvicorn import run
-from os import environ
+from os.path import join
 from urllib.request import urlopen
 from subprocess import run as bash
 
@@ -56,6 +58,42 @@ def edit():
 @app.get('/render')
 def render():
     return renderEdl(getEdl())
+#
+# defaultSize = 1024*8
+# async def async_file(filename, start=0, length=1024*8):
+#     with open(filename, 'rb') as f:
+#         f.seek(start)
+#         data = f.read(length)
+#         while data:
+#             yield data
+#             data = f.read(length)
+#
+# def partialFile(filename, start=0, length=defaultSize):
+#     with open(filename, 'rb') as f:
+#         f.seek(start)
+#         return f.read(length)
+
+@app.get('/videos/{video}', responses={
+    206: {'content': {'video/mp4': {}},
+    'description': 'partial video response'}
+    })
+async def buffer(video:str, response: Response, bits: int = Header(0)):
+    # response.headers['Content-Type'] = 'video/mp4'
+    # response.headers['Content-Start'] = str(bits)
+    # response.headers['Content-End'] = str(bits + defaultSize)
+    # end = bits+defaultSize
+    # response.headers['Content-Range'] = f'bytes={bits}-{end}'
+    # with open(join('/app/videos', video), 'rb') as f:
+    return PartialFileResponse(join('/app/videos', video))
+        # while data:
+            # yield data
+            # data = f.read(defaultSize)
+
+        # f.seek(bits)
+        # return f.read(defaultSize)
+        # return f
+    # return 'yes'
+
 
 app.mount("/", StaticFiles(directory='dist', html=True), name="static")
 
