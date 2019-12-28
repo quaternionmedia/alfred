@@ -10,6 +10,7 @@ module.exports = {
         m('th', 'inpoint'),
         m('th', 'outpoint'),
         m('th', 'duration'),
+        m('th', 'description'),
       ]),
       Timeline.edl.map(c => {
         // console.log('project clip: ', c)
@@ -17,7 +18,8 @@ module.exports = {
         m('td', c[0]),
         m('td', c[1]),
         m('td', c[2]),
-        m('td', c[2] - c[1]),
+        m('td', c[3]),
+        m('td', c[4]),
       ])
     })])
   }

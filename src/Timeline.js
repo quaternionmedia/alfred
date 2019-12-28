@@ -18,19 +18,28 @@ export var Timeline = {
     let clips = Timeline.v.dom.children
     for (var i = 0; i < clips.length; i++) {
       // console.log(clips[i])
-      edl.push([clips[i].attributes.id, clips[i].attributes.inpoint.value, clips[i].attributes.outpoint.value, clips[i].attributes.outpoint.value-clips[i].attributes.inpoint.value])
+      edl.push([
+        clips[i].attributes.filename.value,
+        clips[i].attributes.inpoint.value,
+        clips[i].attributes.outpoint.value,
+        clips[i].attributes.outpoint.value-clips[i].attributes.inpoint.value,
+        clips[i].attributes.description.value
+      ])
     }
     Timeline.edl = edl
+    Timeline.duration =
     m.redraw()
     // state.edl(this.edl)
   },
-
+  updateDuration: () => {
+    Timeline.duration = Timeline.edl.reduce((a, b) => a + b[3], 0)
+  },
   oninit: (vnode) => {
     Timeline.v = vnode
     m.request('/edl.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
       // console.log(e)
     Timeline.edl = csvStringToArray(e.body)
-    Timeline.duration = Timeline.edl.reduce((a, b) => a + b[3], 0)
+    Timeline.updateDuration()
     })
 
   },
@@ -57,7 +66,7 @@ export var Timeline = {
     return m('#timeline.timeline', [
       // m(Clip)
       Timeline.edl.map((c) => {
-        return m(Clip, {name: c[0], inpoint: c[1], outpoint: c[2], duration: c[3], description: c[4]})
+        return m(Clip, {filename: c[0], inpoint: c[1], outpoint: c[2], duration: c[3], description: c[4]})
 
       })
     ])
