@@ -1,6 +1,7 @@
 import m from 'mithril'
 import interact from 'interactjs'
-
+// import Timeline from './Timeline'
+var Timeline = require("./Timeline")
 
 export default class Clip {
   constructor(vnode) {
@@ -32,7 +33,9 @@ export default class Clip {
       // console.log('changing outpoint', event.deltaRect, event)
     }
     target.innerHTML= `${vnode.state.description} - [${vnode.state.inpoint}, ${vnode.state.outpoint}]`
-    // m.redraw()
+    m.redraw()
+    console.log('redrawing edl', Timeline.Timeline)
+    Timeline.Timeline.updateEdl()
     })
     clip.resizable({
       edges: {

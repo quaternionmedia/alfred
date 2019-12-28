@@ -7,13 +7,30 @@ var state = require("./Globals").state
 // import csvStringToArray from "./parseCsv"
 const csvStringToArray = require('./parseCsv').csvStringToArray
 
-var Timeline = {
-  // edl: [],
+export var Timeline = {
+  // constructor() {
+    edl: [],
+    duration: 0,
+    v: null,
+  // }
+  updateEdl: () => {
+    var edl = []
+    let clips = Timeline.v.dom.children
+    for (var i = 0; i < clips.length; i++) {
+      // console.log(clips[i])
+      edl.push([clips[i].attributes.id, clips[i].attributes.inpoint.value, clips[i].attributes.outpoint.value, clips[i].attributes.outpoint.value-clips[i].attributes.inpoint.value])
+    }
+    Timeline.edl = edl
+    m.redraw()
+    // state.edl(this.edl)
+  },
+
   oninit: (vnode) => {
+    Timeline.v = vnode
     m.request('/edl.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
       // console.log(e)
-    state.edl(csvStringToArray(e.body))
-    // console.log(Timeline.edl)
+    Timeline.edl = csvStringToArray(e.body)
+    Timeline.duration = Timeline.edl.reduce((a, b) => a + b[3], 0)
     })
 
   },
@@ -29,24 +46,20 @@ var Timeline = {
         var cursor = e.target.style.cursor;
         // console.log('filter: ', e, cursor)
         return cursor == 'ew-resize'
-      }
-
+      },
+      onUpdate: (e) => {
+        console.log(e)
+        Timeline.updateEdl()
+      },
     })
-    
   },
   view: (vnode) => {
     return m('#timeline.timeline', [
       // m(Clip)
-      state.edl().map((c) => {
+      Timeline.edl.map((c) => {
         return m(Clip, {name: c[0], inpoint: c[1], outpoint: c[2], duration: c[3], description: c[4]})
 
       })
     ])
   },
-}
-
-module.exports = {
-  view: (vnode) => {
-    return m(Timeline)
-  }
 }

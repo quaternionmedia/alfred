@@ -1,6 +1,7 @@
 import m from "mithril";
 var Slider = require("./Slider")
-var Timeline = require("./Timeline")
+var Timeline = require("./Timeline").Timeline
+// import Timeline from './Timeline'
 import Monitor from './Monitor'
 import Project from './Project'
 

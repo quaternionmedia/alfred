@@ -1,5 +1,6 @@
 import m from 'mithril'
 var state = require("./Globals").state
+var Timeline = require("./Timeline").Timeline
 
 module.exports = {
   view: (vnode) => {
@@ -10,7 +11,7 @@ module.exports = {
         m('th', 'outpoint'),
         m('th', 'duration'),
       ]),
-      state.edl().map(c => {
+      Timeline.edl.map(c => {
         // console.log('project clip: ', c)
       return m('tr', [
         m('td', c[0]),
