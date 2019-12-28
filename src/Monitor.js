@@ -14,14 +14,15 @@ module.exports = {
   },
   oncreate: (vnode) => {
     Mon.dom = vnode.dom
-    document.addEventListener('keyup', event => {
-      if (event.code === 'Space') {
-        if (vnode.dom.paused) {
-          vnode.dom.play()
-        } else {
-          vnode.dom.pause()
-        }
+    document.addEventListener('keyup', e => {
+      if (e.code === 'Space') {
+        vnode.dom.paused ? vnode.dom.play() : vnode.dom.pause()
         state.paused(vnode.dom.paused)
+      }
+    })
+    document.addEventListener('keydown', e => {
+      if (e.code === 'Space') {
+        e.preventDefault()
       }
     })
     vnode.dom.addEventListener('timeupdate', (e) => {
