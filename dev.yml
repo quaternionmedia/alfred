@@ -4,7 +4,8 @@ services:
   dev:
     ports:
       - "1234:1234"
-    command: parcel --port 1234 watch /app/src/*
+      - "1235:1235"
+    command: parcel watch /app/src/* --hmr-port 1235
   api:
     ports:
       - "8000:80"
