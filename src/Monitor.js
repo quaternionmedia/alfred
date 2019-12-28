@@ -1,8 +1,10 @@
 import m from 'mithril'
 var state = require("./Globals").state
+
 var Mon = {
   dom: null,
 }
+
 module.exports = {
   dom: null,
   seek: (t) => {
@@ -14,7 +16,6 @@ module.exports = {
     Mon.dom = vnode.dom
     document.addEventListener('keyup', event => {
       if (event.code === 'Space') {
-        console.log('space', vnode)
         if (vnode.dom.paused) {
           vnode.dom.play()
         } else {
@@ -24,17 +25,16 @@ module.exports = {
       }
     })
     vnode.dom.addEventListener('timeupdate', (e) => {
-      console.log('time: ', e)
       state.time(e.target.currentTime)
     })
   },
   view: (vnode) => {
     return m('video#monitor.monitor', {
-      src: vnode.attrs.src,
-      controls: true,
-      preload: true,
-      volume: state.volume(),
-      currentTime: state.time(),
-    })
+        src: vnode.attrs.src,
+        controls: true,
+        preload: true,
+        volume: state.volume(),
+        currentTime: state.time(),
+      })
   }
 }

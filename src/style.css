@@ -32,9 +32,10 @@
 
 .monitor {
   text-align: right;
+  max-width: 75vw;
 }
 .head {
-  display: inline-flex;
+  display: flex;
 }
 
 .sliders {

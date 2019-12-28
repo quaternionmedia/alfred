@@ -10,7 +10,7 @@ var Al = {
       m('#main', 'Alfred. The serverless video editor'),
       m('#head.head', [
         m(Project),
-        m(Monitor, {src: 'videos/15-100k.mp4'}),
+        m(Monitor, {src: 'http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'}),
       ]),
       m(Slider),
       m(Timeline),
