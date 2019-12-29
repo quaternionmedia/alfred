@@ -4,7 +4,8 @@ text: #aaa
 base: #3E188F
 structural: #46346E
 edge: #b4a0df
-ghost: #210D4D, #444
+ghost: #444
+border: #210D4D
 other: #4F1FB8, #7059A2
 */
 
@@ -20,6 +21,8 @@ body {
   /* display: flex; */
   display: -webkit-inline-box;
   overflow: auto;
+  border: 8px solid #210D4D;
+  padding: 3px;
 
 }
 .clip {
@@ -29,10 +32,13 @@ body {
   max-height: 3em; */
   min-width: 1px;
   min-height: 40px;
-  margin: 2px;
+  margin: 5px;
+  margin-left: 0px;
+  margin-right: 0px;
   background-color: #3E188F;
   color: #ccc;
   border-radius: .5em;
+  border: 1px solid #210D4D;
   box-sizing: border-box;
   padding: 10px;
   touch-action: none;
@@ -49,11 +55,14 @@ body {
   text-align: right;
   max-width: 60vw;
   max-height: 45vh;
+  border: 4px solid #210D4D;
 }
 
 .project {
   display: inline;
   overflow: scroll;
+  border: 4px solid #210D4D;
+
 }
 .project tr:nth-child(even){background-color: #333;}
 .project tr:hover {background-color: #393939;}
@@ -72,14 +81,14 @@ body {
 }
 
 .sliders {
-  padding: 1.5em
+  padding: 1em
 }
 /* the slider bar */
 .slider {
   position: relative;
   width: 100%;
   height: 1em;
-  margin: 1.5em auto;
+  margin: .5em auto;
   background-color: #46346E;
   border-radius: 0.5em;
   box-sizing: border-box;
