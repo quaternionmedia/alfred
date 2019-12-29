@@ -3,18 +3,20 @@
 >
 >  ~ Alfred Hitchcock
 
-Alfred is a video editor, designed for quick editing from anywhere, including mobile devices!
+Alfred is a video editor that works even without a server, designed for quick editing from anywhere, including mobile devices!
 
 Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 
-### requirements
+### install
 `pip3 install -r requirements.txt`
 
 ### dev
-`docker-compose up`
-
-and
-
-`python3 api.py`
+`./alfred dev`
 
 then open http://localhost:8000
+
+If the Dockerfiles need to be rebuilt: `./alfred dev --build`
+
+### production
+With a [traefik](https://containo.us/traefik/) instance running:
+`./alfred prod`
