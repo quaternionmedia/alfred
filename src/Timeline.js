@@ -53,8 +53,9 @@ export var Timeline = {
       // delay: 100,
       filter: (e) => {
         var cursor = e.target.style.cursor;
+        var touch = Math.abs(e.target.offsetLeft - e.clientX) <= 20 || Math.abs(e.target.offsetRight - e.clientX) <= 20
         // console.log('filter: ', e, cursor)
-        return cursor == 'ew-resize'
+        return cursor == 'ew-resize' || touch
       },
       onUpdate: (e) => {
         console.log(e)
