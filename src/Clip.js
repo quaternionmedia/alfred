@@ -17,6 +17,7 @@ export default class Clip {
   oncreate(vnode) {
     const clip = interact(vnode.dom)
     clip.on('resizemove', (event) => {
+      // console.log('resizemove', event)
       let target = event.target
     // console.log('event: ', event) //event.delta.x, )
     var w = parseInt(target.style.width)
@@ -34,7 +35,7 @@ export default class Clip {
       // console.log('changing outpoint', event.deltaRect, event)
     }
     target.innerHTML= `${this.description} - [${this.inpoint}, ${this.outpoint}]`
-    m.redraw()
+    // m.redraw()
     // console.log('redrawing edl', Timeline.Timeline)
     Timeline.Timeline.updateEdl()
     })
