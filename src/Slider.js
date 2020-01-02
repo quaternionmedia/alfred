@@ -4,6 +4,17 @@ var state = require("./Globals").state
 import Monitor from './Monitor'
 import Video from './Video'
 
+function formatTime(seconds) {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = ((Math.floor(seconds*100) % 6000)/100).toFixed(2);
+  return [
+    h,
+    m > 9 ? m : (h ? '0' + m : m || '0'),
+    s > 9 ? s : '0' + s,
+  ].filter(a => a).join(':');
+}
+
 var sliderDom = {
   dom: null
 }
@@ -11,7 +22,7 @@ var sliderDom = {
 module.exports = {
   v: null,
   view: (vnode) => {
-    return m('.slider#slider', {min: 1, max: state.duration(), value: Video.time}, Video.time)
+    return m('.slider#slider', {min: 1, max: Video.duration, value: Video.time}, Video.time > 60 ? formatTime(Video.time.toFixed(2)): Video.time.toFixed(2))
   },
   updateValue: (value) => {
     if (sliderDom.dom) {
@@ -46,7 +57,7 @@ module.exports = {
     })
   },
   onupdate: (vnode) => {
-    console.log('updating slider', vnode)
+    // console.log('updating slider', vnode)
     vnode.dom.style.paddingLeft = Video.time/Video.duration*vnode.dom.offsetWidth
   },
 }
