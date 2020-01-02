@@ -83,10 +83,12 @@ body {
 
 .tools {
   display: inline-grid;
+  align-items: center;
 }
 .tools i {
-  border: 2px;
-  padding: 2px;
+  border-style: solid;
+  border-color: #393939;
+  border-radius: 10px;
 }
 .tools i:hover {
   background-color: #393939;
