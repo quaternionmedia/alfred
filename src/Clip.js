@@ -34,7 +34,7 @@ export default class Clip {
       target.setAttribute('outpoint', this.outpoint)
       // console.log('changing outpoint', event.deltaRect, event)
     }
-    target.innerHTML= `${this.description} - [${this.inpoint}, ${this.outpoint}]`
+    // target.innerHTML= `${this.description} - [${this.inpoint}, ${this.outpoint}]`
     // m.redraw()
     // console.log('redrawing edl', Timeline.Timeline)
     Timeline.Timeline.updateEdl()
@@ -58,7 +58,7 @@ export default class Clip {
     return m(`.clip#${vnode.attrs.name}`, {
       'data-x': this.inpoint, // /state.scale(),
       // 'data-duration': vnode.attrs.duration/scale,
-      innerHTML: `${this.description} - [${this.inpoint}, ${this.outpoint}]`,
+      // innerHTML: `${this.description} - [${this.inpoint}, ${this.outpoint}]`,
       inpoint: this.inpoint,
       outpoint: this.outpoint,
       filename: this.filename,
@@ -67,6 +67,10 @@ export default class Clip {
         width: this.outpoint - this.inpoint,
       },
       }, [
+        m('span#clipname.clipname', this.filename),
+        m('span#inpoint', this.inpoint),
+        m('span#outpoint', this.outpoint),
+        m('span#description', this.description),
       ])
       // {data-x: vnode.attrs.inpoint/scale, data-y: vnode.attrs.outpoint/scale})
   }

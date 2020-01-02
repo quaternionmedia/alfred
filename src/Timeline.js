@@ -53,8 +53,8 @@ export var Timeline = {
       // delay: 100,
       filter: (e) => {
         var cursor = e.target.style.cursor;
-        var left = Math.abs(e.target.offsetLeft - e.clientX) <= 20
-        var right = Math.abs(e.target.offsetLeft + e.target.offsetWidth - e.clientX) <= 20
+        var left = Math.abs(e.target.offsetLeft - e.clientX) <= 30
+        var right = Math.abs(e.target.offsetLeft + e.target.offsetWidth - e.clientX) <= 30
         console.log('right', right, e)
         // console.log('filter: ', e, cursor)
         return cursor == 'ew-resize' || left || right
