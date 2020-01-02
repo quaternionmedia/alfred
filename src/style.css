@@ -80,6 +80,10 @@ body {
   height: 40vh;
 }
 
+.tools {
+  display: inline-grid;
+}
+
 .sliders {
   padding: 1em
 }
