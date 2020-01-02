@@ -20,6 +20,7 @@ module.exports = {
     if (Video.paused) {
       Mon.dom.play()
       Video.paused = false
+
     } else {
       Mon.dom.pause()
       Video.paused = true
@@ -27,6 +28,13 @@ module.exports = {
   },
   oncreate: (vnode) => {
     Video.filename = vnode.attrs.src
+    vnode.dom.addEventListener('durationchange', (e) => {
+      Video.duration = vnode.dom.duration
+      console.log('duration change', Video)
+      // m.redraw()
+    })
+    Video.duration = vnode.duration
+    console.log('monitor created', Video)
     Mon.dom = vnode.dom
     document.addEventListener('keyup', e => {
       if (e.code === 'Space') {
@@ -45,10 +53,16 @@ module.exports = {
       }
     })
     vnode.dom.addEventListener('timeupdate', (e) => {
-      state.time(e.target.currentTime)
-      // console.log('timeupdate', e, Slider)
+      // state.time(e.target.currentTime)
+      Video.time = e.target.currentTime
+      console.log('timeupdate', e, Slider)
+      m.redraw()
       // Slider.updateValue(e.target.currentTime)
     })
+  },
+  onbeforeupdate: (vnode, old) => {
+    // prevent component from updating on redraw
+    return false
   },
   view: (vnode) => {
     return m('video#monitor.monitor', {
