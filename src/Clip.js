@@ -2,6 +2,7 @@ import m from 'mithril'
 import interact from 'interactjs'
 // import Timeline from './Timeline'
 var Timeline = require("./Timeline")
+import Monitor from './Monitor'
 
 export default class Clip {
   constructor(vnode) {
@@ -53,6 +54,14 @@ export default class Clip {
     //   state.resizing(false)
     //   console.log('resize stop', state.resizing())
     // })
+    vnode.dom.addEventListener('mousedown', (e) => {
+      e.stopPropagation()
+      const r = e.offsetX / e.target.offsetWidth
+      const t = r*(this.outpoint - this.inpoint) + this.inpoint
+      console.log('clicked on clip', e, r, t)
+      Monitor.seek(t)
+    }, true)
+
   }
   view(vnode) {
     return m(`.clip#${vnode.attrs.name}`, {

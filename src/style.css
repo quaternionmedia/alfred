@@ -201,6 +201,7 @@ body {
 
 span {
   padding: 15px;
+  pointer-events: none;
 }
 
 ::-webkit-scrollbar { width: 20px; height: 20px;}
