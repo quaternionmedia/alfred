@@ -100,7 +100,7 @@ class PartialFileResponse(Response):
                 print('processed range: ', self.range)
                 self.start = int(self.range[0])
                 self.end = min(self.start + self.defaultSize, self.size)
-                self.headers['content-range'] =  f"bytes {self.start}-{self.end}/{self.size}"
+                self.headers['content-range'] =  f"bytes {self.start}-{self.end - 1}/{self.size}"
                 self.headers['content-length'] = str(self.end - self.start)
         await send(
             {
