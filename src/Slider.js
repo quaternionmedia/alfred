@@ -48,7 +48,7 @@ module.exports = {
         const value = (event.pageX / sliderWidth).toFixed(2)
 
         event.target.style.paddingLeft = 100*value + '%'
-        // event.target.setAttribute('data-value', value)
+        event.target.setAttribute('data-value', (value*Video.duration).toFixed(2))
         event.target.setAttribute('value', value*Video.duration)
         // state.time(value)
         Monitor.seek(value*Video.duration)
