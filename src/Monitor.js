@@ -30,11 +30,11 @@ module.exports = {
     Video.filename = vnode.attrs.src
     vnode.dom.addEventListener('durationchange', (e) => {
       Video.duration = vnode.dom.duration
-      console.log('duration change', Video)
+      // console.log('duration change', Video)
       // m.redraw()
     })
     Video.duration = vnode.duration
-    console.log('monitor created', Video)
+    // console.log('monitor created', Video)
     Mon.dom = vnode.dom
     document.addEventListener('keyup', e => {
       if (e.code === 'Space') {
@@ -55,7 +55,7 @@ module.exports = {
     vnode.dom.addEventListener('timeupdate', (e) => {
       // state.time(e.target.currentTime)
       Video.time = e.target.currentTime
-      console.log('timeupdate', e, Slider)
+      // console.log('timeupdate', e, Slider)
       m.redraw()
       // Slider.updateValue(e.target.currentTime)
     })
