@@ -6,6 +6,7 @@ structural: #46346E
 edge: #b4a0df
 ghost: #444
 border: #210D4D
+hover: #393939
 other: #4F1FB8, #7059A2
 */
 
@@ -82,6 +83,13 @@ body {
 
 .tools {
   display: inline-grid;
+}
+.tools i {
+  border: 2px;
+  padding: 2px;
+}
+.tools i:hover {
+  background-color: #393939;
 }
 
 .sliders {

@@ -33,7 +33,7 @@ export default class Tools {
       }, 'fast_rewind'),
       m('i.material-icons', {
         onclick: Monitor.play,
-      }, Video.paused ? 'pause' : 'play_arrow'),
+      }, Video.paused ? 'play_arrow': 'pause' ),
       m('i.material-icons', {
         onclick: (vnode) => {
           Monitor.seek(Math.min(Video.time + 5, Video.duration))}
