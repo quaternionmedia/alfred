@@ -1,6 +1,7 @@
 import m from 'mithril'
 var state = require("./Globals").state
 var Timeline = require("./Timeline").Timeline
+const formatTime = require('./Slider').formatTime
 
 module.exports = {
   view: (vnode) => {
@@ -16,9 +17,9 @@ module.exports = {
         // console.log('project clip: ', c)
       return m('tr', [
         m('td', c[0]),
-        m('td', c[1]),
-        m('td', c[2]),
-        m('td', c[3]),
+        m('td', formatTime(c[1])),
+        m('td', formatTime(c[2])),
+        m('td', formatTime(c[3])),
         m('td', c[4]),
       ])
     })])
