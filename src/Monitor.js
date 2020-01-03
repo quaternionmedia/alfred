@@ -32,7 +32,7 @@ module.exports = {
       Video.speed = (parseFloat(Video.speed) / 2).toFixed(2)
     } else if (Video.speed < 1) {
       Video.speed = parseFloat(Video.speed) + .25
-    } else {
+    } else if (Video.speed < 16){
       Video.speed = parseFloat(Video.speed) * 2
     }
     if (Video.speed == .25) {
@@ -42,12 +42,12 @@ module.exports = {
     }
   },
   slower: () => {
-    if (Video.speed > .25) {
-      Video.speed = (Video.speed / 2).toFixed(2)
-    } else if (Video.speed > -1) {
+    if (Video.speed > 1) {
+      Video.speed = (Video.speed / 2).toFixed()
+    } else if (Video.speed > 0) {
       Video.speed -= .25
     } else {
-      Video.speed = Video.speed * 2
+      // Video.speed = Video.speed * 2
     }
     if (Video.speed == 0) {
       Mon.dom.pause()
@@ -72,15 +72,17 @@ module.exports = {
     Mon.dom = vnode.dom
     document.addEventListener('keyup', e => {
       switch (e.code) {
-        case 'Space': {
+        case 'Space':
           module.exports.play()
           // console.log('space', Video, vnode)
           m.redraw()
-        } case 'Equal': {
+          break
+          case 'Equal':
           module.exports.faster()
-        } case 'Minus': {
+          break
+          case 'Minus':
           module.exports.slower()
-        }
+          break
       }
     })
     document.addEventListener('keydown', e => {
