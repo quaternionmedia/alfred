@@ -46,7 +46,7 @@ export default class Tools {
       }, 'slow_motion_video'),
 
       m('i', {
-        onclick: (vnode) => {Video.resetSpeed()}
+        onclick: (vnode) => {Monitor.resetSpeed()}
       }, Video.speed + 'x'),
       m('i.material-icons', {
         onclick: (vnode) => {Monitor.faster()}

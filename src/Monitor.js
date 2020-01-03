@@ -29,14 +29,14 @@ module.exports = {
   faster: () => {
     console.log('playbackRate changed', Video)
     if (Video.speed < -.25) {
-      Video.speed = (Video.speed / 2).toFixed(2)
+      Video.speed = (parseFloat(Video.speed) / 2).toFixed(2)
     } else if (Video.speed < 1) {
-      Video.speed += .25
+      Video.speed = parseFloat(Video.speed) + .25
     } else {
-      Video.speed = Video.speed*2
+      Video.speed = parseFloat(Video.speed) * 2
     }
-    if (Video.speed == 0) {
-      Mon.dom.pause()
+    if (Video.speed == .25) {
+      Mon.dom.play()
     } else {
       Mon.dom.playbackRate = Video.speed
     }
