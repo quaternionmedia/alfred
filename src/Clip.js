@@ -3,6 +3,7 @@ import interact from 'interactjs'
 // import Timeline from './Timeline'
 var Timeline = require("./Timeline")
 import Monitor from './Monitor'
+import Video from './Video'
 
 export default class Clip {
   constructor(vnode) {
@@ -75,12 +76,18 @@ export default class Clip {
       style: {
         width: this.outpoint - this.inpoint,
       },
-      }, [
-        m('span#clipname.clipname', this.filename),
-        m('span#inpoint', this.inpoint),
-        m('span#outpoint', this.outpoint),
-        m('span#description', this.description),
-      ])
+    }, [
+      m('span#clipname.clipname', this.filename),
+      m('span#inpoint', this.inpoint),
+      m('span#outpoint', this.outpoint),
+      m('span#description', this.description),
+      m('i.material-icons#progress.progress',  {
+        style: {
+          display: (Video.time > this.inpoint) && (Video.time < this.outpoint) ? 'inherit': 'none',
+          left: Video.time - this.inpoint,
+        }
+      }),
+    ])
       // {data-x: vnode.attrs.inpoint/scale, data-y: vnode.attrs.outpoint/scale})
   }
 }

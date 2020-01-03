@@ -54,7 +54,7 @@ body {
 
 .monitor {
   text-align: right;
-  max-width: 60vw;
+  width: 60vw;
   max-height: 45vh;
   border: 4px solid #210D4D;
 }
@@ -165,28 +165,6 @@ body {
   border: 3px solid #4286f4;
   position: absolute;
 }
-
-.resizable .resizers .resizer.top-left {
-  left: -5px;
-  top: -5px;
-  cursor: nwse-resize; /*resizer cursor*/
-}
-.resizable .resizers .resizer.top-right {
-  right: -5px;
-  top: -5px;
-  cursor: nesw-resize;
-}
-.resizable .resizers .resizer.bottom-left {
-  left: -5px;
-  bottom: -5px;
-  cursor: nesw-resize;
-}
-.resizable .resizers .resizer.bottom-right {
-  right: -5px;
-  bottom: -5px;
-  cursor: nwse-resize;
-}
-
 .sortable {
   display: inline;
   padding: 10%;
@@ -202,6 +180,14 @@ body {
 span {
   padding: 15px;
   pointer-events: none;
+}
+
+.progress {
+  width: 2px;
+  height: 100%;
+  top: 0px;
+  background-color: #b4a0df;
+  position: absolute;
 }
 
 ::-webkit-scrollbar { width: 20px; height: 20px;}
