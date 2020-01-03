@@ -1,5 +1,4 @@
 import m from 'mithril'
-import dragula from 'dragula'
 /*Make resizable div by Hung Nguyen*/
 
 
@@ -81,7 +80,6 @@ module.exports = {
           window.removeEventListener('mousemove', resize)
         }
       }
-      // dragula([vnode.dom])
       // }
 
     // makeResizableDiv('.resizable')

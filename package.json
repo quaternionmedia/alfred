@@ -7,9 +7,8 @@
   "author": "Harpo <harpo@harpo.me>",
   "license": "MIT",
   "dependencies": {
-    "dragula": "^3.7.2",
     "interactjs": "^1.7.3",
-    "material-design-icons": "^3.0.1",
+    "material-design-icons-iconfont": "^5.0.1",
     "mithril": "^2.0.4",
     "sortablejs": "^1.10.1"
   },
