@@ -71,14 +71,16 @@ module.exports = {
     // console.log('monitor created', Video)
     Mon.dom = vnode.dom
     document.addEventListener('keyup', e => {
-      if (e.code === 'Space') {
-        // vnode.dom.paused ? vnode.dom.play() : vnode.dom.pause()
-        // state.paused(vnode.dom.paused)
-        // module.exports.paused = vnode.dom.paused
-        // Video.paused = vnode.dom.paused
-        module.exports.play()
-        // console.log('space', Video, vnode)
-        m.redraw()
+      switch (e.code) {
+        case 'Space': {
+          module.exports.play()
+          // console.log('space', Video, vnode)
+          m.redraw()
+        } case 'Equal': {
+          module.exports.faster()
+        } case 'Minus': {
+          module.exports.slower()
+        }
       }
     })
     document.addEventListener('keydown', e => {
