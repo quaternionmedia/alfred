@@ -1,5 +1,5 @@
 import m from 'mithril'
-import '../node_modules/material-design-icons/iconfont/material-icons.css'
+import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 import Monitor from './Monitor'
 import Video from './Video'
 var state = require("./Globals").state
@@ -41,6 +41,16 @@ export default class Tools {
       m('i.material-icons', {
         onclick: (vnode) => {Monitor.seek(Video.duration)}
       }, 'last_page'),
+      m('i.material-icons', {
+        onclick: (vnode) => {Monitor.slower()}
+      }, 'slow_motion_video'),
+
+      m('i', {
+        onclick: (vnode) => {Video.resetSpeed()}
+      }, Video.speed + 'x'),
+      m('i.material-icons', {
+        onclick: (vnode) => {Monitor.faster()}
+      }, 'speed'),
     ])
   }
 }

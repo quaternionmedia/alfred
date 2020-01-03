@@ -26,6 +26,40 @@ module.exports = {
       Video.paused = true
     }
   },
+  faster: () => {
+    console.log('playbackRate changed', Video)
+    if (Video.speed < -.25) {
+      Video.speed = (Video.speed / 2).toFixed(2)
+    } else if (Video.speed < 1) {
+      Video.speed += .25
+    } else {
+      Video.speed = Video.speed*2
+    }
+    if (Video.speed == 0) {
+      Mon.dom.pause()
+    } else {
+      Mon.dom.playbackRate = Video.speed
+    }
+  },
+  slower: () => {
+    if (Video.speed > .25) {
+      Video.speed = (Video.speed / 2).toFixed(2)
+    } else if (Video.speed > -1) {
+      Video.speed -= .25
+    } else {
+      Video.speed = Video.speed * 2
+    }
+    if (Video.speed == 0) {
+      Mon.dom.pause()
+    } else {
+      Mon.dom.playbackRate = Video.speed
+    }
+  },
+  resetSpeed: () => {
+    Video.speed = 1
+    Mon.dom.playbackRate = Video.speed
+    m.redraw()
+  },
   oncreate: (vnode) => {
     Video.filename = vnode.attrs.src
     vnode.dom.addEventListener('durationchange', (e) => {

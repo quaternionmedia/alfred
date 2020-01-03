@@ -54,7 +54,7 @@ body {
 
 .monitor {
   text-align: right;
-  width: 60vw;
+  min-width: 60vw;
   max-height: 45vh;
   border: 4px solid #210D4D;
 }
