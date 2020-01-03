@@ -1,7 +1,7 @@
 import m from 'mithril'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 import Monitor from './Monitor'
-import Video from './Video'
+import { Video } from './Video'
 var state = require("./Globals").state
 
 export default class Tools {

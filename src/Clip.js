@@ -3,7 +3,7 @@ import interact from 'interactjs'
 // import Timeline from './Timeline'
 var Timeline = require("./Timeline")
 import Monitor from './Monitor'
-import Video from './Video'
+import { Video } from './Video'
 
 export default class Clip {
   constructor(vnode) {

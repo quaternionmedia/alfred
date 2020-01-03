@@ -9,4 +9,12 @@ var Video = {
   speed: 1,
 }
 
-module.exports = Video
+var Edl = {
+  edl: [],
+  current: 0,
+  duration: () => {
+    return Edl.edl.reduce((a, b) => a + b[3], 0)
+  }
+}
+
+module.exports = {Video, Edl}

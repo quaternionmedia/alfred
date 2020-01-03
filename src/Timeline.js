@@ -3,8 +3,8 @@ import Sortable from 'sortablejs'
 // var Clip = require('./Clip').Clip
 import Clip from './Clip'
 var state = require("./Globals").state
+import { Edl } from './Video'
 
-// import csvStringToArray from "./parseCsv"
 const csvStringToArray = require('./parseCsv').csvStringToArray
 
 export var Timeline = {
@@ -26,20 +26,16 @@ export var Timeline = {
         clips[i].attributes.description.value
       ])
     }
-    Timeline.edl = edl
-    Timeline.duration =
+    Edl.edl = edl
+    // Timeline.duration =
     m.redraw()
     // state.edl(this.edl)
-  },
-  updateDuration: () => {
-    Timeline.duration = Timeline.edl.reduce((a, b) => a + b[3], 0)
   },
   oninit: (vnode) => {
     Timeline.v = vnode
     m.request('/edl.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
       // console.log(e)
-    Timeline.edl = csvStringToArray(e.body)
-    Timeline.updateDuration()
+    Edl.edl = csvStringToArray(e.body)
     })
 
   },
@@ -75,7 +71,7 @@ export var Timeline = {
   view: (vnode) => {
     return m('#timeline.timeline', [
       // m(Clip)
-      Timeline.edl.map((c) => {
+      Edl.edl.map((c) => {
         return m(Clip, {filename: c[0], inpoint: c[1], outpoint: c[2], duration: c[3], description: c[4]})
 
       })

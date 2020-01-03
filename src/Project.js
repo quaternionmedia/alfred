@@ -2,6 +2,7 @@ import m from 'mithril'
 var state = require("./Globals").state
 var Timeline = require("./Timeline").Timeline
 const formatTime = require('./Slider').formatTime
+import { Edl } from './Video'
 
 module.exports = {
   view: (vnode) => {
@@ -13,7 +14,7 @@ module.exports = {
         m('th', 'duration'),
         m('th', 'description'),
       ]),
-      Timeline.edl.map(c => {
+      Edl.edl.map(c => {
         // console.log('project clip: ', c)
       return m('tr', [
         m('td', c[0]),

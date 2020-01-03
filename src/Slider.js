@@ -2,7 +2,7 @@ import m from 'mithril'
 import interact from 'interactjs'
 var state = require("./Globals").state
 import Monitor from './Monitor'
-import Video from './Video'
+import { Video } from './Video'
 
 module.exports = {
   formatTime: (seconds) => {

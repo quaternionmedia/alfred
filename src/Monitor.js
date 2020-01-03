@@ -3,7 +3,7 @@ var state = require("./Globals").state
 // import Slider from './Slider'
 var Slider = require("./Slider")
 // import Slider from './Slider'
-import Video from './Video'
+import { Video } from './Video'
 
 var Mon = {
   dom: null,
