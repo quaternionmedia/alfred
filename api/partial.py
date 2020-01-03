@@ -74,7 +74,7 @@ class PartialFileResponse(Response):
         # self.headers.setdefault('filesize', filesize)
         self.headers.setdefault('accept-ranges', 'bytes')
         self.size = stat_result.st_size
-        print('size: ', self.size, type(self.size), self.headers)
+        # print('size: ', self.size, type(self.size), self.headers)
         self.start = 0
         self.end = self.start + int(content_length)
         # self.headers.setdefault('range', f"bytes {self.start}-{self.end}/{self.size}")
@@ -91,13 +91,13 @@ class PartialFileResponse(Response):
                 if not stat.S_ISREG(mode):
                     raise RuntimeError(f"File at path {self.path} is not a file.")
         request = Request(scope, receive)
-        print('got a bytes!', request.headers)
+        # print('got a bytes!', request.headers)
         if request.headers.get('range'):
             if request.headers['range'].startswith('bytes='):
-                print('range: ', request.headers['range'], request.headers['range'][:6], request.headers['range'].startswith('bytes='), type(request.headers['range'][:6]))
+                # print('range: ', request.headers['range'], request.headers['range'][:6], request.headers['range'].startswith('bytes='), type(request.headers['range'][:6]))
 
                 self.range = request.headers['range'].split('bytes=')[1].split('-')
-                print('processed range: ', self.range)
+                # print('processed range: ', self.range)
                 self.start = int(self.range[0])
                 self.end = min(self.start + self.defaultSize, self.size)
                 self.headers['content-range'] =  f"bytes {self.start}-{self.end - 1}/{self.size}"
