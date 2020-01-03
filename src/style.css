@@ -80,7 +80,11 @@ body {
   display: flex;
   height: 40vh;
 }
-
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
 .tools {
   display: inline-grid;
   align-items: center;
@@ -93,7 +97,9 @@ body {
 .tools i:hover {
   background-color: #393939;
 }
-
+.tools i:active {
+  animation: blinker .2s 1;
+}
 .sliders {
   padding: 1em
 }
