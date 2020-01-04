@@ -78,7 +78,7 @@ export function edlToSeconds(arrData) {
   for (var i = 0; i < arrData.length; i++) {
     // arrData[i] = arrData[i].map(col => col.includes(":") && !col.includes("M") ? seconds(col) : col
     let d = arrData[i]
-    arrData[i] = [ d[0], seconds(d[1]), seconds(d[2]), d[3], d[4] ]
+    arrData[i] = [ d[0], seconds(d[1]), seconds(d[2]), seconds(d[3]), d[4] ]
 
   }
 
