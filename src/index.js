@@ -14,7 +14,7 @@ var Al = {
       m('#head.head', [
         m(Project),
         m(Tools),
-        m(Monitor, {src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'}),
+        m(Monitor, {}),
       ]),
       m(Slider),
       m(Timeline),
