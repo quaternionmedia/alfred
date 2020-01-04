@@ -4,4 +4,4 @@ FROM countable/parceljs
 #EXPOSE 1235
 WORKDIR /app
 
-CMD ["parcel", "build", "/app/src/*"]
+CMD ["parcel", "build", "/app/src/index.html", "--target", "browser"]
