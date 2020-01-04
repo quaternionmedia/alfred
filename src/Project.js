@@ -17,7 +17,7 @@ module.exports = {
       Edl.edl.map(c => {
         // console.log('project clip: ', c)
       return m('tr', [
-        m('td', c[0]),
+        m('td', c[0].split('/').pop()),
         m('td', formatTime(c[1])),
         m('td', formatTime(c[2])),
         m('td', formatTime(c[3])),

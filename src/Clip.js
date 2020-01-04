@@ -82,7 +82,7 @@ export default class Clip {
         width: this.outpoint - this.inpoint,
       },
     }, [
-      m('span#clipname.clipname', this.filename),
+      m('span#clipname.clipname', this.filename.split('/').pop()),
       m('span#inpoint', this.inpoint),
       m('span#outpoint', this.outpoint),
       m('span#description', this.description),
