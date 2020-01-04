@@ -6,7 +6,9 @@ var state = require("./Globals").state
 import { Video, Edl } from './Video'
 import Monitor from './Monitor'
 
-const csvStringToArray = require('./parseCsv').csvStringToArray
+// const csvStringToArray = require('./parseCsv').csvStringToArray
+const CSVToArray = require('./CSVToArray').CSVToArray
+const edlToSeconds = require('./CSVToArray').edlToSeconds
 
 export var Timeline = {
   // constructor() {
@@ -37,11 +39,12 @@ export var Timeline = {
   oninit: (vnode) => {
     Timeline.v = vnode
     m.request('/edl.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
-      // console.log(e)
-    Edl.edl = csvStringToArray(e.body)
+      console.log('got edl!', e)
+    // Edl.edl = csvStringToArray(e.body)
+    Edl.edl = edlToSeconds(CSVToArray(e.body))
     Video.filename = Edl.edl[0][0]
     Video.time = Edl.edl[0][1]
-    Monitor.load('videos/' + Video.filename)
+    Monitor.load(Video.filename)
     // m.redraw()
     // Monitor.play()
     })
