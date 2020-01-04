@@ -1,9 +1,6 @@
 import m from 'mithril'
 var state = require("./Globals").state
-// import Slider from './Slider'
-var Slider = require("./Slider")
-// import Slider from './Slider'
-import { Video } from './Video'
+import { Video, Edl } from './Video'
 
 var Mon = {
   dom: null,
@@ -60,8 +57,11 @@ module.exports = {
     Mon.dom.playbackRate = Video.speed
     m.redraw()
   },
+  load: (f) => {
+    Mon.dom.src = f
+  },
   oncreate: (vnode) => {
-    Video.filename = vnode.attrs.src
+    // Video.filename = Edl.edl[0][0]
     vnode.dom.addEventListener('durationchange', (e) => {
       Video.duration = vnode.dom.duration
       // console.log('duration change', Video)
@@ -73,16 +73,18 @@ module.exports = {
     document.addEventListener('keyup', e => {
       switch (e.code) {
         case 'Space':
-          module.exports.play()
-          // console.log('space', Video, vnode)
-          m.redraw()
+            module.exports.play()
+            // console.log('space', Video, vnode)
+            m.redraw()
           break
           case 'Equal':
-          module.exports.faster()
+            module.exports.faster()
           break
           case 'Minus':
-          module.exports.slower()
+            module.exports.slower()
           break
+          // case 'ArrowUp':
+
       }
     })
     document.addEventListener('keydown', e => {
@@ -91,11 +93,19 @@ module.exports = {
       }
     })
     vnode.dom.addEventListener('timeupdate', (e) => {
-      // state.time(e.target.currentTime)
       Video.time = e.target.currentTime
-      // console.log('timeupdate', e, Slider)
+      console.log('timeupdate', e, Video, Edl, Edl.edl[Edl.current][2] - Video.time)
+      if (Video.time > Edl.edl[Edl.current][2]) {
+        console.log('editing!', Video, Edl )
+        if (Video.filename != Edl.edl[++Edl.current][0]) {
+          console.log('loading', Video, Edl.edl[Edl.current])
+        Video.filename = Edl.edl[Edl.current][0]
+        module.exports.load('videos/' + Video.filename)
+      }
+      Video.time = parseFloat(Edl.edl[Edl.current][1])
+      module.exports.seek(Video.time)
+    }
       m.redraw()
-      // Slider.updateValue(e.target.currentTime)
     })
   },
   onbeforeupdate: (vnode, old) => {
@@ -104,11 +114,11 @@ module.exports = {
   },
   view: (vnode) => {
     return m('video#monitor.monitor', {
-        src: vnode.attrs.src,
+        src: Video.filename,
         controls: true,
         preload: true,
         volume: Video.volume,
-        currentTime: Video.time,
+        // currentTime: Video.time,
       })
   }
 }

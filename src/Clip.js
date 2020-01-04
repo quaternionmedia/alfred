@@ -3,7 +3,7 @@ import interact from 'interactjs'
 // import Timeline from './Timeline'
 var Timeline = require("./Timeline")
 import Monitor from './Monitor'
-import { Video } from './Video'
+import { Video, Edl } from './Video'
 
 export default class Clip {
   constructor(vnode) {
@@ -36,9 +36,6 @@ export default class Clip {
       target.setAttribute('outpoint', this.outpoint)
       // console.log('changing outpoint', event.deltaRect, event)
     }
-    // target.innerHTML= `${this.description} - [${this.inpoint}, ${this.outpoint}]`
-    // m.redraw()
-    // console.log('redrawing edl', Timeline.Timeline)
     Timeline.Timeline.updateEdl()
     })
     clip.resizable({
@@ -61,6 +58,14 @@ export default class Clip {
       const t = r*(this.outpoint - this.inpoint) + this.inpoint
       console.log('clicked on clip', e, r, t)
       Monitor.seek(t)
+      let c = e.target.parentElement.children
+      for (var i = 0; i < c.length; i++) {
+        if (c[i] == e.target) {
+          Edl.current = i
+          break
+        }
+      }
+      m.redraw()
     }, true)
 
   }

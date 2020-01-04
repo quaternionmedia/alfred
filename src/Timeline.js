@@ -3,21 +3,24 @@ import Sortable from 'sortablejs'
 // var Clip = require('./Clip').Clip
 import Clip from './Clip'
 var state = require("./Globals").state
-import { Edl } from './Video'
+import { Video, Edl } from './Video'
+import Monitor from './Monitor'
 
 const csvStringToArray = require('./parseCsv').csvStringToArray
 
 export var Timeline = {
   // constructor() {
-    edl: [],
-    duration: 0,
-    v: null,
+    // edl: [],
+    // duration: 0,
   // }
+  v: null,
   updateEdl: () => {
+    // console.log('updating edl')
     var edl = []
     let clips = Timeline.v.dom.children
     for (var i = 0; i < clips.length; i++) {
       // console.log(clips[i])
+      clips[i].setAttribute('pos', i)
       edl.push([
         clips[i].attributes.filename.value,
         clips[i].attributes.inpoint.value,
@@ -36,6 +39,11 @@ export var Timeline = {
     m.request('/edl.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
       // console.log(e)
     Edl.edl = csvStringToArray(e.body)
+    Video.filename = Edl.edl[0][0]
+    Video.time = Edl.edl[0][1]
+    Monitor.load('videos/' + Video.filename)
+    // m.redraw()
+    // Monitor.play()
     })
 
   },
@@ -43,7 +51,6 @@ export var Timeline = {
     new Sortable(vnode.dom, {
       swapThreshold: 0.50,
       animation: 150,
-      // ghostClass: 'blue-background-class',
       ghostClass: 'ghost',
       forceFallback: true,
       // delay: 100,
@@ -63,7 +70,8 @@ export var Timeline = {
         // return cursor == 'ew-resize' || left || right
       },
       onUpdate: (e) => {
-        console.log(e)
+        Edl.current = e.newIndex
+        console.log('sorting update', e, Edl)
         Timeline.updateEdl()
       },
     })
