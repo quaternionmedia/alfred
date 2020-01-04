@@ -15,7 +15,9 @@ Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 
 then open http://localhost:8000
 
-If the Dockerfiles need to be rebuilt: `./alfred dev --build`
+If the docker images need to be rebuilt: `./alfred dev --build`
+
+If package.json has changed: `./alfred install`
 
 ### production
 With a [traefik](https://containo.us/traefik/) instance running:
