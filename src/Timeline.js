@@ -59,9 +59,9 @@ export var Timeline = {
       // delay: 100,
       filter: (e) => {
         var cursor = e.target.style.cursor;
-        var left = Math.abs(e.target.offsetLeft - e.clientX) <= 25
-        var right = Math.abs(e.target.offsetLeft + e.target.offsetWidth - e.clientX) <= 25
-        console.log('right', right, e)
+        var left = Math.abs(e.target.offsetLeft) <= 5
+        var right = Math.abs(e.target.offsetLeft + e.target.offsetWidth) <= 5
+        console.log('left', left, e)
         // console.log('filter: ', e, cursor)
          if (cursor == 'ew-resize' || left || right) {
            return true
@@ -76,6 +76,7 @@ export var Timeline = {
         Edl.current = e.newIndex
         console.log('sorting update', e, Edl)
         Timeline.updateEdl()
+        m.redraw()
       },
     })
   },

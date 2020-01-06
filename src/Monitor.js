@@ -94,8 +94,9 @@ module.exports = {
     })
     vnode.dom.addEventListener('timeupdate', (e) => {
       Video.time = e.target.currentTime
-      if (Edl.edl[Edl.current]) {
-        console.log('timeupdate', e, Video, Edl, Edl.edl[Edl.current][2] - Video.time)
+      // if (Edl.edl[Edl.current]) {
+        console.log('timeupdate', e, Video, Edl)
+        // , Edl.edl[Edl.current][2] - Video.time)
         if (Video.time > Edl.edl[Edl.current][2]) {
           console.log('editing!', Video, Edl )
           if (Video.filename != Edl.edl[++Edl.current][0]) {
@@ -105,7 +106,8 @@ module.exports = {
         }
         Video.time = parseFloat(Edl.edl[Edl.current][1])
         module.exports.seek(Video.time)
-      }}
+        }
+      // }
       m.redraw()
     })
   },
