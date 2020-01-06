@@ -5,14 +5,14 @@ var Timeline = require("./Timeline")
 import Monitor from './Monitor'
 import { Video, Edl } from './Video'
 
-function whichAmI(e) {
-  console.log('finding index of ', e)
-  let c = e.parentElement.children
+function whichAmI(e, p) {
+  let c = p.children
   for (var i = 0; i < c.length; i++) {
-    if (c[i] == e.target) {
+    if (c[i] == e) {
       return i
     }
   }
+  return false
 }
 
 export default class Clip {
@@ -70,7 +70,7 @@ export default class Clip {
       const t = r*(this.outpoint - this.inpoint) + this.inpoint
       console.log('clicked on clip', e, r, t)
       Monitor.seek(t)
-      Edl.current = whichAmI(e.target)
+      Edl.current = whichAmI(e.target, e.target.parentElement)
       m.redraw()
     }, true)
 
@@ -95,10 +95,11 @@ export default class Clip {
       m('p#outpoint[]', this.outpoint),
       m('p#description[contenteditable=true]', {
           oncreate: (v) => {
+            let t = document.getElementById('timeline')
             // console.log('description created', v)
             vnode.dom.addEventListener('input', (e) => {
-              console.log('input changed', e)
-              Edl.edl[this.pos][4] = e.target.textContent
+              console.log('input changed', e, vnode, whichAmI(e.target, t))
+              Edl.edl[whichAmI(vnode.dom, t)][4] = e.target.textContent
               this.description = e.target.textContent
             })
             vnode.dom.addEventListener('keyup', (e) => {
