@@ -85,6 +85,7 @@ export default class Clip {
       filename: this.filename,
       description: this.description,
       pos: this.pos,
+      title: this. filename + ' - ' + this.description,
       style: {
         width: this.outpoint - this.inpoint,
       },
