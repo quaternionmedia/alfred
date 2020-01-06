@@ -21,6 +21,7 @@ export default class Clip {
     this.outpoint = vnode.attrs.outpoint
     this.description = vnode.attrs.description
     this.filename = vnode.attrs.filename
+    this.pos = vnode.attrs.pos
     // console.log('clip init', vnode, this.inpoint, this.outpoint)
     }
 
@@ -83,6 +84,7 @@ export default class Clip {
       outpoint: this.outpoint,
       filename: this.filename,
       description: this.description,
+      pos: this.pos,
       style: {
         width: this.outpoint - this.inpoint,
       },
@@ -91,6 +93,17 @@ export default class Clip {
       m('p#inpoint[]', this.inpoint),
       m('p#outpoint[]', this.outpoint),
       m('p#description[contenteditable=true]', {
+          oncreate: (v) => {
+            // console.log('description created', v)
+            vnode.dom.addEventListener('input', (e) => {
+              console.log('input changed', e)
+              Edl.edl[this.pos][4] = e.target.textContent
+              this.description = e.target.textContent
+              // m.redraw()
+              // Timeline.Timeline.updateEdl()
+
+            })
+          }
         }, m.trust(this.description)),
       m('i.material-icons#progress.progress',  {
         style: {
