@@ -99,9 +99,15 @@ export default class Clip {
               console.log('input changed', e)
               Edl.edl[this.pos][4] = e.target.textContent
               this.description = e.target.textContent
-              // m.redraw()
-              // Timeline.Timeline.updateEdl()
-
+            })
+            vnode.dom.addEventListener('keyup', (e) => {
+              if (e.key == 'Enter') {
+                e.preventDefault()
+                m.redraw()
+              }
+              if (e.key == 'ArrowLeft' || e.key == 'ArrowRight' || e.key == ' ') {
+                e.stopPropagation()
+              }
             })
           }
         }, m.trust(this.description)),

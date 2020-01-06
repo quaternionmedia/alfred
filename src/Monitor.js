@@ -88,9 +88,9 @@ module.exports = {
       }
     })
     document.addEventListener('keydown', e => {
-      if (e.code === 'Space') {
-        e.preventDefault()
-      }
+      // if (e.code === 'Space') {
+      //   e.preventDefault()
+      // }
     })
     vnode.dom.addEventListener('timeupdate', (e) => {
       Video.time = e.target.currentTime

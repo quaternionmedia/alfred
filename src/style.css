@@ -18,7 +18,7 @@ body {
 .timeline {
   /* width: 100%; */
   max-width: 100vw;
-  max-height: 50vh;
+  max-height: 45vh;
   /* display: flex; */
   display: -webkit-inline-box;
   overflow: auto;
