@@ -73,7 +73,6 @@ module.exports = {
     document.addEventListener('keyup', e => {
       switch (e.code) {
         case 'Space':
-          e.preventDefault()
           module.exports.play()
           // console.log('space', Video, vnode)
           m.redraw()
@@ -88,6 +87,14 @@ module.exports = {
 
       }
     })
+    document.addEventListener('keydown', e => {
+      switch (e.code) {
+        case 'Space':
+        e.preventDefault()
+        break
+      }
+    })
+  
     vnode.dom.addEventListener('timeupdate', (e) => {
       Video.time = e.target.currentTime
       // if (Edl.edl[Edl.current]) {
