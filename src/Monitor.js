@@ -73,24 +73,20 @@ module.exports = {
     document.addEventListener('keyup', e => {
       switch (e.code) {
         case 'Space':
-            module.exports.play()
-            // console.log('space', Video, vnode)
-            m.redraw()
+          e.preventDefault()
+          module.exports.play()
+          // console.log('space', Video, vnode)
+          m.redraw()
           break
-          case 'Equal':
+        case 'Equal':
             module.exports.faster()
           break
-          case 'Minus':
+        case 'Minus':
             module.exports.slower()
           break
           // case 'ArrowUp':
 
       }
-    })
-    document.addEventListener('keydown', e => {
-      // if (e.code === 'Space') {
-      //   e.preventDefault()
-      // }
     })
     vnode.dom.addEventListener('timeupdate', (e) => {
       Video.time = e.target.currentTime
