@@ -4,6 +4,7 @@ import interact from 'interactjs'
 var Timeline = require("./Timeline")
 import Monitor from './Monitor'
 import { Video, Edl } from './Video'
+var state = require("./Globals").state
 
 function whichAmI(e, p) {
   let c = p.children
@@ -36,12 +37,12 @@ export default class Clip {
     // console.log( w - (vnode.state.outpoint - vnode.state.inpoint), event.rect.width, vnode.state.outpoint, vnode.state.inpoint, w)
     if (event.edges.left && ( this.outpoint > this.inpoint + event.dx) && (this.inpoint + event.dx >= 0)) {
       // target.style.width  = event.rect.width + 'px';
-      target.style.width = w - event.dx + 'px'
-      this.inpoint += event.dx
+      target.style.width = w - event.dx / state.scale() + 'px'
+      this.inpoint += event.dx / state.scale()
       target.setAttribute('inpoint', this.inpoint)
       // console.log('changing inpoint', vnode, event)
     } else if (event.edges.right && (this.outpoint + event.dx > this.inpoint)) {
-      target.style.width  = w + event.dx + 'px';
+      target.style.width  = w + event.dx / state.scale() + 'px';
       this.outpoint += event.dx
       target.setAttribute('outpoint', this.outpoint)
       // console.log('changing outpoint', event.deltaRect, event)
@@ -85,7 +86,7 @@ export default class Clip {
       description: this.description,
       title: this. filename + ' - ' + this.description,
       style: {
-        width: this.outpoint - this.inpoint,
+        width: (this.outpoint - this.inpoint)*state.scale(),
       },
     }, [
       m('p#clipname.clipname', this.filename.split('/').pop()),
@@ -114,7 +115,7 @@ export default class Clip {
       m('i.material-icons#progress.progress',  {
         style: {
           display: (Video.time > this.inpoint) && (Video.time < this.outpoint) ? 'inherit': 'none',
-          left: Video.time - this.inpoint,
+          left: (Video.time - this.inpoint)*state.scale(),
         }
       }),
     ])

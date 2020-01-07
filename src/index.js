@@ -6,6 +6,7 @@ var Timeline = require("./Timeline").Timeline
 import Monitor from './Monitor'
 import Project from './Project'
 import Tools from './Tools'
+import Scale from './Scale'
 
 var Al = {
   view: (vnode) => {
@@ -18,6 +19,7 @@ var Al = {
       ]),
       m(Slider),
       m(Timeline),
+      m(Scale),
       // m(resizable),
       // m(sortable),
     ]
