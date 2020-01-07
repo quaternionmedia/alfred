@@ -19,7 +19,7 @@ module.exports = {
     return m('.slider#slider', {min: 1, max: Video.duration, value: Video.time}, Video.time > 60 ? module.exports.formatTime(Video.time.toFixed(2)): Video.time.toFixed(2))
   },
   oncreate: (vnode) => {
-    const slider = interact('.slider')
+    const slider = interact(vnode.dom)
     slider.draggable({
         origin: 'self',
         inertia: true,
