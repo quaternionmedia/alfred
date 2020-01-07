@@ -17,7 +17,7 @@ body {
 }
 .timeline {
   /* width: 100%; */
-  max-width: 100vw;
+  max-width: 98%;
   max-height: 40vh;
   /* display: flex; */
   display: -webkit-inline-box;

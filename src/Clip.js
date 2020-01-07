@@ -90,8 +90,8 @@ export default class Clip {
       },
     }, [
       m('p#clipname.clipname', this.filename.split('/').pop()),
-      m('p#inpoint[]', this.inpoint),
-      m('p#outpoint[]', this.outpoint),
+      m('p#inpoint[]', this.inpoint.toFixed(2)),
+      m('p#outpoint[]', this.outpoint.toFixed(2)),
       m('p#description[contenteditable=true]', {
           oncreate: (v) => {
             let t = document.getElementById('timeline')
