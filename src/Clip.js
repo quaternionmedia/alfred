@@ -35,15 +35,15 @@ export default class Clip {
     // console.log('event: ', event) //event.delta.x, )
     var w = parseInt(target.style.width)
     // console.log( w - (vnode.state.outpoint - vnode.state.inpoint), event.rect.width, vnode.state.outpoint, vnode.state.inpoint, w)
-    if (event.edges.left && ( this.outpoint > this.inpoint + event.dx) && (this.inpoint + event.dx >= 0)) {
+    if (event.edges.left && ( this.outpoint > this.inpoint + event.dx) && (this.inpoint + event.dx / state.scale() >= 0)) {
       // target.style.width  = event.rect.width + 'px';
       target.style.width = w - event.dx / state.scale() + 'px'
       this.inpoint += event.dx / state.scale()
       target.setAttribute('inpoint', this.inpoint)
       // console.log('changing inpoint', vnode, event)
-    } else if (event.edges.right && (this.outpoint + event.dx > this.inpoint)) {
+    } else if (event.edges.right && (this.outpoint + event.dx / state.scale() > this.inpoint)) {
       target.style.width  = w + event.dx / state.scale() + 'px';
-      this.outpoint += event.dx
+      this.outpoint += event.dx / state.scale()
       target.setAttribute('outpoint', this.outpoint)
       // console.log('changing outpoint', event.deltaRect, event)
     }
