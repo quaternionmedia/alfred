@@ -22,7 +22,6 @@ export var Timeline = {
     let clips = Timeline.v.dom.children
     for (var i = 0; i < clips.length; i++) {
       // console.log(clips[i])
-      clips[i].setAttribute('pos', i)
       edl.push([
         clips[i].attributes.filename.value,
         clips[i].attributes.inpoint.value,
