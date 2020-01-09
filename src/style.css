@@ -15,6 +15,11 @@ body {
   background: #222;
   color: #aaa;
 }
+
+.title {
+  display: inline;
+}
+
 .timeline {
   /* width: 100%; */
   max-width: 98%;

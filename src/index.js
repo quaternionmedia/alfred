@@ -11,7 +11,9 @@ import Scale from './Scale'
 var Al = {
   view: (vnode) => {
     return [
-      m('#main', 'Alfred. The serverless video editor'),
+      m('span#main', {}, [
+        m('h3.title', {align: 'center'}, 'Alfred. The serverless video editor'),
+      ]),
       m('#head.head', [
         m(Project),
         m(Tools),
