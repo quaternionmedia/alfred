@@ -7,11 +7,13 @@ import Monitor from './Monitor'
 import Project from './Project'
 import Tools from './Tools'
 import Scale from './Scale'
+import Menu from './Menu'
 
 var Al = {
   view: (vnode) => {
     return [
       m('span#main', {}, [
+        m(Menu),
         m('h3.title', {align: 'center'}, 'Alfred. The serverless video editor'),
       ]),
       m('#head.head', [
