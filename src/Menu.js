@@ -22,7 +22,9 @@ const Menu = () => {
 const Link = () => {
   return {
     view: (vnode) => {
-      return m(m.route.Link, vnode.attrs, vnode.children)
+      return m('.menu-item', [
+        m(m.route.Link, vnode.attrs, vnode.children)
+      ])
     }
   }
 }
