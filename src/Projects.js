@@ -21,7 +21,9 @@ const Projects = () => {
             ]),
             projects.map(p => {
               return m('tr', [
-                m('td', p),
+                m('td', {onclick: (e) => {
+                  m.route.set('/timeline?edl=' + p)
+                  }}, p),
               ])
             })
           ])

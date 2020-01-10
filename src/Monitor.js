@@ -94,7 +94,7 @@ module.exports = {
         break
       }
     })
-  
+
     vnode.dom.addEventListener('timeupdate', (e) => {
       Video.time = e.target.currentTime
       // if (Edl.edl[Edl.current]) {
@@ -105,7 +105,7 @@ module.exports = {
           if (Video.filename != Edl.edl[++Edl.current][0]) {
             console.log('loading', Video, Edl.edl[Edl.current])
           Video.filename = Edl.edl[Edl.current][0]
-          module.exports.load('videos/' + Video.filename)
+          module.exports.load(Video.filename)
         }
         Video.time = parseFloat(Edl.edl[Edl.current][1])
         module.exports.seek(Video.time)
