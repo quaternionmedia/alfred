@@ -8,14 +8,13 @@ import Project from './Project'
 import Tools from './Tools'
 import Scale from './Scale'
 import { Menu } from './Menu'
+import Home from './Home'
+import Projects from './Projects'
 
 var Al = {
   view: (vnode) => {
     return [
-      m('span#main', {}, [
-        m(Menu),
-        m('h3.title', {align: 'center'}, 'Alfred. The serverless video editor'),
-      ]),
+      m(Menu),
       m('#head.head', [
         m(Project),
         m(Tools),
@@ -33,4 +32,8 @@ var Al = {
 
 console.log('sup!')
 
-m.route(document.body, "/", { "/": Al } );
+m.route(document.body, "/", {
+  "/": Home,
+  '/projects': Projects,
+  '/timeline': Al,
+} );
