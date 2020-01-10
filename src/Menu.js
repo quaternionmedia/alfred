@@ -12,12 +12,24 @@ const Menu = () => {
       return [
         m('#menu.menu', {style: {display: open ? '': 'none', width: open ? '250px' : '0px'}}, [
           m('i.material-icons', {onclick: toggle}, 'close'),
-          m('.menu-item', 'item1'),
+        Links,
         ]),
         m('i.material-icons', {onclick: toggle, style: {display: open ? 'none' : '' }}, 'menu'),
       ]
     }
   }
 }
+const Link = () => {
+  return {
+    view: (vnode) => {
+      return m(m.route.Link, vnode.attrs, vnode.children)
+    }
+  }
+}
 
-export default Menu
+const Links = [
+  m(Link, {href:'/'}, 'home'),
+  m(Link, {href:'/projects'}, 'projects'),
+  m(Link, {href:'/timeline'}, 'timeline'),
+]
+export { Menu, Links, Link }

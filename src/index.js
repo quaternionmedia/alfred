@@ -7,7 +7,7 @@ import Monitor from './Monitor'
 import Project from './Project'
 import Tools from './Tools'
 import Scale from './Scale'
-import Menu from './Menu'
+import { Menu } from './Menu'
 
 var Al = {
   view: (vnode) => {
