@@ -80,7 +80,9 @@ body {
   color: #ddd;
 
 }
-
+.projects {
+  display: table;
+}
 .head {
   display: flex;
   height: 40vh;

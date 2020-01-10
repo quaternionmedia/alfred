@@ -1,14 +1,31 @@
 import m from 'mithril'
-import { Menu, Links } from './Menu'
+import { Menu } from './Menu'
 
 const Projects = () => {
+  var projects = []
   return {
+    oninit: (vnode) => {
+      m.request('/projects').then(e => {
+        console.log('got projects', e)
+        projects = e
+      })
+    },
     view: (vnode) => {
-      return m('.projects', [
+      return [
         m(Menu),
-        Links,
-        m('p', 'projects:'),
-      ])
+        m('.projects', [
+          m('h3', 'projects:'),
+          m('table.project.projects', {}, [
+            m('tr', [
+              m('th', 'name'),
+            ]),
+            projects.map(p => {
+              return m('tr', [
+                m('td', p),
+              ])
+            })
+          ])
+      ])]
     }
   }
 }
