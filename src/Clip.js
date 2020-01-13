@@ -69,8 +69,12 @@ export default class Clip {
       const r = e.offsetX / e.target.offsetWidth
       const t = r*(this.outpoint - this.inpoint) + this.inpoint
       console.log('clicked on clip', e, r, t)
-      Monitor.seek(t)
       Edl.current = whichAmI(e.target, e.target.parentElement)
+      if (Video.filename != Edl.edl[Edl.current][0]) {
+        Video.filename = Edl.edl[Edl.current][0]
+        Monitor.load(Video.filename)
+      }
+      Monitor.seek(t)
       m.redraw()
     }, true)
 
