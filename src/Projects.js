@@ -1,5 +1,6 @@
 import m from 'mithril'
 import { Menu } from './Menu'
+import { Edl } from './Video'
 
 const Projects = () => {
   var projects = []
@@ -22,6 +23,7 @@ const Projects = () => {
             projects.map(p => {
               return m('tr', [
                 m('td', {onclick: (e) => {
+                  Edl.edl = []
                   m.route.set('/timeline?edl=' + p)
                   }}, p),
               ])
