@@ -100,6 +100,11 @@ module.exports = {
             console.log('loading', Video, Edl.edl[Edl.current])
           Video.filename = Edl.edl[Edl.current][0]
           module.exports.load(Video.filename)
+          Mon.dom.addEventListener('canplay', (event) => {
+            if (!Video.paused) {
+              Mon.dom.play()
+            }
+          })
         }
         Video.time = parseFloat(Edl.edl[Edl.current][1])
         module.exports.seek(Video.time)
