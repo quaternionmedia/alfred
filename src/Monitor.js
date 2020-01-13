@@ -70,9 +70,10 @@ module.exports = {
     Video.duration = vnode.duration
     // console.log('monitor created', Video)
     Mon.dom = vnode.dom
-    document.addEventListener('keyup', e => {
+    document.addEventListener('keydown', e => {
       switch (e.code) {
         case 'Space':
+        e.preventDefault()
           module.exports.play()
           // console.log('space', Video, vnode)
           m.redraw()
@@ -85,13 +86,6 @@ module.exports = {
           break
           // case 'ArrowUp':
 
-      }
-    })
-    document.addEventListener('keydown', e => {
-      switch (e.code) {
-        case 'Space':
-        e.preventDefault()
-        break
       }
     })
 
