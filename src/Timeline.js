@@ -37,7 +37,7 @@ export var Timeline = {
   },
   oninit: (vnode) => {
     Timeline.v = vnode
-    m.request(m.route.param('edl'), {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
+    m.request(m.route.param('edl') || 'test.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
       console.log('got edl!', e)
     // Edl.edl = csvStringToArray(e.body)
     Edl.edl = edlToSeconds(CSVToArray(e.body))
