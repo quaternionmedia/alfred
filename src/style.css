@@ -203,6 +203,12 @@ body {
   background-color: #b4a0df;
   position: absolute;
 }
+a:link {
+  color: #aaa;
+}
+a:visited {
+  color: #888;
+}
 
 ::-webkit-scrollbar { width: 20px; height: 20px;}
 ::-webkit-scrollbar-button {  background-color: #888; }
