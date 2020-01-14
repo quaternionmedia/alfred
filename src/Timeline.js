@@ -82,8 +82,8 @@ export var Timeline = {
   view: (vnode) => {
     return m('#timeline.timeline', [
       // m(Clip)
-      Edl.edl.map(c => {
-        return m(Clip, {filename: c[0], inpoint: c[1], outpoint: c[2], duration: c[3], description: c[4]})
+      Edl.edl.map((c, i) => {
+        return m(Clip, {filename: c[0], inpoint: c[1], outpoint: c[2], duration: c[3], description: c[4], pos: i})
 
       })
     ])

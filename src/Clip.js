@@ -22,6 +22,7 @@ export default class Clip {
     this.outpoint = vnode.attrs.outpoint
     this.description = vnode.attrs.description
     this.filename = vnode.attrs.filename
+    this.pos = vnode.attrs.pos
     // console.log('clip init', vnode, this.inpoint, this.outpoint)
     }
 
@@ -79,6 +80,9 @@ export default class Clip {
     }, true)
 
   }
+  onupdate(vnode) {
+    this.pos = whichAmI(vnode.dom, vnode.dom.parentElement)
+  }
   view(vnode) {
     return m(`.clip#${vnode.attrs.name}`, {
       'data-x': this.inpoint, // /state.scale(),
@@ -118,7 +122,7 @@ export default class Clip {
         }, m.trust(this.description)),
       m('i.material-icons#progress.progress',  {
         style: {
-          display: (Video.time > this.inpoint) && (Video.time < this.outpoint) ? 'inherit': 'none',
+          display: (Video.time > this.inpoint) && (Video.time < this.outpoint) && (Edl.current == this.pos)? 'inherit': 'none',
           left: (Video.time - this.inpoint)*state.scale(),
         }
       }),
