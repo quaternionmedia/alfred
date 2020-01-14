@@ -95,19 +95,25 @@ module.exports = {
         console.log('timeupdate', e, Video, Edl)
         // , Edl.edl[Edl.current][2] - Video.time)
         if (Video.time > Edl.edl[Edl.current][2]) {
-          console.log('editing!', Video, Edl )
-          if (Video.filename != Edl.edl[++Edl.current][0]) {
-            console.log('loading', Video, Edl.edl[Edl.current])
-          Video.filename = Edl.edl[Edl.current][0]
-          module.exports.load(Video.filename)
-          Mon.dom.addEventListener('canplay', (event) => {
-            if (!Video.paused) {
-              Mon.dom.play()
-            }
-          })
-        }
-        Video.time = parseFloat(Edl.edl[Edl.current][1])
-        module.exports.seek(Video.time)
+          if (Edl.current < Edl.edl.length - 1) {
+            console.log('editing!', Video, Edl )
+            if (Video.filename != Edl.edl[++Edl.current][0]) {
+              console.log('loading', Video, Edl.edl[Edl.current])
+            Video.filename = Edl.edl[Edl.current][0]
+            module.exports.load(Video.filename)
+            Mon.dom.addEventListener('canplay', (event) => {
+              if (!Video.paused) {
+                Mon.dom.play()
+              }
+            })
+          }} else {
+            console.log('End of edl. stopping')
+            // Mon.dom.pause()
+            // Video.paused = true
+            module.exports.play()
+          }
+        // Video.time = parseFloat(Edl.edl[Edl.current][1])
+        module.exports.seek(parseFloat(Edl.edl[Edl.current][1]))
         }
       // }
       m.redraw()
