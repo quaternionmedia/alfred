@@ -6,7 +6,9 @@
   "repository": "git@github.com:quaternionmedia/alfred.git",
   "author": "Harpo <harpo@harpo.me>",
   "license": "MIT",
+  "scripts": {"test": "$(npm bin)/cypress run"},
   "dependencies": {
+    "cypress": "^4.0.1",
     "interactjs": "^1.7.3",
     "material-design-icons-iconfont": "^5.0.1",
     "mithril": "^2.0.4",
