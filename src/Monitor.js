@@ -73,6 +73,7 @@ module.exports = {
   },
   load: (f) => {
     Mon.dom.src = f
+    Video.filename = f
   },
   oncreate: (vnode) => {
     // Video.filename = Edl.edl[0][0]
