@@ -89,17 +89,17 @@ module.exports = {
       switch (e.code) {
         case 'Space':
         e.preventDefault()
-          module.exports.play()
-          // console.log('space', Video, vnode)
-          m.redraw()
-          break
+        module.exports.play()
+        // console.log('space', Video, vnode)
+        m.redraw()
+        break
         case 'Equal':
-            module.exports.faster()
-          break
+        module.exports.faster()
+        break
         case 'Minus':
-            module.exports.slower()
-          break
-          // case 'ArrowUp':
+        module.exports.slower()
+        break
+        // case 'ArrowUp':
 
       }
     })
@@ -144,11 +144,11 @@ module.exports = {
   },
   view: (vnode) => {
     return m('video#monitor.monitor', {
-        src: Video.filename,
-        controls: true,
-        preload: true,
-        volume: Video.volume,
-        // currentTime: Video.time,
-      })
+      src: Video.filename,
+      controls: true,
+      preload: true,
+      volume: Video.volume,
+      // currentTime: Video.time,
+    })
   }
 }
