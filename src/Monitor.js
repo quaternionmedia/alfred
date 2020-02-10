@@ -106,29 +106,33 @@ module.exports = {
     vnode.dom.addEventListener('timeupdate', (e) => {
       Video.time = e.target.currentTime
       // if (Edl.edl[Edl.current]) {
-        console.log('timeupdate', e, Video, Edl)
-        // , Edl.edl[Edl.current][2] - Video.time)
-        if (Video.time > Edl.edl[Edl.current][2]) {
-          if (Edl.current < Edl.edl.length - 1) {
-            console.log('editing!', Video, Edl )
-            if (Video.filename != Edl.edl[++Edl.current][0]) {
-              console.log('loading', Video, Edl.edl[Edl.current])
-            Video.filename = Edl.edl[Edl.current][0]
-            module.exports.load(Video.filename)
+      console.log('timeupdate', e, Video, Edl)
+      // , Edl.edl[Edl.current][2] - Video.time)
+      // check to see if we need to make an edit in the monitor
+      // if the current video time is beyond the current clip outpoint:
+      if (Video.time > Edl.edl[Edl.current][2]) {
+        // and if there's another clip to edit to:
+        if (Edl.current < Edl.edl.length - 1) {
+          // we need to change the video somehow.
+          console.log('editing!', Video, Edl )
+          // if the next video is different than the current video:
+          if (Video.filename != Edl.edl[++Edl.current][0]) {
+            console.log('loading', Video, Edl.edl[Edl.current])
+            module.exports.load(Edl.edl[Edl.current][0])
             Mon.dom.addEventListener('canplay', (event) => {
               if (!Video.paused) {
                 Mon.dom.play()
               }
             })
-          }} else {
-            console.log('End of edl. stopping')
-            // Mon.dom.pause()
-            // Video.paused = true
-            module.exports.play()
           }
-        // Video.time = parseFloat(Edl.edl[Edl.current][1])
-        module.exports.seek(parseFloat(Edl.edl[Edl.current][1]))
+        } else {
+          // this is the last clip in the edl.
+          console.log('End of edl. stopping')
+          module.exports.play()
         }
+        // seek to
+        module.exports.seek(parseFloat(Edl.edl[Edl.current][1]))
+      }
       // }
       m.redraw()
     })
