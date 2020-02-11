@@ -106,6 +106,7 @@ module.exports = {
 
     vnode.dom.addEventListener('timeupdate', (e) => {
       Video.time = e.target.currentTime
+      Edl.time = Video.time - Edl.edl[Edl.current][1] + Edl.durations(Edl.edl.slice(0, Edl.current))
       // if (Edl.edl[Edl.current]) {
       console.log('timeupdate', e, Video, Edl)
       // , Edl.edl[Edl.current][2] - Video.time)
