@@ -19,13 +19,13 @@ module.exports = {
     while (d + Edl.edl[c][3] <= t && c < Edl.edl.length - 1) {
       d += Edl.edl[c++][3]
     }
-    console.log('seeking edl', c, d)
     Edl.current = c
-    if (Video.filename != Edl.edl[c][0]) {
-      module.exports.load(Edl.edl[c][0])
-    } else {
-      module.exports.seek(t - d)
+    let clip = Edl.edl[c]
+    console.log('seeking edl', c, d, t, t - d + clip[1])
+    if (Video.filename != clip[0]) {
+      module.exports.load(clip[0])
     }
+    module.exports.seek(t - d + clip[1])
   },
   play: () => {
     if (Video.paused) {
