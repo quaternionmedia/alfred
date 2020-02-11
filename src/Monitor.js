@@ -19,13 +19,13 @@ module.exports = {
     while (d + Edl.edl[c][3] <= t && c < Edl.edl.length - 1) {
       d += Edl.edl[c++][3]
     }
-    console.log('seeking edl', c, d)
     Edl.current = c
-    if (Video.filename != Edl.edl[c][0]) {
-      module.exports.load(Edl.edl[c][0])
-    } else {
-      module.exports.seek(t - d)
+    let clip = Edl.edl[c]
+    console.log('seeking edl', c, d, t, t - d + clip[1])
+    if (Video.filename != clip[0]) {
+      module.exports.load(clip[0])
     }
+    module.exports.seek(t - d + clip[1])
   },
   play: () => {
     if (Video.paused) {
@@ -106,6 +106,7 @@ module.exports = {
 
     vnode.dom.addEventListener('timeupdate', (e) => {
       Video.time = e.target.currentTime
+      Edl.time = Video.time - Edl.edl[Edl.current][1] + Edl.durations(Edl.edl.slice(0, Edl.current))
       // if (Edl.edl[Edl.current]) {
       console.log('timeupdate', e, Video, Edl)
       // , Edl.edl[Edl.current][2] - Video.time)
@@ -120,11 +121,6 @@ module.exports = {
           if (Video.filename != Edl.edl[++Edl.current][0]) {
             console.log('loading', Video, Edl.edl[Edl.current])
             module.exports.load(Edl.edl[Edl.current][0])
-            Mon.dom.addEventListener('canplay', (event) => {
-              if (!Video.paused) {
-                Mon.dom.play()
-              }
-            })
           }
         } else {
           // this is the last clip in the edl.
@@ -136,6 +132,12 @@ module.exports = {
       }
       // }
       m.redraw()
+    })
+    Mon.dom.addEventListener('canplay', (event) => {
+      if (!Video.paused && Mon.dom.paused) {
+        console.log('fixed paused!')
+        Mon.dom.play()
+      }
     })
   },
   onbeforeupdate: (vnode, old) => {
