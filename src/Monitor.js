@@ -121,11 +121,6 @@ module.exports = {
           if (Video.filename != Edl.edl[++Edl.current][0]) {
             console.log('loading', Video, Edl.edl[Edl.current])
             module.exports.load(Edl.edl[Edl.current][0])
-            Mon.dom.addEventListener('canplay', (event) => {
-              if (!Video.paused) {
-                Mon.dom.play()
-              }
-            })
           }
         } else {
           // this is the last clip in the edl.
@@ -137,6 +132,12 @@ module.exports = {
       }
       // }
       m.redraw()
+    })
+    Mon.dom.addEventListener('canplay', (event) => {
+      if (!Video.paused && Mon.dom.paused) {
+        console.log('fixed paused!')
+        Mon.dom.play()
+      }
     })
   },
   onbeforeupdate: (vnode, old) => {
