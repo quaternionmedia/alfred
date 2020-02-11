@@ -20,7 +20,7 @@ module.exports = {
     return d.reduce((a, b) => a + b, 0)
   },
   view: (vnode) => {
-    return m('.slider#slider', {min: 1, max: Edl.duration(), value: Video.time}, Video.time > 60 ? module.exports.formatTime(Video.time.toFixed(2)): Video.time.toFixed(2))
+    return m('.slider#slider', {min: 1, max: Edl.duration(), value: Edl.time}, Edl.time > 60 ? module.exports.formatTime(Edl.time.toFixed(2)): Edl.time.toFixed(2))
   },
   oncreate: (vnode) => {
     const slider = interact(vnode.dom)
@@ -44,9 +44,8 @@ module.exports = {
     })
   },
   onupdate: (vnode) => {
-    let t = Video.time - Edl.edl[Edl.current][1] + module.exports.elapsed(Edl.edl.slice(0, Edl.current))
     // console.log('updating slider', vnode, t)
-    vnode.dom.setAttribute('data-value', t.toFixed(2))
-    vnode.dom.style.paddingLeft = t/Edl.duration()*vnode.dom.offsetWidth
+    vnode.dom.setAttribute('data-value', Edl.time.toFixed(2))
+    vnode.dom.style.paddingLeft = Edl.time/Edl.duration()*vnode.dom.offsetWidth
   },
 }
