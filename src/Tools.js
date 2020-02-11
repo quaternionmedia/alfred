@@ -10,11 +10,11 @@ export default class Tools {
       switch (e.which) {
         case 37:
           e.preventDefault()
-          Monitor.seek(Video.time - 5)
+          Monitor.seekEdl(Edl.time - 5)
           break
         case 39:
           e.preventDefault()
-          Monitor.seek(Video.time + 5)
+          Monitor.seekEdl(Edl.time + 5)
           break
 
       }
@@ -29,7 +29,7 @@ export default class Tools {
       }, 'first_page'),
       m('i.material-icons', {
         onclick: (vnode) => {
-          Monitor.seek(Video.time - 5 || 0)}
+          Monitor.seek(Edl.time - 5 || 0)}
       }, 'fast_rewind'),
       m('i.material-icons', {
         onclick: Monitor.play,
