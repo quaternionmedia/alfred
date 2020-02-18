@@ -7,22 +7,7 @@ from os.path import join
 from urllib.request import urlopen
 from subprocess import run as bash
 
-
-
-##########################
-# TODO: move to db.py with __init__
-from tinydb import TinyDB, Query
-
-
-db = TinyDB('main.json')
-db.insert({'int': 1, 'char': 'a'})
-db.insert({'int': 1, 'char': 'b'})
-
-print('db init')
-
-def db():
-    return db
-##########################
+from db import db
 
 def csvToEdl():
     with open('dist/edl.csv', 'w') as f:
@@ -31,8 +16,8 @@ def csvToEdl():
             # print(clip)
             f.write(f'file videos/{clip[0]}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
 
-def edlToDB():
-    db.insert(
+# def edlToDB():
+#     db.insert(
 
 
 
