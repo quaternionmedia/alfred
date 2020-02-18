@@ -7,21 +7,55 @@ from os.path import join
 from urllib.request import urlopen
 from subprocess import run as bash
 
-def seconds(t):
-    return sum(x * int(s) for x, s in zip([3600, 60, 1], t.split(":")))
 
-def getEdl():
-#    return urlopen(url).read().decode().split('\r\n')[1:]
-    with open('edl.csv', 'r') as f:
-        return f.read().split('\n')[1:]
-def saveEdl(edl):
-    # [filename, inpoint, outpoint, duration, description]
-    with open('edl.edl', 'w') as f:
+
+##########################
+# TODO: move to db.py with __init__
+from tinydb import TinyDB, Query
+
+
+db = TinyDB('main.json')
+db.insert({'int': 1, 'char': 'a'})
+db.insert({'int': 1, 'char': 'b'})
+
+print('db init')
+
+def db():
+    return db
+##########################
+
+def csvToEdl():
+    with open('dist/edl.csv', 'w') as f:
         for clip in edl:
             clip = clip.split(',')
             # print(clip)
             f.write(f'file videos/{clip[0]}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
-def renderEdl(edl):
+
+def edlToDB():
+    db.insert(
+
+
+
+
+
+def seconds(t):
+    return sum(x * int(s) for x, s in zip([3600, 60, 1], t.split(":")))
+
+def getEdl():
+#return urlopen(url).read().decode().split('\r\n')[1:]
+    with open('dist/edl.csv', 'r') as f:
+        return f.read().split('\n')[1:]
+
+
+
+def saveEdl(edl):
+    # [filename, inpoint, outpoint, duration, description]
+    with open('dist/edl.edl', 'w') as f:
+        for clip in edl:
+            clip = clip.split(',')
+            # print(clip)
+            f.write(f'file videos/{clip[0]}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
+def bashRenderEdl(edl):
     print(bash(['ffmpeg', '-f', 'concat', '-i', 'edl.edl', '-c', 'copy', 'videos/output.mp4']).stdout)
     with open('chapters.meta', 'w') as f:
         f.write(';FFMETADATA1\n\n')
@@ -41,7 +75,7 @@ app = FastAPI()
 def returnEdl():
     edl = []
     for clip in getEdl():
-        # print(clip, type(clip))
+        print(clip, type(clip))
         clip = clip.split(',')
         edl.append([clip[0],
             seconds(clip[1]),
@@ -57,7 +91,26 @@ def edit():
 
 @app.get('/render')
 def render():
-    return renderEdl(getEdl())
+    return bashRenderEdl(getEdl())
+
+@app.get('/renders')
+def renders():
+    return getEdl();
+
+@app.get('/renders/{render}')
+def rendersInfo():
+    info = { 'ed': '', 'progress': 0, 'link': '', 'paused': False }
+    return info
+
+@app.put('/renders/{render}/pause')
+def pauseRender():
+    #{render}.pause
+    return True
+
+@app.put('/renders/{render}/cancel')
+def cancelRender():
+    #{render}.cancel
+    return True
 
 @app.get('/projects')
 def getProjects():

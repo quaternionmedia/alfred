@@ -1,7 +1,7 @@
 import m from 'mithril'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 import Monitor from './Monitor'
-import { Video } from './Video'
+import { Video, Edl } from './Video'
 var state = require("./Globals").state
 
 export default class Tools {
@@ -51,6 +51,15 @@ export default class Tools {
       m('i.material-icons', {
         onclick: (vnode) => {Monitor.faster()}
       }, 'speed'),
+      m('i.material-icons', {
+        onclick: (vnode) => {
+          console.log('export');
+          m.request('/render').then(e => {
+            console.log('got edl', e);
+            // m.request('/renders/' + e);
+          });
+        }
+      }, 'save_alt')
     ])
   }
 }

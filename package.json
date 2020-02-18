@@ -3,14 +3,17 @@
   "version": "0.1.0",
   "description": "online video management",
   "main": "index.js",
-  "repository": "git@github.com:quaternionmedia/alfred.git",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/quaternionmedia/alfred.git"
+  },
   "author": "Harpo <harpo@harpo.me>",
   "license": "MIT",
   "scripts": {
     "prestart": "npm install",
     "test": "$(npm bin)/cypress run",
     "cy": "$(npm bin)/cypress open"
-},
+  },
   "dependencies": {
     "cypress": "^4.0.1",
     "interactjs": "^1.7.3",
@@ -20,5 +23,9 @@
   },
   "devDependencies": {
     "cssnano": "^4.1.10"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/quaternionmedia/alfred/issues"
+  },
+  "homepage": "https://github.com/quaternionmedia/alfred#readme"
 }
