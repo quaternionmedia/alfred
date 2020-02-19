@@ -5,12 +5,12 @@ var Timeline = require('./Timeline').Timeline
 var state = require("./Globals").state
 
 function logslider(position) {
-  // position will be between 0 and 100
+  // position will be between 0 and 1
   var minp = 0;
   var maxp = 1;
 
-  // The result should be between 100 an 10000000
-  var minv = Math.log(.01);
+  // The result should be between .1 an 100
+  var minv = Math.log(.1);
   var maxv = Math.log(100);
 
   // calculate adjustment factor
@@ -21,7 +21,7 @@ function logslider(position) {
 
 module.exports = {
   view: (vnode) => {
-    return m('.slider#scale', {min: .01, max: 100}, state.scale() < 0 ? '1/' + state.scale() : state.scale())
+    return m('.slider#scale', {min: 1, max: 100, value: state.scale(), style: {paddingLeft: '65%'}}, state.scale())
   },
   oncreate: (vnode) => {
     const slider = interact(vnode.dom)

@@ -10,11 +10,11 @@ export default class Tools {
       switch (e.which) {
         case 37:
           e.preventDefault()
-          Monitor.seek(Video.time - 5)
+          Monitor.seekEdl(Edl.time - 5)
           break
         case 39:
           e.preventDefault()
-          Monitor.seek(Video.time + 5)
+          Monitor.seekEdl(Edl.time + 5)
           break
 
       }
@@ -29,17 +29,17 @@ export default class Tools {
       }, 'first_page'),
       m('i.material-icons', {
         onclick: (vnode) => {
-          Monitor.seek(Video.time - 5 || 0)}
+          Monitor.seek(Edl.time - 5 || 0)}
       }, 'fast_rewind'),
       m('i.material-icons', {
         onclick: Monitor.play,
       }, Video.paused ? 'play_arrow': 'pause' ),
       m('i.material-icons', {
         onclick: (vnode) => {
-          Monitor.seek(Math.min(Video.time + 5, Video.duration))}
+          Monitor.seek(Math.min(Edl.time + 5, Edl.duration()))}
       }, 'fast_forward'),
       m('i.material-icons', {
-        onclick: (vnode) => {Monitor.seek(Video.duration)}
+        onclick: (vnode) => {Monitor.seek(Edl.duration())}
       }, 'last_page'),
       m('i.material-icons', {
         onclick: (vnode) => {Monitor.slower()}
