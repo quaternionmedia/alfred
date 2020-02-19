@@ -29,6 +29,14 @@ def saveEdl(edl):
             f.write(f'file {filename}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
 
 
+def bashRenderEdl(edl, filename):
+    saveEdl(edl)
+    print('rendering', edl, filename)
+    print(bash(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', '/app/dist/edl.edl', '-c', 'copy', '-y', join('videos/', filename)]).stdout)
+    return f'rendered! {edl}!'
+
+
+def bashRenderChapters(edl):
     with open('chapters.meta', 'w') as f:
         f.write(';FFMETADATA1\n\n')
         t = 0
@@ -38,11 +46,12 @@ def saveEdl(edl):
             end = t + d
             f.write(f'[CHAPTER]\nTIMEBASE=1/1\nSTART={t}\nEND={end}\ntitle={clip[4]}\n\n')
             t += d
-    return str(bash(['ffmpeg', '-i', '/app/videos/output.mp4', '-i', 'chapters.meta', '-codec', 'copy', '-y', '/app/videos/out.mp4']).returncode)
-
+    return str(bash(['ffmpeg', '-i', join('videos/', edl), '-i', 'chapters.meta', '-codec', 'copy', '-y', join('videos/', edl)]).returncode)
 
 
 app = FastAPI()
+
+
 @app.get('/edl')
 def returnEdl():
     edl = []
@@ -62,9 +71,8 @@ def edit():
     saveEdl(edl)
 
 @app.get('/render')
-def render():
-    saveEdl(getEdl())
-    return bashRenderEdl(getEdl())
+def render(edl: str = 'test.csv'):
+    return bashRenderEdl(getEdl(edl), filename=edl + '.mp4')
 
 @app.get('/renders')
 def renders():
