@@ -54,8 +54,11 @@ export default class Tools {
       m('i.material-icons', {
         onclick: (vnode) => {
           console.log('export');
-          m.request('/render').then(e => {
-            console.log('got edl', e);
+          m.request({
+            url: '/render',
+            params: { edl: m.route.param('edl') },
+          }).then(e => {
+            console.log('got result', e);
             // m.request('/renders/' + e);
           });
         }
