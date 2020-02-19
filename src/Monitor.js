@@ -123,15 +123,18 @@ module.exports = {
           console.log('editing!', Video, Edl )
           // if the next video is different than the current video:
           if (Video.filename != Edl.edl[++Edl.current][0]) {
+            // we need to switch videos
             console.log('loading', Video, Edl.edl[Edl.current])
             module.exports.load(Edl.edl[Edl.current][0])
           }
+          // perform the edit!
           if (!Video.paused) {
             module.exports.seek(parseFloat(Edl.edl[Edl.current][1]))
           }
         } else {
           // this is the last clip in the edl.
           console.log('End of edl. stopping')
+          // since Video.time > current outpoint
           module.exports.seek(parseFloat(Edl.edl[Edl.current][2]))
           module.exports.stop()
         }
