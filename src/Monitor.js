@@ -147,6 +147,10 @@ module.exports = {
         console.log('fixed paused!')
         Mon.dom.play()
       }
+      if (Video.time < Edl.edl[Edl.current][1]) {
+        console.log('jumping to inpoint')
+        module.exports.seek(Edl.edl[Edl.current][1])
+      }
     })
   },
   onbeforeupdate: (vnode, old) => {
