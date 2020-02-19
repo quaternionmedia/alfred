@@ -65,33 +65,41 @@ def returnEdl():
             *clip[4:]])
     return edl
 
+
 @app.get('/edit')
 def edit():
     edl = getEdl()
     saveEdl(edl)
 
+
 @app.get('/render')
 def render(edl: str = 'test.csv'):
     return bashRenderEdl(getEdl(edl), filename=edl + '.mp4')
 
+
 @app.get('/renders')
 def renders():
-    return getEdl();
+    # returns list of current renders
+    return
+
 
 @app.get('/renders/{render}')
 def rendersInfo():
-    info = { 'ed': '', 'progress': 0, 'link': '', 'paused': False }
+    info = { 'edl': render, 'progress': 0, 'link': '', 'paused': False }
     return info
+
 
 @app.put('/renders/{render}/pause')
 def pauseRender():
-    #{render}.pause
-    return True
+    # pause selected render
+    return
+
 
 @app.put('/renders/{render}/cancel')
 def cancelRender():
-    #{render}.cancel
-    return True
+    # cancel selected render
+    return
+
 
 @app.get('/projects')
 def getProjects():
