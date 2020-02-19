@@ -21,13 +21,14 @@ def getEdl(edlName='test.csv'):
 
 def saveEdl(edl):
     # [filename, inpoint, outpoint, duration, description]
-    with open('dist/edl.edl', 'w') as f:
+    with open('/app/dist/edl.edl', 'w') as f:
         for clip in edl:
             clip = clip.split(',')
             # print(clip)
-            f.write(f'file videos/{clip[0]}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
-def bashRenderEdl(edl):
-    print(bash(['ffmpeg', '-f', 'concat', '-i', '/app/dist/edl.edl', '-c', 'copy', '-y', '/app/videos/output.mp4']).stdout)
+            filename = join('/app/', clip[0])
+            f.write(f'file {filename}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
+
+
     with open('chapters.meta', 'w') as f:
         f.write(';FFMETADATA1\n\n')
         t = 0
