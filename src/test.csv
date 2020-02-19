@@ -1,3 +1,3 @@
 name,inpoint,outpoint,duration,description
-http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4,0:0:0,0:0:10,0:0:10,clip 1
-http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4,0:0:0,0:0:10,0:0:10,clip 2
+videos/train.mp4,0:0:37.52,0:0:42.05,0:0:05.05,shooter
+videos/moon.mp4,0:0:30.15,0:0:38.02,0:0:07.86,moon
