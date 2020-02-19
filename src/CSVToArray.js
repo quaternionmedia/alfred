@@ -64,9 +64,9 @@ export function CSVToArray( strData, strDelimiter ){
 }
 
 export function seconds(t) {
-  // console.log('splitting', t)
   t = t.split(":")
-  var v = 3600*parseInt(t[0]) + 60*parseInt(t[1]) + parseInt(t[2])
+  // console.log('split', t, parseFloat(t[2]))
+  var v = 3600*parseFloat(t[0]) + 60*parseFloat(t[1]) + parseFloat(t[2])
   // console.log('v', v)
   return v
 }

@@ -11,7 +11,7 @@ from db import db
 
 
 def seconds(t):
-    return sum(x * int(s) for x, s in zip([3600, 60, 1], t.split(":")))
+    return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
 
 
 def getEdl(edlName='test.csv'):
