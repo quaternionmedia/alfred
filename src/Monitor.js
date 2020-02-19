@@ -37,6 +37,10 @@ module.exports = {
       Video.paused = true
     }
   },
+  stop: () => {
+    Mon.dom.pause()
+    Video.paused = true
+  },
   faster: () => {
     console.log('playbackRate changed', Video)
     if (Video.speed < -.25) {
@@ -122,13 +126,15 @@ module.exports = {
             console.log('loading', Video, Edl.edl[Edl.current])
             module.exports.load(Edl.edl[Edl.current][0])
           }
+          if (!Video.paused) {
+            module.exports.seek(parseFloat(Edl.edl[Edl.current][1]))
+          }
         } else {
           // this is the last clip in the edl.
           console.log('End of edl. stopping')
-          module.exports.play()
+          module.exports.seek(parseFloat(Edl.edl[Edl.current][2]))
+          module.exports.stop()
         }
-        // seek to
-        module.exports.seek(parseFloat(Edl.edl[Edl.current][1]))
       }
       // }
       m.redraw()
