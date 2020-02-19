@@ -9,28 +9,14 @@ from subprocess import run as bash
 
 from db import db
 
-def csvToEdl():
-    with open('dist/edl.csv', 'w') as f:
-        for clip in edl:
-            clip = clip.split(',')
-            # print(clip)
-            f.write(f'file videos/{clip[0]}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
-
-# def edlToDB():
-#     db.insert(
-
-
-
-
 
 def seconds(t):
     return sum(x * int(s) for x, s in zip([3600, 60, 1], t.split(":")))
 
-def getEdl():
-#return urlopen(url).read().decode().split('\r\n')[1:]
-    with open('dist/edl.csv', 'r') as f:
-        return f.read().split('\n')[1:]
 
+def getEdl(edlName='test.csv'):
+    with open(join('/app/dist/', edlName), 'r') as f:
+        return f.read().strip().split('\n')[1:]
 
 
 def saveEdl(edl):
@@ -41,7 +27,7 @@ def saveEdl(edl):
             # print(clip)
             f.write(f'file videos/{clip[0]}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
 def bashRenderEdl(edl):
-    print(bash(['ffmpeg', '-f', 'concat', '-i', 'edl.edl', '-c', 'copy', 'videos/output.mp4']).stdout)
+    print(bash(['ffmpeg', '-f', 'concat', '-i', '/app/dist/edl.edl', '-c', 'copy', '-y', '/app/videos/output.mp4']).stdout)
     with open('chapters.meta', 'w') as f:
         f.write(';FFMETADATA1\n\n')
         t = 0
@@ -51,7 +37,7 @@ def bashRenderEdl(edl):
             end = t + d
             f.write(f'[CHAPTER]\nTIMEBASE=1/1\nSTART={t}\nEND={end}\ntitle={clip[4]}\n\n')
             t += d
-    return str(bash(['ffmpeg', '-i', 'videos/output.mp4', '-i', 'chapters.meta', '-codec', 'copy', 'videos/out.mp4']).returncode)
+    return str(bash(['ffmpeg', '-i', '/app/videos/output.mp4', '-i', 'chapters.meta', '-codec', 'copy', '-y', '/app/videos/out.mp4']).returncode)
 
 
 
@@ -76,6 +62,7 @@ def edit():
 
 @app.get('/render')
 def render():
+    saveEdl(getEdl())
     return bashRenderEdl(getEdl())
 
 @app.get('/renders')
