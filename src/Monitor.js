@@ -21,11 +21,12 @@ module.exports = {
     }
     Edl.current = c
     let clip = Edl.edl[c]
-    console.log('seeking edl', c, d, t, t - d + clip[1])
+    let clipTime =  parseFloat(t - d + clip[1]).toFixed(2)
+    console.log('seeking edl', c, d, t, clipTime)
     if (Video.filename != clip[0]) {
       module.exports.load(clip[0])
     }
-    module.exports.seek(t - d + clip[1])
+    module.exports.seek(clipTime)
   },
   play: () => {
     if (Video.paused) {
