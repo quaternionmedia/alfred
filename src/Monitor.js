@@ -37,6 +37,10 @@ module.exports = {
       Video.paused = true
     }
   },
+  stop: () => {
+    Mon.dom.pause()
+    Video.paused = true
+  },
   faster: () => {
     console.log('playbackRate changed', Video)
     if (Video.speed < -.25) {
@@ -119,16 +123,21 @@ module.exports = {
           console.log('editing!', Video, Edl )
           // if the next video is different than the current video:
           if (Video.filename != Edl.edl[++Edl.current][0]) {
+            // we need to switch videos
             console.log('loading', Video, Edl.edl[Edl.current])
             module.exports.load(Edl.edl[Edl.current][0])
+          }
+          // perform the edit!
+          if (!Video.paused) {
+            module.exports.seek(parseFloat(Edl.edl[Edl.current][1]))
           }
         } else {
           // this is the last clip in the edl.
           console.log('End of edl. stopping')
-          module.exports.play()
+          // since Video.time > current outpoint
+          module.exports.seek(parseFloat(Edl.edl[Edl.current][2]))
+          module.exports.stop()
         }
-        // seek to
-        module.exports.seek(parseFloat(Edl.edl[Edl.current][1]))
       }
       // }
       m.redraw()
@@ -137,6 +146,10 @@ module.exports = {
       if (!Video.paused && Mon.dom.paused) {
         console.log('fixed paused!')
         Mon.dom.play()
+      }
+      if (Video.time < Edl.edl[Edl.current][1]) {
+        console.log('jumping to inpoint')
+        module.exports.seek(Edl.edl[Edl.current][1])
       }
     })
   },

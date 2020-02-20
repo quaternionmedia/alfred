@@ -19,4 +19,13 @@ elif [ $1 = "i" -o $1 = "install" ]; then
   echo "installing dependencies"
   docker-compose run dev yarn install
 
+elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
+  shift
+  echo "downloading demo media"
+  mkdir -p videos && cd videos
+  wget -nc https://storage.googleapis.com/tower-bucket/moon.mp4
+  wget -nc http://https://storage.googleapis.com/tower-bucket/train.mp4
+  wget -nc https://storage.googleapis.com/tower-bucket/ATripToTheMoon-300k.mp4
+  wget -nc https://storage.googleapis.com/tower-bucket/TheGreatTrainRobbery-300k.mp4
+  cd ..
 fi

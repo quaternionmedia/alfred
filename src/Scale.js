@@ -21,7 +21,7 @@ function logslider(position) {
 
 module.exports = {
   view: (vnode) => {
-    return m('.slider#scale', {min: 1, max: 100, value: state.scale(), style: {paddingLeft: '65%'}}, state.scale())
+    return m('.slider#scale', {min: 1, max: 100, value: state.scale(), style: {paddingLeft: '82%'}}, state.scale())
   },
   oncreate: (vnode) => {
     const slider = interact(vnode.dom)
@@ -40,6 +40,7 @@ module.exports = {
         let p = event.pageX / sliderWidth
         event.target.style.paddingLeft = p*100 + '%'
         const value = logslider(p).toFixed(4)
+        // console.log('scale:', value, 'padding:', p)
         event.target.setAttribute('data-value', value)
         event.target.setAttribute('value', value)
         state.scale(value)

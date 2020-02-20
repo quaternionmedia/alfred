@@ -15,3 +15,4 @@ services:
       - './api/partial.py:/app/partial.py'
       - './dist/:/app/dist/'
       - './videos/:/app/videos/'
+      - './api/db.py:/app/db.py'
