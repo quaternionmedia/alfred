@@ -103,7 +103,7 @@ def cancelRender():
 
 @app.get('/projects')
 def getProjects():
-    return ['test.csv', 'train.csv', 'moon.csv', 'external.csv', 'xmas.csv']
+    return ['demo.csv', 'external.csv', 'moon.csv', 'train.csv', 'xmas.csv']
 
 @app.get('/videos/{video}', responses={
     206: {'content': {'video/mp4': {}},
