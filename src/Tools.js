@@ -26,12 +26,12 @@ export default class Tools {
 
       m('i.material-icons', {
         title: 'start',
-        onclick: (vnode) => {Monitor.seek(0)}
+        onclick: (vnode) => {Monitor.seekEdl(0)}
       }, 'first_page'),
       m('i.material-icons', {
         title: 'back 5s',
         onclick: (vnode) => {
-          Monitor.seek(Edl.time - 5 || 0)}
+          Monitor.seekEdl(Edl.time - 5 || 0)}
       }, 'fast_rewind'),
       m('i.material-icons', {
         title: 'pause',
@@ -40,11 +40,11 @@ export default class Tools {
       m('i.material-icons', {
         title: 'forward 5s',
         onclick: (vnode) => {
-          Monitor.seek(Math.min(Edl.time + 5, Edl.duration()))}
+          Monitor.seekEdl(Math.min(Edl.time + 5, Edl.duration()))}
       }, 'fast_forward'),
       m('i.material-icons', {
         title: 'end',
-        onclick: (vnode) => {Monitor.seek(Edl.duration())}
+        onclick: (vnode) => {Monitor.seekEdl(Edl.duration())}
       }, 'last_page'),
       m('i.material-icons', {
         title: 'slower',
