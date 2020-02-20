@@ -10,11 +10,11 @@ export default class Tools {
       switch (e.which) {
         case 37:
           e.preventDefault()
-          Monitor.seekEdl(Edl.time - 5)
+          Monitor.seekEdl(Edl.time - 5 || 0)
           break
         case 39:
           e.preventDefault()
-          Monitor.seekEdl(Edl.time + 5)
+          Monitor.seekEdl(Math.min(Edl.time + 5, Edl.duration()))
           break
 
       }
