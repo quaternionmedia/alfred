@@ -65,7 +65,7 @@ body {
 }
 
 .project {
-  display: inline;
+  display: inline-table;
   overflow: scroll;
   border: 4px solid #210D4D;
 
@@ -93,13 +93,14 @@ body {
   }
 }
 .tools {
-  display: inline-grid;
-  align-items: center;
+  display: flex;
+  justify-content: space-between;
 }
 .tools i {
   border-style: solid;
   border-color: #393939;
   border-radius: 10px;
+  padding: 2px;
 }
 .tools i:hover {
   background-color: #393939;
@@ -117,6 +118,7 @@ body {
   height: 1em;
   margin: .5em auto;
   margin-bottom: 2em;
+  margin-top: 2em;
   background-color: #46346E;
   border-radius: 0.5em;
   box-sizing: border-box;

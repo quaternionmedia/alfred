@@ -14,11 +14,11 @@ var Editor = {
     return [
       m(Menu),
       m('#head.head', [
-        m(Project),
-        m(Tools),
         m(Monitor, {}),
       ]),
+      m(Tools),
       m(Slider),
+      m(Project),
       m(Timeline),
       m(Scale),
     ]
