@@ -21,7 +21,7 @@ To download the demo media (into `videos/`):
 
 `./alfred demo`
 
-Then you can render the `test.csv` project locally.
+Then you can render the `demo.csv` project locally.
 
 ### production
 With a [traefik](https://containo.us/traefik/) instance running:
@@ -29,7 +29,7 @@ With a [traefik](https://containo.us/traefik/) instance running:
 
 
 ### design
-Alfred is built around the concept of a single track video editor, which holds a rearrangeable series of clips, stacked end to end in time.
+Alfred is a single track video editor, which represents a rearrangeable series of `Clips`, stacked end to end in time.
 
 - `Clip` - a section of time of a media file. Clips have:
   * `filename`: name (url) of media
@@ -39,12 +39,35 @@ Alfred is built around the concept of a single track video editor, which holds a
   * `description`: text
 
 
-- `Edl` - **E**dit **D**ecision **L**ist. An ordered list of `Clips`. This represents the entire state of the finished video.
+- `Edl` - **E**dit **D**ecision **L**ist. An ordered list of `Clips`
+  - An `Edl` represents the entire state of the desired finished video.
 
-- `Timeline` - a visual representation of an `Edl` with clips as sortable blocks, sized proportionately to their durations, and reflowed according to the available space in the window.
+
+- `Timeline` - a visual representation of an `Edl`
+  - `Clips` are displayed as blocks sized proportionately to their durations.
+  - `Clips` can be resized as the length of the source media allows.
+  - `Clips` can be rearranged by dragging and dropping.
+  - When possible, adjacent `Clips` wrap to the next line in the browser depending on available space in the window.
+  - the `Timeline` can be scaled to any size needed with the `Scale` bar.
+
+
+- `Monitor` - an html `<video>` monitor
+  - This follows the current time of the active `Clip` in the `Timeline`
+
 
 - `Project` - an editable table of values of the `Edl`
+  - This is an identical representation of the `Timeline`, but in text format.
+
 
 - `Projects` - a list of available `Edl`s to load
 
+
 - `Bin` - a list of available media to use in the `Timeline`
+
+
+- `Tools` - a panel of selectable tools
+
+
+- `Slider` - a slideable (and throwable) input
+  - `Scale` bar
+  - `Timeline` position slider
