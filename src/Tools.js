@@ -3,6 +3,7 @@ import '../node_modules/material-design-icons-iconfont/dist/material-design-icon
 import Monitor from './Monitor'
 import { Video, Edl } from './Video'
 var state = require("./Globals").state
+import { message, success, defaults } from 'alertifyjs'
 
 export default class Tools {
   oncreate(vnode) {
@@ -62,11 +63,13 @@ export default class Tools {
         title: 'render',
         onclick: (vnode) => {
           console.log('export');
+          message(`Added ${m.route.param("edl")} to render queue`)
           m.request({
             url: '/render',
             params: { edl: m.route.param('edl') },
           }).then(e => {
             console.log('got result', e);
+            success(`Successfully rendered ${m.route.param('edl')}`)
             // m.request('/renders/' + e);
           });
         }
