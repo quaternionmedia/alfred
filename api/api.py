@@ -6,7 +6,6 @@ from uvicorn import run
 from os.path import join
 from urllib.request import urlopen
 from subprocess import run as bash
-
 from db import db
 
 
@@ -18,7 +17,7 @@ def getEdl(edlName='test.csv'):
     with open(join('/app/dist/', edlName), 'r') as f:
         return f.read().strip().split('\n')[1:]
 
-
+# Saves an EDL file to Filesystem.  Takes .edl and returns Boolean confirmation.
 def saveEdl(edl):
     # [filename, inpoint, outpoint, duration, description]
     with open('/app/dist/edl.edl', 'w') as f:
@@ -28,7 +27,7 @@ def saveEdl(edl):
             filename = join('/app/', clip[0])
             f.write(f'file {filename}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
 
-
+# Depreciated(ing) bash version of rendering.
 def bashRenderEdl(edl, filename):
     saveEdl(edl)
     print('rendering', edl, filename)
@@ -49,8 +48,9 @@ def bashRenderChapters(edl):
     return str(bash(['ffmpeg', '-i', join('videos/', edl), '-i', 'chapters.meta', '-codec', 'copy', '-y', join('videos/', edl)]).returncode)
 
 
+# REST Routing :
+# TODO: as it grows length -> breakout file into suporting files as needed, e.g. dbm'database manager', util'utiliy', etc.
 app = FastAPI()
-
 
 @app.get('/edl')
 def returnEdl():
@@ -112,6 +112,7 @@ def getProjects():
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
 
+# Default page to return.
 app.mount("/", StaticFiles(directory='dist', html=True), name="static")
 
 if __name__ == '__main__':

@@ -1,12 +1,14 @@
 version: '3.3'
 
 services:
+  # TODO Development Reloader description
   dev:
     build: ./builder/
     image: parceldock
     volumes:
       - .:/app/
       - ./dist/:/app/dist/
+  # TODO API description
   api:
     build: ./api/
     image: alfred_api
