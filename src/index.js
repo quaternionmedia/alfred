@@ -4,6 +4,7 @@ var Timeline = require("./Timeline").Timeline
 import Monitor from './Monitor'
 import Project from './Project'
 import Tools from './Tools'
+import TimelineTools from './TimelineTools'
 import Scale from './Scale'
 import { Menu } from './Menu'
 import Home from './Home'
@@ -27,7 +28,7 @@ var Editor = {
       m(Tools),
       m(Slider),
       m(Project),
-      m('#spacer'),
+      m(TimelineTools),
       m(Timeline),
       m('#scalecontainer', {style:
         {display: 'inline-flex', width:'95vw'}}, [
