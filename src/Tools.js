@@ -73,7 +73,7 @@ export default class Tools {
             // m.request('/renders/' + e);
           });
         }
-      }, 'save_alt')
+      }, 'publish')
     ])
   }
 }

@@ -29,7 +29,12 @@ var Editor = {
       m(Project),
       m('#spacer'),
       m(Timeline),
-      m(Scale),
+      m('#scalecontainer', {style:
+        {display: 'inline-flex', width:'95vw'}}, [
+        m('i.material-icons', {style: {position: 'absolute',}}, 'zoom_out'),
+        m('i.material-icons', {style: {position: 'absolute', right:0}}, 'zoom_in'),
+        m(Scale),
+      ]),
     ]
   }
 }
