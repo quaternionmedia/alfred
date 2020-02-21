@@ -27,6 +27,7 @@ var Editor = {
       m(Tools),
       m(Slider),
       m(Project),
+      m('#spacer'),
       m(Timeline),
       m(Scale),
     ]
