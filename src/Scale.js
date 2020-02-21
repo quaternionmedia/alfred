@@ -21,7 +21,7 @@ function logslider(position) {
 
 module.exports = {
   view: (vnode) => {
-    return m('.slider#scale', {min: 1, max: 100, value: state.scale(), style: {paddingLeft: '82%'}}, state.scale())
+    return m('.slider#scale', {min: 1, max: 100, value: state.scale(), style: {paddingLeft: '66%'}}, state.scale())
   },
   oncreate: (vnode) => {
     const slider = interact(vnode.dom)
