@@ -101,6 +101,8 @@ body {
   border-color: #393939;
   border-radius: 10px;
   padding: 2px;
+  width: 25px;
+  text-align: center;
 }
 .tools i:hover {
   background-color: #393939;

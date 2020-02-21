@@ -6,7 +6,8 @@ export default class TimelineTools {
 
   }
   view() {
-    return m('#TTools', {}, [
+    return m('#TTools.tools', {}, [
+      m('i', '|'),
       m('i.material-icons', {
         onclick: (vnode) => {
 
