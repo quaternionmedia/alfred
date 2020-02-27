@@ -8,4 +8,5 @@ exports.state = {
   volume: Stream(.1),
   time: Stream(0),
   duration: Stream(0),
+  tool: Stream(''),
 }
