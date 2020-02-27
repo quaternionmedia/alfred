@@ -27,7 +27,6 @@ var Editor = {
       ]),
       m(Tools),
       m(Slider),
-      m(Project),
       m(TimelineTools),
       m(Timeline),
       m('#scalecontainer', {style:
@@ -36,6 +35,7 @@ var Editor = {
         m('i.material-icons', {style: {position: 'absolute', right:0}}, 'zoom_in'),
         m(Scale),
       ]),
+      m(Project),
     ]
   }
 }
