@@ -67,14 +67,6 @@ export default class Clip {
         }}
       }
     })
-    // clip.on('resizestart', (event) => {
-    //   state.resizing(true)
-    //   console.log('resize start', state.resizing())
-    // })
-    // clip.on('resizeend', (event) => {
-    //   state.resizing(false)
-    //   console.log('resize stop', state.resizing())
-    // })
 
     vnode.dom.addEventListener('mousedown', (e) => {
       // e.stopPropagation()

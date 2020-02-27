@@ -58,11 +58,7 @@ export var Timeline = {
       // delay: 100,
       preventOnFilter: false,
       filter: (e) => {
-        let cursor = e.target.style.cursor;
-        let left = Math.abs(e.target.offsetLeft) <= 5
-        let right = Math.abs(e.target.offsetLeft + e.target.offsetWidth) <= 5
-        console.log(cursor, left, right, state.tool(), e)
-         if (cursor == 'ew-resize' || left || right || state.tool() == 'time' || state.tool() == 'trim' || state.tool() == 'cut') {
+         if (state.tool() != 'move') {
            return true
          }
          else {
