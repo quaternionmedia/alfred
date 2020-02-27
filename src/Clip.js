@@ -32,26 +32,6 @@ export default class Clip {
   */
   oncreate(vnode) {
     const clip = interact(vnode.dom)
-    clip.on('resizemove', (event) => {
-      // console.log('resizemove', event)
-      let target = event.target
-    // console.log('event: ', event) //event.delta.x, )
-    var w = parseInt(target.style.width)
-    // console.log( w - (vnode.state.outpoint - vnode.state.inpoint), event.rect.width, vnode.state.outpoint, vnode.state.inpoint, w)
-    if (event.edges.left && ( this.outpoint > this.inpoint + event.dx) && (this.inpoint + event.dx / state.scale() >= 0)) {
-      // target.style.width  = event.rect.width + 'px';
-      target.style.width = w - event.dx / state.scale() + 'px'
-      this.inpoint += event.dx / state.scale()
-      target.setAttribute('inpoint', this.inpoint)
-      // console.log('changing inpoint', vnode, event)
-    } else if (event.edges.right && (this.outpoint + event.dx / state.scale() > this.inpoint)) {
-      target.style.width  = w + event.dx / state.scale() + 'px';
-      this.outpoint += event.dx / state.scale()
-      target.setAttribute('outpoint', this.outpoint)
-      // console.log('changing outpoint', event.deltaRect, event)
-    }
-    Timeline.Timeline.updateEdl()
-    })
     clip.resizable({
       edges: {
         left: true,
@@ -66,6 +46,32 @@ export default class Clip {
           }
         }}
       }
+    )
+    clip.on('resizemove', (event) => {
+      // console.log('resizemove', event)
+      let target = event.target
+      // console.log('event: ', event) //event.delta.x, )
+      var w = parseInt(target.style.width)
+      // console.log( w - (vnode.state.outpoint - vnode.state.inpoint), event.rect.width, vnode.state.outpoint, vnode.state.inpoint, w)
+      if (state.tool() == 'trim') {
+        if (event.edges.left && ( this.outpoint > this.inpoint + event.dx) && (this.inpoint + event.dx / state.scale() >= 0)) {
+          // target.style.width  = event.rect.width + 'px';
+          target.style.width = w - event.dx / state.scale() + 'px'
+          this.inpoint += event.dx / state.scale()
+          target.setAttribute('inpoint', this.inpoint)
+          // console.log('changing inpoint', vnode, event)
+        } else if (event.edges.right && (this.outpoint + event.dx / state.scale() > this.inpoint)) {
+          target.style.width  = w + event.dx / state.scale() + 'px';
+          this.outpoint += event.dx / state.scale()
+          target.setAttribute('outpoint', this.outpoint)
+          // console.log('changing outpoint', event.deltaRect, event)
+        }
+      } else if (state.tool() == 'cut') {
+
+      } else if (state.tool() == 'time') {
+
+      }
+      Timeline.Timeline.updateEdl()
     })
 
     vnode.dom.addEventListener('mousedown', (e) => {
