@@ -75,17 +75,18 @@ export default class Clip {
     })
 
     vnode.dom.addEventListener('mousedown', (e) => {
-      // e.stopPropagation()
-      const r = e.offsetX / e.target.offsetWidth
-      const t = r*(this.outpoint - this.inpoint) + this.inpoint
-      console.log('clicked on clip', e, r, t)
-      Edl.current = whichAmI(e.target, e.target.parentElement)
-      if (Video.filename != Edl.edl[Edl.current][0]) {
-        Video.filename = Edl.edl[Edl.current][0]
-        Monitor.load(Video.filename)
+      if (state.tool() == 'time') {
+        const r = e.offsetX / e.target.offsetWidth
+        const t = r*(this.outpoint - this.inpoint) + this.inpoint
+        console.log('clicked on clip', e, r, t)
+        Edl.current = whichAmI(e.target, e.target.parentElement)
+        if (Video.filename != Edl.edl[Edl.current][0]) {
+          Video.filename = Edl.edl[Edl.current][0]
+          Monitor.load(Video.filename)
+        }
+        Monitor.seek(t)
+        m.redraw()
       }
-      Monitor.seek(t)
-      m.redraw()
     }, true)
 
   }
@@ -110,25 +111,25 @@ export default class Clip {
       m('p#inpoint[]', this.inpoint.toFixed(2)),
       m('p#outpoint[]', this.outpoint.toFixed(2)),
       m('p#description[contenteditable=true]', {
-          oncreate: (v) => {
-            let t = document.getElementById('timeline')
-            // console.log('description created', v)
-            vnode.dom.addEventListener('input', (e) => {
-              console.log('input changed', e, vnode, whichAmI(e.target, t))
-              Edl.edl[whichAmI(vnode.dom, t)][4] = e.target.textContent
-              this.description = e.target.textContent
-            })
-            vnode.dom.addEventListener('keyup', (e) => {
-              if (e.key == 'Enter') {
-                e.preventDefault()
-                m.redraw()
-              }
-              if (e.key == 'ArrowLeft' || e.key == 'ArrowRight' || e.key == ' ') {
-                e.stopPropagation()
-              }
-            })
-          }
-        }, m.trust(this.description)),
+        oncreate: (v) => {
+          let t = document.getElementById('timeline')
+          // console.log('description created', v)
+          vnode.dom.addEventListener('input', (e) => {
+            console.log('input changed', e, vnode, whichAmI(e.target, t))
+            Edl.edl[whichAmI(vnode.dom, t)][4] = e.target.textContent
+            this.description = e.target.textContent
+          })
+          vnode.dom.addEventListener('keyup', (e) => {
+            if (e.key == 'Enter') {
+              e.preventDefault()
+              m.redraw()
+            }
+            if (e.key == 'ArrowLeft' || e.key == 'ArrowRight' || e.key == ' ') {
+              e.stopPropagation()
+            }
+          })
+        }
+      }, m.trust(this.description)),
       m('i.material-icons#progress.progress',  {
         style: {
           display: (Edl.current == this.pos) && (this.inpoint < Video.time < this.outpoint) ? 'inherit': 'none',
