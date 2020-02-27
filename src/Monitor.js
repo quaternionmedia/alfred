@@ -143,7 +143,7 @@ module.exports = {
       // }
       m.redraw()
     })
-    Mon.dom.addEventListener('canplay', (event) => {
+    Mon.dom.addEventListener('loadeddata', (event) => {
       if (!Video.paused && Mon.dom.paused) {
         console.log('fixed paused!')
         Mon.dom.play()
