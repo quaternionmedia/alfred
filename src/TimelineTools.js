@@ -15,6 +15,12 @@ export default class TimelineTools {
             state.tool('time')
           }
       }, '|'),
+      m('i', {
+        onclick: (vnode) => {
+          t.style.cursor = 'ew-resize'
+          state.tool('trim')
+        }
+      }, '[ ]'),
       m('i.material-icons', {
         onclick: (vnode) => {
           console.log('changing timeline tools', t)
