@@ -24,10 +24,12 @@ export default class Clip {
     this.filename = vnode.attrs.filename
     this.pos = vnode.attrs.pos
     // console.log('clip init', vnode, this.inpoint, this.outpoint)
-    }
+  }
 
   oninit(vnode) {
   }
+  /*  Create an interactable object in order to resize the left and right edges of the clip.
+  */
   oncreate(vnode) {
     const clip = interact(vnode.dom)
     clip.on('resizemove', (event) => {
@@ -54,6 +56,15 @@ export default class Clip {
       edges: {
         left: true,
         right: true,
+      },
+      cursorChecker: (action, interactable, element, interacting) => {
+        if (state.tool() == 'trim') {
+          if (action.edges.right) {
+            return 'e-resize'
+          } else if (action.edges.left) {
+            return 'w-resize'
+          }
+        }}
       }
     })
     // clip.on('resizestart', (event) => {
@@ -127,6 +138,6 @@ export default class Clip {
         }
       }),
     ])
-      // {data-x: vnode.attrs.inpoint/scale, data-y: vnode.attrs.outpoint/scale})
+    // {data-x: vnode.attrs.inpoint/scale, data-y: vnode.attrs.outpoint/scale})
   }
 }
