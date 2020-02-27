@@ -93,18 +93,25 @@ module.exports = {
     document.addEventListener('keydown', e => {
       switch (e.code) {
         case 'Space':
-        e.preventDefault()
-        module.exports.play()
-        // console.log('space', Video, vnode)
-        m.redraw()
-        break
+          e.preventDefault()
+          module.exports.play()
+          // console.log('space', Video, vnode)
+          m.redraw()
+          break
         case 'Equal':
-        module.exports.faster()
-        break
+          module.exports.faster()
+          break
         case 'Minus':
-        module.exports.slower()
-        break
-        // case 'ArrowUp':
+          module.exports.slower()
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          module.exports.seekEdl(Edl.time - 5 || 0)
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          module.exports.seekEdl(Math.min(Edl.time + 5, Edl.duration()))
+          break
 
       }
     })

@@ -6,22 +6,6 @@ var state = require("./Globals").state
 import { message, success, defaults } from 'alertifyjs'
 
 export default class Tools {
-  oncreate(vnode) {
-    document.addEventListener('keydown', (e) => {
-      switch (e.which) {
-        case 37:
-          e.preventDefault()
-          Monitor.seekEdl(Edl.time - 5 || 0)
-          break
-        case 39:
-          e.preventDefault()
-          Monitor.seekEdl(Math.min(Edl.time + 5, Edl.duration()))
-          break
-
-      }
-    })
-  }
-
   view(vnode) {
     return m('#tools.tools.', {}, [
 
