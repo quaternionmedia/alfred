@@ -66,27 +66,36 @@ export default class Clip {
           target.setAttribute('outpoint', this.outpoint)
           // console.log('changing outpoint', event.deltaRect, event)
         }
-      } else if (state.tool() == 'cut') {
-
-      } else if (state.tool() == 'time') {
-
       }
       Timeline.Timeline.updateEdl()
     })
 
     vnode.dom.addEventListener('mousedown', (e) => {
+      let target = e.target
+      let r = e.offsetX / e.target.offsetWidth
+      const t = (r*(this.outpoint - this.inpoint) + this.inpoint).toFixed(2)
+      let i = whichAmI(target, target.parentElement)
+      console.log('clicked on clip', i, e, r, t)
       if (state.tool() == 'time') {
-        const r = e.offsetX / e.target.offsetWidth
-        const t = r*(this.outpoint - this.inpoint) + this.inpoint
-        console.log('clicked on clip', e, r, t)
-        Edl.current = whichAmI(e.target, e.target.parentElement)
+        Edl.current = i
         if (Video.filename != Edl.edl[Edl.current][0]) {
           Video.filename = Edl.edl[Edl.current][0]
           Monitor.load(Video.filename)
         }
         Monitor.seek(t)
         m.redraw()
-      }
+      } else if (state.tool() == 'cut') {
+          let newClip = [Edl.edl[i][0], Edl.edl[i][1], Edl.edl[i][2],Edl.edl[i][3],Edl.edl[i][4],]
+          // Edl.edl[i][2] = parseFloat(t)
+          this.outpoint = parseFloat(t)
+          Edl.edl[i][3] = Edl.edl[i][2] - Edl.edl[i][1]
+          console.log('old:', Edl.edl[i])
+          newClip[1] = parseFloat(t)
+          console.log('cutting', Edl.edl[i], newClip)
+          newClip[3] = parseFloat(newClip[2]) - parseFloat(newClip[1])
+          Edl.edl.splice(i + 1, 0, newClip)
+          m.redraw()
+        }
     }, true)
 
   }
