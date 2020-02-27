@@ -23,15 +23,13 @@ export default class TimelineTools {
       }, '[ ]'),
       m('i.material-icons', {
         onclick: (vnode) => {
-          console.log('changing timeline tools', t)
           t.style.cursor = 'url(content-cut.svg), auto'
           state.tool('cut')
         }
       }, 'content_cut'),
       m('i.material-icons', {
         onclick: (vnode) => {
-          t.style.cursor = 'url(swap-horizontal.svg), auto'
-
+          t.style.cursor = 'url(swap-horizontal.svg), -webkit-grab'
           state.tool('move')
         }
       }, 'swap_horizontal'),
