@@ -56,20 +56,20 @@ export var Timeline = {
       ghostClass: 'ghost',
       forceFallback: true,
       // delay: 100,
+      preventOnFilter: false,
       filter: (e) => {
-        var cursor = e.target.style.cursor;
-        var left = Math.abs(e.target.offsetLeft) <= 5
-        var right = Math.abs(e.target.offsetLeft + e.target.offsetWidth) <= 5
-        console.log('left', left, e)
-        // console.log('filter: ', e, cursor)
-         if (cursor == 'ew-resize' || left || right) {
+        let cursor = e.target.style.cursor;
+        let left = Math.abs(e.target.offsetLeft) <= 5
+        let right = Math.abs(e.target.offsetLeft + e.target.offsetWidth) <= 5
+        let tool = document.getElementById('timeline').style.cursor
+        console.log(cursor, left, right, tool, typeof(tool), e)
+         if (cursor == 'ew-resize' || left || right || tool == 'url("content-cut.svg"), auto' || tool == 'text') {
            return true
-         } else {
-           // e.preventDefault()
-           e.stopPropagation()
+         }
+         else {
            return false
          }
-        // return cursor == 'ew-resize' || left || right
+
       },
       onUpdate: (e) => {
         Edl.current = e.newIndex
