@@ -21,8 +21,8 @@ module.exports = {
     }
     Edl.current = c
     let clip = Edl.edl[c]
-    let clipTime =  parseFloat(t - d + clip[1]).toFixed(2)
-    console.log('seeking edl', c, d, t, clipTime)
+    console.log('seeking edl', c, d, t, clip)
+    let clipTime =  Number((t - d + clip[1]).toFixed(2))
     if (Video.filename != clip[0]) {
       module.exports.load(clip[0])
     }

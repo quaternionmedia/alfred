@@ -24,9 +24,9 @@ export var Timeline = {
       // console.log(clips[i])
       edl.push([
         clips[i].attributes.filename.value,
-        clips[i].attributes.inpoint.value,
-        clips[i].attributes.outpoint.value,
-        clips[i].attributes.outpoint.value - clips[i].attributes.inpoint.value,
+        Number(clips[i].attributes.inpoint.value),
+        Number(clips[i].attributes.outpoint.value),
+        Number(clips[i].attributes.outpoint.value - clips[i].attributes.inpoint.value),
         clips[i].attributes.description.value
       ])
     }

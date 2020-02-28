@@ -57,12 +57,12 @@ export default class Clip {
         if (event.edges.left && ( this.outpoint > this.inpoint + event.dx) && (this.inpoint + event.dx / state.scale() >= 0)) {
           // target.style.width  = event.rect.width + 'px';
           target.style.width = w - event.dx / state.scale() + 'px'
-          this.inpoint += event.dx / state.scale()
+          this.inpoint = Number((this.inpoint + event.dx / state.scale()).toFixed(2))
           target.setAttribute('inpoint', this.inpoint)
           // console.log('changing inpoint', vnode, event)
         } else if (event.edges.right && (this.outpoint + event.dx / state.scale() > this.inpoint)) {
           target.style.width  = w + event.dx / state.scale() + 'px';
-          this.outpoint += event.dx / state.scale()
+          this.outpoint = Number((this.outpoint + event.dx / state.scale()).toFixed(2))
           target.setAttribute('outpoint', this.outpoint)
           // console.log('changing outpoint', event.deltaRect, event)
         }
@@ -72,8 +72,9 @@ export default class Clip {
 
     vnode.dom.addEventListener('mousedown', (e) => {
       let target = e.target
-      let r = e.offsetX / e.target.offsetWidth
-      const t = (r*(this.outpoint - this.inpoint) + this.inpoint).toFixed(2)
+      const r = e.offsetX / e.target.offsetWidth
+      const t = Number((r*(this.outpoint - this.inpoint) + this.inpoint).toFixed(2))
+      // let i = this.pos
       let i = whichAmI(target, target.parentElement)
       console.log('clicked on clip', i, e, r, t)
       if (state.tool() == 'time') {
