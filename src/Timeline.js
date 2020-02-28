@@ -34,6 +34,12 @@ export var Timeline = {
     Edl.edl = edl
     m.redraw()
   },
+  loadEdl: (edl) => {
+    Edl.edl = []
+    m.redraw.sync()
+    Edl.edl = edl
+    m.redraw()
+  },
   oninit: (vnode) => {
     Timeline.v = vnode
     m.request(m.route.param('edl') || 'test.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {

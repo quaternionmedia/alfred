@@ -86,16 +86,25 @@ export default class Clip {
         Monitor.seek(t)
         m.redraw()
       } else if (state.tool() == 'cut') {
-          let newClip = [Edl.edl[i][0], Edl.edl[i][1], Edl.edl[i][2],Edl.edl[i][3],Edl.edl[i][4],]
-          // Edl.edl[i][2] = parseFloat(t)
-          this.outpoint = parseFloat(t)
-          Edl.edl[i][3] = Edl.edl[i][2] - Edl.edl[i][1]
-          console.log('old:', Edl.edl[i])
-          newClip[1] = parseFloat(t)
-          console.log('cutting', Edl.edl[i], newClip)
-          newClip[3] = parseFloat(newClip[2]) - parseFloat(newClip[1])
-          Edl.edl.splice(i + 1, 0, newClip)
-          m.redraw()
+          if ((this.inpoint < t) && (t < this.outpoint)) {
+            console.log(this.inpoint, t, this.outpoint)
+            var edl = Edl.edl
+            var newClip = [edl[i][0], edl[i][1], edl[i][2],edl[i][3],edl[i][4]]
+            console.log('old:', edl[i])
+            // var newClip = Edl.edl[i]
+            edl[i][2] = t
+            this.outpoint = t
+            edl[i][3] = Number((edl[i][2] - edl[i][1]).toFixed(2))
+            newClip[1] = t
+            console.log('cutting', edl[i], newClip)
+            newClip[3] = newClip[2] - newClip[1]
+            edl.splice(i+1, 0, newClip)
+            // Edl.edl = edl
+            console.log('new edl', Edl.edl)
+            // m.redraw()
+            Timeline.Timeline.loadEdl(edl)
+            // Timeline.Timeline.updateEdl()
+          }
         }
     }, true)
 
