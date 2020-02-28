@@ -106,7 +106,7 @@ module.exports = {
           break
         case 'ArrowLeft':
           e.preventDefault()
-          module.exports.seekEdl(Edl.time - 5 || 0)
+          module.exports.seekEdl(Math.max(Edl.time - 5, 0))
           break
         case 'ArrowRight':
           e.preventDefault()
