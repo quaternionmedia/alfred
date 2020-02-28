@@ -102,17 +102,19 @@ export default class Clip {
   }
   onupdate(vnode) {
     this.pos = whichAmI(vnode.dom, vnode.dom.parentElement)
+    // console.log('updating clip pos', this.filename, this.pos)
   }
   view(vnode) {
     return m(`.clip#${vnode.attrs.name}`, {
       'data-x': this.inpoint, // /state.scale(),
       // 'data-duration': vnode.attrs.duration/scale,
       // innerHTML: `${this.description} - [${this.inpoint}, ${this.outpoint}]`,
+      pos: this.pos,
       inpoint: this.inpoint,
       outpoint: this.outpoint,
       filename: this.filename,
       description: this.description,
-      title: this. filename + ' - ' + this.description,
+      title: this.pos + ' - ' + this. filename + ' - ' + this.description,
       style: {
         width: (this.outpoint - this.inpoint)*state.scale(),
       },
@@ -125,8 +127,8 @@ export default class Clip {
           let t = document.getElementById('timeline')
           // console.log('description created', v)
           vnode.dom.addEventListener('input', (e) => {
-            console.log('input changed', e, vnode, whichAmI(e.target, t))
-            Edl.edl[whichAmI(vnode.dom, t)][4] = e.target.textContent
+            console.log('input changed', e, vnode, this.pos)
+            Edl.edl[this.pos][4] = e.target.textContent
             this.description = e.target.textContent
           })
           vnode.dom.addEventListener('keyup', (e) => {
