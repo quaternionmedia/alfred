@@ -103,6 +103,7 @@ body {
   padding: 2px;
   width: 25px;
   text-align: center;
+  font-style: normal;
 }
 .tools i:hover {
   background-color: #393939;

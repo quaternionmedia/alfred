@@ -29,11 +29,10 @@ export var Timeline = {
         Number(clips[i].attributes.outpoint.value - clips[i].attributes.inpoint.value),
         clips[i].attributes.description.value
       ])
+      clips[i].attributes.pos.value = i
     }
     Edl.edl = edl
-    // Timeline.duration =
     m.redraw()
-    // state.edl(this.edl)
   },
   oninit: (vnode) => {
     Timeline.v = vnode
@@ -70,7 +69,6 @@ export var Timeline = {
         Edl.current = e.newIndex
         console.log('sorting update', e, Edl)
         Timeline.updateEdl()
-        m.redraw()
       },
     })
   },
