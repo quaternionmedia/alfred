@@ -66,8 +66,8 @@ export default class Clip {
           target.setAttribute('outpoint', this.outpoint)
           // console.log('changing outpoint', event.deltaRect, event)
         }
-      }
       Timeline.Timeline.updateEdl()
+    }
     })
 
     vnode.dom.addEventListener('mousedown', (e) => {
