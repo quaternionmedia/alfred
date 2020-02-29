@@ -5,6 +5,7 @@ pipeline {
             agent any
             steps {
                 echo 'Building..'
+                make build
                 //step([$class: 'DockerComposeBuilder', dockerComposeFile: 'docker-compose.yml', option: [$class: 'StartService', scale: 1, service: 'dev'], useCustomDockerComposeFile: true])
                 //sh 'docker-compose -f docker-compose.yml -f dev.yml build dev'
             }
@@ -19,6 +20,7 @@ pipeline {
             agent any
             steps {
                 echo 'Deploying....'
+                make run
             }
         }
     }

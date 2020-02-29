@@ -1,15 +1,16 @@
 # project based
 node_modules
-dist
+/dist/*
 .cache
 package-lock.json
 yarn.lock
 media/
 cypress/screenshots/
 cypress/videos/
+__*__
+/videos/*
 
 # compiled output
-/dist
 /tmp
 /out-tsc
 

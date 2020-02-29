@@ -1,4 +1,1 @@
-FastAPI
-uvicorn
-aiofiles
-ffmpeg
+
