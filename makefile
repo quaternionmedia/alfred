@@ -56,13 +56,11 @@ stop-dev:
 build-api:
 	@docker build -t alfred_api:latest ./api/
 run-api:
-		- $(LOCAL_PATH)/api/api.py:/app/main.py
-		- $(LOCAL_PATH)/api/partial.py:/app/partial.py
-		- $(LOCAL_PATH)/dist/:/app/dist/
-		- $(LOCAL_PATH)/videos/:/app/videos/
-		- $(LOCAL_PATH)/api/db.py:/app/db.py
 	@docker run --name=alfred_api --rm --detach -label=alfred \
 	--network=alfred_isolated \
+	-v $(LOCAL_PATH)/api/:/app/ \
+	-v $(LOCAL_PATH)/dist/:/app/dist/ \
+	-v $(LOCAL_PATH)/videos/:/app/videos/ \
 	-p 8000:80 alfred_api:latest
 stop-api:
 	@docker stop alfred_api

@@ -9,6 +9,7 @@ cypress/screenshots/
 cypress/videos/
 __*__
 /videos/*
+/api/main.json
 
 # compiled output
 /tmp
