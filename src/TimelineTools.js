@@ -37,6 +37,27 @@ export default class TimelineTools {
           state.tool('move')
         }
       }, 'swap_horizontal'),
+      m('i.material-icons', {
+        title: 'slip',
+        onclick: (vnode) => {
+          t.style.cursor = 'ew-resize'
+          state.tool('slip')
+        }
+      }, 'swap_calls'),
+      m('i.material-icons', {
+        title: 'slide',
+        onclick: (vnode) => {
+          t.style.cursor = 'ew-resize'
+          state.tool('slide')
+        }
+      }, 'sync_alt'),
+      m('i.material-icons', {
+        title: 'dual roller',
+        onclick: (vnode) => {
+          t.style.cursor = 'ew-resize'
+          state.tool('dual roller')
+        }
+      }, 'compare_arrows'),
     ])
   }
 }
