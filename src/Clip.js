@@ -69,6 +69,31 @@ export default class Clip {
       Timeline.Timeline.updateEdl()
     }
     })
+    var self = this
+    clip.draggable({
+      listeners: {
+        start (e) {
+          console.log('dragging clip', e)
+        },
+        move (e) {
+          if (state.tool() == 'slip') {
+            const dx = e.dx / state.scale()
+            if (self.inpoint + e.dx > 0) {
+              console.log('slipping', e, dx)
+              self.inpoint += dx
+              self.outpoint += dx
+              Timeline.Timeline.updateEdl()
+            } else {
+              self.outpoint -= self.inpoint
+              self.inpoint = 0
+            }
+          }
+        },
+        end (e) {
+        }
+      }
+    })
+
 
     vnode.dom.addEventListener('mousedown', (e) => {
       let target = e.target
