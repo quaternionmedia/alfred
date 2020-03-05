@@ -51,18 +51,19 @@ export default class Clip {
       // console.log('resizemove', event)
       let target = event.target
       // console.log('event: ', event) //event.delta.x, )
-      var w = parseInt(target.style.width)
+      const w = parseInt(target.style.width)
+      const dx = Number((event.dx / state.scale()).toFixed(2))
       // console.log( w - (vnode.state.outpoint - vnode.state.inpoint), event.rect.width, vnode.state.outpoint, vnode.state.inpoint, w)
       if (state.tool() == 'trim') {
-        if (event.edges.left && ( this.outpoint > this.inpoint + event.dx) && (this.inpoint + event.dx / state.scale() >= 0)) {
+        if (event.edges.left && ( this.outpoint > this.inpoint + dx) && (this.inpoint + dx >= 0)) {
           // target.style.width  = event.rect.width + 'px';
-          target.style.width = w - event.dx / state.scale() + 'px'
-          this.inpoint = Number((this.inpoint + event.dx / state.scale()).toFixed(2))
+          target.style.width = w - dx + 'px'
+          this.inpoint = this.inpoint + dx
           target.setAttribute('inpoint', this.inpoint)
           // console.log('changing inpoint', vnode, event)
-        } else if (event.edges.right && (this.outpoint + event.dx / state.scale() > this.inpoint)) {
-          target.style.width  = w + event.dx / state.scale() + 'px';
-          this.outpoint = Number((this.outpoint + event.dx / state.scale()).toFixed(2))
+        } else if (event.edges.right && (this.outpoint + dx > this.inpoint)) {
+          target.style.width  = w + dx + 'px';
+          this.outpoint = this.outpoint + dx
           target.setAttribute('outpoint', this.outpoint)
           // console.log('changing outpoint', event.deltaRect, event)
         }
