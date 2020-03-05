@@ -38,13 +38,18 @@ export default class Clip {
         right: true,
       },
       cursorChecker: (action, interactable, element, interacting) => {
-        if (state.tool() == 'trim') {
-          if (action.edges.right) {
-            return 'e-resize'
-          } else if (action.edges.left) {
-            return 'w-resize'
+        switch(state.tool()) {
+          case 'trim': {
+            if (action.edges.right) {
+              return 'e-resize'
+            } else if (action.edges.left) {
+              return 'w-resize'
+            }
+            break
           }
-        }}
+          default: return null
+        }
+      },
       }
     )
     clip.on('resizemove', (event) => {
@@ -87,6 +92,9 @@ export default class Clip {
     })
     var self = this
     clip.draggable({
+      cursorChecker () {
+        return null
+      },
       listeners: {
         start (e) {
           console.log('dragging clip', e)
