@@ -20,7 +20,7 @@ module.exports = {
         m('td', c[0].split('/').pop()),
         m('td', formatTime(c[1])),
         m('td', formatTime(c[2])),
-        m('td', formatTime(c[3])),
+        m('td', formatTime(c[2] - c[1])),
         m('td', c[4]),
       ])
     })])
