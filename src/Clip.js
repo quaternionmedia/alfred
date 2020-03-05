@@ -87,8 +87,19 @@ export default class Clip {
               self.outpoint -= self.inpoint
               self.inpoint = 0
             }
-          }
-        },
+          } else if (state.tool() == 'slide') {
+              const dx = e.dx / state.scale()
+              console.log('sliding', e, dx)
+              if (self.pos) {
+                Edl.edl[self.pos - 1][2] = Math.max(Edl.edl[self.pos - 1][2] + dx, 0)
+              }
+              if (Edl.edl.length - 1 > self.pos) {
+                Edl.edl[self.pos + 1][1] += dx
+              }
+              Timeline.Timeline.loadEdl(Edl.edl)
+
+            }
+          },
         end (e) {
         }
       }
