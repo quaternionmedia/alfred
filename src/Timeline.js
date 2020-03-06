@@ -66,6 +66,7 @@ export var Timeline = {
       forceFallback: true,
       // delay: 100,
       preventOnFilter: false,
+      invertSwap: true,
       filter: (e) => {
          if (state.tool() != 'move') {
            return true
