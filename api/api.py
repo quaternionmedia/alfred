@@ -75,7 +75,10 @@ def edit():
 @app.get('/render')
 async def render(edl: str = 'test.csv'):
     filename = edl + '.mp4'
-    bashRenderEdl(getEdl(edl), filename=filename)
+    return bashRenderEdl(getEdl(edl), filename=filename)
+
+@app.get('/download')
+async def download(filename: str):
     return FileResponse(join('videos', filename), filename=filename)
 
 @app.get('/renders')

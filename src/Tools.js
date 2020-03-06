@@ -5,6 +5,14 @@ import { Video, Edl } from './Video'
 var state = require("./Globals").state
 import { message, success, defaults } from 'alertifyjs'
 
+function downloadFile(url) {
+  var a = document.createElement("a")
+  document.body.appendChild(a)
+  a.style = "display: none"
+  a.href = url
+  a.click()
+  document.body.removeChild(a)
+}
 export default class Tools {
   view(vnode) {
     return m('#tools.tools.', {}, [
@@ -48,20 +56,15 @@ export default class Tools {
         onclick: (vnode) => {
           console.log('export')
           message(`Added ${m.route.param("edl")} to render queue`)
-          var a = document.createElement("a")
-          document.body.appendChild(a)
-          a.style = "display: none"
-          a.href = '/render?edl=' + m.route.param('edl')
-          a.download = m.route.param('edl') + '.mp4'
-          a.click()
-          document.body.removeChild(a)
-          // m.request({
-          //   url: '/render',
-          //   params: { edl: m.route.param('edl') },
-          // }).then(e => {
-          //   console.log('got result', e)
-          //   success(`Successfully rendered ${m.route.param('edl')}`)
-          // })
+
+          m.request({
+            url: '/render',
+            params: { edl: m.route.param('edl') },
+          }).then(e => {
+            console.log('got result', e)
+            success(`Successfully rendered ${m.route.param('edl')}`)
+            downloadFile('/download?filename=' + m.route.param('edl') + '.mp4')
+          })
         }
       }, 'file_download')
     ])
