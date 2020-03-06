@@ -1,5 +1,6 @@
 # project based
 node_modules
+*/dist/*
 /dist/*
 .cache
 package-lock.json
@@ -16,7 +17,6 @@ __*__
 /out-tsc
 
 # dependencies
-/node_modules
 
 # IDEs and editors
 /.idea
@@ -25,20 +25,8 @@ __*__
 .c9/
 *.launch
 .settings/
-*.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
 
 # misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
 npm-debug.log
 yarn-error.log
 testem.log

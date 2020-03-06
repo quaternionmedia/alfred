@@ -10,7 +10,8 @@
   "author": "Harpo <harpo@harpo.me>",
   "license": "MIT",
   "scripts": {
-    "prestart": "npm install",
+    "prestart": "npm install && parcel build ./src/index.html",
+    "dev": "parcel ./src/index.html",
     "test": "$(npm bin)/cypress run",
     "cy": "$(npm bin)/cypress open"
   },
@@ -22,7 +23,8 @@
     "sortablejs": "^1.10.1"
   },
   "devDependencies": {
-    "cssnano": "^4.1.10"
+    "cssnano": "^4.1.10",
+    "parcel-bundler": "^1.12.4"
   },
   "bugs": {
     "url": "https://github.com/quaternionmedia/alfred/issues"
