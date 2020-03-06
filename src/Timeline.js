@@ -1,10 +1,12 @@
 import m from 'mithril'
-import Sortable from 'sortablejs'
+import { Sortable, MultiDrag } from 'sortablejs'
+Sortable.mount(new MultiDrag());
 // var Clip = require('./Clip').Clip
 import Clip from './Clip'
 var state = require("./Globals").state
 import { Video, Edl } from './Video'
 import Monitor from './Monitor'
+
 
 // const csvStringToArray = require('./parseCsv').csvStringToArray
 const CSVToArray = require('./CSVToArray').CSVToArray
@@ -56,6 +58,8 @@ export var Timeline = {
   },
   oncreate: (vnode) => {
     new Sortable(vnode.dom, {
+      multiDrag: true,
+      selectedClass: "selected",
       swapThreshold: 0.50,
       animation: 150,
       ghostClass: 'ghost',

@@ -56,7 +56,10 @@ body {
   /* text-overflow: ellipsis; */
   overflow: hidden;
 }
-
+.selected {
+  background-color: #4F1FB8;
+  border: solid #393939 1px;
+}
 .monitor {
   text-align: right;
   min-width: 40vw;
