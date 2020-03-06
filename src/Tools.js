@@ -46,18 +46,24 @@ export default class Tools {
       m('i.material-icons', {
         title: 'render',
         onclick: (vnode) => {
-          console.log('export');
+          console.log('export')
           message(`Added ${m.route.param("edl")} to render queue`)
-          m.request({
-            url: '/render',
-            params: { edl: m.route.param('edl') },
-          }).then(e => {
-            console.log('got result', e);
-            success(`Successfully rendered ${m.route.param('edl')}`)
-            // m.request('/renders/' + e);
-          });
+          var a = document.createElement("a")
+          document.body.appendChild(a)
+          a.style = "display: none"
+          a.href = '/render?edl=' + m.route.param('edl')
+          a.download = m.route.param('edl') + '.mp4'
+          a.click()
+          document.body.removeChild(a)
+          // m.request({
+          //   url: '/render',
+          //   params: { edl: m.route.param('edl') },
+          // }).then(e => {
+          //   console.log('got result', e)
+          //   success(`Successfully rendered ${m.route.param('edl')}`)
+          // })
         }
-      }, 'publish')
+      }, 'file_download')
     ])
   }
 }

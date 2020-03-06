@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Path, Body, Header
 from starlette.staticfiles import StaticFiles
-from starlette.responses import Response
+from starlette.responses import Response, FileResponse
 from partial import PartialFileResponse
 from uvicorn import run
 from os.path import join
@@ -73,9 +73,10 @@ def edit():
 
 
 @app.get('/render')
-def render(edl: str = 'test.csv'):
-    return bashRenderEdl(getEdl(edl), filename=edl + '.mp4')
-
+async def render(edl: str = 'test.csv'):
+    filename = edl + '.mp4'
+    bashRenderEdl(getEdl(edl), filename=filename)
+    return FileResponse(join('videos', filename), filename=filename)
 
 @app.get('/renders')
 def renders():
