@@ -3,3 +3,5 @@ FROM node:alpine
 RUN apk add util-linux
 
 WORKDIR /app
+
+CMD ["parcel", "build", "/app/src/index.html", "/app/src/*.csv", "/app/src/*.svg", "--target", "browser"]
