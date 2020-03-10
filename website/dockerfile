@@ -1,4 +1,5 @@
 FROM node:alpine
 
+RUN apk add util-linux
+
 WORKDIR /app
-RUN mkdir -p /app/src && mkdir -p /app/dist
