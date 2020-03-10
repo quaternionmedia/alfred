@@ -12,7 +12,7 @@ services:
     build: ./api/
     image: alfred_api
     depends_on:
-      - dev
+      - website
     volumes:
       - "./api/:/app/"
       - "./website/dist/:/app/dist/"
