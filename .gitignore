@@ -6,8 +6,8 @@ node_modules
 package-lock.json
 yarn.lock
 media/
-cypress/screenshots/
-cypress/videos/
+/website/cypress/screenshots/
+/website/cypress/videos/
 __*__
 /videos
 /api/main.json
