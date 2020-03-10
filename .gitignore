@@ -9,7 +9,7 @@ media/
 cypress/screenshots/
 cypress/videos/
 __*__
-/videos/*
+/videos
 /api/main.json
 
 # compiled output
