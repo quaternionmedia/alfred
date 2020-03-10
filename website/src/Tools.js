@@ -3,24 +3,17 @@ import '../node_modules/material-design-icons-iconfont/dist/material-design-icon
 import Monitor from './Monitor'
 import { Video, Edl } from './Video'
 var state = require("./Globals").state
+import { message, success, defaults } from 'alertifyjs'
 
+function downloadFile(url) {
+  var a = document.createElement("a")
+  document.body.appendChild(a)
+  a.style = "display: none"
+  a.href = url
+  a.click()
+  document.body.removeChild(a)
+}
 export default class Tools {
-  oncreate(vnode) {
-    document.addEventListener('keydown', (e) => {
-      switch (e.which) {
-        case 37:
-          e.preventDefault()
-          Monitor.seekEdl(Edl.time - 5 || 0)
-          break
-        case 39:
-          e.preventDefault()
-          Monitor.seekEdl(Math.min(Edl.time + 5, Edl.duration()))
-          break
-
-      }
-    })
-  }
-
   view(vnode) {
     return m('#tools.tools.', {}, [
 
@@ -61,16 +54,19 @@ export default class Tools {
       m('i.material-icons', {
         title: 'render',
         onclick: (vnode) => {
-          console.log('export');
+          console.log('export')
+          message(`Added ${m.route.param("edl")} to render queue`)
+
           m.request({
             url: '/render',
             params: { edl: m.route.param('edl') },
           }).then(e => {
-            console.log('got result', e);
-            // m.request('/renders/' + e);
-          });
+            console.log('got result', e)
+            success(`Successfully rendered ${m.route.param('edl')}`)
+            downloadFile('/download?filename=' + m.route.param('edl') + '.mp4')
+          })
         }
-      }, 'save_alt')
+      }, 'file_download')
     ])
   }
 }

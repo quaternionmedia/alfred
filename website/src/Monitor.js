@@ -21,8 +21,8 @@ module.exports = {
     }
     Edl.current = c
     let clip = Edl.edl[c]
-    let clipTime =  parseFloat(t - d + clip[1]).toFixed(2)
-    console.log('seeking edl', c, d, t, clipTime)
+    console.log('seeking edl', c, d, t, clip)
+    let clipTime =  Number((t - d + clip[1]).toFixed(2))
     if (Video.filename != clip[0]) {
       module.exports.load(clip[0])
     }
@@ -93,18 +93,25 @@ module.exports = {
     document.addEventListener('keydown', e => {
       switch (e.code) {
         case 'Space':
-        e.preventDefault()
-        module.exports.play()
-        // console.log('space', Video, vnode)
-        m.redraw()
-        break
+          e.preventDefault()
+          module.exports.play()
+          // console.log('space', Video, vnode)
+          m.redraw()
+          break
         case 'Equal':
-        module.exports.faster()
-        break
+          module.exports.faster()
+          break
         case 'Minus':
-        module.exports.slower()
-        break
-        // case 'ArrowUp':
+          module.exports.slower()
+          break
+        case 'ArrowLeft':
+          e.preventDefault()
+          module.exports.seekEdl(Math.max(Edl.time - 5, 0))
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          module.exports.seekEdl(Math.min(Edl.time + 5, Edl.duration()))
+          break
 
       }
     })
@@ -143,7 +150,7 @@ module.exports = {
       // }
       m.redraw()
     })
-    Mon.dom.addEventListener('canplay', (event) => {
+    Mon.dom.addEventListener('loadeddata', (event) => {
       if (!Video.paused && Mon.dom.paused) {
         console.log('fixed paused!')
         Mon.dom.play()

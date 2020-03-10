@@ -36,11 +36,12 @@ module.exports = {
       .on('dragmove',  (event) => {
         const sliderWidth = interact.getElementRect(event.target.parentNode).width
         const value = (event.pageX / sliderWidth).toFixed(2)
-
+        const t = value*Edl.duration().toFixed(2)
+        // console.log('sliding to', t, value)
         event.target.style.paddingLeft = 100*value + '%'
-        event.target.setAttribute('data-value', (value*Edl.duration()).toFixed(2))
-        event.target.setAttribute('value', value*Edl.duration())
-        Monitor.seekEdl(value*Edl.duration())
+        event.target.setAttribute('data-value', t)
+        event.target.setAttribute('value', t)
+        Monitor.seekEdl(t)
     })
   },
   onupdate: (vnode) => {
