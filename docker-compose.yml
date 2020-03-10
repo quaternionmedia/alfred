@@ -19,5 +19,5 @@ services:
     image: alfred_api
     volumes:
       - "./api/:/app/"
-      - "./dist/:/app/dist/"
+      - "./website/dist/:/app/dist/"
       - "./videos/:/app/videos/"
