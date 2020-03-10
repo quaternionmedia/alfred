@@ -3,9 +3,19 @@
 # Returns a greeting quote to the user.
 echo
 shuf -n 1 quotes.csv
+echo
+
+downloadMedia() {
+  echo "downloading demo media"
+  mkdir -p videos && cd videos
+  wget -N https://storage.googleapis.com/tower-bucket/moon.mp4
+  wget -N https://storage.googleapis.com/tower-bucket/train.mp4
+  wget -N https://storage.googleapis.com/tower-bucket/ATripToTheMoon-300k.mp4
+  wget -N https://storage.googleapis.com/tower-bucket/TheGreatTrainRobbery-300k.mp4
+  cd ..
+}
 
 # Starts in development (optional "--build")
-echo
 if [ $1 = "dev" ] || [ -z $1 ]; then
 if [ !-z ]; then shift; fi
 echo "Alfred! running dev $1"
@@ -23,14 +33,9 @@ elif [ $1 = "i" -o $1 = "install" ]; then
   shift
   echo "installing dependencies"
   docker-compose run website yarn install
+  downloadMedia
 
 elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
   shift
-  echo "downloading demo media"
-  mkdir -p videos && cd videos
-  wget -N https://storage.googleapis.com/tower-bucket/moon.mp4
-  wget -N https://storage.googleapis.com/tower-bucket/train.mp4
-  wget -N https://storage.googleapis.com/tower-bucket/ATripToTheMoon-300k.mp4
-  wget -N https://storage.googleapis.com/tower-bucket/TheGreatTrainRobbery-300k.mp4
-  cd ..
+  downloadMedia
 fi
