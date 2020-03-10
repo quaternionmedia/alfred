@@ -10,8 +10,8 @@
   "author": "Harpo <harpo@harpo.me>",
   "license": "MIT",
   "scripts": {
-    "prestart": "npm install && parcel build ./src/index.html",
-    "dev": "parcel ./src/index.html",
+    "prestart": "npm install && parcel build ./src/*",
+    "dev": "parcel watch ./src/*",
     "test": "$(npm bin)/cypress run",
     "cy": "$(npm bin)/cypress open"
   },
