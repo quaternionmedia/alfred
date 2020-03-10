@@ -1,13 +1,7 @@
 version: '3.3'
 
 services:
-  # # TODO Development Reloader description
-  # dev:
-  #   build: ./builder/
-  #   image: parceldock
-  #   volumes:
-  #     - "./:/app/"
-  #     - "./dist/:/app/dist/"
+  # TODO Development Reloader description
   website:
     build: ./website/
     image: alfred_site
