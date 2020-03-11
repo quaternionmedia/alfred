@@ -10,8 +10,8 @@
   "author": "Harpo <harpo@harpo.me>",
   "license": "MIT",
   "scripts": {
-    "prestart": "npm install && parcel build ./src/*",
-    "dev": "parcel watch ./src/* --hmr-port=1234",
+    "prestart": "yarn install && yarn parcel build ./src/*",
+    "dev": "yarn parcel watch ./src/* --hmr-port=1234",
     "test": "$(npm bin)/cypress run",
     "cy": "$(npm bin)/cypress open"
   },

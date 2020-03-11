@@ -1,7 +1,7 @@
 FROM node:alpine
 
 RUN apk add util-linux
-
+RUN npm i yarn
 WORKDIR /app
 
-CMD ["parcel", "build", "/app/src/index.html", "/app/src/*.csv", "/app/src/*.svg", "--target", "browser"]
+CMD ["yarn", "parcel", "build", "/app/src/index.html", "/app/src/*.csv", "/app/src/*.svg", "--target", "browser"]
