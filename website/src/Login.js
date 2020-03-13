@@ -73,6 +73,18 @@ const Login = () => {
               // })
             }},
           ),
+            m('button#logout', {
+              onclick: (e) => {
+                e.preventDefault()
+                if (User.username) {
+                  console.log('logged out')
+                  User.username = null
+                  User.token = null
+                  User.loggedIn = false
+                } else {
+                }
+              }
+            }, 'logout')
           ]
         )
       ]
