@@ -21,8 +21,8 @@ endif
 echo:
 	@echo $(OS) : $(shell uname) : $(LOCAL_PATH)
 
-init:
-	@npm install
+install:
+	@cd website && npm install && cd ..
 	@docker network create alfred_isolated
 build:
 	@make build-api

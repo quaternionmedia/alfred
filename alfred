@@ -32,7 +32,7 @@ docker-compose -f docker-compose.yml -f production.yml up --build -d $1
 elif [ $1 = "i" -o $1 = "install" ]; then
   shift
   echo "installing dependencies"
-  docker-compose run website yarn install
+  make install
   downloadMedia
 
 elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then

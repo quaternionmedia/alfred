@@ -7,7 +7,7 @@ services:
       - "1234:1234"
     networks:
       - alfred_isolated
-    command: npm run dev
+    command: npm start
 # TODO API description
   api:
     ports:
