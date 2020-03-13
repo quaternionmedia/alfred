@@ -19,6 +19,7 @@
     "alertifyjs": "^1.13.1",
     "cypress": "^4.0.1",
     "interactjs": "^1.7.3",
+    "jwt-decode": "^2.2.0",
     "material-design-icons-iconfont": "^5.0.1",
     "mithril": "^2.0.4",
     "sortablejs": "^1.10.1"
