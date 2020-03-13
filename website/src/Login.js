@@ -36,7 +36,10 @@ const Login = () => {
                 if (request.readyState == 4 && request.status == 200) {
                   let token = JSON.parse(request.response)
                   let decoded = jwt_decode(token['access_token'])
+                  User.username = decoded['sub']
                   console.log('authenticated!', decoded)
+                  User.token = token['token_type'] + ' ' + token['access_token']
+                  User.loggedIn = true
                   m.route.set('/')
                 } else if (request.readyState == 4 && request.status != 200) {
                   console.log('error logging in!', request)
