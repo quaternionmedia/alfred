@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path, Body, Header
+from fastapi import FastAPI, Path, Body, Header, Depends
 from starlette.staticfiles import StaticFiles
 from starlette.responses import Response, FileResponse
 from partial import PartialFileResponse
@@ -7,7 +7,7 @@ from os.path import join
 from urllib.request import urlopen
 from subprocess import run as bash
 from db import db
-
+from auth import auth, users, get_current_active_user, User
 
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
@@ -106,7 +106,7 @@ def cancelRender():
 
 
 @app.get('/projects')
-def getProjects():
+def getProjects(user: User = Depends(get_current_active_user)):
     return ['demo.csv', 'external.csv', 'moon.csv', 'train.csv', 'xmas.csv']
 
 @app.get('/videos/{video}', responses={
@@ -116,7 +116,10 @@ def getProjects():
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
 
-# Default page to return.
+app.include_router(auth)
+app.include_router(users)
+
+# if request does not match the above api, try to return a StaticFiles match
 app.mount("/", StaticFiles(directory='dist', html=True), name="static")
 
 if __name__ == '__main__':
