@@ -2,6 +2,7 @@ import m from 'mithril'
 import { Menu } from './Menu'
 import { User } from './User'
 import jwt_decode from 'jwt-decode'
+import { success, error, message } from 'alertifyjs'
 
 const Login = () => {
   return {
@@ -40,9 +41,12 @@ const Login = () => {
                   console.log('authenticated!', decoded)
                   User.token = token['token_type'] + ' ' + token['access_token']
                   User.loggedIn = true
+                  success(`${User.username} logged in!`)
+                  console.log('User: ', User)
                   m.route.set('/')
                 } else if (request.readyState == 4 && request.status != 200) {
                   console.log('error logging in!', request)
+                  error('error logging in', 3)
                 }
               }
               request.send(form)
@@ -78,10 +82,12 @@ const Login = () => {
                 e.preventDefault()
                 if (User.username) {
                   console.log('logged out')
+                  message(`${User.username} logged out`)
                   User.username = null
                   User.token = null
                   User.loggedIn = false
                 } else {
+                  message("not logged in. Can't log out.", 3)
                 }
               }
             }, 'logout')
