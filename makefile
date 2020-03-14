@@ -43,8 +43,8 @@ run-dev:
 	--network=alfred_isolated \
 	-v $(LOCAL_PATH):/app/ \
 	-v $(LOCAL_PATH)/dist:/app/dist/ \
-	-p 1234:1234 -p 1235:1235 parceldock \
-	"parcel watch /app/src/* --hmr-port 1235"
+	-p 1234:1234 parceldock \
+	"parcel watch /app/src/* --hmr-port 1234"
 stop-dev:
 	@docker stop alfred_dev
 
