@@ -4,6 +4,7 @@ from starlette.responses import Response, FileResponse
 from partial import PartialFileResponse
 from uvicorn import run
 from os.path import join
+from os import listdir
 from urllib.request import urlopen
 from subprocess import run as bash
 from db import db
@@ -108,6 +109,10 @@ def cancelRender():
 @app.get('/projects')
 def getProjects(user: User = Depends(get_current_active_user)):
     return ['demo.csv', 'external.csv', 'moon.csv', 'train.csv', 'xmas.csv']
+
+@app.get('/videos')
+async def getVideos():
+    return listdir('videos')
 
 @app.get('/videos/{video}', responses={
     206: {'content': {'video/mp4': {}},
