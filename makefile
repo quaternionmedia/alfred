@@ -25,16 +25,11 @@ install:
 	@cd website && npm install && cd ..
 	@docker network create alfred_isolated
 build:
-	@make build-api
-	@make build-dev
+	@docker-compose -f docker-compose.yml -f dev.yml build
 run:
-	@make run-dev
-	@make run-api
+	@docker-compose -f docker-compose.yml -f dev.yml up
 stop:
-	# @make stop-dev
-	# @make stop-api
-	@docker stop alfred_dev alfred_api
-
+	@docker-compose -f docker-compose.yml -f dev.yml down
 clean-data:
 clean-images:
 ps:
