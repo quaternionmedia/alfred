@@ -86,6 +86,13 @@ body {
 .projects {
   display: table;
 }
+
+.bin {
+  display: inherit;
+  max-height: 50vh;
+  margin-top: .5em;
+  padding: .5em;
+}
 .head {
   display: flex;
   height: 40vh;

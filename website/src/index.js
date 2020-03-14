@@ -13,6 +13,7 @@ import '../node_modules/alertifyjs/build/css/alertify.min.css'
 import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'
 import Login from './Login'
+import Bin from './Bin'
 
 defaults.transition = "zoom"
 defaults.theme.ok = "ui positive button"
@@ -37,6 +38,7 @@ var Editor = {
         m(Scale),
       ]),
       m(Project),
+      m(Bin),
     ]
   }
 }
