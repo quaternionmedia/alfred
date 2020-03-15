@@ -7,8 +7,7 @@ from os.path import join
 from os import listdir
 from urllib.request import urlopen
 from subprocess import run as bash
-from db import db
-from auth import auth, users, get_current_active_user, User
+from auth import auth, users, get_current_active_user, User, Edl
 from pymongo import MongoClient
 from bson.json_util import dumps, ObjectId
 
@@ -19,19 +18,18 @@ def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
 
 
-def getEdl(edlName='test.csv'):
-    with open(join('/app/dist/', edlName), 'r') as f:
-        return f.read().strip().split('\n')[1:]
+def getEdl(filename='test.csv'):
+    # with open(join('/app/dist/', edlName), 'r') as f:
+    #     return f.read().strip().split('\n')[1:]
+    return db.edls.find_one({'filename': filename})['edl']
 
 # Saves an EDL file to Filesystem.  Takes .edl and returns Boolean confirmation.
 def saveEdl(edl):
-    # [filename, inpoint, outpoint, duration, description]
-    with open('/app/dist/edl.edl', 'w') as f:
-        for clip in edl:
-            clip = clip.split(',')
-            # print(clip)
-            filename = join('/app/', clip[0])
-            f.write(f'file {filename}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
+    for clip in getEdl(edl):
+        clip = clip.split(',')
+        # print(clip)
+        filename = join('/app/', clip[0])
+        f.write(f'file {filename}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
 
 # Depreciated(ing) bash version of rendering.
 def bashRenderEdl(edl, filename):
@@ -58,18 +56,10 @@ def bashRenderChapters(edl):
 # TODO: as it grows length -> breakout file into suporting files as needed, e.g. dbm'database manager', util'utiliy', etc.
 app = FastAPI()
 
+
 @app.get('/edl')
-def returnEdl():
-    edl = []
-    for clip in getEdl():
-        print(clip, type(clip))
-        clip = clip.split(',')
-        edl.append([clip[0],
-            seconds(clip[1]),
-            seconds(clip[2]),
-            seconds(clip[3]),
-            *clip[4:]])
-    return edl
+def returnEdl(filename: str):
+    return getEdl(filename)
 
 
 @app.get('/edit')
@@ -81,6 +71,10 @@ def edit():
 async def download(filename: str):
     return FileResponse(join('videos', filename), filename=filename)
 
+
+@app.post('/save')
+async def save(filename: str, edl: Edl):
+    return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.edl}}, upsert=True))
 
 @app.get('/render')
 async def render(edl: str = 'test.csv'):

@@ -56,15 +56,24 @@ export default class Tools {
         onclick: (vnode) => {
           console.log('export')
           message(`Added ${m.route.param("edl")} to render queue`)
-
           m.request({
-            url: '/render',
-            params: { edl: m.route.param('edl') },
+            url: '/save',
+            method: 'post',
+            params: {
+              filename: m.route.param('edl')
+            },
+            body: {'edl': Edl.edl}
           }).then(e => {
-            console.log('got result', e)
-            m.route.set('/renders')
-            // success(`Successfully rendered ${m.route.param('edl')}`)
-            // downloadFile('/download?filename=' + m.route.param('edl') + '.mp4')
+            message(`saved! ${e['filename']}`)
+            m.request({
+              url: '/render',
+              params: { edl: m.route.param('edl') },
+            }).then(e => {
+              console.log('got result', e)
+              m.route.set('/renders')
+              // success(`Successfully rendered ${m.route.param('edl')}`)
+              // downloadFile('/download?filename=' + m.route.param('edl') + '.mp4')
+            })
           })
         }
       }, 'file_download')

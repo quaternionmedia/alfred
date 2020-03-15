@@ -19,11 +19,12 @@ export var Timeline = {
   // }
   v: null,
   updateEdl: () => {
-    // console.log('updating edl')
     var edl = []
     let clips = Timeline.v.dom.children
+    // let clips = document.getElementById('timeline').children
+    // console.log('updating edl', clips)
     for (var i = 0; i < clips.length; i++) {
-      // console.log(clips[i])
+      // console.log(i, clips[i])
       edl.push([
         clips[i].attributes.filename.value,
         Number(clips[i].attributes.inpoint.value),
@@ -44,16 +45,25 @@ export var Timeline = {
   },
   oninit: (vnode) => {
     Timeline.v = vnode
-    m.request(m.route.param('edl') || 'test.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
+    // m.request(m.route.param('edl') || 'test.csv', {extract: (xhr) => {return {status: xhr.status, body: xhr.responseText}}}).then((e) => {
+    //   console.log('got edl!', e)
+    // // Edl.edl = csvStringToArray(e.body)
+    // Edl.edl = edlToSeconds(CSVToArray(e.body))
+    m.request({
+      url: '/edl',
+      params: {
+        filename: m.route.param('edl')
+      }
+    }).then(e => {
       console.log('got edl!', e)
-    // Edl.edl = csvStringToArray(e.body)
-    Edl.edl = edlToSeconds(CSVToArray(e.body))
-    Video.filename = Edl.edl[0][0]
-    Video.time = Edl.edl[0][1]
-    Monitor.load(Video.filename)
+      Edl.edl = e
+      Video.filename = Edl.edl[0][0]
+      Video.time = Edl.edl[0][1]
+      Monitor.load(Video.filename)
+    })
     // m.redraw()
     // Monitor.play()
-    })
+    // })
 
   },
   oncreate: (vnode) => {
@@ -66,8 +76,8 @@ export var Timeline = {
       ghostClass: 'ghost',
       forceFallback: true,
       // delay: 100,
-      preventOnFilter: false,
       invertSwap: true,
+      preventOnFilter: false,
       filter: (e) => {
          if (state.tool() != 'move') {
            return true
@@ -93,7 +103,6 @@ export var Timeline = {
   },
   view: (vnode) => {
     return m('#timeline.timeline', [
-      // m(Clip)
       Edl.edl.map((c, i) => {
         return m(Clip, {filename: c[0], inpoint: c[1], outpoint: c[2], duration: c[3], description: c[4], pos: i})
 
