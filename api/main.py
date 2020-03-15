@@ -112,7 +112,7 @@ def getProjects(user: User = Depends(get_current_active_user)):
 
 @app.get('/videos')
 async def getVideos():
-    return listdir('videos')
+    return [join('videos', f) for f in listdir('videos')]
 
 @app.get('/videos/{video}', responses={
     206: {'content': {'video/mp4': {}},
