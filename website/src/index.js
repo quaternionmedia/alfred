@@ -14,6 +14,7 @@ import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'
 import Login from './Login'
 import Bin from './Bin'
+import { Renders } from './Renders'
 
 defaults.transition = "zoom"
 defaults.theme.ok = "ui positive button"
@@ -50,5 +51,6 @@ m.route(document.body, "/", {
   "/": Home,
   '/projects': Projects,
   '/editor': Editor,
+  '/renders': Renders,
   '/login': Login,
 } );

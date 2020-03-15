@@ -5,7 +5,7 @@ import { Video, Edl } from './Video'
 var state = require("./Globals").state
 import { message, success, defaults } from 'alertifyjs'
 
-function downloadFile(url) {
+export function downloadFile(url) {
   var a = document.createElement("a")
   document.body.appendChild(a)
   a.style = "display: none"
@@ -62,8 +62,9 @@ export default class Tools {
             params: { edl: m.route.param('edl') },
           }).then(e => {
             console.log('got result', e)
-            success(`Successfully rendered ${m.route.param('edl')}`)
-            downloadFile('/download?filename=' + m.route.param('edl') + '.mp4')
+            m.route.set('/renders')
+            // success(`Successfully rendered ${m.route.param('edl')}`)
+            // downloadFile('/download?filename=' + m.route.param('edl') + '.mp4')
           })
         }
       }, 'file_download')

@@ -10,7 +10,7 @@ from subprocess import run as bash
 from db import db
 from auth import auth, users, get_current_active_user, User
 from pymongo import MongoClient
-from bson.json_util import dumps
+from bson.json_util import dumps, ObjectId
 
 client = MongoClient('mongodb://db:27017', connect=False)
 db = client.alfred
@@ -85,8 +85,10 @@ async def download(filename: str):
 @app.get('/render')
 async def render(edl: str = 'test.csv'):
     filename = edl + '.mp4'
-    db.renders.insert({'filename': filename, 'edl': edl, 'progress': 0, 'link': join('videos', filename)})
-    return bashRenderEdl(getEdl(edl), filename=filename)
+    id = db.renders.insert_one({'filename': filename, 'edl': edl, 'progress': 0, 'link': join('videos', filename)}).inserted_id
+    # return str(id)
+    bashRenderEdl(getEdl(edl), filename=filename)
+    db.renders.find_one_and_update({'_id': id}, {'$set': {'progress': 100 }})
 
 
 @app.get('/renders')

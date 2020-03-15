@@ -32,6 +32,7 @@ const Link = () => {
 const Links = [
   m(Link, {href:'/'}, 'home'),
   m(Link, {href:'/projects'}, 'projects'),
+  m(Link, {href: '/renders'}, 'renders'),
   m(Link, {href:'/login'}, 'login'),
 ]
 export { Menu, Links, Link }
