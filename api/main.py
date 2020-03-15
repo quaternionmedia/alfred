@@ -9,6 +9,11 @@ from urllib.request import urlopen
 from subprocess import run as bash
 from db import db
 from auth import auth, users, get_current_active_user, User
+from pymongo import MongoClient
+from bson.json_util import dumps
+
+client = MongoClient('mongodb://db:27017', connect=False)
+db = client.alfred
 
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
@@ -72,20 +77,21 @@ def edit():
     edl = getEdl()
     saveEdl(edl)
 
-
-@app.get('/render')
-async def render(edl: str = 'test.csv'):
-    filename = edl + '.mp4'
-    return bashRenderEdl(getEdl(edl), filename=filename)
-
 @app.get('/download')
 async def download(filename: str):
     return FileResponse(join('videos', filename), filename=filename)
 
+
+@app.get('/render')
+async def render(edl: str = 'test.csv'):
+    filename = edl + '.mp4'
+    db.renders.insert({'filename': filename, 'edl': edl, 'progress': 0, 'link': join('videos', filename)})
+    return bashRenderEdl(getEdl(edl), filename=filename)
+
+
 @app.get('/renders')
 def renders():
-    # returns list of current renders
-    return
+    return dumps(db.renders.find())
 
 
 @app.get('/renders/{render}')
