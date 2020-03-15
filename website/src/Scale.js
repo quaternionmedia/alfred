@@ -9,9 +9,9 @@ function logslider(position) {
   var minp = 0;
   var maxp = 1;
 
-  // The result should be between .1 an 100
-  var minv = Math.log(.5);
-  var maxv = Math.log(500);
+  // The result should be between .1 an 1000
+  var minv = Math.log(.1);
+  var maxv = Math.log(1000);
 
   // calculate adjustment factor
   var scale = (maxv-minv) / (maxp-minp);
