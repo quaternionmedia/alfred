@@ -82,6 +82,13 @@ export var Timeline = {
         console.log('sorting update', e, Edl)
         Timeline.updateEdl()
       },
+      removeOnSpill: true,
+      onSpill: e => {
+        console.log('spilling', e)
+        Edl.edl.splice(e.oldIndex, 1)
+        Timeline.loadEdl(Edl.edl)
+        // console.log('new edl:', Edl.edl)
+      }
     })
   },
   view: (vnode) => {
