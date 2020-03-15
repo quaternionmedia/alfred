@@ -27,7 +27,7 @@ const Bin = () => {
         ghostClass: 'ghost',
         forceFallback: true,
         animation: 150,
-        onRemove: (e) => {
+        onEnd: (e) => {
           if (e.from.id == 'bin' && e.to.id == 'timeline') {
             console.log('moved media!', e)
             var clip = e.item.attributes
@@ -44,9 +44,9 @@ const Bin = () => {
             ])
             edl = edl.concat(Edl.edl.slice(e.newIndex))
               console.log('inserted new clip', edl)
-              // if (e.newIndex <= Edl.current) {
-              //   Edl.current++
-              // }
+              if (e.newIndex <= Edl.current) {
+                Edl.current++
+              }
             e.item.remove()
             Timeline.loadEdl(edl)
           }
