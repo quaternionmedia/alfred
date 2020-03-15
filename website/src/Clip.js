@@ -102,14 +102,19 @@ export default class Clip {
         move (e) {
           if (state.tool() == 'slip') {
             const dx = e.dx / state.scale()
-            if (self.inpoint + e.dx > 0) {
+            if (self.inpoint - e.dx > 0) {
               console.log('slipping', e, dx)
-              self.inpoint += dx
-              self.outpoint += dx
+              self.inpoint -= dx
+              self.outpoint -= dx
+              Edl.edl[self.pos][1] -= dx
+              Edl.edl[self.pos][2] -= dx
               Timeline.loadEdl(Edl.edl)
             } else {
               self.outpoint -= self.inpoint
               self.inpoint = 0
+              Edl.edl[self.pos][2] -= Edl.edl[self.pos][1]
+              Edl.edl[self.pos][1] = 0
+              Timeline.loadEdl(Edl.edl)
             }
           } else if (state.tool() == 'slide') {
               const dx = e.dx / state.scale()
