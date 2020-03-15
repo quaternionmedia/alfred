@@ -57,7 +57,7 @@ export default class Tools {
           console.log('export')
           message(`Added ${m.route.param("edl")} to render queue`)
           m.request({
-            url: '/save',
+            url: '/edl',
             method: 'post',
             params: {
               filename: m.route.param('edl')

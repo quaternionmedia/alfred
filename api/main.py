@@ -25,11 +25,12 @@ def getEdl(filename='test.csv'):
 
 # Saves an EDL file to Filesystem.  Takes .edl and returns Boolean confirmation.
 def saveEdl(edl):
-    for clip in getEdl(edl):
-        clip = clip.split(',')
+    for clip in edl:
+        # clip = clip.split(',')
         # print(clip)
         filename = join('/app/', clip[0])
-        f.write(f'file {filename}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
+        with open(filename, 'w') as f:
+            f.write(f'file {filename}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
 
 # Depreciated(ing) bash version of rendering.
 def bashRenderEdl(edl, filename):
@@ -62,6 +63,11 @@ def returnEdl(filename: str):
     return getEdl(filename)
 
 
+@app.post('/edl')
+async def save(filename: str, edl: Edl):
+    return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.edl}}, upsert=True))
+
+
 @app.get('/edit')
 def edit():
     edl = getEdl()
@@ -71,10 +77,6 @@ def edit():
 async def download(filename: str):
     return FileResponse(join('videos', filename), filename=filename)
 
-
-@app.post('/save')
-async def save(filename: str, edl: Edl):
-    return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.edl}}, upsert=True))
 
 @app.get('/render')
 async def render(edl: str = 'test.csv'):
