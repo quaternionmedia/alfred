@@ -3,3 +3,4 @@ ffmpeg-python
 tinydb
 pyjwt
 passlib[bcrypt]
+pymongo

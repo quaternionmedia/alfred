@@ -5,13 +5,14 @@ services:
   website:
     ports:
       - "1234:1234"
-    networks:
-      - alfred_isolated
     command: npm run dev
 # TODO API description
   api:
     ports:
       - "8000:80"
+    networks:
+      - alfred_isolated
+  db:
     networks:
       - alfred_isolated
 networks:
