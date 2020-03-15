@@ -138,13 +138,15 @@ export default class Clip {
       let i = whichAmI(target, target.parentElement)
       console.log('clicked on clip', i, e, r, t)
       if (state.tool() == 'time') {
-        Edl.current = i
-        if (Video.filename != Edl.edl[Edl.current][0]) {
-          Video.filename = Edl.edl[Edl.current][0]
-          Monitor.load(Video.filename)
+        if (target.parentElement.id == 'timeline') {
+          Edl.current = i
+          if (Video.filename != Edl.edl[Edl.current][0]) {
+            Video.filename = Edl.edl[Edl.current][0]
+            Monitor.load(Video.filename)
+          }
+          Monitor.seek(t)
+          m.redraw()
         }
-        Monitor.seek(t)
-        m.redraw()
       } else if (state.tool() == 'cut') {
           if ((this.inpoint < t) && (t < this.outpoint)) {
             console.log(this.inpoint, t, this.outpoint)
@@ -170,7 +172,11 @@ export default class Clip {
 
   }
   onupdate(vnode) {
-    this.pos = whichAmI(vnode.dom, vnode.dom.parentElement)
+    if (vnode.dom.parentElement) {
+      this.pos = whichAmI(vnode.dom, vnode.dom.parentElement)
+    } else {
+      vnode.dom.remove()
+    }
     // console.log('updating clip pos', this.filename, this.pos)
   }
   view(vnode) {

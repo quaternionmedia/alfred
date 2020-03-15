@@ -28,7 +28,7 @@ body {
   display: -webkit-inline-box;
   overflow: auto;
   border: 8px solid #210D4D;
-  padding: 3px;
+  padding: 1em;
 
 }
 .clip {
