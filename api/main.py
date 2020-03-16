@@ -72,7 +72,7 @@ def returnEdl(filename: str):
 
 @app.post('/edl')
 async def save(filename: str, edl: Edl):
-    return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.edl}}, upsert=True))
+    return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.edl}}, upsert=True, new=True))
 
 
 @app.get('/edit')
