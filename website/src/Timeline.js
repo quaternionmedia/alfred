@@ -55,8 +55,9 @@ export var Timeline = {
         filename: m.route.param('edl')
       }
     }).then(e => {
-      console.log('got edl!', e)
-      Edl.edl = e
+      let edl = edlToSeconds(CSVToArray(e))
+      console.log('got edl!', e, edl)
+      Edl.edl = edl
       Video.filename = Edl.edl[0][0]
       Video.time = Edl.edl[0][1]
       Monitor.load(Video.filename)
