@@ -3,7 +3,7 @@ from starlette.staticfiles import StaticFiles
 from starlette.responses import Response, FileResponse
 from partial import PartialFileResponse
 from uvicorn import run
-from os.path import join
+from os.path import join, isfile
 from os import listdir
 from urllib.request import urlopen
 from subprocess import run as bash
@@ -19,9 +19,16 @@ def seconds(t):
 
 
 def getEdl(filename='test.csv'):
-    # with open(join('/app/dist/', edlName), 'r') as f:
-    #     return f.read().strip().split('\n')[1:]
-    return db.edls.find_one({'filename': filename})['edl']
+    results = db.edls.find_one({'filename': filename})
+    if results:
+        return results['edl']
+    else:
+        if isfile(join('dist', filename)):
+            with open(join('dist', filename), 'r') as f:
+                return f.read()
+                # return f.read().strip().split('\n')[1:]
+        else:
+            return False
 
 # Saves an EDL file to Filesystem.  Takes .edl and returns Boolean confirmation.
 def saveEdl(edl):
