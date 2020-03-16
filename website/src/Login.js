@@ -72,7 +72,12 @@ const Login = () => {
                   message("not logged in. Can't log out.", 3)
                 }
               }
-            }, 'logout')
+            }, 'logout'),
+            m('button#register', {
+              style: {
+                display: User.username ? 'none' : ''
+              },
+            }, 'register')
           ]
         )
       ]
