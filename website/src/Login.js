@@ -27,6 +27,10 @@ const Login = () => {
           m('br'),
           m('input#submit', {
             type: 'submit',
+            value: 'login',
+            style: {
+              display: User.username ? 'none' : ''
+            },
             onclick: (e) => {
               e.preventDefault()
               let form = new FormData(document.getElementById('login'))
@@ -50,34 +54,12 @@ const Login = () => {
                 }
               }
               request.send(form)
-              // .then((e) => {
-              // })
-              // m.request({
-              //   url: '/token',
-              //   method: 'POST',
-              //   serialize: m.route.buildQueryString,
-              //   headers: {
-              //     'X-Requested-With': 'XMLHttpRequest',
-              //     'Content-Type':'application/x-www-form-urlencoded',
-              //   },
-              //   // config: function(xhr) {
-              //   //   xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest')
-              //   //   xhr.setRequestHeader('Content-Type','application/x-www-form-urlencoded')
-              //   // },
-              //   // data: {
-              //   //   username: document.getElementById('username').value,
-              //   //   password: document.getElementById('password').value,
-              //   // },
-              //   data: form,
-              // }).then((res) => {
-              //   console.log('authenticated!', res)
-              //   if (res['token']) {
-              //     User.token = res['type'] + ' ' + res['token']
-              //   }
-              // })
             }},
           ),
             m('button#logout', {
+              style: {
+                display: User.username ? '' : 'none'
+              },
               onclick: (e) => {
                 e.preventDefault()
                 if (User.username) {
