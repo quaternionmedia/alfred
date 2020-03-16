@@ -56,7 +56,7 @@ export var Timeline = {
       }
     }).then(e => {
       let edl
-      if (e.length) {
+      if (Array.isArray(e) && e.length) {
         edl = e
       } else {
         edl = edlToSeconds(CSVToArray(e))
