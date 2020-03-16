@@ -82,7 +82,7 @@ export default class Tools {
               }
             )
           }
-        }, 'file_download'),
+        }, 'file_upload'),
       ]
     )
   }
