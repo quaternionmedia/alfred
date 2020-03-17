@@ -30,14 +30,14 @@ def getEdl(filename='test.csv'):
         else:
             return False
 
-# Saves an EDL file to Filesystem.  Takes .edl and returns Boolean confirmation.
-def saveEdl(edl):
-    for clip in edl:
-        # clip = clip.split(',')
-        # print(clip)
-        filename = join('/app/', clip[0])
-        with open(filename, 'w') as f:
-            f.write(f'file {filename}\ninpoint {clip[1]}\noutpoint {clip[2]}\n\n')
+# Takes an Edl and saves an ffmpeg text file to filesystem.
+def saveEdl(edl, filename):
+    filename = join('/app', filename)
+    with open(filename, 'w') as f:
+        for clip in edl:
+            # clip = clip.split(',')
+            # print(clip)
+            f.write(f'file {clip[0]}\ninpoint {clip[1]:.2f}\noutpoint {clip[2]:.2f}\n\n')
 
 # Depreciated(ing) bash version of rendering.
 def bashRenderEdl(edl, filename):
