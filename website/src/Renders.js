@@ -23,11 +23,11 @@ export const Renders = () => {
           ],),
           renders.map(r => {
             return m('tr', {}, [
-              m('td', {}, r['edl']),
+              m('td', {}, r['filename']),
               m('td', {}, r['progress']),
               m('td', {
                 onclick: vnode => {
-                  downloadFile(`download?filename=${r['edl']+'.mp4'}`)
+                  downloadFile(`download?filename=${r['filename']}`)
                 }
               }, r['link']),
             ])
