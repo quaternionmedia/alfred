@@ -41,9 +41,10 @@ def saveEdl(edl, filename):
 
 # Depreciated(ing) bash version of rendering.
 def bashRenderEdl(edl, filename):
-    saveEdl(edl)
-    print('rendering', edl, filename)
-    print(bash(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', '/app/dist/edl.edl', '-c', 'copy', '-y', join('videos/', filename)]).stdout)
+    edlName = filename + '.edl'
+    saveEdl(edl, edlName)
+    # print('rendering', edl, filename)
+    print(bash(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', join('/app', edlName), '-c', 'copy', '-y', join('videos/', filename)]).stdout)
     return f'rendered! {edl}!'
 
 
@@ -75,11 +76,6 @@ async def save(filename: str, edl: Edl):
     return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.edl}}, upsert=True, new=True))
 
 
-@app.get('/edit')
-def edit():
-    edl = getEdl()
-    saveEdl(edl)
-
 @app.get('/download')
 async def download(filename: str):
     return FileResponse(join('videos', filename), filename=filename)
@@ -88,9 +84,10 @@ async def download(filename: str):
 @app.post('/render')
 async def render(edl: str = 'test.csv'):
     filename = edl + '.mp4'
+    edl = getEdl(edl)
     id = db.renders.insert_one({'filename': filename, 'edl': edl, 'progress': 0, 'link': join('videos', filename)}).inserted_id
     # return str(id)
-    bashRenderEdl(getEdl(edl), filename=filename)
+    bashRenderEdl(edl, filename=filename)
     db.renders.find_one_and_update({'_id': id}, {'$set': {'progress': 100 }})
 
 
