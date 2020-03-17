@@ -85,7 +85,7 @@ async def download(filename: str):
     return FileResponse(join('videos', filename), filename=filename)
 
 
-@app.get('/render')
+@app.post('/render')
 async def render(edl: str = 'test.csv'):
     filename = edl + '.mp4'
     id = db.renders.insert_one({'filename': filename, 'edl': edl, 'progress': 0, 'link': join('videos', filename)}).inserted_id

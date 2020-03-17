@@ -70,11 +70,12 @@ export default class Tools {
             title: 'render',
             onclick: (vnode) => {
               // console.log('export')
-              message(`Added ${m.route.param("edl")} to render queue`, 5)
               m.request({
                 url: '/render',
+                method: 'post',
                 params: { edl: m.route.param('edl') },
               }).then(e => {
+                message(`Added ${m.route.param("edl")} to render queue`, 5)
                 console.log('got result', e)
                 m.route.set('/renders')
                 // success(`Successfully rendered ${m.route.param('edl')}`)
