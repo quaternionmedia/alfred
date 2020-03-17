@@ -21,4 +21,4 @@ services:
   db:
     image: mvertes/alpine-mongo
     volumes:
-      - './api/database:/data/db'
+      - './database:/data/db'
