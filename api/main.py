@@ -44,7 +44,7 @@ def bashRenderEdl(edl, filename):
     edlName = filename + '.edl'
     saveEdl(edl, edlName)
     # print('rendering', edl, filename)
-    print(bash(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', join('/app', edlName), '-c', 'copy', '-y', join('videos/', filename)]).stdout)
+    print(bash(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', join('/app', edlName), '-c:v', 'libx264', '-preset', 'fast', '-c:a', 'aac', '-y', join('videos/', filename)]).stdout)
     return f'rendered! {edl}!'
 
 
