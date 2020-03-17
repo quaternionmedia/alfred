@@ -20,3 +20,5 @@ services:
       - "./videos/:/app/videos/"
   db:
     image: mvertes/alpine-mongo
+    volumes:
+      - './api/database:/data/db'
