@@ -31,7 +31,7 @@ def getEdl(filename='test.csv'):
             return False
 
 # Takes an Edl and saves an ffmpeg text file to filesystem.
-def saveEdl(edl, filename):
+def saveFFConcat(edl, filename):
     filename = join('/app', filename)
     with open(filename, 'w') as f:
         for clip in edl:
@@ -42,7 +42,7 @@ def saveEdl(edl, filename):
 # Depreciated(ing) bash version of rendering.
 def bashRenderEdl(edl, filename):
     edlName = filename + '.edl'
-    saveEdl(edl, edlName)
+    saveFFConcat(edl, edlName)
     # print('rendering', edl, filename)
     print(bash(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', join('/app', edlName), '-c:v', 'libx264', '-preset', 'fast', '-c:a', 'aac', '-y', join('videos/', filename)]).stdout)
     return f'rendered! {edl}!'
