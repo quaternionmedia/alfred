@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path, Body, Header, Depends
+from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks
 from starlette.staticfiles import StaticFiles
 from starlette.responses import Response, FileResponse
 from partial import PartialFileResponse
@@ -61,6 +61,10 @@ def bashRenderChapters(edl):
     return str(bash(['ffmpeg', '-i', join('videos/', edl), '-i', 'chapters.meta', '-codec', 'copy', '-y', join('videos/', edl)]).returncode)
 
 
+# update db when render progress has changed
+def updateProgress(id, progress):
+    return db.renders.find_one_and_update({'_id': id}, {'$set': {'progress': progress }})
+
 # REST Routing :
 # TODO: as it grows length -> breakout file into suporting files as needed, e.g. dbm'database manager', util'utiliy', etc.
 app = FastAPI()
@@ -82,13 +86,13 @@ async def download(filename: str):
 
 
 @app.post('/render')
-async def render(edl: str = 'test.csv'):
+async def render(render: BackgroundTasks, edl: str = 'test.csv'):
     filename = edl + '.mp4'
     edl = getEdl(edl)
     id = db.renders.insert_one({'filename': filename, 'edl': edl, 'progress': 0, 'link': join('videos', filename)}).inserted_id
-    # return str(id)
-    bashRenderEdl(edl, filename=filename)
-    db.renders.find_one_and_update({'_id': id}, {'$set': {'progress': 100 }})
+    render.add_task(bashRenderEdl, edl, filename=filename)
+    render.add_task(updateProgress, id, 100)
+    return str(id)
 
 
 @app.get('/renders')
