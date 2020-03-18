@@ -93,7 +93,7 @@ async def render(edl: str = 'test.csv'):
 
 @app.get('/renders')
 def renders():
-    return dumps(db.renders.find())
+    return dumps(db.renders.find({}, ['filename', 'progress', 'link']))
 
 
 @app.get('/renders/{render}')
