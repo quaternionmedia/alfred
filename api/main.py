@@ -116,7 +116,8 @@ def cancelRender():
 
 @app.get('/projects')
 def getProjects(user: User = Depends(get_current_active_user)):
-    return ['demo.csv', 'external.csv', 'moon.csv', 'train.csv', 'xmas.csv']
+    return [i['filename'] for i in db.edls.find({}, ['filename'])]
+    # return ['demo.csv', 'external.csv', 'moon.csv', 'train.csv', 'xmas.csv']
 
 @app.get('/videos')
 async def getVideos():
