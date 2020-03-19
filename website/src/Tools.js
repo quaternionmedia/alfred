@@ -62,7 +62,9 @@ export default class Tools {
                 },
                 body: {'edl': Edl.edl}
               }).then(e => {
-                message(`saved! ${e['filename']}`, 3)
+                let resp = JSON.parse(e)
+                console.log('sucessfully saved', resp)
+                message(`saved! ${resp.filename}`, 3)
               })
             }
           }, 'save'),
@@ -70,16 +72,14 @@ export default class Tools {
             title: 'render',
             onclick: (vnode) => {
               // console.log('export')
-              message(`Added ${m.route.param("edl")} to render queue`, 5)
               m.request({
                 url: '/render',
                 method: 'post',
                 params: { edl: m.route.param('edl') },
               }).then(e => {
                 console.log('got result', e)
+                message(`Added ${m.route.param("edl")} to render queue`, 5)
                 m.route.set('/renders')
-                // success(`Successfully rendered ${m.route.param('edl')}`)
-                // downloadFile('/download?filename=' + m.route.param('edl') + '.mp4')
               }
             )
           }
