@@ -1,7 +1,7 @@
 import m from 'mithril'
 import { Menu, Links } from './Menu'
 
-const Home = () => {
+function Home() {
   return {
     view: (vnode) => {
       return [
@@ -9,7 +9,7 @@ const Home = () => {
         m('span#main', {}, [
           m('h3.title', {align: 'center'}, 'Alfred. The serverless video editor'),
         ]),
-        Links,
+        m(Links),
       ]
     }
   }
