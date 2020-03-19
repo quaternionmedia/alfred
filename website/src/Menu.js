@@ -1,6 +1,7 @@
 import m from 'mithril'
 import './menu.css'
 import { User } from './User'
+import { message } from 'alertifyjs'
 
 function Menu() {
   var open = false
@@ -41,6 +42,7 @@ function Links() {
             href:'/login',
             onclick: vnode => {
               if (User.username) {
+                message(`${User.username} logged out`)
                 User.logout()
               }
             }
