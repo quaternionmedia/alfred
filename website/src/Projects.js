@@ -18,6 +18,7 @@ const Projects = () => {
       }, (err) => {
         console.log('error loading projects from server', err)
         error('Not authorized!', 3)
+        m.route.set('/login')
       })
     },
     view: (vnode) => {
