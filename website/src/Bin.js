@@ -6,16 +6,23 @@ import { Edl } from './Video'
 
 
 
-const Bin = () => {
+function Bin() {
   var media = []
+  function importFiles(e) {
+    console.log('imported files', e)
+    Array.from(e.target.files).forEach(i => media.push(URL.createObjectURL(i)))
+    m.redraw()
+    // console.log('new media list', media)
+  }
   return {
     oninit: (vnode) => {
       m.request('/videos').then( e => {
-        console.log('got videos!', e)
+        // console.log('got videos!', e)
         media = e
       })
     },
     oncreate: vnode => {
+      vnode.dom.addEventListener('change', importFiles, false)
       new Sortable(vnode.dom, {
         group: {
           name: 'media',
@@ -70,6 +77,11 @@ const Bin = () => {
       //   ])
 
       return m('table#bin.bin.project', {}, [
+        m('input#files', {
+          multiple: true,
+          name: 'files[]',
+          type: 'file',
+        },),
         media.map(f => {
         return m(Clip, {filename: f, inpoint: 0, outpoint: 10, pos: "-1", duration: null, description: ''}, f)
       })])
