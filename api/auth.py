@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-
 import jwt
 from fastapi import Depends, FastAPI, APIRouter, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -7,6 +6,7 @@ from jwt import PyJWTError
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from typing import List
+from db import db
 
 # openssl rand -hex 32
 SECRET_KEY = '645e87ee8bd522e5f93bca30be7bf580a64270cf1d50fb77c68f4b58124dd0f7'

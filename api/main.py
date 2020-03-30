@@ -8,11 +8,9 @@ from os import listdir
 from urllib.request import urlopen
 from subprocess import run as bash
 from auth import auth, get_current_active_user, User, Edl
-from pymongo import MongoClient
 from bson.json_util import dumps, ObjectId
 
-client = MongoClient('mongodb://db:27017', connect=False)
-db = client.alfred
+from db import db
 from users import users
 
 def seconds(t):

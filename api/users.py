@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from auth import User, get_current_active_user
-from main import db
+from db import db
 
 users = APIRouter()
 
