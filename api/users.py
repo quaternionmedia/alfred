@@ -1,13 +1,27 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from auth import User, get_current_active_user
+from fastapi.param_functions import Form
+from auth import User, get_current_active_user, pwd_context
 from db import db
+
+
+class RegisterForm(OAuth2PasswordRequestForm):
+    def __init__(
+        self,
+        username: str = Form(...),
+        password: str = Form(...),
+        email: str = Form(...)
+    ):
+        self.email = email
+        self.username = username
+        self.password = password
 
 users = APIRouter()
 
 @users.post('/register')
-async def registerUser(form_data: OAuth2PasswordRequestForm = Depends()):
-    if (db.users.find({'username': form_data.username}).count()):
+async def registerUser(form_data: RegisterForm = Depends()):
+    c = db.users.find({'username': form_data.username})
+    if c.count():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User already exists",
@@ -16,8 +30,6 @@ async def registerUser(form_data: OAuth2PasswordRequestForm = Depends()):
     else:
         db.users.insert_one({
         'username': form_data.username,
-        'first_name': form_data.first_name,
-        'last_name': form_data.last_name,
         'hashed_password': pwd_context.hash(form_data.password),
         'email': form_data.email,
         })
