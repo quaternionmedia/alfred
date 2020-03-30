@@ -8,7 +8,6 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 from typing import List
 
-
 # openssl rand -hex 32
 SECRET_KEY = '645e87ee8bd522e5f93bca30be7bf580a64270cf1d50fb77c68f4b58124dd0f7'
 
@@ -56,7 +55,6 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 # app = FastAPI()
 auth = APIRouter()
-users = APIRouter()
 
 def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
@@ -132,12 +130,3 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
-
-@users.get("/users/me/", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_active_user)):
-    return current_user
-
-
-@users.get("/users/me/items/")
-async def read_own_items(current_user: User = Depends(get_current_active_user)):
-    return [{"item_id": "Foo", "owner": current_user.username}]

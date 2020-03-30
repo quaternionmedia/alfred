@@ -7,12 +7,13 @@ from os.path import join, isfile
 from os import listdir
 from urllib.request import urlopen
 from subprocess import run as bash
-from auth import auth, users, get_current_active_user, User, Edl
+from auth import auth, get_current_active_user, User, Edl
 from pymongo import MongoClient
 from bson.json_util import dumps, ObjectId
 
 client = MongoClient('mongodb://db:27017', connect=False)
 db = client.alfred
+from users import users
 
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
