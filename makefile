@@ -21,20 +21,15 @@ endif
 echo:
 	@echo $(OS) : $(shell uname) : $(LOCAL_PATH)
 
-init:
-	@npm install
+install:
+	@cd website && npm install && cd ..
 	@docker network create alfred_isolated
 build:
-	@make build-api
-	@make build-dev
+	@docker-compose -f docker-compose.yml -f dev.yml build
 run:
-	@make run-dev
-	@make run-api
+	@docker-compose -f docker-compose.yml -f dev.yml up
 stop:
-	# @make stop-dev
-	# @make stop-api
-	@docker stop alfred_dev alfred_api
-
+	@docker-compose -f docker-compose.yml -f dev.yml down
 clean-data:
 clean-images:
 ps:
@@ -48,8 +43,8 @@ run-dev:
 	--network=alfred_isolated \
 	-v $(LOCAL_PATH):/app/ \
 	-v $(LOCAL_PATH)/dist:/app/dist/ \
-	-p 1234:1234 -p 1235:1235 parceldock \
-	"parcel watch /app/src/* --hmr-port 1235"
+	-p 1234:1234 parceldock \
+	"parcel watch /app/src/* --hmr-port 1234"
 stop-dev:
 	@docker stop alfred_dev
 

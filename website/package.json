@@ -10,14 +10,14 @@
   "author": "Harpo <harpo@harpo.me>",
   "license": "MIT",
   "scripts": {
-    "prestart": "yarn install && yarn parcel build ./src/*",
-    "dev": "yarn parcel watch ./src/* --hmr-port=1234",
+    "build": "parcel build src/index.html",
+    "dev": "parcel src/index.html",
+    "start": "parcel watch src/index.html --hmr-port=1234",
     "test": "$(npm bin)/cypress run",
     "cy": "$(npm bin)/cypress open"
   },
   "dependencies": {
     "alertifyjs": "^1.13.1",
-    "cypress": "^4.0.1",
     "interactjs": "^1.7.3",
     "jwt-decode": "^2.2.0",
     "material-design-icons-iconfont": "^5.0.1",
@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "cssnano": "^4.1.10",
+    "cypress": "^4.0.1",
     "parcel-bundler": "^1.12.4"
   },
   "bugs": {
