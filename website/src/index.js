@@ -14,6 +14,7 @@ import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'
 import Login from './Login'
 import Bin from './Bin'
+import { Import } from './Import'
 import { Renders } from './Renders'
 
 defaults.transition = "zoom"
@@ -39,6 +40,7 @@ var Editor = {
         m(Scale),
       ]),
       m(Project),
+      m(Import),
       m(Bin),
     ]
   }
