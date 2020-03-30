@@ -1,7 +1,9 @@
 import m from 'mithril'
 import './menu.css'
+import { User } from './User'
+import { message } from 'alertifyjs'
 
-const Menu = () => {
+function Menu() {
   var open = false
   function toggle() {
     console.log('toggling', open)
@@ -12,14 +14,14 @@ const Menu = () => {
       return [
         m('#menu.menu', {style: {display: open ? '': 'none', width: open ? '250px' : '0px'}}, [
           m('i.material-icons', {onclick: toggle}, 'close'),
-        Links,
+        m(Links),
         ]),
         m('i.material-icons', {onclick: toggle, style: {display: open ? 'none' : '' }}, 'menu'),
       ]
     }
   }
 }
-const Link = () => {
+function Link() {
   return {
     view: (vnode) => {
       return m('.menu-item', [
@@ -29,9 +31,21 @@ const Link = () => {
   }
 }
 
-const Links = [
-  m(Link, {href:'/'}, 'home'),
-  m(Link, {href:'/projects'}, 'projects'),
-  m(Link, {href:'/editor'}, 'editor'),
-]
+function Links() {
+    return {
+      view: vnode => {
+        return [
+          m(Link, {href:'/'}, 'home'),
+          m(Link, {href:'/projects'}, 'projects'),
+          m(Link, {href: '/renders'}, 'renders'),
+          m(Link, {
+            href:'/login',
+            onclick: vnode => {
+              if (User.username) {
+                message(`${User.username} logged out`)
+                User.logout()
+              }
+            }
+          }, User.username ? 'logout' : 'login'),
+        ]}}}
 export { Menu, Links, Link }

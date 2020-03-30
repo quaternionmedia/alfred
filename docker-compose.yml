@@ -13,7 +13,12 @@ services:
     image: alfred_api
     depends_on:
       - website
+      - db
     volumes:
       - "./api/:/app/"
       - "./website/dist/:/app/dist/"
       - "./videos/:/app/videos/"
+  db:
+    image: mvertes/alpine-mongo
+    volumes:
+      - './database:/data/db'

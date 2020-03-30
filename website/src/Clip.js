@@ -1,7 +1,6 @@
 import m from 'mithril'
 import interact from 'interactjs'
-// import Timeline from './Timeline'
-var Timeline = require("./Timeline")
+import { Timeline } from './Timeline'
 import Monitor from './Monitor'
 import { Video, Edl } from './Video'
 var state = require("./Globals").state
@@ -65,14 +64,15 @@ export default class Clip {
           target.style.width = w - dx + 'px'
           this.inpoint = this.inpoint + dx
           target.setAttribute('inpoint', this.inpoint)
+          Timeline.updateEdl()
           // console.log('changing inpoint', vnode, event)
         } else if (event.edges.right && (this.outpoint + dx > this.inpoint)) {
           target.style.width  = w + dx + 'px';
           this.outpoint = this.outpoint + dx
           target.setAttribute('outpoint', this.outpoint)
           // console.log('changing outpoint', event.deltaRect, event)
+          Timeline.updateEdl()
         }
-      Timeline.Timeline.updateEdl()
     } else if (state.tool() == 'dual roller') {
         if (event.edges.left && ( this.outpoint > this.inpoint + dx) && (this.inpoint + dx >= 0)) {
           console.log('dual rolling')
@@ -80,13 +80,13 @@ export default class Clip {
           if (this.pos) {
             Edl.edl[this.pos - 1][2] += dx
           }
-          Timeline.Timeline.loadEdl(Edl.edl)
+          Timeline.loadEdl(Edl.edl)
         } else if (event.edges.right && (this.outpoint + dx > this.inpoint)) {
           Edl.edl[this.pos][2] += dx
           if (Edl.edl.length - 1 > this.pos) {
             Edl.edl[this.pos + 1][1] += dx
           }
-          Timeline.Timeline.loadEdl(Edl.edl)
+          Timeline.loadEdl(Edl.edl)
         }
       }
     })
@@ -102,14 +102,19 @@ export default class Clip {
         move (e) {
           if (state.tool() == 'slip') {
             const dx = e.dx / state.scale()
-            if (self.inpoint + e.dx > 0) {
+            if (self.inpoint - e.dx > 0) {
               console.log('slipping', e, dx)
-              self.inpoint += dx
-              self.outpoint += dx
-              Timeline.Timeline.updateEdl()
+              self.inpoint -= dx
+              self.outpoint -= dx
+              Edl.edl[self.pos][1] -= dx
+              Edl.edl[self.pos][2] -= dx
+              Timeline.loadEdl(Edl.edl)
             } else {
               self.outpoint -= self.inpoint
               self.inpoint = 0
+              Edl.edl[self.pos][2] -= Edl.edl[self.pos][1]
+              Edl.edl[self.pos][1] = 0
+              Timeline.loadEdl(Edl.edl)
             }
           } else if (state.tool() == 'slide') {
               const dx = e.dx / state.scale()
@@ -120,7 +125,7 @@ export default class Clip {
               if (Edl.edl.length - 1 > self.pos) {
                 Edl.edl[self.pos + 1][1] += dx
               }
-              Timeline.Timeline.loadEdl(Edl.edl)
+              Timeline.loadEdl(Edl.edl)
 
             }
           },
@@ -138,13 +143,15 @@ export default class Clip {
       let i = whichAmI(target, target.parentElement)
       console.log('clicked on clip', i, e, r, t)
       if (state.tool() == 'time') {
-        Edl.current = i
-        if (Video.filename != Edl.edl[Edl.current][0]) {
-          Video.filename = Edl.edl[Edl.current][0]
-          Monitor.load(Video.filename)
+        if (target.parentElement.id == 'timeline') {
+          Edl.current = i
+          if (Video.filename != Edl.edl[Edl.current][0]) {
+            Video.filename = Edl.edl[Edl.current][0]
+            Monitor.load(Video.filename)
+          }
+          Monitor.seek(t)
+          m.redraw()
         }
-        Monitor.seek(t)
-        m.redraw()
       } else if (state.tool() == 'cut') {
           if ((this.inpoint < t) && (t < this.outpoint)) {
             console.log(this.inpoint, t, this.outpoint)
@@ -162,15 +169,19 @@ export default class Clip {
             // Edl.edl = edl
             console.log('new edl', Edl.edl)
             // m.redraw()
-            Timeline.Timeline.loadEdl(edl)
-            // Timeline.Timeline.updateEdl()
+            Timeline.loadEdl(edl)
+            // Timeline.updateEdl()
           }
         }
     }, true)
 
   }
   onupdate(vnode) {
-    this.pos = whichAmI(vnode.dom, vnode.dom.parentElement)
+    if (vnode.dom.parentElement) {
+      this.pos = whichAmI(vnode.dom, vnode.dom.parentElement)
+    } else {
+      vnode.dom.remove()
+    }
     // console.log('updating clip pos', this.filename, this.pos)
   }
   view(vnode) {
