@@ -2,7 +2,7 @@ import m from 'mithril'
 import { Menu } from './Menu'
 import { User } from './User'
 import jwt_decode from 'jwt-decode'
-import { success, error, message } from 'alertifyjs'
+import { success, error, message, prompt } from 'alertifyjs'
 
 const Login = () => {
   return {
@@ -56,33 +56,52 @@ const Login = () => {
               request.send(form)
             }},
           ),
-            m('button#logout', {
-              style: {
-                display: User.username ? '' : 'none'
-              },
-              onclick: (e) => {
-                e.preventDefault()
-                if (User.username) {
-                  console.log('logged out')
-                  message(`${User.username} logged out`)
-                  User.username = null
-                  User.token = null
-                  User.loggedIn = false
-                } else {
-                  message("not logged in. Can't log out.", 3)
-                }
+          m('button#logout', {
+            style: {
+              display: User.username ? '' : 'none'
+            },
+            onclick: (e) => {
+              e.preventDefault()
+              if (User.username) {
+                console.log('logged out')
+                message(`${User.username} logged out`)
+                User.username = null
+                User.token = null
+                User.loggedIn = false
+              } else {
+                message("not logged in. Can't log out.", 3)
               }
-            }, 'logout'),
-            m('button#register', {
-              style: {
-                display: User.username ? 'none' : ''
-              },
-            }, 'register')
-          ]
-        )
-      ]
-    }
+            }
+          }, 'logout'),
+          m('button#register', {
+            style: {
+              display: User.username ? 'none' : ''
+            },
+            onclick: e => {
+              e.preventDefault()
+              prompt('register', 'what is your email address?', 'e@mail.com', (e, v) => {
+                let form = new FormData(document.getElementById('login'))
+                form.append('email', v)
+                console.log('registering user', e, v, form)
+                m.request({
+                  url: '/register',
+                  method: 'post',
+                  body: form
+                }).then( res => {
+                  console.log('successfully registered', res)
+                  success(`${v} is now registered!`)
+                }).catch( err => {
+                  error('error regestering')
+                })
+              }, () => {
+              })
+            },
+          }, 'register')
+        ]
+      )
+    ]
   }
+}
 }
 
 export default Login
