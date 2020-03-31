@@ -10,10 +10,3 @@ services:
   api:
     ports:
       - "8000:80"
-    networks:
-      - alfred_isolated
-  db:
-    networks:
-      - alfred_isolated
-networks:
-  alfred_isolated:

@@ -18,7 +18,13 @@ services:
       - "./api/:/app/"
       - "./website/dist/:/app/dist/"
       - "./videos/:/app/videos/"
+    networks:
+      - alfred_isolated
   db:
     image: mvertes/alpine-mongo
     volumes:
       - './database:/data/db'
+    networks:
+      - alfred_isolated
+networks:
+  alfred_isolated:
