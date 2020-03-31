@@ -19,6 +19,9 @@ export function Import() {
           multiple: true,
           name: 'files[]',
           type: 'file',
+          style: {
+            display: 'flex',
+          },
           oncreate: vnode => {
             vnode.dom.addEventListener('change', importFiles, false)
           },
