@@ -35,11 +35,12 @@ function Links() {
     return {
       view: vnode => {
         return [
-          m(Link, {href:'/'}, 'home'),
-          m(Link, {href:'/projects'}, 'projects'),
-          m(Link, {href: '/renders'}, 'renders'),
+          m(Link, {href:'/', id: 'home-link'}, 'home'),
+          m(Link, {href:'/projects', id: 'projects-link'}, 'projects'),
+          m(Link, {href: '/renders', id: 'renders-link'}, 'renders'),
           m(Link, {
             href:'/login',
+            id: 'login-link',
             onclick: vnode => {
               if (User.username) {
                 message(`${User.username} logged out`)
