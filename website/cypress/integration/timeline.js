@@ -1,8 +1,10 @@
-describe('editor', () => {
-  it('opens the editor and loads demo.csv', () => {
-    cy.visit('http://localhost:8000/')
-    cy.contains('menu').click()
-    cy.contains('projects').click()
+import jwt_decode from 'jwt-decode'
+import { autoLogin } from './login'
+
+describe('timeline', () => {
+  it('opens the timeline editor and loads demo.csv', () => {
+    autoLogin()
+    cy.visit('http://localhost:8000/#!/projects')
     cy.contains('demo.csv').click()
 
     cy.url().should('include', '/#!/editor?edl=demo.csv')
