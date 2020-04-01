@@ -1,4 +1,5 @@
 #!/bin/sh
+VERSION=v0.1.0
 
 # Returns a greeting quote to the user.
 echo
@@ -15,18 +16,21 @@ downloadMedia() {
   cd ..
 }
 
+if [ $1 = "version" -o $1 = "v" -o $1 = "-v" ]; then
+  echo $VERSION
+
 # Starts in development (optional "--build")
-if [ $1 = "dev" ] || [ -z $1 ]; then
-if [ !-z ]; then shift; fi
-echo "Alfred! running dev $1"
-docker-compose -f docker-compose.yml -f dev.yml up $1
+elif [ $1 = "dev" ] || [ -z $1 ]; then
+  if [ !-z ]; then shift; fi
+  echo "Alfred! running dev $1"
+  docker-compose -f docker-compose.yml -f dev.yml up $1
 
 # Starts in production.
 elif [ $1 = "prod" -o $1 = "production" ]; then
-shift
-echo "Alfred! running production $1"
-docker-compose down && \
-docker-compose -f docker-compose.yml -f production.yml up --build -d $1
+  shift
+  echo "Alfred! running production $1"
+  docker-compose down && \
+  docker-compose -f docker-compose.yml -f production.yml up --build -d $1
 
 # Installs the dependencies.
 elif [ $1 = "i" -o $1 = "install" ]; then
