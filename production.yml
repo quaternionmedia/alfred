@@ -14,3 +14,4 @@ services:
       - traefik.http.routers.alfred.tls=true
       - traefik.http.routers.alfred.tls.certresolver=le
       - traefik.http.routers.alfred.entrypoints=websecure
+      - traefik.docker.network=web
