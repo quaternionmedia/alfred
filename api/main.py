@@ -72,8 +72,8 @@ app = FastAPI()
 @app.on_event("startup")
 async def seedDb():
     if not db.edls.find({}).count():
-        seed = ['demo.csv', 'external.csv', 'moon.csv', 'train.csv', 'xmas.csv']
-        db.edls.insert_many([{'filename': i} for i in seed])
+        from seed import seed
+        db.edls.insert_many(seed)
 
 @app.get('/edl')
 def returnEdl(filename: str):
