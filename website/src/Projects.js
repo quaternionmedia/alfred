@@ -1,14 +1,24 @@
 import m from 'mithril'
 import { Menu } from './Menu'
 import { Edl } from './Video'
-
+import { User } from './User'
+import { error } from 'alertifyjs'
 const Projects = () => {
   var projects = []
   return {
     oninit: (vnode) => {
-      m.request('/projects').then(e => {
+      m.request({
+        url: '/projects',
+        headers: {
+          Authorization: User.token
+        }
+      }).then(e => {
         console.log('got projects', e)
         projects = e
+      }, (err) => {
+        console.log('error loading projects from server', err)
+        error('Not authorized!', 3)
+        m.route.set('/login')
       })
     },
     view: (vnode) => {

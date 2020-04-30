@@ -1,4 +1,8 @@
 FastAPI
-uvicorn
 aiofiles
-ffmpeg
+python-multipart
+ffmpeg-python
+tinydb
+pyjwt
+passlib[bcrypt]
+pymongo

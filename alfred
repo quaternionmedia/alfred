@@ -1,26 +1,12 @@
 #!/bin/sh
+VERSION=v0.1.0
+
+# Returns a greeting quote to the user.
 echo
 shuf -n 1 quotes.csv
 echo
-if [ $1 = "dev" ] || [ -z $1 ]; then
-if [ !-z ]; then shift; fi
 
-echo "Alfred! running dev $1"
-docker-compose -f docker-compose.yml -f dev.yml up $1
-
-elif [ $1 = "prod" -o $1 = "production" ]; then
-shift
-echo "Alfred! running production $1"
-docker-compose down && \
-docker-compose -f docker-compose.yml -f production.yml up --build -d $1
-
-elif [ $1 = "i" -o $1 = "install" ]; then
-  shift
-  echo "installing dependencies"
-  docker-compose run dev yarn install
-
-elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
-  shift
+downloadMedia() {
   echo "downloading demo media"
   mkdir -p videos && cd videos
   wget -N https://storage.googleapis.com/tower-bucket/moon.mp4
@@ -28,4 +14,35 @@ elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
   wget -N https://storage.googleapis.com/tower-bucket/ATripToTheMoon-300k.mp4
   wget -N https://storage.googleapis.com/tower-bucket/TheGreatTrainRobbery-300k.mp4
   cd ..
+}
+
+if [ $1 = "version" -o $1 = "v" -o $1 = "-v" ]; then
+  echo $VERSION
+
+# Starts in development (optional "--build")
+elif [ $1 = "dev" ] || [ -z $1 ]; then
+  if [ !-z ]; then shift; fi
+  echo "Alfred! running dev $1"
+  docker-compose -f docker-compose.yml -f dev.yml up $1
+
+# Starts in production.
+elif [ $1 = "prod" -o $1 = "production" ]; then
+  shift
+  echo "Alfred! running production $1"
+  docker-compose down && \
+  docker-compose -f docker-compose.yml -f production.yml up --build -d $1
+
+# Installs the dependencies.
+elif [ $1 = "i" -o $1 = "install" ]; then
+  shift
+  echo "installing dependencies"
+  make install
+
+elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
+  shift
+  downloadMedia
+
+elif [ $1 = "restart" -o $1 = "r" ]; then
+  shift
+  docker-compose -f docker-compose.yml -f production.yml restart
 fi
