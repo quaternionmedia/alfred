@@ -22,7 +22,7 @@ echo:
 	@echo $(OS) : $(shell uname) : $(LOCAL_PATH)
 
 install:
-	@cd website && npm install && cd ..
+	@docker-compose run website npm install
 	@docker network create alfred_isolated
 build:
 	@docker-compose -f docker-compose.yml -f dev.yml build
