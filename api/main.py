@@ -69,6 +69,12 @@ def updateProgress(id, progress):
 app = FastAPI()
 
 
+@app.on_event("startup")
+async def seedDb():
+    if not db.edls.find({}).count():
+        seed = ['demo.csv', 'external.csv', 'moon.csv', 'train.csv', 'xmas.csv']
+        db.edls.insert_many([{'filename': i} for i in seed])
+
 @app.get('/edl')
 def returnEdl(filename: str):
     return getEdl(filename)
@@ -120,7 +126,6 @@ def cancelRender():
 @app.get('/projects')
 def getProjects(user: User = Depends(get_current_active_user)):
     return [i['filename'] for i in db.edls.find({}, ['filename'])]
-    # return ['demo.csv', 'external.csv', 'moon.csv', 'train.csv', 'xmas.csv']
 
 @app.get('/videos')
 async def getVideos():
