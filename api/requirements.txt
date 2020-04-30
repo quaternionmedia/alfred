@@ -1,4 +1,6 @@
-FastAPI[all]
+FastAPI
+aiofiles
+python-multipart
 ffmpeg-python
 tinydb
 pyjwt
