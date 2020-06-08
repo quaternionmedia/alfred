@@ -138,6 +138,17 @@ async def getVideos():
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
 
+@app.get('/otto')
+async def getOtto():
+    return [
+        {
+            'type': 'template',
+            'name': 'title',
+            'data': {
+            }
+        },
+    ]
+
 app.include_router(auth)
 app.include_router(users)
 
