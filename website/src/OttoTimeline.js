@@ -12,6 +12,9 @@ export function Template() {
 
     view: (vnode) => {
       return m('.clip', {
+          style: {
+            width: vnode.attrs.duration*state.scale()
+          },
       }, `${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`)
     }
   }

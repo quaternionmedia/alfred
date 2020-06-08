@@ -145,7 +145,9 @@ async def getOtto():
             'type': 'template',
             'name': 'title',
             'data': {
-            }
+                'text': 'Business Name'
+            },
+            'duration': 5,
         },
     ]
 
