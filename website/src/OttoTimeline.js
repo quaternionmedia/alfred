@@ -11,7 +11,8 @@ export function Template() {
   return {
 
     view: (vnode) => {
-      return m('.clip', {}, vnode.children)
+      return m('.clip', {
+      }, `${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`)
     }
   }
 }
@@ -26,7 +27,7 @@ export var OttoTimeline = {
   view: (vnode) => {
     return m('#timeline.timeline', [
       Edl.edl.map((c, i) => {
-        return m(Template, JSON.stringify(c))
+        return m(Template, c)
       })
     ])
   }
