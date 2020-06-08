@@ -9,7 +9,6 @@ import Monitor from './Monitor'
 
 export function Template() {
   return {
-
     view: (vnode) => {
       return m('.clip', {
           style: {
@@ -20,18 +19,20 @@ export function Template() {
   }
 }
 
-export var OttoTimeline = {
-  oninit: (vnode) => {
-    m.request('/otto').then(e => {
-      console.log('got otto', e)
-      Edl.edl = e
-    })
-  },
-  view: (vnode) => {
-    return m('#timeline.timeline', [
-      Edl.edl.map((c, i) => {
-        return m(Template, c)
+export function OttoTimeline() {
+  return {
+    oninit: (vnode) => {
+      m.request('/otto').then(e => {
+        console.log('got otto', e)
+        Edl.edl = e
       })
-    ])
+    },
+    view: (vnode) => {
+      return m('#timeline.timeline', [
+        Edl.edl.map((c, i) => {
+          return m(Template, c)
+        })
+      ])
+    },
   }
 }
