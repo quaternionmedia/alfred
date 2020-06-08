@@ -27,6 +27,34 @@ export function OttoTimeline() {
         Edl.edl = e
       })
     },
+    oncreate: (vnode) => {
+      new Sortable(vnode.dom, {
+        multiDrag: true,
+        group: 'media',
+        selectedClass: "selected",
+        swapThreshold: 0.50,
+        animation: 150,
+        ghostClass: 'ghost',
+        forceFallback: true,
+        // delay: 100,
+        invertSwap: true,
+        preventOnFilter: false,
+        filter: (e) => {
+           if (state.tool() != 'move') {
+             return true
+           }
+           else {
+             return false
+           }
+        },
+        removeOnSpill: true,
+        onSpill: e => {
+          console.log('spilling', e)
+          Edl.edl.splice(e.oldIndex, 1)
+          // Timeline.loadEdl(Edl.edl)
+      },
+    })
+  },
     view: (vnode) => {
       return m('#timeline.timeline', [
         Edl.edl.map((c, i) => {
