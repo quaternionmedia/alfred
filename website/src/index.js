@@ -16,6 +16,7 @@ import Login from './Login'
 import Bin from './Bin'
 import { Import } from './Import'
 import { Renders } from './Renders'
+import { OttoTimeline } from './OttoTimeline'
 
 defaults.transition = "zoom"
 defaults.theme.ok = "ui positive button"
@@ -46,6 +47,28 @@ var Editor = {
   }
 }
 
+var Otto = {
+  view: (vnode) => {
+    return [
+      m(Menu),
+      m('#head.head', [
+      ]),
+      m(Tools),
+      m(Slider),
+      m(TimelineTools),
+      m(OttoTimeline),
+      m('#scalecontainer', {style:
+        {display: 'inline-flex', width:'95vw'}}, [
+        m('i.material-icons', {style: {position: 'absolute',}}, 'zoom_out'),
+        m('i.material-icons', {style: {position: 'absolute', right:0}}, 'zoom_in'),
+        m(Scale),
+      ]),
+      m(Import),
+      m(Bin),
+    ]
+  }
+}
+
 
 console.log('sup!')
 
@@ -53,6 +76,7 @@ m.route(document.body, "/", {
   "/": Home,
   '/projects': Projects,
   '/editor': Editor,
+  '/otto': Otto,
   '/renders': Renders,
   '/login': Login,
 } );
