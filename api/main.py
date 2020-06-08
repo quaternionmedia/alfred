@@ -149,6 +149,41 @@ async def getOtto():
             },
             'duration': 5,
         },
+        {
+            'type': 'template',
+            'name': 'initial',
+            'data': {
+                'text': 'initial text'
+            },
+            'duration': 5,
+        },
+        {
+            'type': 'template',
+            'name': 'bullets',
+            'data': {
+                'text': 'bullet points'
+            },
+            'duration': 5,
+        },
+        {
+            'type': 'template',
+            'name': 'call',
+            'data': {
+                'text': 'call to action'
+            },
+            'duration': 5,
+        },
+        {
+            'type': 'template',
+            'name': 'ending',
+            'data': {
+                'text1': 'Business Name',
+                'text2': 'address',
+                'text3': 'website',
+                'text4': 'hours',
+            },
+            'duration': 5,
+        },
     ]
 
 app.include_router(auth)
