@@ -40,7 +40,7 @@ export function Template() {
           function stopResize() {
             element.removeEventListener('mousemove', resize)
             Edl.edl[vnode.attrs.i]['duration'] = parseFloat(element.style.width) / state.scale()
-            m.redraw.sync()
+            Edl.update()
           }
 
           element.addEventListener('mousemove', resize)
