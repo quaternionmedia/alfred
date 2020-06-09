@@ -89,23 +89,15 @@ export function OttoTimeline() {
            }
         },
         onUpdate: (e) => {
-          let edl = array_move(Edl.edl, e.oldIndex, e.newIndex)
-          Edl.edl = []
-          m.redraw.sync()
-          Edl.edl = edl
-          Edl.current = e.newIndex
-          m.redraw.sync()
-          console.log('sorting update', e, Edl)
+          Edl.edl = array_move(Edl.edl, e.oldIndex, e.newIndex)
+          Edl.update()
+          console.log('sorting update', e, Edl.edl)
         },
         removeOnSpill: true,
         onSpill: e => {
           console.log('spilling', e)
           Edl.edl.splice(e.oldIndex, 1)
-          let edl = Edl.edl
-          Edl.edl = []
-          m.redraw.sync()
-          Edl.edl = edl
-          m.redraw.sync()
+          Edl.update()
       },
     })
   },

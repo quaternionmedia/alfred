@@ -24,6 +24,14 @@ var Edl = {
     let d = e.map(clip => clip['duration'])
     return d.reduce((a, b) => a + b, 0)
   },
+  update: () => {
+    let edl = Edl.edl
+    Edl.edl = []
+    m.redraw.sync()
+    Edl.edl = edl
+    m.redraw.sync()
+    console.log('edl updated', Edl.edl)
+  }
 }
 
 module.exports = {Video, Edl}
