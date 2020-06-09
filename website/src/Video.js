@@ -14,7 +14,11 @@ var Edl = {
   current: 0,
   time: 0,
   duration: () => {
-    return Edl.edl.reduce((a, b) => a + b['duration'], 0)
+    if (Edl.edl.length > 0) {
+      return Edl.edl.reduce((a, b) => a + b['duration'], 0)
+    } else {
+      return 0
+    }
   },
   durations: (e) => {
     let d = e.map(clip => clip['duration'])
