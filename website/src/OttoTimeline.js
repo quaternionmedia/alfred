@@ -112,8 +112,10 @@ export function OttoTimeline() {
     view: (vnode) => {
       return m('#timeline.timeline', [
         Edl.edl.map((c, i) => {
-          if (i) {c.i = i}
-          return m(Template, c)
+          if (c) {
+            c.i = i
+            return m(Template, c)
+          } else return m('')
         })
       ])
     },
