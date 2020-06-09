@@ -50,6 +50,8 @@ export function Template() {
         }
         function stopResize() {
           element.removeEventListener('mousemove', resize)
+          Edl.edl[vnode.attrs.i]['duration'] = parseFloat(element.style.width) / state.scale()
+          m.redraw.sync()
         }
 
         element.addEventListener('mousemove', resize)
@@ -120,7 +122,7 @@ export function OttoTimeline() {
     view: (vnode) => {
       return m('#timeline.timeline', [
         Edl.edl.map((c, i) => {
-          c.i = i
+          if (i) {c.i = i}
           return m(Template, c)
         })
       ])
