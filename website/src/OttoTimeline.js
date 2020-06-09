@@ -50,11 +50,22 @@ export function Template() {
 
     },
     view: (vnode) => {
-      return m('.clip', {
-          style: {
-            width: vnode.attrs.duration*state.scale()
-          },
-      }, `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`)
+      if (vnode.attrs.type == 'template') {
+        return m('.clip', {
+            style: {
+              width: vnode.attrs.duration*state.scale()
+            },
+        }, `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`)
+      } else {
+        return m('.clip', {style: {
+          width: vnode.attrs.duration*state.scale()
+        },}, [
+          m('p#i.i', vnode.attrs.i),
+          m('p#clipname.clipname', vnode.attrs.filename),
+          m('p#inpoint.inpoint', vnode.attrs.inpoint),
+          m('p#outpoint.outpoint', vnode.attrs.outpoint),
+        ])
+      }
     }
   }
 }

@@ -34,13 +34,13 @@ var Bin = {
           // Timeline.updateEdl()
           // Edl.edl.splice(e.newIndex, 0, [
           var edl = Edl.edl.slice(0, e.newIndex)
-          edl.push( [
-            clip.filename.value,
-            Number(clip.inpoint.value),
-            Number(clip.outpoint.value),
-            Number(clip.outpoint.value - clip.inpoint.value),
-            clip.description.value
-          ])
+          edl.push( {
+            filename: clip.filename.value,
+            inpoint: Number(clip.inpoint.value),
+            outpoint: Number(clip.outpoint.value),
+            duration: Number(clip.outpoint.value - clip.inpoint.value),
+            description: clip.description.value,
+          })
           edl = edl.concat(Edl.edl.slice(e.newIndex))
             console.log('inserted new clip', edl)
             if (e.newIndex <= Edl.current) {
