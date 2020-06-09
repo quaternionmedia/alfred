@@ -32,7 +32,7 @@ export function Template() {
           style: {
             width: vnode.attrs.duration*state.scale()
           },
-      }, `${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`)
+      }, `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`)
     }
   }
 }
@@ -68,6 +68,7 @@ export function OttoTimeline() {
         onUpdate: (e) => {
           Edl.edl = array_move(Edl.edl, e.oldIndex, e.newIndex)
           Edl.current = e.newIndex
+          m.redraw.sync()
           console.log('sorting update', e, Edl)
           // Timeline.updateEdl()
         },
@@ -75,6 +76,7 @@ export function OttoTimeline() {
         onSpill: e => {
           console.log('spilling', e)
           Edl.edl.splice(e.oldIndex, 1)
+          m.redraw.sync()
           // Timeline.loadEdl(Edl.edl)
       },
     })
@@ -82,6 +84,7 @@ export function OttoTimeline() {
     view: (vnode) => {
       return m('#timeline.timeline', [
         Edl.edl.map((c, i) => {
+          c.i = i
           return m(Template, c)
         })
       ])
