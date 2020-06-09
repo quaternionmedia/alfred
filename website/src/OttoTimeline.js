@@ -24,28 +24,27 @@ export function Template() {
       let original_mouse_x = 0;
 
       element.addEventListener('mousedown', e => {
-        e.preventDefault()
-        original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
-        original_x = element.getBoundingClientRect().left;
-        original_mouse_x = e.pageX;
+        if (state.tool() == 'trim') {
+          e.preventDefault()
+          original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
+          original_x = element.getBoundingClientRect().left;
+          original_mouse_x = e.pageX;
 
-        function resize(e) {
-          if (state.tool() == 'trim') {
-            const w = original_width + (e.pageX - original_mouse_x);
-            const dx = e.movementX / state.scale()
-            if ((w + dx) > 0)
-            element.style.width = w + dx + 'px'
-            console.log('trimmed', e, dx, element)
+          function resize(e) {
+              const w = original_width + (e.pageX - original_mouse_x);
+              const dx = e.movementX / state.scale()
+              if ((w + dx) > 0)
+              element.style.width = w + dx + 'px'
+              console.log('trimmed', e, dx, element)
           }
-        }
-        function stopResize() {
-          element.removeEventListener('mousemove', resize)
-          Edl.edl[vnode.attrs.i]['duration'] = parseFloat(element.style.width) / state.scale()
-          m.redraw.sync()
-        }
+          function stopResize() {
+            element.removeEventListener('mousemove', resize)
+            Edl.edl[vnode.attrs.i]['duration'] = parseFloat(element.style.width) / state.scale()
+            m.redraw.sync()
+          }
 
-        element.addEventListener('mousemove', resize)
-        element.addEventListener('mouseup', stopResize)
+          element.addEventListener('mousemove', resize)
+          element.addEventListener('mouseup', stopResize)
 
       })
 
