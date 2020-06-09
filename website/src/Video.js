@@ -15,7 +15,7 @@ var Edl = {
   time: 0,
   duration: () => {
     if (Edl.edl.length > 0) {
-      return Edl.edl.reduce((a, b) => a + b['duration'], 0)
+      return Edl.edl.reduce((a, b) => a + (b ? b['duration'] : 0), 0)
     } else {
       return 0
     }
