@@ -27,6 +27,37 @@ function array_move(arr, old_index, new_index) {
 
 export function Template() {
   return {
+    oncreate: (vnode) => {
+      let element = vnode.dom
+      let original_width = 0;
+      let original_x = 0;
+      let original_mouse_x = 0;
+
+      element.addEventListener('mousedown', e => {
+        e.preventDefault()
+        original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
+        original_x = element.getBoundingClientRect().left;
+        original_mouse_x = e.pageX;
+
+        function resize(e) {
+          if (state.tool() == 'trim') {
+            const w = original_width + (e.pageX - original_mouse_x);
+            const dx = e.movementX / state.scale()
+            if ((w + dx) > 0)
+            element.style.width = w + dx + 'px'
+            console.log('trimmed', e, dx, element)
+          }
+        }
+        function stopResize() {
+          element.removeEventListener('mousemove', resize)
+        }
+
+        element.addEventListener('mousemove', resize)
+        element.addEventListener('mouseup', stopResize)
+
+      })
+
+    },
     view: (vnode) => {
       return m('.clip', {
           style: {
@@ -70,14 +101,12 @@ export function OttoTimeline() {
           Edl.current = e.newIndex
           m.redraw.sync()
           console.log('sorting update', e, Edl)
-          // Timeline.updateEdl()
         },
         removeOnSpill: true,
         onSpill: e => {
           console.log('spilling', e)
           Edl.edl.splice(e.oldIndex, 1)
           m.redraw.sync()
-          // Timeline.loadEdl(Edl.edl)
       },
     })
   },

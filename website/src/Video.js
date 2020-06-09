@@ -14,10 +14,10 @@ var Edl = {
   current: 0,
   time: 0,
   duration: () => {
-    return Edl.edl.reduce((a, b) => a + b[3], 0)
+    return Edl.edl.reduce((a, b) => a + b['duration'], 0)
   },
   durations: (e) => {
-    let d = e.map(clip => clip[3])
+    let d = e.map(clip => clip['duration'])
     return d.reduce((a, b) => a + b, 0)
   },
 }
