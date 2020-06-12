@@ -13,6 +13,8 @@ from bson.json_util import dumps, ObjectId
 from db import db
 from users import users
 
+from otto.main import app as ottoApi
+
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
 
@@ -67,7 +69,7 @@ def updateProgress(id, progress):
 # REST Routing :
 # TODO: as it grows length -> breakout file into suporting files as needed, e.g. dbm'database manager', util'utiliy', etc.
 app = FastAPI()
-
+app.mount('/otto', ottoApi)
 
 @app.on_event("startup")
 async def seedDb():
