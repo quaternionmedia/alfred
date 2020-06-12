@@ -22,13 +22,9 @@ RUN pip install numpy gizeh pillow
 COPY --from=builder /kburns-slideshow /kburns
 RUN chmod +x /kburns/main.py
 RUN ln -s /kburns/main.py /usr/bin/kburns
-# COPY --from=builder /otto /otto
-# RUN apk add --no-cache file
+
 COPY otto/fonts/* /usr/share/fonts/truetype/
 RUN fc-cache -fv
-COPY otto/ /otto
+
 RUN pip install /otto/
-# COPY ./magick /usr/local/bin/magick
 ENTRYPOINT ["/start-reload.sh"]
-# ENTRYPOINT ["pip3", "install", "otto", , "&&", "/start-reload.sh"]
-# CMD ["sh"]
