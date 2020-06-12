@@ -23,6 +23,7 @@ COPY --from=builder /kburns-slideshow /kburns
 RUN chmod +x /kburns/main.py
 RUN ln -s /kburns/main.py /usr/bin/kburns
 
+COPY --from=builder /otto /otto
 COPY otto/fonts/* /usr/share/fonts/truetype/
 RUN fc-cache -fv
 
