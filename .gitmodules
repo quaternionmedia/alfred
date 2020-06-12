@@ -1,0 +1,4 @@
+[submodule "api/otto"]
+	path = api/otto
+	url = git@github.com:quaternionmedia/otto.git
+	branch = pip
