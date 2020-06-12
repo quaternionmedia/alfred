@@ -46,6 +46,7 @@ export function Template() {
           element.addEventListener('mousemove', resize)
           element.addEventListener('mouseup', stopResize)
 
+        }
       })
 
     },
