@@ -1,6 +1,7 @@
 import m from 'mithril'
 
 var Video = {
+  clip: null,
   paused: true,
   filename: "",
   time: 0,

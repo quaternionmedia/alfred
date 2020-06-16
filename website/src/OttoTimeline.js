@@ -20,6 +20,7 @@ function array_move(arr, old_index, new_index) {
 export function Template() {
   return {
     oncreate: (vnode) => {
+      let data = vnode.attrs
       let i = vnode.attrs.i
       let element = vnode.dom
       let original_width = 0;
@@ -55,6 +56,8 @@ export function Template() {
           Edl.current = i
           Edl.time = d + Edl.durations(Edl.edl.slice(0, i))
           console.log('clicked on clip', this, vnode, e, p, d, Edl)
+          Video.clip = data
+          Video.time = d
           m.redraw()
 
         }

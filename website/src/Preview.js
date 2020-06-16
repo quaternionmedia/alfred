@@ -37,7 +37,7 @@ export var Preview = ( () => {
         if (clip.type == 'template') {
           return m(Image, {
             id: 'preview',
-            src: `otto/template/${clip['name']}?${urlfy(clip.data)}&t=${Edl.time}`
+            src: `otto/template/${clip['name']}?${urlfy(clip.data)}&t=${Video.time}`
           })
         } else {
           return m('#preview')
