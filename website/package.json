@@ -21,6 +21,7 @@
     "jwt-decode": "^2.2.0",
     "material-design-icons-iconfont": "^5.0.1",
     "mithril": "^2.0.4",
+    "mithril-contenteditable": "^0.1.2",
     "sortablejs": "^1.10.1"
   },
   "devDependencies": {
