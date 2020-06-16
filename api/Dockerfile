@@ -1,12 +1,6 @@
 FROM alpine AS builder
-RUN apk add openssh-client git
-COPY github_key /github_key
-RUN eval $(ssh-agent) && \
-    ssh-add github_key && \
-    ssh-keyscan -H github.com >> /etc/ssh/ssh_known_hosts && \
-    git clone git@github.com:quaternionmedia/otto.git /otto
+RUN apk add git
 RUN git clone https://github.com/quaternionmedia/kburns-slideshow.git
-RUN cd /otto && git checkout pip
 
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.7-alpine3.8
 RUN apk update
@@ -23,9 +17,10 @@ COPY --from=builder /kburns-slideshow /kburns
 RUN chmod +x /kburns/main.py
 RUN ln -s /kburns/main.py /usr/bin/kburns
 
-COPY --from=builder /otto /otto
 COPY otto/fonts/* /usr/share/fonts/truetype/
 RUN fc-cache -fv
-
+RUN pip install moviepy jinja2
+ENV IMAGEMAGICK_BINARY=/usr/bin/magick
+COPY /otto /otto
 RUN pip install /otto/
 ENTRYPOINT ["/start-reload.sh"]
