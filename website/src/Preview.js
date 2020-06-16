@@ -13,7 +13,8 @@ function Image() {
         src: vnode.attrs.src,
         style: {
           width: '100%',
-          height: '100%'
+          height: '100%',
+          'object-fit': 'contain'
         }
       })
     }
