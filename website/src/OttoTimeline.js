@@ -7,7 +7,7 @@ Sortable.mount(new MultiDrag());
 import Clip from './Clip'
 var state = require("./Globals").state
 import { Video, Edl } from './Video'
-import Monitor from './Monitor'
+import { Preview } from './Preview'
 
 function array_move(arr, old_index, new_index) {
     let element = arr[old_index];
@@ -20,6 +20,7 @@ function array_move(arr, old_index, new_index) {
 export function Template() {
   return {
     oncreate: (vnode) => {
+      let i = vnode.attrs.i
       let element = vnode.dom
       let original_width = 0;
       let original_x = 0;
@@ -47,6 +48,14 @@ export function Template() {
 
           element.addEventListener('mousemove', resize)
           element.addEventListener('mouseup', stopResize)
+
+        } else if (state.tool() == 'time') {
+          let p = e.offsetX / e.target.offsetWidth
+          let d = p * e.target.offsetWidth / state.scale()
+          Edl.current = i
+          Edl.time = d + Edl.durations(Edl.edl.slice(0, i))
+          console.log('clicked on clip', this, vnode, e, p, d, Edl)
+          m.redraw()
 
         }
       })

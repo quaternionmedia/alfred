@@ -17,6 +17,7 @@ import Bin from './Bin'
 import { Import } from './Import'
 import { Renders } from './Renders'
 import { OttoTimeline } from './OttoTimeline'
+import { Preview } from './Preview'
 
 defaults.transition = "zoom"
 defaults.theme.ok = "ui positive button"
@@ -52,6 +53,7 @@ var Otto = {
     return [
       m(Menu),
       m('#head.head', [
+        m(Preview)
       ]),
       m(Tools),
       m(Slider),
