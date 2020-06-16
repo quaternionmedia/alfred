@@ -71,32 +71,40 @@ export function Template() {
             style: {
               width: vnode.attrs.duration*state.scale()
             },
-          }, `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`,
-            m(ContentEditable, {
-              // Original HTML input
-              html: state.html,
-              // Returns the updated HTML code
-              onchange: html => {
-                state.html = html;
-                console.log(html);
-              },
-              // Example to prevent the user from entering commas
-              onkeydown: e => {
-                if (e.key === ',') {
-                  e.preventDefault();
+          }, [
+              m('p', `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`),
+              m(ContentEditable, {
+                // Original HTML input
+                html: state.html,
+                // Returns the updated HTML code
+                onchange: html => {
+                  state.html = html;
+                  console.log(html);
+                },
+                // Example to prevent the user from entering commas
+                onkeydown: e => {
+                  if (e.key === ',') {
+                    e.preventDefault();
+                  }
+                },
+                // Replace the base tag, if needed
+                tagName: 'div',
+                // By default, &amp; etc are replaced by their normal counterpart when losing focus.
+                // cleanupHtml: false,
+                // By default, don't allow the user to enter newlines
+                // preventNewline: false,
+                // By default, select all text when the element receives focus
+                // selectAllOnFocus: false,
+                // By default, when pasting text, remove all HTML and keep the plain text.
+                // pasteAsPlainText: false,
+              }),
+              m('i.progress', {
+                style: {
+                  display: (Edl.current == vnode.attrs.i) ? 'inherit': 'none',
+                  left: Video.time * state.scale(),
                 }
-              },
-              // Replace the base tag, if needed
-              tagName: 'div',
-              // By default, &amp; etc are replaced by their normal counterpart when losing focus.
-              // cleanupHtml: false,
-              // By default, don't allow the user to enter newlines
-              // preventNewline: false,
-              // By default, select all text when the element receives focus
-              // selectAllOnFocus: false,
-              // By default, when pasting text, remove all HTML and keep the plain text.
-              // pasteAsPlainText: false,
-            })
+              })
+            ]
           )
       } else {
         return m('.clip', {style: {
@@ -106,6 +114,12 @@ export function Template() {
           m('p#clipname.clipname', vnode.attrs.filename),
           m('p#inpoint.inpoint', vnode.attrs.inpoint),
           m('p#outpoint.outpoint', vnode.attrs.outpoint),
+          m('i.material-icons.progress', {
+            style: {
+              display: (Edl.current == i) ? 'inherit': 'none',
+              left: Video.time*state.scale(),
+            }
+          })
         ])
       }
 
