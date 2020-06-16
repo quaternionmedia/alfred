@@ -20,7 +20,7 @@ module.exports = {
     return d.reduce((a, b) => a + b, 0)
   },
   view: (vnode) => {
-    return m('.slider#slider', {min: 1, max: Edl.duration(), value: Edl.time}, Edl.time > 60 ? module.exports.formatTime(Edl.time.toFixed(2)): Edl.time.toFixed(2))
+    return m('.slider#slider', {min: 1, max: Edl.duration(), value: Edl.time}, Edl.time > 60 ? module.exports.formatTime(Edl.time.toFixed(2)) : Edl.time.toFixed(2))
   },
   oncreate: (vnode) => {
     const slider = interact(vnode.dom)
@@ -41,7 +41,12 @@ module.exports = {
         event.target.style.paddingLeft = 100*value + '%'
         event.target.setAttribute('data-value', t)
         event.target.setAttribute('value', t)
-        Monitor.seekEdl(t)
+    })
+    .on('dragend', (event) => {
+      const sliderWidth = interact.getElementRect(event.target.parentNode).width
+      const value = (event.pageX / sliderWidth).toFixed(2)
+      const t = value*Edl.duration().toFixed(2)
+      Edl.jump(t)
     })
   },
   onupdate: (vnode) => {
