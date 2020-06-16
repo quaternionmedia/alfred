@@ -32,6 +32,25 @@ var Edl = {
     Edl.edl = edl
     m.redraw.sync()
     console.log('edl updated', Edl.edl)
+  },
+  which: (t) => {
+    let c = 0
+    let i = 0
+    while (c + Edl.edl[i].duration < t) {
+      c += Edl.edl[i].duration
+      i++
+    }
+    return i
+  },
+  jump: (t) => {
+    let n = Edl.which(t)
+    if (n != Edl.current) {
+      Video.clip = Edl.edl[n]
+      Edl.current = n
+    }
+    Edl.time = t
+    Video.time = t - Edl.durations(Edl.edl.slice(0, n))
+    m.redraw.sync()
   }
 }
 
