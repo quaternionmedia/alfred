@@ -3,4 +3,4 @@ FROM node:alpine
 RUN apk add util-linux make
 WORKDIR /app
 RUN npm upgrade -g yarn
-CMD ["$(npm bin)/parcel", "build", "/app/src/index.html", "/app/src/*.csv", "/app/src/*.svg", "--target", "browser"]
+CMD ["/app/node_modules/.bin/parcel", "build", "/app/src/index.html", "/app/src/*.csv", "/app/src/*.svg", "--target", "browser"]
