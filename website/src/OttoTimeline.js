@@ -1,5 +1,7 @@
 import m from 'mithril'
 import { Sortable, MultiDrag } from 'sortablejs'
+import { ContentEditable } from 'mithril-contenteditable'
+
 Sortable.mount(new MultiDrag());
 // var Clip = require('./Clip').Clip
 import Clip from './Clip'
@@ -51,12 +53,39 @@ export function Template() {
 
     },
     view: (vnode) => {
+
       if (vnode.attrs.type == 'template') {
         return m('.clip', {
             style: {
               width: vnode.attrs.duration*state.scale()
             },
-        }, `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`)
+          }, `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`,
+            m(ContentEditable, {
+              // Original HTML input
+              html: state.html,
+              // Returns the updated HTML code
+              onchange: html => {
+                state.html = html;
+                console.log(html);
+              },
+              // Example to prevent the user from entering commas
+              onkeydown: e => {
+                if (e.key === ',') {
+                  e.preventDefault();
+                }
+              },
+              // Replace the base tag, if needed
+              tagName: 'div',
+              // By default, &amp; etc are replaced by their normal counterpart when losing focus.
+              // cleanupHtml: false,
+              // By default, don't allow the user to enter newlines
+              // preventNewline: false,
+              // By default, select all text when the element receives focus
+              // selectAllOnFocus: false,
+              // By default, when pasting text, remove all HTML and keep the plain text.
+              // pasteAsPlainText: false,
+            })
+          )
       } else {
         return m('.clip', {style: {
           width: vnode.attrs.duration*state.scale()
@@ -67,6 +96,8 @@ export function Template() {
           m('p#outpoint.outpoint', vnode.attrs.outpoint),
         ])
       }
+
+
     }
   }
 }
