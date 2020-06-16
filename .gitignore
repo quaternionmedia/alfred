@@ -40,3 +40,5 @@ Thumbs.db
 database/
 
 github_key*
+output/*
+api/output/*

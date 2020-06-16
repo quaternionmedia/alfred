@@ -169,7 +169,7 @@ async def getOtto():
         },
         {
             'type': 'template',
-            'name': 'call',
+            'name': 'initial',
             'data': {
                 'text': 'call to action'
             },
@@ -177,12 +177,12 @@ async def getOtto():
         },
         {
             'type': 'template',
-            'name': 'ending',
+            'name': 'final',
             'data': {
-                'text1': 'Business Name',
-                'text2': 'address',
-                'text3': 'website',
-                'text4': 'hours',
+                'text': 'Business Name',
+                'address': 'address',
+                'website': 'alfred.quaternion.media',
+                'phone': '(xxx) xxx-xxxx',
             },
             'duration': 5,
         },
