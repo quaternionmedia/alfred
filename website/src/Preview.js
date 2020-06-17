@@ -41,7 +41,19 @@ export var Preview = ( () => {
   return {
     oncreate: (vnode) => {
       dom = vnode.dom
-    },
+      document.addEventListener('keydown', e => {
+        switch (e.code) {
+          case 'ArrowLeft':
+            console.log('left!', e)
+            e.preventDefault()
+            Edl.jump(Math.max(Edl.time - 5, 0))
+            break
+          case 'ArrowRight':
+            e.preventDefault()
+            Edl.jump(Math.min(Edl.time + 5, Edl.duration()))
+            break
+        }
+    })},
     onupdate: (vnode) => {
 
     },

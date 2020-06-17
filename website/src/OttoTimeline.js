@@ -140,6 +140,8 @@ export function OttoTimeline() {
       }).then(e => {
         console.log('got otto', e)
         Edl.edl = e
+        Edl.current = 0
+        Edl.time = 0
       })
     },
     oncreate: (vnode) => {
