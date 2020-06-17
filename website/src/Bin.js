@@ -1,6 +1,6 @@
 import m from 'mithril'
 import { Sortable } from 'sortablejs'
-import Clip from './Clip'
+import { VideoClip } from './OttoTimeline'
 import { Timeline } from './Timeline'
 import { Edl } from './Video'
 
@@ -40,6 +40,7 @@ var Bin = {
             outpoint: Number(clip.outpoint.value),
             duration: Number(clip.outpoint.value - clip.inpoint.value),
             description: clip.description.value,
+            type: clip.type.value,
           })
           edl = edl.concat(Edl.edl.slice(e.newIndex))
             console.log('inserted new clip', edl)
@@ -71,7 +72,7 @@ var Bin = {
     return [
       m('table#bin.bin.project', {}, [
       Bin.media.map(f => {
-      return m(Clip, {filename: f, inpoint: 0, outpoint: 10, pos: "-1", duration: null, description: ''}, f)
+      return m(VideoClip, {type: 'video', filename: f, inpoint: 0, outpoint: 10, pos: "-1", duration: 10, description: ''})
     })])]
   }
 }
