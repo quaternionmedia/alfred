@@ -131,7 +131,11 @@ export function Template() {
 export function OttoTimeline() {
   return {
     oninit: (vnode) => {
-      m.request('/otto').then(e => {
+      m.request('/edl', {
+        params: {
+          filename: m.route.param('edl')
+        }
+      }).then(e => {
         console.log('got otto', e)
         Edl.edl = e
       })
