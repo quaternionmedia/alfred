@@ -1,5 +1,7 @@
 import m from 'mithril'
 import { Menu } from './Menu'
+import { User } from './User'
+import { error } from 'alertifyjs'
 import { downloadFile } from './Tools'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 
@@ -7,9 +9,17 @@ import '../node_modules/material-design-icons-iconfont/dist/material-design-icon
 export const Renders = () => {
   var renders = []
   function getRenders() {
-    m.request('/renders').then( e => {
+    m.request('/renders', {
+      headers: {
+        Authorization: User.token
+      }
+    }).then( e => {
       console.log('render list:', e)
       renders = JSON.parse(e)
+    }, (err) => {
+      error('Not authorized!', 3)
+      console.log('error loading renders from server', err)
+      m.route.set('/login?redirect=/renders')
     })
   }
   return {

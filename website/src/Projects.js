@@ -3,13 +3,14 @@ import { Menu } from './Menu'
 import { Edl } from './Video'
 import { User } from './User'
 import { error } from 'alertifyjs'
-const Projects = () => {
+
+function Projects() {
   var projects = []
   return {
     oninit: (vnode) => {
       m.request({
-        url: '/projects',
         headers: {
+        url: '/projects',
           Authorization: User.token
         }
       }).then(e => {
