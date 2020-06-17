@@ -47,7 +47,11 @@ const Login = () => {
                   User.loggedIn = true
                   success(`${User.username} logged in!`)
                   console.log('User: ', User)
-                  m.route.set('/')
+                  if (m.route.param('redirect')) {
+                    m.route.set(m.route.param('redirect'))
+                  } else {
+                    m.route.set('/')
+                  }
                 } else if (request.readyState == 4 && request.status != 200) {
                   console.log('error logging in!', request)
                   error('error logging in', 3)
