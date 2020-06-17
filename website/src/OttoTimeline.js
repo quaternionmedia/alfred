@@ -111,7 +111,7 @@ export function Template() {
           width: vnode.attrs.duration*state.scale()
         },}, [
           m('p#i.i', vnode.attrs.i),
-          m('p#clipname.clipname', vnode.attrs.name),
+          m('p#clipname.clipname', vnode.attrs.filename),
           m('p#inpoint.inpoint', vnode.attrs.inpoint),
           m('p#outpoint.outpoint', vnode.attrs.outpoint),
           m('i.material-icons.progress', {

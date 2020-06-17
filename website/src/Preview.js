@@ -6,10 +6,24 @@ const urlfy = obj => Object
     .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]))
     .join('&');
 
-function Image() {
+function ImageClip() {
   return {
     view: (vnode) => {
       return m('img', {
+        src: vnode.attrs.src,
+        style: {
+          width: '100%',
+          height: '100%',
+          'object-fit': 'contain'
+        }
+      })
+    }
+  }
+}
+function VideoClip() {
+  return {
+    view: (vnode) => {
+      return m('video', {
         src: vnode.attrs.src,
         style: {
           width: '100%',
@@ -33,15 +47,17 @@ export var Preview = ( () => {
     },
     view: (vnode) => {
       let clip = Edl.edl[Edl.current]
-      console.log('redrawing preview', vnode, clip, Edl)
       if (clip) {
         if (clip.type == 'template') {
-          return m(Image, {
+          return m(ImageClip, {
             id: 'preview',
             src: `otto/template/${clip['name']}?${urlfy(clip.data)}&t=${Video.time}`
           })
         } else {
-          return m('#preview')
+            return m(VideoClip, {
+              id: 'preview',
+              src: clip.filename
+            })
         }
       }
     }
