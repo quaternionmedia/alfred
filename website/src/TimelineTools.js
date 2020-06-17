@@ -30,16 +30,6 @@ export default class TimelineTools {
         }
       }, '[ ]'),
       m('i.material-icons', {
-        title: 'cut',
-        onclick: (vnode) => {
-          t.style.cursor = 'url(content-cut.svg), auto'
-          state.tool('cut')
-        },
-        style: {
-          'background-color': state.tool() == 'cut' ? '#393939' : 'transparent'
-        }
-      }, 'content_cut'),
-      m('i.material-icons', {
         title: 'move',
         onclick: (vnode) => {
           t.style.cursor = 'url(swap-horizontal.svg), -webkit-grab'
@@ -49,6 +39,16 @@ export default class TimelineTools {
           'background-color': state.tool() == 'move' ? '#393939' : 'transparent'
         }
       }, 'swap_horizontal'),
+      m('i.material-icons', {
+        title: 'cut',
+        onclick: (vnode) => {
+          t.style.cursor = 'url(content-cut.svg), auto'
+          state.tool('cut')
+        },
+        style: {
+          'background-color': state.tool() == 'cut' ? '#393939' : 'transparent'
+        }
+      }, 'content_cut'),
       m('i.material-icons', {
         title: 'slip',
         onclick: (vnode) => {
