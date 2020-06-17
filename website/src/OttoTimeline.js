@@ -3,21 +3,19 @@ import { Sortable, MultiDrag } from 'sortablejs'
 import { ContentEditable } from 'mithril-contenteditable'
 
 Sortable.mount(new MultiDrag());
-// var Clip = require('./Clip').Clip
-import Clip from './Clip'
 var state = require("./Globals").state
 import { Video, Edl } from './Video'
 import { Preview } from './Preview'
 
 function array_move(arr, old_index, new_index) {
-    let element = arr[old_index];
-    arr.splice(old_index, 1);
-    arr.splice(new_index, 0, element);
-    return arr
+  let element = arr[old_index];
+  arr.splice(old_index, 1);
+  arr.splice(new_index, 0, element);
+  return arr
 };
 
 
-export function Template() {
+export function Clip() {
   return {
     oncreate: (vnode) => {
       let data = vnode.attrs
@@ -35,18 +33,17 @@ export function Template() {
           original_mouse_x = e.pageX;
 
           function resize(e) {
-              const w = original_width + (e.pageX - original_mouse_x);
-              const dx = e.movementX / state.scale()
-              if ((w + dx) > 0)
-              element.style.width = w + dx + 'px'
-              console.log('trimmed', e, dx, element)
+            const w = original_width + (e.pageX - original_mouse_x);
+            const dx = e.movementX / state.scale()
+            if ((w + dx) > 0)
+            element.style.width = w + dx + 'px'
+            console.log('trimmed', e, dx, element)
           }
           function stopResize() {
             element.removeEventListener('mousemove', resize)
             Edl.edl[vnode.attrs.i]['duration'] = parseFloat(element.style.width) / state.scale()
             Edl.update()
           }
-
           element.addEventListener('mousemove', resize)
           element.addEventListener('mouseup', stopResize)
 
@@ -55,78 +52,83 @@ export function Template() {
           let d = p * e.target.offsetWidth / state.scale()
           Edl.current = i
           Edl.time = d + Edl.durations(Edl.edl.slice(0, i))
-          console.log('clicked on clip', this, vnode, e, p, d, Edl)
           Video.clip = data
           Video.time = d
+          console.log('clicked on clip', this, vnode, e, p, d, Edl, Video)
           m.redraw()
-
         }
       })
-
     },
     view: (vnode) => {
-
-      if (vnode.attrs.type == 'template') {
-        return m('.clip', {
-            style: {
-              width: vnode.attrs.duration*state.scale()
-            },
-          }, [
-              m('p', `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`),
-              m(ContentEditable, {
-                // Original HTML input
-                html: state.html,
-                // Returns the updated HTML code
-                onchange: html => {
-                  state.html = html;
-                  console.log(html);
-                },
-                // Example to prevent the user from entering commas
-                onkeydown: e => {
-                  if (e.key === ',') {
-                    e.preventDefault();
-                  }
-                },
-                // Replace the base tag, if needed
-                tagName: 'div',
-                // By default, &amp; etc are replaced by their normal counterpart when losing focus.
-                // cleanupHtml: false,
-                // By default, don't allow the user to enter newlines
-                // preventNewline: false,
-                // By default, select all text when the element receives focus
-                // selectAllOnFocus: false,
-                // By default, when pasting text, remove all HTML and keep the plain text.
-                // pasteAsPlainText: false,
-              }),
-              m('i.progress', {
-                style: {
-                  display: (Edl.current == vnode.attrs.i) ? 'inherit': 'none',
-                  left: Video.time * state.scale(),
-                }
-              })
-            ]
-          )
-      } else {
-        return m('.clip', {style: {
+      return m('.clip', {
+        style: {
           width: vnode.attrs.duration*state.scale()
-        },}, [
+        },
+        ...vnode.attrs
+        }, [
           m('p#i.i', vnode.attrs.i),
-          m('p#clipname.clipname', vnode.attrs.filename),
-          m('p#inpoint.inpoint', vnode.attrs.inpoint),
-          m('p#outpoint.outpoint', vnode.attrs.outpoint),
           m('i.material-icons.progress', {
             style: {
               display: (Edl.current == vnode.attrs.i) ? 'inherit': 'none',
               left: Video.time*state.scale(),
             }
-          })
+          }),
+          ...vnode.children
         ])
-      }
-
-
     }
   }
 }
+
+
+export function Template() {
+  return {
+    view: (vnode) => {
+      return m(Clip, vnode.attrs, [
+        // m('p', `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`),
+        m('p#clipname', vnode.attrs.name),
+        m('p#data', JSON.stringify(vnode.attrs.data)),
+        m(ContentEditable, {
+          // Original HTML input
+          html: state.html,
+          // Returns the updated HTML code
+          onchange: html => {
+            state.html = html;
+            console.log(html);
+          },
+          // Example to prevent the user from entering commas
+          onkeydown: e => {
+            if (e.key === ',') {
+              e.preventDefault();
+            }
+          },
+          // Replace the base tag, if needed
+          tagName: 'div',
+          // By default, &amp; etc are replaced by their normal counterpart when losing focus.
+          // cleanupHtml: false,
+          // By default, don't allow the user to enter newlines
+          // preventNewline: false,
+          // By default, select all text when the element receives focus
+          // selectAllOnFocus: false,
+          // By default, when pasting text, remove all HTML and keep the plain text.
+          // pasteAsPlainText: false,
+        }),
+      ])
+    }
+  }
+}
+
+export function VideoClip() {
+  return {
+    view: (vnode) => {
+      return m(Clip, vnode.attrs, [
+        m('p#clipname.clipname', vnode.attrs.filename),
+        m('p#inpoint.inpoint', vnode.attrs.inpoint),
+        m('p#outpoint.outpoint', vnode.attrs.outpoint),
+      ])
+    }
+  }
+}
+
 
 export function OttoTimeline() {
   return {
@@ -153,12 +155,12 @@ export function OttoTimeline() {
         invertSwap: true,
         preventOnFilter: false,
         filter: (e) => {
-           if (state.tool() != 'move') {
-             return true
-           }
-           else {
-             return false
-           }
+          if (state.tool() != 'move') {
+            return true
+          }
+          else {
+            return false
+          }
         },
         onUpdate: (e) => {
           Edl.edl = array_move(Edl.edl, e.oldIndex, e.newIndex)
@@ -170,15 +172,19 @@ export function OttoTimeline() {
           console.log('spilling', e)
           Edl.edl.splice(e.oldIndex, 1)
           Edl.update()
-      },
-    })
-  },
+        },
+      })
+    },
     view: (vnode) => {
       return m('#timeline.timeline', [
         Edl.edl.map((c, i) => {
           if (c) {
             c.i = i
-            return m(Template, c)
+            switch (c.type) {
+              case 'template': return m(Template, c)
+              case 'video': return m(VideoClip, c)
+              // default: return m(Clip, c)
+            }
           } else return m('')
         })
       ])
