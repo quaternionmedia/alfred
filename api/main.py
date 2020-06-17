@@ -93,7 +93,7 @@ async def download(filename: str):
 
 
 @app.post('/render')
-async def render(render: BackgroundTasks, edl: str = 'test.csv'):
+async def render(render: BackgroundTasks, edl: str = 'test.csv', user: User = Depends(get_current_active_user)):
     filename = edl + '.mp4'
     edl = getEdl(edl)
     id = db.renders.insert_one({'filename': filename, 'edl': edl, 'progress': 0, 'link': join('videos', filename)}).inserted_id
@@ -103,24 +103,24 @@ async def render(render: BackgroundTasks, edl: str = 'test.csv'):
 
 
 @app.get('/renders')
-def renders():
+def renders(user: User = Depends(get_current_active_user)):
     return dumps(db.renders.find({}, ['filename', 'progress', 'link']))
 
 
 @app.get('/renders/{render}')
-def rendersInfo():
+def rendersInfo(user: User = Depends(get_current_active_user)):
     info = { 'edl': render, 'progress': 0, 'link': '', 'paused': False }
     return info
 
 
 @app.put('/renders/{render}/pause')
-def pauseRender():
+def pauseRender(user: User = Depends(get_current_active_user)):
     # pause selected render
     return
 
 
 @app.put('/renders/{render}/cancel')
-def cancelRender():
+def cancelRender(user: User = Depends(get_current_active_user)):
     # cancel selected render
     return
 
@@ -139,54 +139,6 @@ async def getVideos():
     })
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
-
-@app.get('/otto')
-async def getOtto():
-    return [
-        {
-            'type': 'template',
-            'name': 'title',
-            'data': {
-                'text': 'Business Name'
-            },
-            'duration': 5,
-        },
-        {
-            'type': 'template',
-            'name': 'initial',
-            'data': {
-                'text': 'initial text'
-            },
-            'duration': 5,
-        },
-        {
-            'type': 'template',
-            'name': 'bullets',
-            'data': {
-                'text': 'bullet points'
-            },
-            'duration': 5,
-        },
-        {
-            'type': 'template',
-            'name': 'initial',
-            'data': {
-                'text': 'call to action'
-            },
-            'duration': 5,
-        },
-        {
-            'type': 'template',
-            'name': 'final',
-            'data': {
-                'text': 'Business Name',
-                'address': 'address',
-                'website': 'alfred.quaternion.media',
-                'phone': '(xxx) xxx-xxxx',
-            },
-            'duration': 5,
-        },
-    ]
 
 app.include_router(auth)
 app.include_router(users)
