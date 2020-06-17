@@ -111,12 +111,12 @@ export function Template() {
           width: vnode.attrs.duration*state.scale()
         },}, [
           m('p#i.i', vnode.attrs.i),
-          m('p#clipname.clipname', vnode.attrs.filename),
+          m('p#clipname.clipname', vnode.attrs.name),
           m('p#inpoint.inpoint', vnode.attrs.inpoint),
           m('p#outpoint.outpoint', vnode.attrs.outpoint),
           m('i.material-icons.progress', {
             style: {
-              display: (Edl.current == i) ? 'inherit': 'none',
+              display: (Edl.current == vnode.attrs.i) ? 'inherit': 'none',
               left: Video.time*state.scale(),
             }
           })

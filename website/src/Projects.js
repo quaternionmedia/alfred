@@ -34,7 +34,7 @@ const Projects = () => {
               return m('tr', [
                 m('td', {onclick: (e) => {
                   Edl.edl = []
-                  m.route.set('/editor?edl=' + p)
+                  m.route.set('/otto?edl=' + p)
                   }}, p),
               ])
             })
