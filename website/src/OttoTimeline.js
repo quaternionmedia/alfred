@@ -104,6 +104,7 @@ export function Template() {
             switch (e.key) {
               case ',': e.preventDefault()
               case 'Enter': e.preventDefault()
+              e.stopPropagation()
               console.log('enter')
               Edl.edl[vnode.attrs.i].data['text'] = this.html
               Edl.update()
