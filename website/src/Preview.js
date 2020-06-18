@@ -23,6 +23,21 @@ function ImagePreview() {
 function VideoPreview() {
   return {
     oncreate: (vnode) => {
+      document.addEventListener('keydown', e => {
+        switch (e.code) {
+          case 'Space':
+            e.preventDefault()
+            if (Video.paused) {
+              vnode.dom.play()
+              Video.paused = false
+            } else {
+              vnode.dom.pause()
+              Video.paused = true
+            }
+            m.redraw()
+            break
+          }
+        })
       vnode.dom.addEventListener('loadeddata', (event) => {
         if (!Video.paused && vnode.dom.paused) {
           console.log('fixing paused video by playing')
@@ -50,10 +65,8 @@ function VideoPreview() {
 
 
 export var Preview = ( () => {
-  let dom = null
   return {
     oncreate: (vnode) => {
-      dom = vnode.dom
       document.addEventListener('keydown', e => {
         switch (e.code) {
           case 'ArrowLeft':
