@@ -22,6 +22,9 @@ function ImagePreview() {
 }
 function VideoPreview() {
   return {
+    onbeforeupdate: (vnode, old) => {
+      return Video.paused
+    },
     oncreate: (vnode) => {
       document.addEventListener('keydown', e => {
         switch (e.code) {
