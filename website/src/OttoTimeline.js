@@ -85,20 +85,29 @@ export function Template() {
     view: (vnode) => {
       return m(Clip, vnode.attrs, [
         // m('p', `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`),
-        m('p#clipname', vnode.attrs.name),
-        m('p#data', JSON.stringify(vnode.attrs.data)),
+        // m('p#clipname', vnode.attrs.name),
+        // m('p#data', JSON.stringify(vnode.attrs.data)),
         m(ContentEditable, {
           // Original HTML input
-          html: state.html,
+          html: this.html,
           // Returns the updated HTML code
+          oninit: html => {
+            this.html = `${JSON.stringify(vnode.attrs.data['text']).slice(1, -1)}`;
+          },
           onchange: html => {
-            state.html = html;
-            console.log(html);
+            this.html = html
+
           },
           // Example to prevent the user from entering commas
           onkeydown: e => {
             if (e.key === ',') {
               e.preventDefault();
+            }
+          },
+          onkeydown: e => {
+            if (e.key === '~') {
+              e.preventDefault();
+              console.log('enter');
             }
           },
           // Replace the base tag, if needed
