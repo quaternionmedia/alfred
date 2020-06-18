@@ -102,7 +102,7 @@ export var Preview = ( () => {
         } else {
             return m(VideoPreview, {
               id: 'preview',
-              src: clip.filename
+              src: clip.name
             })
         }
       }

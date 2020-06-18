@@ -35,7 +35,7 @@ var Bin = {
           // Edl.edl.splice(e.newIndex, 0, [
           var edl = Edl.edl.slice(0, e.newIndex)
           edl.push( {
-            filename: clip.filename.value,
+            name: clip.filename.value,
             inpoint: Number(clip.inpoint.value),
             outpoint: Number(clip.outpoint.value),
             duration: Number(clip.outpoint.value - clip.inpoint.value),
@@ -72,7 +72,7 @@ var Bin = {
     return [
       m('table#bin.bin.project', {}, [
       Bin.media.map(f => {
-      return m(VideoClip, {type: 'video', filename: f, inpoint: 0, outpoint: 10, pos: "-1", duration: 10, description: ''})
+      return m(VideoClip, {type: 'video', name: f, inpoint: 0, outpoint: 10, pos: "-1", duration: 10, description: ''})
     })])]
   }
 }

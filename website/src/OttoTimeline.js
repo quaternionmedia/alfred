@@ -121,7 +121,7 @@ export function VideoClip() {
   return {
     view: (vnode) => {
       return m(Clip, vnode.attrs, [
-        m('p#clipname.clipname', vnode.attrs.filename),
+        m('p#clipname.clipname', vnode.attrs.name),
         m('p#inpoint.inpoint', vnode.attrs.inpoint),
         m('p#outpoint.outpoint', vnode.attrs.outpoint),
       ])

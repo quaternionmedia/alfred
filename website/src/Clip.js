@@ -20,7 +20,7 @@ export default class Clip {
     this.inpoint = vnode.attrs.inpoint
     this.outpoint = vnode.attrs.outpoint
     this.description = vnode.attrs.description
-    this.filename = vnode.attrs.filename
+    this.filename = vnode.attrs.name
     this.pos = vnode.attrs.pos
     // console.log('clip init', vnode, this.inpoint, this.outpoint)
   }
@@ -192,9 +192,9 @@ export default class Clip {
       pos: this.pos,
       inpoint: this.inpoint,
       outpoint: this.outpoint,
-      filename: this.filename,
+      name: this.filename,
       description: this.description,
-      title: this.pos + ' - ' + this. filename + ' - ' + this.description,
+      title: this.pos + ' - ' + this.filename + ' - ' + this.description,
       style: {
         width: (this.outpoint - this.inpoint)*state.scale(),
       },
