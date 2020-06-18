@@ -8,9 +8,8 @@ function Projects() {
   var projects = []
   return {
     oninit: (vnode) => {
-      m.request({
+      m.request('/projects', {
         headers: {
-        url: '/projects',
           Authorization: User.token
         }
       }).then(e => {
