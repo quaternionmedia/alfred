@@ -48,7 +48,8 @@ var Bin = {
               Edl.current++
             }
           e.item.remove()
-          Timeline.loadEdl(edl)
+          // Timeline.loadEdl(edl)
+          m.redraw()
         }
       },
     })
