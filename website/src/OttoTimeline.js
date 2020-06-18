@@ -91,8 +91,9 @@ export function Template() {
           // Original HTML input
           html: this.html,
           // Returns the updated HTML code
-          oninit: html => {
-            this.html = `${JSON.stringify(vnode.attrs.data['text']).slice(1, -1)}`;
+          oncreate: html => {
+            this.html = `${JSON.stringify(vnode.attrs.data['text']).slice(1, -1)}`
+            m.redraw()
           },
           onchange: html => {
             this.html = html
