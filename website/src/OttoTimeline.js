@@ -101,16 +101,17 @@ export function Template() {
           },
           // Example to prevent the user from entering commas
           onkeydown: e => {
-            if (e.key === ',') {
-              e.preventDefault();
+            switch (e.key) {
+              case ',': e.preventDefault()
+              case 'Enter': e.preventDefault()
+              console.log('enter')
+              Edl.edl[vnode.attrs.i].data['text'] = this.html
+              Edl.update()
+              case 'ArrowLeft': e.stopPropagation()
+              case 'ArrowRight': e.stopPropagation()
             }
           },
-          onkeydown: e => {
-            if (e.key === '~') {
-              e.preventDefault();
-              console.log('enter');
-            }
-          },
+
           // Replace the base tag, if needed
           tagName: 'div',
           // By default, &amp; etc are replaced by their normal counterpart when losing focus.
