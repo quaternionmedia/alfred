@@ -52,4 +52,9 @@ elif [ $1 = "seed" -o $1 = "db" ]; then
 from main import db
 db.edls.insert_many(seed)
 """
+
+elif [ $1 = "sh" ]; then
+  shift
+  docker-compose exec api sh
+
 fi
