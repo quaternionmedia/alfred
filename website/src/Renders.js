@@ -1,5 +1,5 @@
 import m from 'mithril'
-import { Menu } from './Menu'
+import { Menu, Link} from './Menu'
 import { User } from './User'
 import { error } from 'alertifyjs'
 import { downloadFile } from './Tools'
@@ -46,10 +46,7 @@ export const Renders = () => {
               m('td', {}, r['filename']),
               m('td', {}, r['progress']),
               m('td', {
-                onclick: vnode => {
-                  downloadFile(`download?filename=${r['filename']}`)
-                }
-              }, r['link']),
+              }, m('a', {href: r['link']}, `/${r['link']}`)),
             ])
           })
         ])
