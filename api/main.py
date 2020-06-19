@@ -115,7 +115,7 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str):
 
 @app.get('/renders')
 def renders(user: User = Depends(get_current_active_user)):
-    return dumps(db.renders.find({}, ['filename', 'progress', 'link']))
+    return dumps(db.renders.find({}, ['filename', 'progress', 'link']).sort([('_id', -1)]))
 
 
 @app.get('/renders/{render}')
