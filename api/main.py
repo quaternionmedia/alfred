@@ -14,6 +14,9 @@ from db import db
 from users import users
 
 from otto.main import app as ottoApi
+from render import render
+from otto.getdata import timestr
+from otto.models import Edl
 
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
@@ -93,12 +96,11 @@ async def download(filename: str):
 
 
 @app.post('/render')
-async def render(render: BackgroundTasks, edl: str = 'test.csv', user: User = Depends(get_current_active_user)):
-    filename = edl + '.mp4'
-    edl = getEdl(edl)
-    id = db.renders.insert_one({'filename': filename, 'edl': edl, 'progress': 0, 'link': join('videos', filename)}).inserted_id
-    render.add_task(bashRenderEdl, edl, filename=filename)
-    render.add_task(updateProgress, id, 100)
+async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str):
+    filename = f'{project}_{timestr()}.mp4'
+    id = db.renders.insert_one({'filename': filename, 'edl': edl.edl, 'progress': 0, 'link': join('output', filename)}).inserted_id
+    renderer.add_task(render, edl.edl, filename=join('output', filename))
+    # renderer.add_task(updateProgress, id, 100)
     return str(id)
 
 

@@ -75,7 +75,8 @@ export default class Tools {
               m.request({
                 url: '/render',
                 method: 'post',
-                params: { edl: m.route.param('edl') },
+                params: { project: m.route.param('edl') },
+                body: { edl: Edl.edl },
               }).then(e => {
                 console.log('got result', e)
                 message(`Added ${m.route.param("edl")} to render queue`, 5)
