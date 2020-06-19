@@ -21,7 +21,7 @@ services:
     networks:
       - alfred_isolated
   db:
-    image: mvertes/alpine-mongo
+    image: mongo:4.2
     volumes:
       - './database:/data/db'
     networks:
