@@ -17,6 +17,7 @@ from otto.main import app as ottoApi
 from otto.render import render
 from otto.getdata import timestr
 from otto.models import Edl
+from proglog import ProgressBarLogger
 
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
@@ -98,8 +99,16 @@ async def download(filename: str):
 @app.post('/render')
 async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str):
     filename = f'{project}_{timestr()}.mp4'
-    renderer.add_task(render, edl.edl, filename=join('output', filename))
     id = db.renders.insert_one({'filename': filename, 'edl': edl.edl, 'progress': 0, 'link': join('videos', filename)}).inserted_id
+    class DbLogger(ProgressBarLogger):
+        def callback(self, **kwargs):
+            if self.state['bars']:
+                bar = self.state['bars']
+                if bar.get('t'):
+                    t = bar.get('t')
+                    p = 100 * t['index'] / t['total']
+                    db.renders.update({'filename': filename}, {'$set': {'progress': p}})
+    renderer.add_task(render, edl.edl, filename=join('videos', filename), logger=DbLogger())
     # renderer.add_task(updateProgress, id, 100)
     return str(id)
 
