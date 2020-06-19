@@ -14,7 +14,7 @@ from db import db
 from users import users
 
 from otto.main import app as ottoApi
-from render import render
+from otto.render import render
 from otto.getdata import timestr
 from otto.models import Edl
 
@@ -92,14 +92,14 @@ async def saveEdl(filename: str, edl: Edl):
 
 @app.get('/download')
 async def download(filename: str):
-    return FileResponse(join('videos', filename), filename=filename)
+    return FileResponse(filename, filename=filename)
 
 
 @app.post('/render')
 async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str):
     filename = f'{project}_{timestr()}.mp4'
-    id = db.renders.insert_one({'filename': filename, 'edl': edl.edl, 'progress': 0, 'link': join('output', filename)}).inserted_id
     renderer.add_task(render, edl.edl, filename=join('output', filename))
+    id = db.renders.insert_one({'filename': filename, 'edl': edl.edl, 'progress': 0, 'link': join('videos', filename)}).inserted_id
     # renderer.add_task(updateProgress, id, 100)
     return str(id)
 
