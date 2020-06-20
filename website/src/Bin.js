@@ -35,12 +35,12 @@ var Bin = {
           // Edl.edl.splice(e.newIndex, 0, [
           var edl = Edl.edl.slice(0, e.newIndex)
           edl.push( {
-            name: clip.filename.value,
+            name: clip.name.value,
             inpoint: Number(clip.inpoint.value),
             outpoint: Number(clip.outpoint.value),
             duration: Number(clip.outpoint.value - clip.inpoint.value),
             description: clip.description.value,
-            type: clip.type.value,
+            type: 'video',
           })
           edl = edl.concat(Edl.edl.slice(e.newIndex))
             console.log('inserted new clip', edl)
@@ -49,6 +49,7 @@ var Bin = {
             }
           e.item.remove()
           // Timeline.loadEdl(edl)
+          Edl.edl = edl
           m.redraw()
         }
       },
