@@ -102,6 +102,11 @@ body {
 .head {
   display: flex;
   height: 40vh;
+  background-color: black;
+  border: #46346E;
+  border-width: 4px;
+  border-style: solid;
+  margin-bottom: .5em;
 }
 @keyframes blinker {
   50% {
