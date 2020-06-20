@@ -4,9 +4,23 @@ import { User } from './User'
 import { error } from 'alertifyjs'
 import { downloadFile } from './Tools'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
+var Stream = require("mithril/stream")
 
+export function RenderPreview() {
+  return {
+    view: (vnode) => {
+      return m('video', {
+        width: '100%',
+        'object-fit': 'contain',
+        src: vnode.attrs.src,
+        controls: true,
+      })
+    }
+  }
+}
 
-export const Renders = () => {
+export function Renders() {
+  var preview = Stream(null)
   var renders = []
   function getRenders() {
     m.request('/renders', {
@@ -46,10 +60,17 @@ export const Renders = () => {
               m('td', {}, r['filename']),
               m('td', {}, r['progress']),
               m('td', {
-              }, m('a', {href: r['link']}, `/${r['link']}`)),
+              }, m('p', {
+                onclick: (vnode) => {
+                  preview(r['link'])
+                }
+              }, r['link'])),
             ])
           })
-        ])
+        ]),
+        m(RenderPreview, {
+          src: preview()
+        })
       ]
     }
   }
