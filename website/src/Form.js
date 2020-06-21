@@ -16,14 +16,45 @@ export function Text() {
   }
 }
 
-export function Form() {
+export function Dropdown() {
   return {
+    view: (vnode) => {
+      return m('select', [
+        vnode.children.map( opt => {
+          return m('option', {
+          value: opt['name']
+        }, opt['name'])})
+      ])
+    }
+  }
+}
+
+export function Form() {
+  var options = []
+  var selected = null
+  return {
+    oninit: (vnode) => {
+      m.request('/examples').then(e => {
+        options = JSON.parse(e)
+        console.log('examples', options)
+      })
+    },
+
     view: (vnode) => {
       return m('form.form', {
         action: '/otto/form',
         method: 'POST',
+        onchange: e => {
+          console.log('form res', options, e.target.selectedIndex)
+          if (options) {
+            m.request(`/example/${options[e.target.selectedIndex].name}`).then(res => {
+              selected = res
+          })
+        }
+        }
       }, [
-        m(Text, {name: 'NAME'}, 'Business Name'),
+        m(Dropdown, options),
+        m(Text, {name: 'NAME', value: selected ? selected.NAME : null}, 'Business Name'),
         m(Text, {name: 'LOGO'}, 'Logo'),
         m(Text, {name: 'ADDRESS'}, 'Address'),
         m(Text, {name: 'PHONE'}, 'Phone'),
@@ -50,8 +81,8 @@ export function FormPage() {
   return {
     view: (vnode) => {
       return [
-      m(Menu),
-      m(Form)
+        m(Menu),
+        m(Form)
     ]
     }
   }

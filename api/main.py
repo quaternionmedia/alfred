@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks
+from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form
 from starlette.staticfiles import StaticFiles
 from starlette.responses import Response, FileResponse
 from partial import PartialFileResponse
@@ -16,7 +16,7 @@ from users import users
 from otto.main import app as ottoApi
 from otto.render import render
 from otto.getdata import timestr
-from otto.models import Edl
+from otto.models import Edl, VideoForm
 from proglog import ProgressBarLogger
 
 def seconds(t):
@@ -150,6 +150,14 @@ async def getVideos():
     })
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
+
+@app.get('/examples')
+async def getExamples():
+    return dumps(db.examples.find({}, ['name']))
+
+@app.get('/example/{example}')
+async def getExample(example: str):
+    return db.examples.find_one({'name': example}, ['form'])['form']
 
 app.include_router(auth)
 app.include_router(users)
