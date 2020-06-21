@@ -107,6 +107,7 @@ body {
   border-width: 4px;
   border-style: solid;
   margin-bottom: .5em;
+  border-radius: 6px;
 }
 @keyframes blinker {
   50% {
@@ -255,6 +256,11 @@ form input {
   margin: 1em;
 }
 
+form label {
+  text-align: end;
+  display: inline-block;
+  width: 20%;
+}
 #files {
   padding: 1em;
 }
