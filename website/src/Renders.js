@@ -58,7 +58,13 @@ export function Renders() {
           renders.map(r => {
             return m('tr', {}, [
               m('td', {}, r['filename']),
-              m('td', {}, r['progress']),
+              m('td', {}, [
+                m('progress', {
+                  max: 100,
+                  value: `${Number(r['progress']).toFixed(2)}`,
+                }, ),
+                m('p', `${Number(r['progress']).toFixed(2)}%`)
+              ]),
               m('td', {
               }, m('p', {
                 onclick: (vnode) => {
