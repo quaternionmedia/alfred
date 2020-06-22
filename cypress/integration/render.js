@@ -17,6 +17,6 @@ describe('render', () => {
 
     cy.contains('tala').click()
 
-    cy.get('.i').contains('render').click()
+    cy.get('[title="render"]').click()
   })
 })

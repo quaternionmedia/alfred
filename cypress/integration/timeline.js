@@ -1,12 +1,6 @@
 describe('editor', () => {
   it('opens the editor and loads demo.csv', () => {
-    cy.visit('http://localhost:8000/')
-
-
-    cy.contains('menu').click()
-    cy.contains('login').click()
-    cy.get('input[name=username]').type('testing')
-    cy.get('input[name=password]').type('testing{enter}')
+    cy.testingLogin()
 
     cy.wait(1000)
 
