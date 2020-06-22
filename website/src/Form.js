@@ -5,6 +5,7 @@ export function Dropdown() {
   return {
     view: (vnode) => {
       return m('select', [
+        m('option', {value: ''}, ''),
         vnode.children.map( opt => {
           return m('option', {
           value: opt['name']
@@ -48,15 +49,22 @@ export function Form() {
         action: '/otto/form',
         method: 'POST',
         onchange: e => {
-          console.log('form res', options, e.target.selectedIndex)
-          if (options) {
-            m.request(`/example/${options[e.target.selectedIndex].name}`).then(res => {
+          const i = e.target.selectedIndex
+          console.log('form res', options, i)
+          if (options && i) {
+            m.request(`/example/${options[i - 1].name}`).then(res => {
               selected = res
-          })
-        }
+              selected.name = options[i - 1].name
+            })
+          }
         }
       }, [
         m(Dropdown, options),
+        m('br'),
+        m('label', {for: 'project'}, 'Project Name'),
+        m('input', {name: 'project', value: selected ? selected.name: null}),
+        m('input', {type: 'submit', name: 'save', value: 'save'},),
+        m('hr'),
         m(Text, {name: 'NAME'}, 'Business Name'),
         m(Text, {name: 'LOGO'}, 'Logo'),
         m(Text, {name: 'ADDRESS'}, 'Address'),
@@ -74,7 +82,7 @@ export function Form() {
         m(Text, {name: 'THEMECOLOR'}, 'Theme Color'),
         m(Text, {name: 'FONT'}, 'Font'),
         m(Text, {name: 'DURATION'}, 'Duration'),
-        m('input', {type: 'submit'})
+        m('input', {type: 'submit', name: 'render', value: 'render'}, )
       ])
     }
   }
