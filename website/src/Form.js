@@ -1,21 +1,6 @@
 import m from 'mithril'
 import { Menu } from './Menu'
 
-export function Text() {
-  return {
-    view: (vnode) => {
-      return m('', {}, [
-        m('label.formlabel', {
-          for: vnode.attrs.name
-        }, vnode.children),
-        m('input', {
-          ...vnode.attrs
-        })
-      ])
-    }
-  }
-}
-
 export function Dropdown() {
   return {
     view: (vnode) => {
@@ -30,8 +15,26 @@ export function Dropdown() {
 }
 
 export function Form() {
+
   var options = []
   var selected = null
+
+  function Text() {
+    return {
+      view: (vnode) => {
+        return m('', {}, [
+          m('label.formlabel', {
+            for: vnode.attrs.name
+          }, vnode.children),
+          m('input', {
+            ...vnode.attrs,
+            value: selected ? selected[vnode.attrs.name] : null
+          })
+        ])
+      }
+    }
+  }
+
   return {
     oninit: (vnode) => {
       m.request('/examples').then(e => {
@@ -54,7 +57,7 @@ export function Form() {
         }
       }, [
         m(Dropdown, options),
-        m(Text, {name: 'NAME', value: selected ? selected.NAME : null}, 'Business Name'),
+        m(Text, {name: 'NAME'}, 'Business Name'),
         m(Text, {name: 'LOGO'}, 'Logo'),
         m(Text, {name: 'ADDRESS'}, 'Address'),
         m(Text, {name: 'PHONE'}, 'Phone'),
