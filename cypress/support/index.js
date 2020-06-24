@@ -18,7 +18,7 @@
 
 // Alternatively you can use CommonJS syntax:
 require('./commands')
-require('cypress-dark')
+// require('cypress-dark')
 
 beforeEach(() => {
   cy.log('Starting alfred tests. Places.')

@@ -9,7 +9,15 @@ describe('otto', () => {
 
     cy.contains('tala').click()
 
-    cy.get('div.clip').click({ multiple: true })
+    cy.wait(100)
+
+    // cy.get('div.clip').click({ multiple: true })
+
+    cy.get('[title="move"]').click()
+
+    cy.wait(100)
+    cy.moveTemplate(5,100,0)
+    // cy.get('[i="1"]').trigger('mousedown').trigger('mousemove', { clientX: 200, clientY: 300 }).trigger('mouseup')
 
     // cy.url().should('include', '/#!/editor?edl=demo')
     //

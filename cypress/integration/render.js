@@ -18,5 +18,7 @@ describe('render', () => {
     cy.contains('tala').click()
 
     cy.get('[title="render"]').click()
+
+    cy.waitForResource('rendertest.mp4')
   })
 })

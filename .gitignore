@@ -8,6 +8,12 @@ yarn.lock
 media/
 /website/cypress/screenshots/
 /website/cypress/videos/
+.hypothesis/
+api/data/
+
+cypress/screenshots/*
+cypress/videos/*
+
 __*__
 /videos
 /api/main.json

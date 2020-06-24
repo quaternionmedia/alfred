@@ -24,6 +24,10 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite("visit", (originalFn, url, options) => { ... })
 
+
+require('@4tw/cypress-drag-drop')
+
+
 Cypress.Commands.add('clickLink', (label) => {
   cy.get('a').contains(label).click()
 })
@@ -68,6 +72,7 @@ Cypress.Commands.add('tokenLogin', (user) => {
   cy.request({
     method: 'POST',
     url: '/token',
+    header: {type:'content-type', ContentType:'multipart-form-data'},
     body: {
       username: 'testing',
       password: 'testing'
@@ -107,4 +112,99 @@ Cypress.Commands.add('createUser', (user) => {
       body: user
     })
   })
+})
+
+
+Cypress.Commands.add('sliderInteract', (slider, value) => {
+  cy.get(slider).first()
+
+    // .first()
+    // .trigger('mousedown', 'left', { which: 1 , force: true})
+    // .wait(50)
+    // // .trigger('mousemove', 0, 0, { force: true })
+    // // .trigger('mousemove', 'right', {force: true})
+    // .trigger('mousemove', 'center')
+    // .trigger('mouseup', 'center')
+    .invoke('val', value)
+    .trigger('change', { data: value })
+  // cy.get('@slider').siblings('p').should('have.text', value)
+  // cy.get('@slider')
+    // .trigger('mouseover')
+    // .trigger('mousedown')
+    // // .wait(10)
+    // .trigger('mousemove', { clientX: 100, clientY: 0 })
+    // .trigger('mousemove', { clientX: 300, clientY: 0 })
+    // // .wait(10)
+    // .trigger('mouseup')
+})
+
+// Cypress.Commands.add('moveTemplate', (id,x,y) => {
+//       cy.get(id).first()
+//         .trigger("mousedown", 'left', { button: 0 }, { force: true })
+//         .trigger("mousemove", x,y, { force: true })
+//         .trigger("mouseup", x,y, { force: true });
+// })
+
+// enables intelligent code completion for Cypress commands
+// https://on.cypress.io/intelligent-code-completion
+/// <reference types="Cypress" />
+
+/**
+ * Adds command "cy.waitForResource(name)" that checks performance entries
+ * for resource that ends with the given name.
+ * This command only applies to the tests in this spec file
+ *
+ * @see https://developers.google.com/web/tools/chrome-devtools/network/understanding-resource-timing
+ */
+Cypress.Commands.add('waitForResource', (name, options = {}) => {
+  cy.log(`Waiting for resource ${name}`)
+
+  const log = false // let's not log inner commands
+  const timeout = options.timeout || Cypress.config('defaultCommandTimeout')
+
+  cy.window({ log }).then(
+    // note that ".then" method has options first, callback second
+    // https://on.cypress.io/then
+    { log, timeout },
+    (win) => {
+      return new Cypress.Promise((resolve, reject) => {
+        let foundResource
+
+        // control how long we should try finding the resource
+        // and if it is still not found. An explicit "reject"
+        // allows us to show nice informative message
+        setTimeout(() => {
+          if (foundResource) {
+            // nothing needs to be done, successfully found the resource
+            return
+          }
+
+          clearInterval(interval)
+          reject(new Error(`Timed out waiting for resource ${name}`))
+        }, timeout)
+
+        const interval = setInterval(() => {
+          foundResource = win.performance
+          .getEntriesByType('resource')
+          .find((item) => item.name.endsWith(name))
+
+          if (!foundResource) {
+            // resource not found, will try again
+            return
+          }
+
+          clearInterval(interval)
+          // because cy.log changes the subject, let's resolve the returned promise
+          // with log + returned actual result
+          resolve(
+            cy.log('✅ success').then(() => {
+              // let's resolve with the found performance object
+              // to allow tests to inspect it
+              return foundResource
+            })
+          )
+        }, 100)
+      })
+    }
+  )
 })
