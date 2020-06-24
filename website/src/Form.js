@@ -1,5 +1,6 @@
 import m from 'mithril'
 import { Menu } from './Menu'
+import { success, error } from 'alertifyjs'
 
 export function Dropdown() {
   return {
@@ -76,9 +77,7 @@ export function Form() {
     },
 
     view: (vnode) => {
-      return m('form.form', {
-        action: '/otto/form',
-        method: 'POST',
+      return m('form.form#form', {
         onchange: e => {
           const i = e.target.selectedIndex
           console.log('form res', options, i)
@@ -94,7 +93,19 @@ export function Form() {
         m('br'),
         m(Text, {name: 'project'}, 'Project Name'),
         m('', {style: {'text-align': 'right'}}, [
-          m('input', {type: 'submit', name: 'save', value: 'save'},),
+          m('input', {type: 'submit', name: 'save', value: 'save',
+            onclick: e => {
+              e.preventDefault()
+              let form = new FormData(document.getElementById('form'))
+              console.log('saving form', e, form)
+              m.request('/form', {
+                params: {
+                  project: selected.name
+                },
+                body: form
+              })
+            },
+          },),
         ]),
         m('hr'),
         m(Text, {name: 'NAME'}, 'Business Name'),
@@ -110,12 +121,32 @@ export function Form() {
         m(TextArea, {name: 'MEDIA'}, 'Media'),
         m(TextArea, {name: 'CALL'}, 'Call'),
         // m(TextArea, {name: 'CLOSING'}, 'Closing'),
-        m(Color, {name: 'FONTCOLOR'}, 'Font Clolor'),
-        m(Color, {name: 'THEMECOLOR'}, 'Theme Color'),
+        m(Color, {name: 'THEMECOLOR', value:'#FF0'}, 'Theme Color'),
+        m(Color, {name: 'FONTCOLOR', value: '#FFF'}, 'Font Clolor'),
         m(Text, {name: 'FONT'}, 'Font'),
         m(Text, {name: 'DURATION'}, 'Duration'),
         m('', {style: {'text-align': 'right'}}, [
-          m('input', {type: 'submit', name: 'render', value: 'render'}, )
+          m('input', {type: 'submit', name: 'render', value: 'render',
+            onclick: (e) => {
+              e.preventDefault()
+              let form = new FormData(document.getElementById('form'))
+              console.log('rendering from form', e, form)
+              m.request('/form', {
+                method: 'post',
+                params: {
+                  project: selected ? selected.name : ''
+                },
+                body: form,
+              }).then(e => {
+                console.log('rendering', e)
+                success(`rendering!`)
+                m.route.set('/renders')
+              }, e => {
+                console.log('error rendering', e)
+                error('oops... something went wrong.')
+              })
+            }
+          }, )
         ]),
       ])
     }
