@@ -135,8 +135,8 @@ def cancelRender(user: User = Depends(get_current_active_user)):
     return
 
 
-@app.get('/projects')
-def getProjects(user: User = Depends(get_current_active_user)):
+@app.get('/edls')
+def getEdls(user: User = Depends(get_current_active_user)):
     return [i['filename'] for i in db.edls.find({}, ['filename'])]
 
 @app.get('/videos')
@@ -150,13 +150,20 @@ async def getVideos():
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
 
-@app.get('/examples')
-async def getExamples():
-    return dumps(db.examples.find({}, ['name']))
+@app.get('/projects')
+async def getProjects():
+    return dumps(db.projects.find({}, ['name']))
 
-@app.get('/example/{example}')
-async def getExample(example: str):
-    return db.examples.find_one({'name': example}, ['form'])['form']
+@app.get('/project/{project}')
+async def getProject(project: str):
+    return db.projects.find_one({'name': project}, ['form'])['form']
+
+@app.get('/form')
+async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form), ):
+    return dumps(db.projects.update({'name': project}, {'$set': {'form': form}}, upsert=True))
+
+@app.post('/form')
+
 
 app.include_router(auth)
 app.include_router(users)
