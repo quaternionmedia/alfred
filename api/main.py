@@ -76,9 +76,12 @@ app.mount('/otto', ottoApi)
 
 @app.on_event("startup")
 async def seedDb():
-    if not db.edls.find({}).count():
+    if not db.edls.count_documents({}):
         from seed import seed
         db.edls.insert_many(seed)
+    if not db.projects.count_documents({}):
+        from otto.defaults import sample_forms
+        db.projects.insert_many(sample_forms)
 
 @app.get('/edl')
 def returnEdl(filename: str):
