@@ -50,8 +50,8 @@ export function Clip() {
         } else if (state.tool() == 'time') {
           let p = e.offsetX / e.target.offsetWidth
           let d = p * e.target.offsetWidth / state.scale()
-          Edl.current = i
-          Edl.time = d + Edl.durations(Edl.edl.slice(0, i))
+          Edl.current = vnode.attrs.i
+          Edl.time = d + Edl.durations(Edl.edl.slice(0, vnode.attrs.i))
           Video.clip = data
           Video.time = d
           console.log('clicked on clip', this, vnode, e, p, d, Edl, Video)
@@ -83,13 +83,10 @@ export function Clip() {
 export function Template() {
   return {
     view: (vnode) => {
-      return m(Clip,
-          {style:
-            {color: "#fff",
-              backgroundColor: "#104"},...vnode.attrs}, [
-        // m('p', `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`),
-        // m('p#clipname', vnode.attrs.name),
-        // m('p#data', JSON.stringify(vnode.attrs.data)),
+      return m(Clip, {
+          class: 'template',
+          ...vnode.attrs,
+        }, [
         m(ContentEditable, {
           // Original HTML input
           html: this.html,

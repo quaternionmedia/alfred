@@ -9,6 +9,7 @@ border: #210D4D
 hover: #393939
 other: #4F1FB8, #7059A2
 gentle highlight: #2b2b2b
+highlight with transparency: #777a
 recessed: #101010
 */
 
@@ -58,6 +59,9 @@ body {
   height: 1em;
   /* text-overflow: ellipsis; */
   overflow: hidden;
+}
+.template {
+  background-color: #520E7D;
 }
 .selected {
   background-color: #4F1FB8;
