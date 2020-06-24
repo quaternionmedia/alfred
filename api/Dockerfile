@@ -20,7 +20,8 @@ RUN ln -s /usr/bin/ffmpeg /usr/bin/ffmpeg.exe
 
 COPY otto/fonts/* /usr/share/fonts/truetype/
 RUN fc-cache -fv
-RUN pip install moviepy jinja2
+RUN pip install jinja2
+RUN pip install --pre moviepy
 ENV IMAGEMAGICK_BINARY=/usr/bin/magick
 COPY /otto /otto
 RUN pip install /otto/
