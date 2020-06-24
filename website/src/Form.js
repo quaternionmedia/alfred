@@ -1,25 +1,37 @@
 import m from 'mithril'
-import { Menu } from './Menu'
 import { success, error } from 'alertifyjs'
+import { Menu } from './Menu'
 
-export function Dropdown() {
-  return {
-    view: (vnode) => {
-      return m('select', [
-        m('option', {value: ''}, ''),
-        vnode.children.map( opt => {
-          return m('option', {
-          value: opt['name']
-        }, opt['name'])})
-      ])
-    }
-  }
-}
 
 export function Form() {
 
   var options = []
-  var selected = null
+  var selected = {}
+
+  function Dropdown() {
+    return {
+      view: (vnode) => {
+        return m('select', {
+          onchange: e => {
+            const i = e.target.selectedIndex
+            console.log('form res', options, i)
+            if (options && i) {
+              m.request(`/project/${options[i - 1].name}`).then(res => {
+                selected = res
+                selected.name = options[i - 1].name
+              })
+            }
+          }
+        }, [
+          m('option', {value: '', ...vnode.attrs}, ''),
+          vnode.children.map( opt => {
+            return m('option', {
+            value: opt['name']
+          }, opt['name'])})
+        ])
+      }
+    }
+  }
 
   function Text() {
     return {
@@ -30,7 +42,7 @@ export function Form() {
           }, vnode.children),
           m('input', {
             ...vnode.attrs,
-            value: selected ? selected[vnode.attrs.name] : null
+            value: selected ? selected[vnode.attrs.name] : ''
           })
         ])
       }
@@ -45,7 +57,7 @@ export function Form() {
           }, vnode.children),
           m('textarea', {
             ...vnode.attrs,
-            value: selected ? selected[vnode.attrs.name] : null
+            value: selected ? selected[vnode.attrs.name] : ''
           })
         ])
       }
@@ -61,7 +73,7 @@ export function Form() {
           m('input', {
             type: 'color',
             ...vnode.attrs,
-            value: selected ? selected[vnode.attrs.name] : null
+            value: selected ? selected[vnode.attrs.name] : ''
           })
         ])
       }
@@ -78,16 +90,7 @@ export function Form() {
 
     view: (vnode) => {
       return m('form.form#form', {
-        onchange: e => {
-          const i = e.target.selectedIndex
-          console.log('form res', options, i)
-          if (options && i) {
-            m.request(`/project/${options[i - 1].name}`).then(res => {
-              selected = res
-              selected.name = options[i - 1].name
-            })
-          }
-        }
+
       }, [
         m(Dropdown, options),
         m('br'),
