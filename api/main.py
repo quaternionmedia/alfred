@@ -15,7 +15,7 @@ from users import users
 from logger import DbLogger
 
 from otto.main import app as ottoApi
-from otto.render import render
+from otto.render import renderEdl, renderForm
 from otto.getdata import timestr
 from otto.models import Edl, VideoForm
 def seconds(t):
@@ -163,6 +163,17 @@ async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form), )
     return dumps(db.projects.update({'name': project}, {'$set': {'form': form}}, upsert=True))
 
 @app.post('/form')
+async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):
+    filename = f'{timestr()}_{form.project}.mp4'
+    print('rendering video from form', form, filename)
+    db.renders.insert_one(
+        {'filename': filename,
+        'form': dict(form),
+        'progress': 0,
+        'link': join('videos', filename),
+        })
+    renderer.add_task(renderForm, form=dict(form), filename=join('videos', filename), logger=DbLogger(filename))
+    return filename
 
 
 app.include_router(auth)
