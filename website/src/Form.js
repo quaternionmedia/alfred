@@ -91,7 +91,7 @@ export function Form() {
       }, [
         m(Dropdown, options),
         m('br'),
-        m(Text, {name: 'project'}, 'Project Name'),
+        m(Text, {name: 'project', id:'projectName'}, 'Project Name'),
         m('', {style: {'text-align': 'right'}}, [
           m('input', {type: 'submit', name: 'save', value: 'save',
             onclick: e => {
@@ -99,8 +99,9 @@ export function Form() {
               let form = new FormData(document.getElementById('form'))
               console.log('saving form', e, form)
               m.request('/form', {
+              let proj = document.getElementById('projectName').value
                 params: {
-                  project: selected.name
+                  project: proj
                 },
                 body: form
               })
@@ -129,11 +130,12 @@ export function Form() {
             onclick: (e) => {
               e.preventDefault()
               let form = new FormData(document.getElementById('form'))
+              let proj = document.getElementById('projectName').value
               console.log('rendering from form', e, form)
               m.request('/form', {
                 method: 'post',
                 params: {
-                  project: selected ? selected.name : ''
+                  project: proj
                 },
                 body: form,
               }).then(e => {
