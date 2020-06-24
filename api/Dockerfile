@@ -23,6 +23,8 @@ RUN fc-cache -fv
 RUN pip install jinja2
 RUN pip install --pre moviepy
 ENV IMAGEMAGICK_BINARY=/usr/bin/magick
+
+RUN mkdir -p /app/data/
 COPY /otto /otto
 RUN pip install /otto/
 ENTRYPOINT ["/start-reload.sh"]
