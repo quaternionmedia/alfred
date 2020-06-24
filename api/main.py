@@ -158,9 +158,11 @@ async def getProjects():
 async def getProject(project: str):
     return db.projects.find_one({'name': project}, ['form'])['form']
 
-@app.get('/form')
-async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form), ):
-    return dumps(db.projects.update({'name': project}, {'$set': {'form': form}}, upsert=True))
+@app.post('/save')
+async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
+    result = db.projects.update_one({'name': project}, {'$set': {'form': dict(form)}}, upsert=True)
+    print('saved form', project, form, result)
+    return result.modified_count
 
 @app.post('/form')
 async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):

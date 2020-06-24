@@ -98,8 +98,9 @@ export function Form() {
               e.preventDefault()
               let form = new FormData(document.getElementById('form'))
               console.log('saving form', e, form)
-              m.request('/form', {
               let proj = document.getElementById('projectName').value
+              m.request('/save', {
+                method: 'post',
                 params: {
                   project: proj
                 },
