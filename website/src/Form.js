@@ -117,7 +117,6 @@ export function Form() {
         m(TextArea, {name: 'INITIAL'}, 'Initial text'),
         m(TextArea, {name: 'BULLETS'}, 'Bullets'),
         m(TextArea, {name: 'OPTIONAL'}, 'Optional'),
-        m(TextArea, {name: 'AUDIO'}, 'Audio'),
         m(TextArea, {name: 'MEDIA'}, 'Media'),
         m(TextArea, {name: 'CALL'}, 'Call'),
         // m(TextArea, {name: 'CLOSING'}, 'Closing'),
