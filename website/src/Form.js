@@ -69,9 +69,9 @@ export function Form() {
 
   return {
     oninit: (vnode) => {
-      m.request('/examples').then(e => {
+      m.request('/projects').then(e => {
         options = JSON.parse(e)
-        console.log('examples', options)
+        console.log('projects', options)
       })
     },
 
@@ -83,7 +83,7 @@ export function Form() {
           const i = e.target.selectedIndex
           console.log('form res', options, i)
           if (options && i) {
-            m.request(`/example/${options[i - 1].name}`).then(res => {
+            m.request(`/project/${options[i - 1].name}`).then(res => {
               selected = res
               selected.name = options[i - 1].name
             })
@@ -92,8 +92,7 @@ export function Form() {
       }, [
         m(Dropdown, options),
         m('br'),
-        m('label', {for: 'project'}, 'Project Name'),
-        m('input', {name: 'project', value: selected ? selected.name: null}),
+        m(Text, {name: 'project'}, 'Project Name'),
         m('', {style: {'text-align': 'right'}}, [
           m('input', {type: 'submit', name: 'save', value: 'save'},),
         ]),

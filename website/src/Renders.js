@@ -51,7 +51,7 @@ export function Renders() {
         ]),
         m('table#renders.bin.project', {}, [
           m('tr', [
-            m('th', 'edl'),
+            m('th', 'name'),
             m('th', 'progress'),
             m('th', 'link'),
           ],),
