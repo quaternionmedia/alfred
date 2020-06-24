@@ -16,6 +16,7 @@ RUN pip install numpy gizeh pillow
 COPY --from=builder /kburns-slideshow /kburns
 RUN chmod +x /kburns/main.py
 RUN ln -s /kburns/main.py /usr/bin/kburns
+RUN ln -s /usr/bin/ffmpeg /usr/bin/ffmpeg.exe
 
 COPY otto/fonts/* /usr/share/fonts/truetype/
 RUN fc-cache -fv
