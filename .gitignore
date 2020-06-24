@@ -42,3 +42,9 @@ database/
 github_key*
 output/*
 api/output/*
+
+*.mp3
+*.mp4
+*.png
+*.jpg
+*.edl
