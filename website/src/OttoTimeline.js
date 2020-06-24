@@ -83,7 +83,10 @@ export function Clip() {
 export function Template() {
   return {
     view: (vnode) => {
-      return m(Clip, vnode.attrs, [
+      return m(Clip,
+          {style:
+            {color: "#fff",
+              backgroundColor: "#104"},...vnode.attrs}, [
         // m('p', `${vnode.attrs.i} ${vnode.attrs.name} ${JSON.stringify(vnode.attrs.data)}`),
         // m('p#clipname', vnode.attrs.name),
         // m('p#data', JSON.stringify(vnode.attrs.data)),
