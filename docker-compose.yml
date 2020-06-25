@@ -1,5 +1,8 @@
 version: '3.3'
-
+networks:
+  alfred_isolated:
+  alfred_outgoing:
+    driver: bridge
 services:
   # TODO Development Reloader description
   website:
@@ -20,11 +23,10 @@ services:
       - "./videos/:/app/videos/"
     networks:
       - alfred_isolated
+      - alfred_outgoing
   db:
-    image: mvertes/alpine-mongo
+    image: mongo:4.2
     volumes:
       - './database:/data/db'
     networks:
       - alfred_isolated
-networks:
-  alfred_isolated:

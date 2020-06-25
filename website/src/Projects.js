@@ -3,12 +3,12 @@ import { Menu } from './Menu'
 import { Edl } from './Video'
 import { User } from './User'
 import { error } from 'alertifyjs'
-const Projects = () => {
+
+function Projects() {
   var projects = []
   return {
     oninit: (vnode) => {
-      m.request({
-        url: '/projects',
+      m.request('/edls', {
         headers: {
           Authorization: User.token
         }
@@ -18,7 +18,7 @@ const Projects = () => {
       }, (err) => {
         console.log('error loading projects from server', err)
         error('Not authorized!', 3)
-        m.route.set('/login')
+        m.route.set('/login?redirect=/projects')
       })
     },
     view: (vnode) => {
@@ -34,7 +34,7 @@ const Projects = () => {
               return m('tr', [
                 m('td', {onclick: (e) => {
                   Edl.edl = []
-                  m.route.set('/editor?edl=' + p)
+                  m.route.set('/otto?edl=' + p)
                   }}, p),
               ])
             })

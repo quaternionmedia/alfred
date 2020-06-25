@@ -19,12 +19,12 @@ export default class Tools {
 
       m('i.material-icons', {
         title: 'start',
-        onclick: (vnode) => {Monitor.seekEdl(0)}
+        onclick: (vnode) => {Edl.jump(0)}
       }, 'first_page'),
       m('i.material-icons', {
         title: 'back 5s',
         onclick: (vnode) => {
-          Monitor.seekEdl(Edl.time - 5 || 0)}
+          Edl.jump(Edl.time - 5 || 0)}
         }, 'fast_rewind'),
         m('i.material-icons', {
           title: 'pause',
@@ -33,11 +33,11 @@ export default class Tools {
         m('i.material-icons', {
           title: 'forward 5s',
           onclick: (vnode) => {
-            Monitor.seekEdl(Math.min(Edl.time + 5, Edl.duration()))}
+            Edl.jump(Math.min(Edl.time + 5, Edl.duration()))}
           }, 'fast_forward'),
           m('i.material-icons', {
             title: 'end',
-            onclick: (vnode) => {Monitor.seekEdl(Edl.duration())}
+            onclick: (vnode) => {Edl.jump(Edl.duration())}
           }, 'last_page'),
           m('i.material-icons', {
             title: 'slower',
@@ -75,7 +75,8 @@ export default class Tools {
               m.request({
                 url: '/render',
                 method: 'post',
-                params: { edl: m.route.param('edl') },
+                params: { project: m.route.param('edl') },
+                body: { edl: Edl.edl },
               }).then(e => {
                 console.log('got result', e)
                 message(`Added ${m.route.param("edl")} to render queue`, 5)

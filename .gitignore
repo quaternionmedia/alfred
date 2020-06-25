@@ -36,3 +36,15 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+database/
+
+github_key*
+output/*
+api/output/*
+
+*.mp3
+*.mp4
+*.png
+*.jpg
+*.edl

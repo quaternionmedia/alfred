@@ -1,6 +1,6 @@
 import m from 'mithril'
 import { Sortable } from 'sortablejs'
-import Clip from './Clip'
+import { VideoClip } from './OttoTimeline'
 import { Timeline } from './Timeline'
 import { Edl } from './Video'
 
@@ -34,20 +34,23 @@ var Bin = {
           // Timeline.updateEdl()
           // Edl.edl.splice(e.newIndex, 0, [
           var edl = Edl.edl.slice(0, e.newIndex)
-          edl.push( [
-            clip.filename.value,
-            Number(clip.inpoint.value),
-            Number(clip.outpoint.value),
-            Number(clip.outpoint.value - clip.inpoint.value),
-            clip.description.value
-          ])
+          edl.push( {
+            name: clip.name.value,
+            inpoint: Number(clip.inpoint.value),
+            outpoint: Number(clip.outpoint.value),
+            duration: Number(clip.outpoint.value - clip.inpoint.value),
+            description: clip.description.value,
+            type: 'video',
+          })
           edl = edl.concat(Edl.edl.slice(e.newIndex))
             console.log('inserted new clip', edl)
             if (e.newIndex <= Edl.current) {
               Edl.current++
             }
           e.item.remove()
-          Timeline.loadEdl(edl)
+          // Timeline.loadEdl(edl)
+          Edl.edl = edl
+          m.redraw()
         }
       },
     })
@@ -71,7 +74,7 @@ var Bin = {
     return [
       m('table#bin.bin.project', {}, [
       Bin.media.map(f => {
-      return m(Clip, {filename: f, inpoint: 0, outpoint: 10, pos: "-1", duration: null, description: ''}, f)
+      return m(VideoClip, {type: 'video', name: f, inpoint: 0, outpoint: 10, pos: "-1", duration: 10, description: ''})
     })])]
   }
 }

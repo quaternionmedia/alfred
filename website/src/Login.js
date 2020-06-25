@@ -35,25 +35,26 @@ const Login = () => {
               e.preventDefault()
               let form = new FormData(document.getElementById('login'))
               console.log('sending form', e, form)
-              let request = new XMLHttpRequest();
-              request.open('POST', '/token')
-              request.onreadystatechange = () => {
-                if (request.readyState == 4 && request.status == 200) {
-                  let token = JSON.parse(request.response)
-                  let decoded = jwt_decode(token['access_token'])
-                  User.username = decoded['sub']
-                  console.log('authenticated!', decoded)
-                  User.token = token['token_type'] + ' ' + token['access_token']
-                  User.loggedIn = true
-                  success(`${User.username} logged in!`)
-                  console.log('User: ', User)
+              m.request('/token', {
+                method: 'post',
+                body: form,
+              }).then( (token) => {
+                let decoded = jwt_decode(token['access_token'])
+                User.username = decoded['sub']
+                console.log('authenticated!', decoded)
+                User.token = token['token_type'] + ' ' + token['access_token']
+                User.loggedIn = true
+                success(`${User.username} logged in!`, 4)
+                console.log('User: ', User)
+                if (m.route.param('redirect')) {
+                  m.route.set(m.route.param('redirect'))
+                } else {
                   m.route.set('/')
-                } else if (request.readyState == 4 && request.status != 200) {
-                  console.log('error logging in!', request)
-                  error('error logging in', 3)
                 }
-              }
-              request.send(form)
+              }, (res) => {
+                console.log('error logging in!', res)
+                error('error logging in', 3)
+              })
             }},
           ),
           m('button#logout', {

@@ -45,4 +45,27 @@ elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
 elif [ $1 = "restart" -o $1 = "r" ]; then
   shift
   docker-compose -f docker-compose.yml -f production.yml restart
+
+elif [ $1 = "seed" -o $1 = "db" ]; then
+  shift
+  docker-compose exec api python3 -c """
+from seed import seed
+from main import db
+from otto.defaults import sample_forms
+
+if db.edls.count_documents({}) == 0:
+  db.edls.insert_many(seed)
+if db.projects.count_documents({}) == 0:
+  db.projects.insert_many(sample_forms)
+
+"""
+
+elif [ $1 = "sh" ]; then
+  shift
+  docker-compose exec api sh
+
+elif [ $1 = "log" -o $1 = "logs" -o $1 = "l"]; then
+  shift
+  docker-compose logs -f
+
 fi
