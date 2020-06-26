@@ -61,7 +61,7 @@ export function Renders() {
           m('tr', [
             m('th', 'name'),
             m('th', 'progress'),
-            m('th', 'view'),
+            m('th', 'preview'),
             m('th', 'download'),
             m('th', 'delete'),
           ],),
@@ -75,39 +75,42 @@ export function Renders() {
                 }, ),
                 m('p', `${Number(r['progress']).toFixed(2)}%`)
               ]),
-              m('td', [
-                m('.tools',m('i.material-icons', {
-                onclick: e => { preview(r['link']) }}, 'missed_video_call')),
-                ]),
-              m('td', {}, m('a[download]', {
-                href: `download?filename=${r['link']}`,
-              }, m('i.material-icons',
-              'file_download'))),
-              m('td', m('i.material-icons', {
-                onclick: e => {
-                  m.request(`/renders/${r['filename']}/cancel`, {
-                    method: 'put',
-                    headers: {
-                      Authorization: User.token
-                    }
-                  }).then(res => {
-                    console.log('deleted', res)
-                    if (res.status_code == 406) {
-                      error('did not find that entry', 4)
-                    } else {
-                      message(`${r['filename']} removed`, 4)
-                      getRenders()
-                    }
-                  }, err => {
-                    console.log('error deleting', err)
-                    error('error removing from db', 4)
-                  })
-                },
-              }, 'delete')),
-          ])
-        }),
-      ]),
-    ]
+              m('td',
+              m('.tools',
+              m('i.material-icons', {
+                onclick: e => { preview(r['link']) }}, 'missed_video_call'))),
+                m('td',
+                  m('.tools',
+                    m('a[download]', {
+                      href: `download?filename=${r['link']}`,
+                    }, m('i.material-icons', 'file_download')))),
+                m('td',
+                  m('.tools',
+                    m('i.material-icons', {
+                      onclick: e => {
+                        m.request(`/renders/${r['filename']}/cancel`, {
+                          method: 'put',
+                          headers: {
+                            Authorization: User.token
+                          }
+                        }).then(res => {
+                          console.log('deleted', res)
+                          if (res.status_code == 406) {
+                            error('did not find that entry', 4)
+                          } else {
+                            message(`${r['filename']} removed`, 4)
+                            getRenders()
+                          }
+                        }, err => {
+                          console.log('error deleting', err)
+                          error('error removing from db', 4)
+                        })
+                      },
+                    }, 'delete'))),
+              ])
+            }),
+          ]),
+        ]
+      }
+    }
   }
-}
-}
