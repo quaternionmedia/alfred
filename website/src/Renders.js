@@ -1,7 +1,7 @@
 import m from 'mithril'
 import { Menu, Link} from './Menu'
 import { User } from './User'
-import { error } from 'alertifyjs'
+import { error, message } from 'alertifyjs'
 import { downloadFile } from './Tools'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 var Stream = require("mithril/stream")
@@ -77,13 +77,33 @@ export function Renders() {
               ]),
               m('td', [
                 m('.tools',m('i.material-icons', {
-                onclick: (vnode) => { preview(r['link']) }}, 'missed_video_call')),
+                onclick: e => { preview(r['link']) }}, 'missed_video_call')),
                 ]),
               m('td', {}, m('a[download]', {
                 href: `download?filename=${r['link']}`,
               }, m('i.material-icons',
               'file_download'))),
-              m('td', m('i.material-icons', 'delete')),
+              m('td', m('i.material-icons', {
+                onclick: e => {
+                  m.request(`/renders/${r['filename']}/cancel`, {
+                    method: 'put',
+                    headers: {
+                      Authorization: User.token
+                    }
+                  }).then(res => {
+                    console.log('deleted', res)
+                    if (res.status_code == 406) {
+                      error('did not find that entry', 4)
+                    } else {
+                      message(`${r['filename']} removed`, 4)
+                      getRenders()
+                    }
+                  }, err => {
+                    console.log('error deleting', err)
+                    error('error removing from db', 4)
+                  })
+                },
+              }, 'delete')),
           ])
         }),
       ]),

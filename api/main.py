@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form
+from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form, HTTPException
 from starlette.staticfiles import StaticFiles
 from starlette.responses import Response, FileResponse
 from partial import PartialFileResponse
@@ -130,9 +130,14 @@ def pauseRender(user: User = Depends(get_current_active_user)):
 
 
 @app.put('/renders/{render}/cancel')
-def cancelRender(user: User = Depends(get_current_active_user)):
+def cancelRender(render: str, user: User = Depends(get_current_active_user)):
     # cancel selected render
-    return
+    res = db.renders.delete_one({'filename': render})
+    if res.deleted_count:
+        print('deleted render', render, res, res.deleted_count)
+        return res.deleted_count
+    else:
+        return HTTPException(status_code=406, detail='no such entry in database')
 
 
 @app.get('/edls')
