@@ -43,6 +43,11 @@ export function Renders() {
     view: vnode => {
       return [
         m(Menu),
+        m('.head', [
+          m(RenderPreview, {
+            src: preview()
+          })
+        ]),
         m('h3', 'Renders'),
         m('.tools', [
           m('i.material-icons', {
@@ -74,9 +79,6 @@ export function Renders() {
             ])
           })
         ]),
-        m(RenderPreview, {
-          src: preview()
-        })
       ]
     }
   }
