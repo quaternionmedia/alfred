@@ -48,11 +48,14 @@ export function Renders() {
             src: preview()
           })
         ]),
-        m('h3', 'Renders'),
-        m('.tools', [
-          m('i.material-icons', {
-            onclick: vnode => { getRenders() }
-          }, 'refresh'),
+        m('.toolbar', [
+          m('h3', 'Renders'),
+          m('.tools', [
+            m('i.material-icons', {
+              style: { 'margin-left': '2vw' },
+              onclick: vnode => { getRenders() }
+            }, 'refresh'),
+          ]),
         ]),
         m('table#renders.renders.bin.project', {}, [
           m('tr', [
@@ -72,27 +75,15 @@ export function Renders() {
                 }, ),
                 m('p', `${Number(r['progress']).toFixed(2)}%`)
               ]),
-              // m('td', {
-              // }, m('p', {
-              //   onclick: (vnode) => {
-              //     preview(r['link'])
-              //   }
-              // }, r['link'])),
-              m('td', m('i.material-icons', {
+              m('td', [
+                m('.tools',m('i.material-icons', {
                 onclick: (vnode) => { preview(r['link']) }}, 'missed_video_call')),
-              m('td', m('i.material-icons', 'file_download')),
+                ]),
+              m('td', {}, m('a[download]', {
+                href: `download?filename=${r['link']}`,
+              }, m('i.material-icons',
+              'file_download'))),
               m('td', m('i.material-icons', 'delete')),
-              // m('td', {
-              // }, m('i.material-icons', {
-              //   onclick: (vnode) => {
-              //     preview(r['link'])
-              //   }
-              // }, 'file_download'),
-            //   m('td', {
-            //   }, m('i.material-icons', {
-            //     onclick: (vnode) => {preview(r['link'])
-            //   }
-            // }, 'delete')),
           ])
         }),
       ]),

@@ -139,11 +139,17 @@ body {
 .tools i:active {
   animation: blinker .2s 1;
 }
+.renders {
+  display: inline-block;
+}
 .renders td {
   text-align: center;
 }
 .renders tr td:FIRST-CHILD {
   text-align: left;
+}
+th {
+  text-align: center;
 }
 .sliders {
   padding: 1em
