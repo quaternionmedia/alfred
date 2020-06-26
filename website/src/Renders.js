@@ -75,15 +75,15 @@ export function Renders() {
                 }, ),
                 m('p', `${Number(r['progress']).toFixed(2)}%`)
               ]),
-              m('td',
-              m('.tools',
-              m('i.material-icons', {
-                onclick: e => { preview(r['link']) }}, 'missed_video_call'))),
-                m('td',
-                  m('.tools',
-                    m('a[download]', {
-                      href: `download?filename=${r['link']}`,
-                    }, m('i.material-icons', 'file_download')))),
+              m('td', r['progress'] >= 100 ?
+                m('.tools',
+                  m('i.material-icons', {
+                    onclick: e => { preview(r['link']) }}, 'missed_video_call')) : ''),
+              m('td', r['progress'] >= 100 ?
+                m('.tools',
+                  m('a[download]', {
+                    href: `download?filename=${r['link']}`,
+                  }, m('i.material-icons', 'file_download'))) : ''),
                 m('td',
                   m('.tools',
                     m('i.material-icons', {
