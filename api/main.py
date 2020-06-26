@@ -13,6 +13,7 @@ from bson.json_util import dumps, ObjectId
 from db import db
 from users import users
 from logger import DbLogger
+from seed import seed
 
 from otto.main import app as ottoApi
 from otto.render import renderEdl, renderForm
@@ -143,6 +144,10 @@ def cancelRender(render: str, user: User = Depends(get_current_active_user)):
 @app.get('/edls')
 def getEdls(user: User = Depends(get_current_active_user)):
     return [i['filename'] for i in db.edls.find({}, ['filename'])]
+
+@app.get('/templates')
+async def getTemplates():
+    return seed[0]['edl']
 
 @app.get('/videos')
 async def getVideos():
