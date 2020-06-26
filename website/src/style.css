@@ -151,6 +151,12 @@ body {
 th {
   text-align: center;
 }
+select {
+  color: #aaa;
+  background-color: #210D4D;
+  border-radius: .4em;
+  margin-bottom: .5em;
+}
 .sliders {
   padding: 1em
 }
