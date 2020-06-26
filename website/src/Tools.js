@@ -15,7 +15,7 @@ export function downloadFile(url) {
 }
 export default class Tools {
   view(vnode) {
-    return m('#tools.tools.', {}, [
+    return m('#tools.tools.toolbar', {}, [
 
       m('i.material-icons', {
         title: 'start',

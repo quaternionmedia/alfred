@@ -118,8 +118,10 @@ body {
     opacity: 0;
   }
 }
-.tools {
+.toolbar {
   display: flex;
+}
+.tools {
   justify-content: space-between;
 }
 .tools i {
