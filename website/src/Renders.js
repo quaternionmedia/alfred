@@ -54,11 +54,13 @@ export function Renders() {
             onclick: vnode => { getRenders() }
           }, 'refresh'),
         ]),
-        m('table#renders.bin.project', {}, [
+        m('table#renders.renders.bin.project', {}, [
           m('tr', [
             m('th', 'name'),
             m('th', 'progress'),
-            m('th', 'link'),
+            m('th', 'view'),
+            m('th', 'download'),
+            m('th', 'delete'),
           ],),
           renders.map(r => {
             return m('tr', {}, [
@@ -70,16 +72,31 @@ export function Renders() {
                 }, ),
                 m('p', `${Number(r['progress']).toFixed(2)}%`)
               ]),
-              m('td', {
-              }, m('p', {
-                onclick: (vnode) => {
-                  preview(r['link'])
-                }
-              }, r['link'])),
-            ])
-          })
-        ]),
-      ]
-    }
+              // m('td', {
+              // }, m('p', {
+              //   onclick: (vnode) => {
+              //     preview(r['link'])
+              //   }
+              // }, r['link'])),
+              m('td', m('i.material-icons', {
+                onclick: (vnode) => { preview(r['link']) }}, 'missed_video_call')),
+              m('td', m('i.material-icons', 'file_download')),
+              m('td', m('i.material-icons', 'delete')),
+              // m('td', {
+              // }, m('i.material-icons', {
+              //   onclick: (vnode) => {
+              //     preview(r['link'])
+              //   }
+              // }, 'file_download'),
+            //   m('td', {
+            //   }, m('i.material-icons', {
+            //     onclick: (vnode) => {preview(r['link'])
+            //   }
+            // }, 'delete')),
+          ])
+        }),
+      ]),
+    ]
   }
+}
 }
