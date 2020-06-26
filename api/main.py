@@ -167,6 +167,7 @@ async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
 @app.post('/form')
 async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):
     filename = f'{timestr()}_{form.project}.mp4'
+    form.MEDIA = [ m.strip() for m in form.MEDIA[0].split(',') ]
     print('rendering video from form', form, filename)
     db.renders.insert_one(
         {'filename': filename,
