@@ -64,7 +64,7 @@ elif [ $1 = "sh" ]; then
   shift
   docker-compose exec api sh
 
-elif [ $1 = "log" -o $1 = "logs" -o $1 = "l"]; then
+elif [ $1 = "log" -o $1 = "logs" -o $1 = "l" ]; then
   shift
   docker-compose logs -f
 
