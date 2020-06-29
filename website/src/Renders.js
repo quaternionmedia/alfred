@@ -59,7 +59,10 @@ export function Renders() {
         ]),
         m('table#renders.renders.bin.project', {}, [
           m('tr', [
-            m('th', 'name'),
+            m('th', 'project'),
+            m('th', 'duration'),
+            m('th', 'resolution'),
+            m('th', 'start time'),
             m('th', 'progress'),
             m('th', 'preview'),
             m('th', 'download'),
@@ -67,7 +70,10 @@ export function Renders() {
           ],),
           renders.map(r => {
             return m('tr', {}, [
-              m('td', {}, r['filename']),
+              m('td', {}, r['project']),
+              m('td', {}, r['duration']),
+              m('td', {}, r['resolution'] ? `${r['resolution'][0]}x${r['resolution'][1]}` : ''),
+              m('td', {}, r['started']),
               m('td', {}, [
                 m('progress', {
                   max: 100,

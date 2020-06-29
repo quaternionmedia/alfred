@@ -105,15 +105,19 @@ async def download_file(filename: str):
 
 @app.post('/render')
 async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: int = 1920, height: int = 1080):
-    filename = f'{project}_{timestr()}.mp4'
+    ts = timestr()
+    duration = sum(c['duration'] for c in edl.edl)
+    filename = f'{project}_{width}x{height}_{duration}s_{ts}.mp4'
     media = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
     id = db.renders.insert_one({
         'project': project,
         'filename': filename,
+        'duration': duration,
         'resolution': (width, height),
         'media': media,
         'edl': edl.edl,
         'progress': 0,
+        'started': ts,
         'link': join('videos', filename),
         }
     ).inserted_id
@@ -126,7 +130,7 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: 
 
 @app.get('/renders')
 def renders(user: User = Depends(get_current_active_user)):
-    return dumps(db.renders.find({}, ['filename', 'progress', 'link']).sort([('_id', -1)]))
+    return dumps(db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'duration', 'started']).sort([('_id', -1)]))
 
 
 @app.get('/renders/{render}')
