@@ -19,7 +19,7 @@ import { Renders } from './Renders'
 import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'
 import { FormPage } from './Form'
-import { Resolution } from './Resolution'
+import { Resolution, Aspect } from './Resolution'
 
 defaults.transition = "zoom"
 defaults.theme.ok = "ui positive button"
@@ -57,14 +57,20 @@ var Otto = {
       m('#head.head', [
         m(Preview)
       ]),
+      m(Aspect, [
+        '16:9',
+        '4:3',
+        '4:5',
+        '1:1',
+        '5:4',
+        '3:4',
+        '9:16'
+      ]),
       m(Resolution, [
-        '1920x1080',
-        '1280x720',
-        '1024x768',
-        '800x600',
-        '640x480',
-        '480x320',
-        '200x200',
+        '1080p',
+        '720p',
+        '480p',
+        '240p',
       ]),
       m(Tools),
       m(Slider),

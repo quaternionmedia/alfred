@@ -11,4 +11,7 @@ exports.state = {
   tool: Stream('time'),
   width: Stream(1920),
   height: Stream(1080),
+  resolution: Stream(1080),
+  aspectWidth: Stream(16),
+  aspectHeight: Stream(9),
 }
