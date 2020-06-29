@@ -106,11 +106,16 @@ async def download_file(filename: str):
 @app.post('/render')
 async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: int = 1920, height: int = 1080):
     filename = f'{project}_{timestr()}.mp4'
+    media = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
     id = db.renders.insert_one({
+        'project': project,
         'filename': filename,
+        'resolution': (width, height),
+        'media': media,
         'edl': edl.edl,
         'progress': 0,
-        'link': join('videos', filename)}
+        'link': join('videos', filename),
+        }
     ).inserted_id
     proj = db.projects.find_one({'name': project}, ['form'])['form']
     media = [ download(m) for m in proj['MEDIA'] ]
