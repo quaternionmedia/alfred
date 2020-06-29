@@ -150,6 +150,7 @@ export function OttoTimeline() {
         Edl.edl = e.edl
         Edl.current = 0
         Edl.time = 0
+        Edl.update()
       })
     },
     oncreate: (vnode) => {
