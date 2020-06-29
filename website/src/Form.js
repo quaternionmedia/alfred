@@ -134,7 +134,7 @@ export function Form() {
         m(Text, {name: 'DURATION'}, 'Duration'),
         m('hr'),
         m('', {style: {'text-align': 'right'}}, [
-          m('input', {type: 'submit', name: 'render', value: 'render',
+          m('input', {type: 'submit', name: 'render', value: 'Preview',
             onclick: (e) => {
               e.preventDefault()
               let form = new FormData(document.getElementById('form'))
