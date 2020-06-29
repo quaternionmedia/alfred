@@ -112,9 +112,9 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: 
         'progress': 0,
         'link': join('videos', filename)}
     ).inserted_id
-    media = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
-    media = [ download(m) for m in media ]
-    renderer.add_task(renderEdl, edl.edl, media=media, filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
+    proj = db.projects.find_one({'name': project}, ['form'])['form']
+    media = [ download(m) for m in proj['MEDIA'] ]
+    renderer.add_task(renderEdl, edl.edl, media=media, audio=download(proj['AUDIO'][0]), filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
     # renderer.add_task(updateProgress, id, 100)
     return str(id)
 

@@ -18,6 +18,7 @@ export function Form() {
             if (options && i) {
               m.request(`/project/${options[i - 1]}`).then(res => {
                 selected = res['form']
+                selected.project = options[i - 1]
                 console.log('selected', selected)
                 // selected['name'] = options[i - 1]
               })
