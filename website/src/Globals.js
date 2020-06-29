@@ -1,7 +1,7 @@
 
 var Stream = require("mithril/stream")
 
-exports.state = {
+export var state = {
   edl: Stream([]),
   paused: Stream(true),
   scale: Stream(50),
@@ -9,8 +9,20 @@ exports.state = {
   time: Stream(0),
   duration: Stream(0),
   tool: Stream('time'),
-  width: Stream(1920),
-  height: Stream(1080),
+  width: () => {
+    if (state.aspectWidth() > state.aspectHeight()) {
+      return parseInt(state.resolution()*state.aspectWidth()/state.aspectHeight())
+    } else {
+      return parseInt(state.resolution())
+    }
+  },
+  height: () => {
+    if (state.aspectWidth() > state.aspectHeight()) {
+      return parseInt(state.resolution())
+    } else {
+      return parseInt(state.resolution()*state.aspectWidth()/state.aspectHeight())
+    }
+  },
   resolution: Stream(1080),
   aspectWidth: Stream(16),
   aspectHeight: Stream(9),
