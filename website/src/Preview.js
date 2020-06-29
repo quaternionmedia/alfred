@@ -7,21 +7,16 @@ const urlfy = obj => Object
     .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]))
     .join('&');
 
-function ImagePreview() {
+export function ImagePreview() {
   return {
     view: (vnode) => {
-      return m('img', {
-        src: vnode.attrs.src,
-        style: {
-          width: '100%',
-          height: '100%',
-          'object-fit': 'contain'
-        }
+      return m('img.preview', {
+        src: vnode.attrs.src
       })
     }
   }
 }
-function VideoPreview() {
+export function VideoPreview() {
   return {
     onbeforeupdate: (vnode, old) => {
       return Video.paused
@@ -59,7 +54,7 @@ function VideoPreview() {
       })
     },
     view: (vnode) => {
-      return m('video', {
+      return m('video.preview', {
         ...vnode.attrs,
         currentTime: Video.time(),
         // state: Video.paused ? vnode.dom.pause() : vnode.dom.play(),
@@ -97,10 +92,15 @@ export var Preview = ( () => {
       let clip = Edl.edl[Edl.current]
       if (clip) {
         if (clip.type == 'template') {
-          return m(ImagePreview, {
+          return m('.bkg#preview', {
+            style: {
+              'background-image': `url(bkg/${m.route.param('project')}?width=${state.width()}&height=${state.height()}&t=${Edl.time})`
+            }
+          }, [m(ImagePreview, {
             id: 'preview',
             src: `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time()}`
           })
+        ])
         } else {
             return m(VideoPreview, {
               id: 'preview',
