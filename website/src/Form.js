@@ -124,12 +124,14 @@ export function Form() {
         m(TextArea, {name: 'BULLETS'}, 'Bullets'),
         m(TextArea, {name: 'OPTIONAL'}, 'Optional'),
         m(TextArea, {name: 'MEDIA'}, 'Media'),
+        m(TextArea, {name: 'AUDIO'}, 'Audio'),
         m(TextArea, {name: 'CALL'}, 'Call'),
         // m(TextArea, {name: 'CLOSING'}, 'Closing'),
         m(Color, {name: 'THEMECOLOR', value:'#FF0'}, 'Theme Color'),
         m(Color, {name: 'FONTCOLOR', value: '#FFF'}, 'Font Clolor'),
         m(Text, {name: 'FONT'}, 'Font'),
         m(Text, {name: 'DURATION'}, 'Duration'),
+        m('hr'),
         m('', {style: {'text-align': 'right'}}, [
           m('input', {type: 'submit', name: 'render', value: 'render',
             onclick: (e) => {
