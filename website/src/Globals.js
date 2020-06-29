@@ -10,17 +10,25 @@ export var state = {
   duration: Stream(0),
   tool: Stream('time'),
   width: () => {
-    if (state.aspectWidth() > state.aspectHeight()) {
-      return parseInt(state.resolution()*state.aspectWidth()/state.aspectHeight())
+    if (state.aspectWidth() >= state.aspectHeight()) {
+      let w = parseInt(state.resolution()/state.aspectWidth()*state.aspectHeight())
+      if (w % 2 != 0) {
+        w -= 1
+      }
+      return w
     } else {
-      return parseInt(state.resolution())
+        return state.resolution()
     }
   },
   height: () => {
-    if (state.aspectWidth() > state.aspectHeight()) {
-      return parseInt(state.resolution())
+    if (state.aspectWidth() >= state.aspectHeight()) {
+      return state.resolution()
     } else {
-      return parseInt(state.resolution()*state.aspectWidth()/state.aspectHeight())
+      let h = parseInt(state.resolution()/state.aspectHeight()*state.aspectWidth())
+      if (h % 2 != 0) {
+        h -= 1
+      }
+      return h
     }
   },
   resolution: Stream(1080),
