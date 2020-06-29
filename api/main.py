@@ -212,7 +212,7 @@ async def get_bkg(project: str, width: int, height: int, t: float):
         if clip.endswith(('jpg', 'jpeg', 'png')):
             clip = ImageClip(clip)
         elif clip.endswith('mp4'):
-            clip = VideoFileClip(clip)
+            clip = VideoFileClip(download(clip))
         else: raise HTTPException(status_code=500, detail="unidentifiable file type")
         if width >= height:
             clip = clip.resize(width=width)
