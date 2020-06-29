@@ -206,7 +206,11 @@ async def get_bkg(project: str, width: int, height: int, t: float):
             clip = ImageClip(clip)
         elif clip.endswith('mp4'):
             clip = VideoFileClip(clip)
-        clip.resize((width, height)).save_frame('bkg.jpg', t=t % 5)
+        else: raise HTTPException(status_code=500, detail="unidentifiable file type")
+        if width >= height:
+            clip = clip.resize(width=width)
+        else: clip = clip.resize(height=height)
+        clip.save_frame('bkg.jpg', t=t % 5)
         return FileResponse('bkg.jpg')
     except Exception as e:
         print('error making kburns frame', e)
