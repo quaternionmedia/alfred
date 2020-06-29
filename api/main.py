@@ -162,11 +162,16 @@ async def buffer(video:str, response: Response, bits: int = Header(0)):
 
 @app.get('/projects')
 async def getProjects():
-    return dumps(db.projects.find({}, ['name']))
+    return [ p['name'] for p in db.projects.find({})]
 
 @app.get('/project/{project}')
 async def getProject(project: str):
-    return db.projects.find_one({'name': project}, ['form'])['form']
+    c = db.projects.find_one({'name': project}, ['name', 'form', 'edl'])
+    res = {}
+    for a in ['name', 'edl', 'form']:
+        if c.get(a):
+            res[a] = c.get(a)
+    return res
 
 @app.post('/save')
 async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
