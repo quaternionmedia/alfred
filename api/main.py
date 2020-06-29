@@ -199,8 +199,8 @@ async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
         {'$set':
             {
                 'form': dict(form),
-                'edl': edl['edl']
-            }})
+                'edl': edl['edl'],
+            }}, upsert=True)
     return True
 
 @app.get('/bkg/{project}')
