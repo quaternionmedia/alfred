@@ -11,7 +11,7 @@ export var state = {
   tool: Stream('time'),
   width: () => {
     if (state.aspectWidth() >= state.aspectHeight()) {
-      let w = parseInt(state.resolution()/state.aspectWidth()*state.aspectHeight())
+      let w = parseInt(state.resolution()*state.aspectWidth()/state.aspectHeight())
       if (w % 2 != 0) {
         w -= 1
       }
@@ -24,7 +24,7 @@ export var state = {
     if (state.aspectWidth() >= state.aspectHeight()) {
       return state.resolution()
     } else {
-      let h = parseInt(state.resolution()/state.aspectHeight()*state.aspectWidth())
+      let h = parseInt(state.resolution()*state.aspectHeight()/state.aspectWidth())
       if (h % 2 != 0) {
         h -= 1
       }
