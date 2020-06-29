@@ -53,7 +53,7 @@ export function Clip() {
           Edl.current = vnode.attrs.i
           Edl.time = d + Edl.durations(Edl.edl.slice(0, vnode.attrs.i))
           Video.clip = data
-          Video.time = d
+          Video.time(d)
           console.log('clicked on clip', this, vnode, e, p, d, Edl, Video)
           m.redraw()
         }
@@ -70,7 +70,7 @@ export function Clip() {
           m('i.material-icons.progress', {
             style: {
               display: (Edl.current == vnode.attrs.i) ? 'inherit': 'none',
-              left: Video.time*state.scale(),
+              left: Video.time()*state.scale(),
             }
           }),
           ...vnode.children
