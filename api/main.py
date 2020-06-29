@@ -17,7 +17,7 @@ from seed import seed, formToEdl
 
 from otto.main import app as ottoApi
 from otto.render import renderEdl, renderForm
-from otto.getdata import timestr
+from otto.getdata import timestr, download
 from otto.models import Edl, VideoForm
 
 from moviepy.editor import ImageClip, VideoFileClip
@@ -99,12 +99,12 @@ async def saveEdl(filename: str, edl: Edl):
 
 
 @app.get('/download')
-async def download(filename: str):
+async def download_file(filename: str):
     return FileResponse(filename, filename=filename)
 
 
 @app.post('/render')
-async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str):
+async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: int = 1920, height: int = 1080):
     filename = f'{project}_{timestr()}.mp4'
     id = db.renders.insert_one({
         'filename': filename,
@@ -112,7 +112,9 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str):
         'progress': 0,
         'link': join('videos', filename)}
     ).inserted_id
-    renderer.add_task(renderEdl, edl.edl, filename=join('videos', filename), logger=DbLogger(filename))
+    media = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
+    media = [ download(m) for m in media ]
+    renderer.add_task(renderEdl, edl.edl, media=media, filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
     # renderer.add_task(updateProgress, id, 100)
     return str(id)
 
