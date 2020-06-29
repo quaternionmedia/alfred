@@ -19,6 +19,10 @@ from otto.main import app as ottoApi
 from otto.render import renderEdl, renderForm
 from otto.getdata import timestr
 from otto.models import Edl, VideoForm
+
+from moviepy.editor import ImageClip, VideoFileClip
+from math import floor
+
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
 
@@ -191,6 +195,24 @@ async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
                 'edl': edl['edl']
             }})
     return True
+
+@app.get('/bkg/{project}')
+async def get_bkg(project: str, width: int, height: int, t: float):
+    clips = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
+    clip = clips[floor(t / 5)]
+    print('making bkg', clip)
+    try:
+        if clip.endswith(('jpg', 'jpeg', 'png')):
+            clip = ImageClip(clip)
+        elif clip.endswith('mp4'):
+            clip = VideoFileClip(clip)
+        clip.resize((width, height)).save_frame('bkg.jpg', t=t % 5)
+        return FileResponse('bkg.jpg')
+    except Exception as e:
+        print('error making kburns frame', e)
+        raise HTTPException(status_code=500, detail='error making kburns frame')
+
+
 
 @app.post('/form')
 async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):
