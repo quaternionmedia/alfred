@@ -139,16 +139,13 @@ export function Form() {
               let form = new FormData(document.getElementById('form'))
               let proj = document.getElementById('projectName').value
               console.log('rendering from form', e, form)
-              m.request('/form', {
+              m.request('/formToEdl', {
                 method: 'post',
-                params: {
-                  project: proj
-                },
                 body: form,
               }).then(e => {
                 console.log('rendering', e)
                 success(`rendering!`)
-                m.route.set('/renders')
+                m.route.set(`/otto?project=${proj}`)
               }, e => {
                 console.log('error rendering', e)
                 error('oops... something went wrong.')

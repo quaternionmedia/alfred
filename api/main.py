@@ -13,7 +13,7 @@ from bson.json_util import dumps, ObjectId
 from db import db
 from users import users
 from logger import DbLogger
-from seed import seed
+from seed import seed, formToEdl
 
 from otto.main import app as ottoApi
 from otto.render import renderEdl, renderForm
@@ -178,6 +178,19 @@ async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
     result = db.projects.update_one({'name': project}, {'$set': {'form': dict(form)}}, upsert=True)
     print('saved form', project, form, result)
     return result.modified_count
+
+@app.post('/formToEdl')
+async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
+    form.MEDIA = [ m.strip() for m in form.MEDIA[0].split(',') ]
+    edl = formToEdl(form)
+    print('edl from form', edl)
+    db.projects.update_one({'name': form.project},
+        {'$set':
+            {
+                'form': dict(form),
+                'edl': edl['edl']
+            }})
+    return True
 
 @app.post('/form')
 async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):
