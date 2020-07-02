@@ -122,6 +122,7 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: 
         }
     ).inserted_id
     proj = db.projects.find_one({'name': project}, ['form'])['form']
+    print('rendering!', filename, proj)
     media = [ download(m) for m in proj['MEDIA'] ]
     renderer.add_task(renderEdl, edl.edl, media=media, audio=download(proj['AUDIO'][0]), filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
     # renderer.add_task(updateProgress, id, 100)
@@ -198,7 +199,7 @@ async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
 async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
     form.MEDIA = [ m.strip() for m in form.MEDIA[0].split(',') ]
     edl = formToEdl(form)
-    print('edl from form', edl)
+    print('edl from form', edl, dict(form))
     db.projects.update_one({'name': form.project},
         {'$set':
             {
@@ -213,14 +214,14 @@ async def get_bkg(project: str, width: int, height: int, t: float):
     clip = clips[floor(t / 5)]
     print('making bkg', clip)
     try:
-        if clip.endswith(('jpg', 'jpeg', 'png')):
-            clip = ImageClip(clip)
-        elif clip.endswith('mp4'):
+        if clip.endswith('mp4'):
             clip = VideoFileClip(download(clip))
-        else: raise HTTPException(status_code=500, detail="unidentifiable file type")
+        else:
+            clip = ImageClip(clip)
         if width >= height:
             clip = clip.resize(width=width)
-        else: clip = clip.resize(height=height)
+        else:
+            clip = clip.resize(height=height)
         clip.save_frame('bkg.jpg', t=t % 5)
         return FileResponse('bkg.jpg')
     except Exception as e:
