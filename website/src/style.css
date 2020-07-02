@@ -9,6 +9,7 @@ border: #210D4D
 hover: #393939
 other: #4F1FB8, #7059A2
 gentle highlight: #2b2b2b
+medium highlight: #67539177
 highlight with transparency: #777a
 recessed: #101010
 */
@@ -95,7 +96,7 @@ body {
 
 }
 .project tr:nth-child(even){background-color: #2b2b2b;}
-.project tr:hover {background-color: #393939;}
+.project tr:hover {background-color: #67539177;}
 .project th {
   padding: 10px;
   padding-right: 10px;
