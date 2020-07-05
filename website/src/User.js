@@ -13,9 +13,11 @@ export var User = {
     console.log('authenticated!', decoded)
     User.token = token['token_type'] + ' ' + token['access_token']
     User.loggedIn = true
-    // console.log('User: ', User)
+    console.log('logged in as: ', User)
     if (m.route.param('redirect')) {
       m.route.set(m.route.param('redirect'))
+    } else {
+      m.route.set(m.route.get())
     }
     m.redraw()
   },
@@ -25,5 +27,8 @@ export var User = {
     User.username = null
     User.token = null
     User.loggedIn = false
+    window.localStorage.setItem('CREDENTIALS_FLUSH', Date.now().toString())
+    window.localStorage.removeItem('CREDENTIALS_FLUSH')
+    m.redraw()
   }
 }

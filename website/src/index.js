@@ -27,6 +27,24 @@ defaults.theme.ok = "ui positive button"
 defaults.theme.cancel = "ui black button"
 defaults.notifier.delay = 10
 
+window.addEventListener('storage', (event) => {
+  let credentials = User.jwt
+  // console.log('storage event', event, credentials)
+  if (event.key === 'REQUESTING_SHARED_CREDENTIALS' && credentials) {
+    window.localStorage.setItem('CREDENTIALS_SHARING', JSON.stringify(credentials))
+    window.localStorage.removeItem('CREDENTIALS_SHARING')
+  }
+  if (event.key === 'CREDENTIALS_SHARING' && !credentials) {
+    User.login(JSON.parse(event.newValue))
+  }
+  if (event.key === 'CREDENTIALS_FLUSH' && credentials) {
+    User.logout()
+  }
+})
+
+window.localStorage.setItem('REQUESTING_SHARED_CREDENTIALS', Date.now().toString())
+window.localStorage.removeItem('REQUESTING_SHARED_CREDENTIALS')
+
 var Editor = {
   view: (vnode) => {
     return [
