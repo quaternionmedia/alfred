@@ -28,7 +28,7 @@ export function Renders() {
         Authorization: User.token
       }
     }).then( e => {
-      console.log('render list:', e)
+      // console.log('render list:', e)
       renders = JSON.parse(e)
     }, (err) => {
       error('Not authorized!', 3)
@@ -48,11 +48,11 @@ export function Renders() {
             src: preview()
           })
         ]),
-        m('.toolbar', [
+        m('', { style: { display: 'flex' }}, [
           m('h3', 'Renders'),
           m('.tools', [
             m('i.material-icons', {
-              style: { 'margin-left': '2vw' },
+              style: { 'margin-left': '2vw', },
               onclick: vnode => { getRenders() }
             }, 'refresh'),
           ]),

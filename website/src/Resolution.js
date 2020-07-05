@@ -30,7 +30,7 @@ export function Aspect() {
           let res = e.target.value.split(':')
           state.aspectWidth(res[0])
           state.aspectHeight(res[1])
-          console.log('changing aspects', res, state.width(), state.height())
+          console.log('changing aspects', state.aspectWidth(), state.aspectHeight(), state.width(), state.height())
         }
       }, [
         vnode.children.map(opt => {
