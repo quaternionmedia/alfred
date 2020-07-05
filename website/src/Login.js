@@ -1,10 +1,9 @@
 import m from 'mithril'
 import { Menu } from './Menu'
 import { User } from './User'
-import jwt_decode from 'jwt-decode'
 import { success, error, message, prompt } from 'alertifyjs'
 
-const Login = () => {
+export const Login = () => {
   return {
     view: (vnode) => {
       return [
@@ -39,18 +38,9 @@ const Login = () => {
                 method: 'post',
                 body: form,
               }).then( (token) => {
-                let decoded = jwt_decode(token['access_token'])
-                User.username = decoded['sub']
-                console.log('authenticated!', decoded)
-                User.token = token['token_type'] + ' ' + token['access_token']
-                User.loggedIn = true
+                User.login(token)
                 success(`${User.username} logged in!`, 4)
-                console.log('User: ', User)
-                if (m.route.param('redirect')) {
-                  m.route.set(m.route.param('redirect'))
-                } else {
-                  m.route.set('/')
-                }
+                m.route.set('/')
               }, (res) => {
                 console.log('error logging in!', res)
                 error('error logging in', 3)
@@ -64,11 +54,7 @@ const Login = () => {
             onclick: (e) => {
               e.preventDefault()
               if (User.username) {
-                console.log('logged out')
-                message(`${User.username} logged out`)
-                User.username = null
-                User.token = null
-                User.loggedIn = false
+                logout()
               } else {
                 message("not logged in. Can't log out.", 3)
               }
@@ -104,5 +90,3 @@ const Login = () => {
   }
 }
 }
-
-export default Login
