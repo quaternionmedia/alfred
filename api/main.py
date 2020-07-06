@@ -108,7 +108,7 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: 
     ts = timestr()
     duration = sum(c['duration'] for c in edl.edl)
     filename = f'{project}_{width}x{height}_{duration}s_{ts}.mp4'
-    media = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
+    media = db.projects.find_one({'name': project}, ['form'])['form']['media']
     id = db.renders.insert_one({
         'project': project,
         'filename': filename,
@@ -123,8 +123,8 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: 
     ).inserted_id
     proj = db.projects.find_one({'name': project}, ['form'])['form']
     print('rendering!', filename, proj)
-    media = [ download(m) for m in proj['MEDIA'] ]
-    renderer.add_task(renderEdl, edl.edl, media=media, audio=download(proj['AUDIO'][0]), filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
+    media = [ download(m) for m in proj['media'] ]
+    renderer.add_task(renderEdl, edl.edl, media=media, audio=download(proj['audio'][0]), filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
     # renderer.add_task(updateProgress, id, 100)
     return str(id)
 
@@ -197,7 +197,7 @@ async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
 
 @app.post('/formToEdl')
 async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
-    form.MEDIA = [ m.strip() for m in form.MEDIA[0].split(',') ]
+    form.media = [ m.strip() for m in form.media[0].split(',') ]
     edl = formToEdl(form)
     print('edl from form', edl, dict(form))
     db.projects.update_one({'name': form.project},
@@ -210,7 +210,7 @@ async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
 
 @app.get('/bkg/{project}')
 async def get_bkg(project: str, width: int, height: int, t: float):
-    clips = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
+    clips = db.projects.find_one({'name': project}, ['form'])['form']['media']
     clip = clips[floor(t / 5)]
     print('making bkg', clip)
     try:
@@ -233,7 +233,7 @@ async def get_bkg(project: str, width: int, height: int, t: float):
 @app.post('/form')
 async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):
     filename = f'{timestr()}_{form.project}.mp4'
-    form.MEDIA = [ m.strip() for m in form.MEDIA[0].split(',') ]
+    form.media = [ m.strip() for m in form.media[0].split(',') ]
     print('rendering video from form', form, filename)
     db.renders.insert_one(
         {'filename': filename,
