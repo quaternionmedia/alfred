@@ -130,6 +130,10 @@ body {
     opacity: 0;
   }
 }
+
+.bar {
+  display: flex;
+}
 .toolbar {
   display: flex;
   border: #46346E;

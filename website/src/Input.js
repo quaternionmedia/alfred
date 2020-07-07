@@ -93,3 +93,29 @@ export function InputArea() {
     }
   }
 }
+
+
+export function Image() {
+  return {
+    view: (vnode) => {
+      return m('.bar', {}, [
+        m('label', { for: vnode.attrs.name }, vnode.children),
+        m('input', {
+        oninput: e => {
+          console.log('input ', vnode.dom.value, e.target.value)
+          VideoForm[vnode.attrs.name](e.target.value)
+        },
+        value: VideoForm[vnode.attrs.name](),
+        ...vnode.attrs,
+      }),
+      m('img', {
+        src: VideoForm[vnode.attrs.name](),
+        style: {
+          width: '30%',
+          padding: '1em'
+        }
+      })
+    ])
+    }
+  }
+}
