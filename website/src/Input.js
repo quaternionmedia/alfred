@@ -108,7 +108,7 @@ export function Image() {
         value: VideoForm[vnode.attrs.name](),
         ...vnode.attrs,
       }),
-      m('img', {
+      m('img.formthumb', {
         src: VideoForm[vnode.attrs.name](),
         style: {
           width: '30%',
@@ -116,6 +116,22 @@ export function Image() {
         }
       })
     ])
+    }
+  }
+}
+
+export function Media() {
+  return {
+    view: (vnode) => {
+      return [
+        m('label', { for: vnode.attrs.name }, vnode.children),
+        VideoForm.media().map(medium => {
+          return m('.bar', {}, [
+            m('input', { value: medium }),
+            m('img.formthumb', { src: medium }),
+          ])
+        })
+      ]
     }
   }
 }

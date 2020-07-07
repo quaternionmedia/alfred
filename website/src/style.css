@@ -134,6 +134,10 @@ body {
 .bar {
   display: flex;
 }
+.formthumb {
+  width: 30%;
+  padding: 1em;
+}
 .toolbar {
   display: flex;
   border: #46346E;

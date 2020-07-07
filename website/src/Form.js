@@ -1,7 +1,7 @@
 import m from 'mithril'
 import { success, error } from 'alertifyjs'
 import { Menu } from './Menu'
-import { Field, Input, InputArea, VideoForm, Image } from './Input'
+import { Field, Input, InputArea, VideoForm, Image, Media } from './Input'
 
 export function Form() {
 
@@ -129,7 +129,7 @@ export function Form() {
         m(InputArea, {name: 'initial'}, 'Initial text'),
         m(InputArea, {name: 'bullets'}, 'Bullets'),
         m(InputArea, {name: 'optional'}, 'Optional'),
-        m(InputArea, {name: 'media'}, 'Media'),
+        m(Media, {name: 'media'}, 'Media'),
         m(InputArea, {name: 'audio'}, 'Audio'),
         m(InputArea, {name: 'call'}, 'Call'),
         // m(TextArea, {name: 'closing'}, 'Closing'),
