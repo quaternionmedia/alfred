@@ -135,7 +135,8 @@ body {
   display: flex;
 }
 .formthumb {
-  width: 30%;
+  max-width: 20vw;
+  max-height: 20vh;
   padding: 1em;
 }
 .toolbar {
