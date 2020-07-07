@@ -56,3 +56,40 @@ export function Field() {
     }
   }
 }
+
+export function Input() {
+  return {
+    view: (vnode) => {
+      return [
+        m('label', { for: vnode.attrs.name }, vnode.children),
+        m('input[type=text]', {
+        oninput: e => {
+          console.log('input ', vnode.dom.value, e.target.value)
+          VideoForm[vnode.attrs.name](e.target.value)
+        },
+        value: VideoForm[vnode.attrs.name](),
+        ...vnode.attrs,
+      })
+    ]
+    }
+  }
+}
+
+
+export function InputArea() {
+  return {
+    view: (vnode) => {
+      return [
+        m('label', { for: vnode.attrs.name }, vnode.children),
+        m('textarea', {
+        oninput: e => {
+          console.log('input ', vnode.dom.value, e.target.value)
+          VideoForm[vnode.attrs.name](e.target.value)
+        },
+        value: VideoForm[vnode.attrs.name](),
+        ...vnode.attrs,
+      })
+    ]
+    }
+  }
+}
