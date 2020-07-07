@@ -1,5 +1,5 @@
 import m from 'mithril'
-import { success, error } from 'alertifyjs'
+import { success, error, message } from 'alertifyjs'
 import { Menu } from './Menu'
 import { Field, Input, InputArea, VideoForm, Image, Media } from './Input'
 
@@ -150,7 +150,7 @@ export function Form() {
                 body: form,
               }).then(e => {
                 console.log('rendering', e)
-                success(`rendering!`)
+                message(`generating preview!`)
                 m.route.set(`/otto?project=${proj}`)
               }, e => {
                 console.log('error rendering', e)
