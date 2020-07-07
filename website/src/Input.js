@@ -1,6 +1,9 @@
 import m from 'mithril'
 import { ContentEditable } from 'mithril-contenteditable'
 var Stream = require("mithril/stream")
+import { Sortable, MultiDrag } from 'sortablejs'
+Sortable.mount(new MultiDrag());
+import { array_move } from './Video'
 
 export var VideoForm = {
   project: Stream(''),
@@ -122,6 +125,28 @@ export function Image() {
 
 export function Media() {
   return {
+    oncreate: (vnode) => {
+      new Sortable(vnode.dom, {
+        multiDrag: true,
+        // group: 'media',
+        selectedClass: "selected",
+        swapThreshold: 0.50,
+        animation: 150,
+        ghostClass: 'ghost',
+        forceFallback: true,
+        // delay: 100,
+        invertSwap: true,
+        preventOnFilter: false,
+        onUpdate: e => {
+          let form = array_move(VideoForm.media(), e.oldIndex, e.newIndex)
+          VideoForm.media([''])
+          m.redraw.sync()
+          VideoForm.media(form)
+          m.redraw()
+          console.log('moved media', e, form)
+        }
+      })
+    },
     view: (vnode) => {
       return m('', {}, VideoForm.media().map(medium => {
           return m('.media.bar', [
