@@ -123,19 +123,13 @@ export function Image() {
 export function Media() {
   return {
     view: (vnode) => {
-      return [
-        m('label', { for: vnode.attrs.name }, vnode.children),
-        m('textarea', {
-          value: VideoForm.media(),
-          ...vnode.attrs
-        }),
-        VideoForm.media().map(medium => {
-          return m('.bar', {}, [
-            m('input', { value: medium }),
+      return m('', {}, VideoForm.media().map(medium => {
+          return m('.media.bar', [
+            m('input', { value: medium , name: `${vnode.attrs.name}[]`}),
             m('img.formthumb', { src: medium }),
           ])
         })
-      ]
+      )
     }
   }
 }
