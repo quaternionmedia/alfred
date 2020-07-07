@@ -139,6 +139,12 @@ body {
   max-height: 20vh;
   padding: 1em;
 }
+.subform {
+  border: #46346E;
+  border-width: 4px;
+  border-style: solid;
+  border-radius: 6px;
+}
 .toolbar {
   display: flex;
   border: #46346E;

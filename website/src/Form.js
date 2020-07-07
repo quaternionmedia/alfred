@@ -129,7 +129,9 @@ export function Form() {
         m(InputArea, {name: 'initial'}, 'Initial text'),
         m(InputArea, {name: 'bullets'}, 'Bullets'),
         m(InputArea, {name: 'optional'}, 'Optional'),
-        m(Media, {name: 'media'}, 'Media'),
+        m('.subform', {}, [
+          m(Media, {name: 'media'}, 'Media'),
+        ]),
         m(InputArea, {name: 'audio'}, 'Audio'),
         m(InputArea, {name: 'call'}, 'Call'),
         // m(TextArea, {name: 'closing'}, 'Closing'),
