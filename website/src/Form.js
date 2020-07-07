@@ -157,11 +157,11 @@ export function Form() {
                 body: form,
               }).then(e => {
                 console.log('rendering', e)
-                message(`generating preview!`)
+                message(`generating preview!`, 3)
                 m.route.set(`/otto?project=${proj}`)
               }, e => {
                 console.log('error rendering', e)
-                error('oops... something went wrong.')
+                error('oops... something went wrong.', 3)
               })
             }
           }, )

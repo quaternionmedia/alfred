@@ -144,7 +144,12 @@ export function Media() {
           VideoForm.media(form)
           m.redraw()
           console.log('moved media', e, form)
-        }
+        },
+        removeOnSpill: true,
+        onSpill: e => {
+          VideoForm.media(VideoForm.media().splice(e.oldIndex, 1))
+          console.log('spilling', e, VideoForm.media())
+        },
       })
     },
     view: (vnode) => {
