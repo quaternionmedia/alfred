@@ -1,4 +1,5 @@
 import m from 'mithril'
+import { ContentEditable } from 'mithril-contenteditable'
 var Stream = require("mithril/stream")
 
 export var VideoForm = {
@@ -22,3 +23,36 @@ export var VideoForm = {
   duration: Stream(5),
 }
 
+
+export function Field() {
+  return {
+    view: (vnode) => {
+      return [
+        m('label', { for: vnode.attrs.name }, vnode.children),
+        m(ContentEditable, {
+          // html: VideoForm[vnode.attrs.name],
+          html: this.html,
+          oncreate: html => {
+            this.html = VideoForm[vnode.attrs.name]()
+          },
+          onchange: html => {
+            this.html = html
+            VideoForm[vnode.attrs.name](html)
+            console.log('field changed', html)
+          },
+          onChanged: v => {
+            VideoForm[vnode.attrs.name](v)
+          },
+          onkeydown: e => {
+            switch (e.key) {
+              case 'Enter':
+                e.preventDefault()
+                // console.log('enter', VideoForm.name(), VideoForm[vnode.attrs.name]())
+            }
+          },
+          ...vnode.attrs,
+      })
+    ]
+    }
+  }
+}
