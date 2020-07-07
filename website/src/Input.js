@@ -153,12 +153,30 @@ export function Media() {
       })
     },
     view: (vnode) => {
-      return m('', {}, VideoForm.media().map(medium => {
+      return m('', {}, [
+        VideoForm.media().map(medium => {
           return m('.media.bar', [
             m('input', { value: medium , name: `${vnode.attrs.name}[]`}),
             m('img.formthumb', { src: medium }),
           ])
-        })
+        }),
+        m('.bar', {}, [
+          m('input', {id: 'newMedia'}),
+          m('input[type=submit]', {
+            value: 'add new media',
+            onclick: e => {
+              e.preventDefault()
+              console.log('adding new media', e)
+              let form = VideoForm.media()
+              let newMedia = document.getElementById('newMedia')
+              if (newMedia.value) {
+                form.push(newMedia.value)
+                VideoForm.media(form)
+              }
+            }
+          }, )
+        ]),
+      ]
       )
     }
   }
