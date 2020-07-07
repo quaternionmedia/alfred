@@ -125,6 +125,10 @@ export function Media() {
     view: (vnode) => {
       return [
         m('label', { for: vnode.attrs.name }, vnode.children),
+        m('textarea', {
+          value: VideoForm.media(),
+          ...vnode.attrs
+        }),
         VideoForm.media().map(medium => {
           return m('.bar', {}, [
             m('input', { value: medium }),
