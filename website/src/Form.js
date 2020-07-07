@@ -131,6 +131,10 @@ export function Form() {
         m(InputArea, {name: 'optional'}, 'Optional'),
         m('label', { for: 'media' }, 'Media'),
         m('.subform', {}, [
+          m(InputArea, {
+            name: 'media',
+            value: VideoForm.media(),
+            style: {display: 'none'}}, ),
           m(Media, {name: 'media'}, 'Media'),
         ]),
         m(InputArea, {name: 'audio'}, 'Audio'),
