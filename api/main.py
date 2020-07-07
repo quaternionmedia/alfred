@@ -211,11 +211,11 @@ async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
 @app.get('/bkg/{project}')
 async def get_bkg(project: str, width: int, height: int, t: float):
     clips = db.projects.find_one({'name': project}, ['form'])['form']['media']
-    clip = clips[floor(t / 5)]
+    clip = download(clips[floor(t / 5)])
     print('making bkg', clip)
     try:
         if clip.endswith('mp4'):
-            clip = VideoFileClip(download(clip))
+            clip = VideoFileClip(clip)
         else:
             clip = ImageClip(clip)
         if width >= height:
