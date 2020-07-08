@@ -191,6 +191,7 @@ async def getProject(project: str):
 
 @app.post('/save')
 async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
+    form.media = [ m.strip() for m in form.media[0].split(',') ]
     result = db.projects.update_one({'name': project}, {'$set': {'form': dict(form)}}, upsert=True)
     print('saved form', project, form, result)
     return result.modified_count
