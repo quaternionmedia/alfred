@@ -181,3 +181,22 @@ export function Media() {
     }
   }
 }
+
+export function Color() {
+  return {
+    view: (vnode) => {
+      return [
+        m('label', { for: vnode.attrs.name }, vnode.children),
+        m('input[type=color]', {
+        oninput: e => {
+          VideoForm[vnode.attrs.name](e.target.value)
+          console.log('input ',e.target.value, VideoForm[vnode.attrs.name]())
+          m.redraw()
+        },
+        value: VideoForm[vnode.attrs.name](),
+        ...vnode.attrs,
+      })
+    ]
+    }
+  }
+}

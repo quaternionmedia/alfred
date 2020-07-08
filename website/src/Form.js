@@ -1,7 +1,7 @@
 import m from 'mithril'
 import { success, error, message } from 'alertifyjs'
 import { Menu } from './Menu'
-import { Field, Input, InputArea, VideoForm, Image, Media } from './Input'
+import { Field, Input, InputArea, VideoForm, Image, Media, Color } from './Input'
 
 export function Form() {
 
@@ -68,22 +68,6 @@ export function Form() {
       }
     }
   }
-  function Color() {
-    return {
-      view: (vnode) => {
-        return m('', {}, [
-          m('label.formlabel', {
-            for: vnode.attrs.name
-          }, vnode.children),
-          m('input', {
-            type: 'color',
-            ...vnode.attrs,
-            value: selected ? selected[vnode.attrs.name] : ''
-          })
-        ])
-      }
-    }
-  }
 
   return {
     oninit: (vnode) => {
@@ -140,8 +124,8 @@ export function Form() {
         m(InputArea, {name: 'audio'}, 'Audio'),
         m(InputArea, {name: 'call'}, 'Call'),
         // m(TextArea, {name: 'closing'}, 'Closing'),
-        m(Color, {name: 'themecolor', value:'#FF0'}, 'Theme Color'),
-        m(Color, {name: 'fontcolor', value: '#FFF'}, 'Font Clolor'),
+        m(Color, {name: 'themecolor'}, 'Theme Color'),
+        m(Color, {name: 'fontcolor'}, 'Font Clolor'),
         m(Input, {name: 'font'}, 'Font'),
         m(Input, {name: 'duration'}, 'Duration'),
         m('hr'),
