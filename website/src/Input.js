@@ -147,7 +147,9 @@ export function Media() {
         },
         removeOnSpill: true,
         onSpill: e => {
-          VideoForm.media(VideoForm.media().splice(e.oldIndex, 1))
+          let form = VideoForm.media()
+          form.splice(e.oldIndex, 1)
+          VideoForm.media(form)
           console.log('spilling', e, VideoForm.media())
         },
       })
