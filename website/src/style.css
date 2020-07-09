@@ -134,21 +134,6 @@ body {
 .bar {
   display: flex;
 }
-.formthumb {
-  max-width: 20vw;
-  max-height: 20vh;
-  padding: 1em;
-}
-.subform {
-  border: #46346E;
-  border-width: 4px;
-  border-style: solid;
-  border-radius: 10px;
-  margin-left: auto;
-  margin-left: 15vw;
-  margin-right: 1em;
-  padding: 1em;
-}
 .toolbar {
   display: flex;
   border: #46346E;
@@ -322,17 +307,43 @@ form label {
   vertical-align: middle;
 }
 form input {
-    width: 75%;
-    margin-bottom: 1em;
+  min-width: 60%;
+  max-width: 75%;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  vertical-align: middle;
 }
 form textarea {
-  width: 75%;
-  height: 10em;
-  margin-bottom: 2em;
+  min-width: 60%;
+  max-width: 75%;
+  height: 6em;
+  margin-top: 1em;
+  margin-bottom: 1em;
   vertical-align: middle;
 }
 input[type=submit] {
-  width: 20%;
+  min-width: 10vw;
+  max-width: 20vw;
+}
+
+.formthumb {
+  max-width: 18vw;
+  padding: 1em;
+}
+.subform {
+  border: #46346E;
+  border-width: 4px;
+  border-style: solid;
+  border-radius: 10px;
+  margin-left: auto;
+  margin-left: 15vw;
+  margin-right: 1em;
+  padding: 1em;
+
+  .formthumb {
+    max-width: 38%;
+    padding: 1em;
+  }
 }
 #files {
   padding: 1em;
