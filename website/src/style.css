@@ -307,15 +307,13 @@ form label {
   vertical-align: middle;
 }
 form input {
-  min-width: 60%;
-  max-width: 75%;
+  min-width: 50%;
   margin-top: 1em;
   margin-bottom: 1em;
   vertical-align: middle;
 }
 form textarea {
-  min-width: 60%;
-  max-width: 75%;
+  min-width: 50%;
   height: 6em;
   margin-top: 1em;
   margin-bottom: 1em;
@@ -326,18 +324,18 @@ input[type=submit] {
   max-width: 20vw;
 }
 .subform img {
-  max-width: 27vw;
+  max-width: 48%;
   max-height: 20vh;
   padding: 1em;
 }
 .formthumb {
-  max-width: 20%;
+  max-width: 30%;
   padding: 1em;
 }
 .textthumb {
   display: inline-block;
   padding: 1em;
-  width: 20%
+  width: 30%
 }
 .subform {
   border: #46346E;
@@ -349,10 +347,6 @@ input[type=submit] {
   margin-right: 1em;
   padding: 1em;
 
-  .formthumb {
-    max-width: 38%;
-    padding: 1em;
-  }
 }
 .form audio {
   width: 20%;
