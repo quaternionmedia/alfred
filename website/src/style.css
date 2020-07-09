@@ -325,9 +325,13 @@ input[type=submit] {
   min-width: 10vw;
   max-width: 20vw;
 }
-
+.subform img {
+  max-width: 27vw;
+  max-height: 20vh;
+  padding: 1em;
+}
 .formthumb {
-  max-width: 18vw;
+  max-width: 20%;
   padding: 1em;
 }
 .textthumb {
