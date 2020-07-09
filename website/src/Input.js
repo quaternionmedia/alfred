@@ -169,10 +169,16 @@ export function Media() {
     view: (vnode) => {
       return m('', {}, [
         VideoForm.media().map(medium => {
+          if (medium && medium.endsWith('.mp4')) {
+            return m('.media.bar', [
+              m('input', { value: medium , name: `${vnode.attrs.name}[]`}),
+              m('video[controls].formthumb', { src: medium }),
+            ])
+          } else {
           return m('.media.bar', [
             m('input', { value: medium , name: `${vnode.attrs.name}[]`}),
             m('img.formthumb', { src: medium }),
-          ])
+          ])}
         }),
         m('.bar', {}, [
           m('input', {id: 'newMedia'}),
