@@ -73,7 +73,7 @@ export function Input() {
         value: VideoForm[vnode.attrs.name](),
         ...vnode.attrs,
       }),
-      m('p', {style: {display: 'inline-block', padding: '1em'}}, VideoForm[vnode.attrs.name]())
+      m('p.textthumb', vnode.attrs, VideoForm[vnode.attrs.name]())
     ])
     }
   }
@@ -93,7 +93,7 @@ export function InputArea() {
         value: VideoForm[vnode.attrs.name](),
         ...vnode.attrs,
       }),
-      m('p.textthumb', {}, VideoForm[vnode.attrs.name]())
+      m('p.textthumb', vnode.attrs, VideoForm[vnode.attrs.name]())
     ])
     }
   }
