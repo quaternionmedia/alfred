@@ -147,6 +147,7 @@ body {
   margin-left: auto;
   margin-left: 15vw;
   margin-right: 1em;
+  padding: 1em;
 }
 .toolbar {
   display: flex;

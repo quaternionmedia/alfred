@@ -147,8 +147,20 @@ export function Media() {
         },
         removeOnSpill: true,
         onSpill: e => {
-          let form = VideoForm.media()
-          form.splice(e.oldIndex, 1)
+          var form = VideoForm.media()
+          if (e.oldIndicies.length > 0) {
+            let indicies = []
+            e.oldIndicies.forEach((item, i) => {
+              indicies.push(item.index)
+            })
+          indicies.sort(function(a,b){ return b - a; })
+          indicies.forEach((item, i) => {
+            console.log('removing', item)
+            form.splice(item, 1)
+          })
+          } else {
+            form.splice(e.oldIndex, 1)
+          }
           VideoForm.media(form)
           console.log('spilling', e, VideoForm.media())
         },
