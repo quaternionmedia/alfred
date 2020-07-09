@@ -350,6 +350,11 @@ input[type=submit] {
     padding: 1em;
   }
 }
+.form audio {
+  width: 20%;
+  padding: 1em;
+  vertical-align: middle;
+}
 #files {
   padding: 1em;
 }

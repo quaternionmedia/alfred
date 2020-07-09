@@ -234,3 +234,25 @@ export function Color() {
     }
   }
 }
+
+export function Audio() {
+  return {
+    view: (vnode) => {
+      return m('', {}, [
+        m('label', { for: vnode.attrs.name }, vnode.children),
+        m('textarea', {
+        oninput: e => {
+          console.log('input ', vnode.dom.value, e.target.value)
+          VideoForm[vnode.attrs.name](e.target.value)
+        },
+        value: VideoForm[vnode.attrs.name](),
+        ...vnode.attrs,
+        }),
+        m('audio[controls]', {
+            src: VideoForm[vnode.attrs.name](),
+            type: 'audio/mpeg',
+        }),
+      ])
+    }
+  }
+}
