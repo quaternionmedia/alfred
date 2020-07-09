@@ -136,16 +136,16 @@ export function Media() {
         invertSwap: true,
         preventOnFilter: false,
         onUpdate: e => {
-          let form = array_move(VideoForm.media(), e.oldIndex, e.newIndex)
+          let media = array_move(VideoForm.media(), e.oldIndex, e.newIndex)
           VideoForm.media([''])
           m.redraw.sync()
-          VideoForm.media(form)
+          VideoForm.media(media)
           m.redraw()
-          console.log('moved media', e, form)
+          console.log('moved media', e, media)
         },
         removeOnSpill: true,
         onSpill: e => {
-          var form = VideoForm.media()
+          var media = VideoForm.media()
           if (e.oldIndicies.length > 0) {
             let indicies = []
             e.oldIndicies.forEach((item, i) => {
@@ -154,12 +154,12 @@ export function Media() {
           indicies.sort(function(a,b){ return b - a; })
           indicies.forEach((item, i) => {
             console.log('removing', item)
-            form.splice(item, 1)
+            media.splice(item, 1)
           })
           } else {
-            form.splice(e.oldIndex, 1)
+            media.splice(e.oldIndex, 1)
           }
-          VideoForm.media(form)
+          VideoForm.media(media)
           console.log('spilling', e, VideoForm.media())
         },
       })
@@ -229,7 +229,8 @@ export function Color() {
         },
         value: VideoForm[vnode.attrs.name](),
         ...vnode.attrs,
-      })
+      }),
+      m('.textthumb', {style: {background: VideoForm[vnode.attrs.name]()}})
     ])
     }
   }
