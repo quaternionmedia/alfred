@@ -177,7 +177,7 @@ async def getVideos():
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
 
-@app.get('/media/{media}')
+@app.get('/data/{media}')
 async def getMedia(media: str):
     return FileResponse(join('data', media))
 
@@ -252,7 +252,7 @@ async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(Vid
 async def upload(file: UploadFile = File(...)):
     print('saving files', file.filename)
     await saveFile(file)
-    return {'filename': join('media', file.filename)}
+    return {'filename': join('data', file.filename)}
 
 async def saveFile(file, location='data'):
     data = await file.read()
