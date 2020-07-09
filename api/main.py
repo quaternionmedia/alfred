@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form, HTTPException
+from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form, HTTPException, File, UploadFile
 from starlette.staticfiles import StaticFiles
 from starlette.responses import Response, FileResponse
+from typing import List
 from partial import PartialFileResponse
 from uvicorn import run
 from os.path import join, isfile
@@ -176,6 +177,10 @@ async def getVideos():
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
 
+@app.get('/media/{media}')
+async def getMedia(media: str):
+    return FileResponse(join('data', media))
+
 @app.get('/projects')
 async def getProjects():
     return [ p['name'] for p in db.projects.find({})]
@@ -229,8 +234,6 @@ async def get_bkg(project: str, width: int, height: int, t: float):
         print('error making kburns frame', e)
         raise HTTPException(status_code=500, detail='error making kburns frame')
 
-
-
 @app.post('/form')
 async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):
     filename = f'{timestr()}_{form.project}.mp4'
@@ -245,6 +248,16 @@ async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(Vid
     renderer.add_task(renderForm, form=dict(form), filename=join('videos', filename), logger=DbLogger(filename))
     return filename
 
+@app.post('/upload')
+async def upload(file: UploadFile = File(...)):
+    print('saving files', file.filename)
+    await saveFile(file)
+    return {'filename': join('media', file.filename)}
+
+async def saveFile(file, location='data'):
+    data = await file.read()
+    with open(join(location, file.filename), 'wb') as f:
+        f.write(data)
 
 app.include_router(auth)
 app.include_router(users)

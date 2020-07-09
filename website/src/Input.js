@@ -163,6 +163,36 @@ export function Media() {
           console.log('spilling', e, VideoForm.media())
         },
       })
+
+      // setup drag and drop file upload
+      dragdrop(vnode.dom, {onchange: files => {
+        console.log('dropped', files, files.length)
+        let form = new FormData()
+        for (var i = 0; i < files.length; i++ ){
+          // let medium = (URL.createObjectURL(f))
+          console.log('adding', files[i])
+          form.append('file', files[i])
+          fetch('/upload', {
+            method: 'POST',
+            body: form
+          })
+          .then(response => response.json())
+          .then(data => {
+            let media = VideoForm.media()
+            media.push(data.filename)
+            VideoForm.media(media)
+            console.log('upload successfully!', data.filename, VideoForm.media())
+            m.redraw()
+
+          })
+          .catch(error => {
+            console.error(error)
+          })
+        }
+      }})
+    },
+    onchange: (vnode) => {
+      console.log('element changed', vnode)
     },
     view: (vnode) => {
       return m('', {}, [
@@ -256,4 +286,25 @@ export function Audio() {
       ])
     }
   }
+}
+
+export function dragdrop(element, options) {
+    options = options || {}
+
+    element.addEventListener("dragover", activate)
+    element.addEventListener("dragleave", deactivate)
+    element.addEventListener("dragend", deactivate)
+    element.addEventListener("drop", deactivate)
+    element.addEventListener("drop", update)
+
+    function activate(e) {
+        e.preventDefault()
+    }
+    function deactivate() {}
+    function update(e) {
+        e.preventDefault()
+        if (typeof options.onchange == "function") {
+            options.onchange((e.dataTransfer || e.target).files)
+        }
+    }
 }
