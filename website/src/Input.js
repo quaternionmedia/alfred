@@ -72,7 +72,8 @@ export function Input() {
         },
         value: VideoForm[vnode.attrs.name](),
         ...vnode.attrs,
-      })
+      }),
+      m('p', {style: {display: 'inline-block', padding: '1em'}}, VideoForm[vnode.attrs.name]())
     ])
     }
   }
@@ -91,7 +92,8 @@ export function InputArea() {
         },
         value: VideoForm[vnode.attrs.name](),
         ...vnode.attrs,
-      })
+      }),
+      m('p.textthumb', {}, VideoForm[vnode.attrs.name]())
     ])
     }
   }
@@ -113,7 +115,7 @@ export function Image() {
       }),
       m('img.formthumb', {
         src: VideoForm[vnode.attrs.name](),
-      })
+      }),
     ])
     }
   }
@@ -185,6 +187,22 @@ export function Media() {
               console.log('adding new media', e)
               let form = VideoForm.media()
               let newMedia = document.getElementById('newMedia')
+              m.request(newMedia.value, {
+                type: 'head',
+                extract: (xhr, options) => {
+                  console.log('extracting', xhr)
+                  xhr.onreadystatechange = () => {
+                    if (xhr.readystate == 4) {
+                      console.log(xhr.status);
+                      console.log('type', xhr.getResponseHeader("Content-Type"));
+                    }
+                  }
+                  // return options.deserialize()
+                },
+              }).then(res => {
+                console.log('newMedia head', res)
+
+              })
               if (newMedia.value) {
                 form.push(newMedia.value)
                 VideoForm.media(form)

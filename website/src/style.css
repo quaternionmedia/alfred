@@ -330,6 +330,11 @@ input[type=submit] {
   max-width: 18vw;
   padding: 1em;
 }
+.textthumb {
+  display: inline-block;
+  padding: 1em;
+  width: 20%
+}
 .subform {
   border: #46346E;
   border-width: 4px;

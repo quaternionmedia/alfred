@@ -104,7 +104,6 @@ export function Form() {
         m('hr'),
 
         m(Input, {name: 'name'}, 'Business Name'),
-        m('p', VideoForm.name()),
         m(Image, {name: 'logo'}, 'Logo'),
         m(InputArea, {name: 'address'}, 'Address'),
         m(Input, {name: 'phone'}, 'Phone'),
