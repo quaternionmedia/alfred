@@ -63,7 +63,7 @@ export function Field() {
 export function Input() {
   return {
     view: (vnode) => {
-      return [
+      return m('', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
         m('input[type=text]', {
         oninput: e => {
@@ -73,7 +73,7 @@ export function Input() {
         value: VideoForm[vnode.attrs.name](),
         ...vnode.attrs,
       })
-    ]
+    ])
     }
   }
 }
@@ -82,7 +82,7 @@ export function Input() {
 export function InputArea() {
   return {
     view: (vnode) => {
-      return [
+      return m('', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
         m('textarea', {
         oninput: e => {
@@ -92,7 +92,7 @@ export function InputArea() {
         value: VideoForm[vnode.attrs.name](),
         ...vnode.attrs,
       })
-    ]
+    ])
     }
   }
 }
@@ -103,7 +103,7 @@ export function Image() {
     view: (vnode) => {
       return m('.bar', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
-        m('input', {
+        m('textarea', {
         oninput: e => {
           console.log('input ', vnode.dom.value, e.target.value)
           VideoForm[vnode.attrs.name](e.target.value)
@@ -113,10 +113,6 @@ export function Image() {
       }),
       m('img.formthumb', {
         src: VideoForm[vnode.attrs.name](),
-        style: {
-          width: '30%',
-          padding: '1em'
-        }
       })
     ])
     }
@@ -171,12 +167,12 @@ export function Media() {
         VideoForm.media().map(medium => {
           if (medium && medium.endsWith('.mp4')) {
             return m('.media.bar', [
-              m('input', { value: medium , name: `${vnode.attrs.name}[]`}),
+              m('textarea', { value: medium , name: `${vnode.attrs.name}[]`}),
               m('video[controls].formthumb', { src: medium }),
             ])
           } else {
           return m('.media.bar', [
-            m('input', { value: medium , name: `${vnode.attrs.name}[]`}),
+            m('textarea', { value: medium , name: `${vnode.attrs.name}[]`}),
             m('img.formthumb', { src: medium }),
           ])}
         }),
@@ -205,7 +201,7 @@ export function Media() {
 export function Color() {
   return {
     view: (vnode) => {
-      return [
+      return m('', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
         m('input[type=color]', {
         oninput: e => {
@@ -216,7 +212,7 @@ export function Color() {
         value: VideoForm[vnode.attrs.name](),
         ...vnode.attrs,
       })
-    ]
+    ])
     }
   }
 }
