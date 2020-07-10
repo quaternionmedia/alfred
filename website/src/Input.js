@@ -136,12 +136,29 @@ export function Media() {
         invertSwap: true,
         preventOnFilter: false,
         onUpdate: e => {
-          let media = array_move(VideoForm.media(), e.oldIndex, e.newIndex)
+          let media
+          if (e.oldIndicies.length > 0) {
+            media = VideoForm.media()
+            let indicies = []
+            e.oldIndicies.forEach((item, i) => {
+              indicies.push(item.index)
+            })
+          indicies.sort(function(a,b){ return b - a; })
+          // console.log('moving multiple', indicies)
+          let moved = []
+          indicies.forEach((item, i) => {
+            moved.unshift(...media.splice(item, 1))
+          })
+          // console.log('unshifted', moved)
+          media.splice(e.newIndicies[0], 0, ...moved)
+          } else {
+          media = array_move(VideoForm.media(), e.oldIndex, e.newIndex)
+        }
           VideoForm.media([''])
           m.redraw.sync()
           VideoForm.media(media)
           m.redraw()
-          console.log('moved media', e, media)
+          // console.log('moved media', e, media)
         },
         removeOnSpill: true,
         onSpill: e => {
@@ -279,7 +296,7 @@ export function Audio() {
         value: VideoForm[vnode.attrs.name](),
         ...vnode.attrs,
         }),
-        m('audio[controls]', {
+        m('audio[controls].audiothumb', {
             src: VideoForm[vnode.attrs.name](),
             type: 'audio/mpeg',
         }),
