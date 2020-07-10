@@ -64,7 +64,7 @@ export var Timeline = {
       console.log('got edl!', e, edl)
       Edl.edl = edl
       Video.filename = Edl.edl[0][0]
-      Video.time = Edl.edl[0][1]
+      Video.time(Edl.edl[0][1])
       Monitor.load(Video.filename)
     })
     // m.redraw()
