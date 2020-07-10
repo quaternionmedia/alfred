@@ -59,8 +59,9 @@ function VideoPreview() {
     },
     view: (vnode) => {
       return m('video', {
-        src: vnode.attrs.src,
+        ...vnode.attrs,
         currentTime: Video.time,
+        // state: Video.paused ? vnode.dom.pause() : vnode.dom.play(),
         style: {
           width: '100%',
           height: '100%',

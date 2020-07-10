@@ -9,6 +9,7 @@ border: #210D4D
 hover: #393939
 other: #4F1FB8, #7059A2
 gentle highlight: #2b2b2b
+highlight with transparency: #777a
 recessed: #101010
 */
 
@@ -59,6 +60,9 @@ body {
   /* text-overflow: ellipsis; */
   overflow: hidden;
 }
+.template {
+  background-color: #520E7D;
+}
 .selected {
   background-color: #4F1FB8;
   border: solid #393939 1px;
@@ -107,6 +111,7 @@ body {
   border-width: 4px;
   border-style: solid;
   margin-bottom: .5em;
+  border-radius: 6px;
 }
 @keyframes blinker {
   50% {
@@ -251,10 +256,30 @@ form {
   border-radius: 1em;
   background-color: #393939;
 }
-form input {
-  margin: 1em;
+form label {
+  text-align: end;
+  display: inline-block;
+  width: 15%;
+  margin-right: 1em;
+  vertical-align: middle;
 }
-
+form input {
+    width: 75%;
+    margin-bottom: 1em;
+}
+form textarea {
+  width: 75%;
+  height: 10em;
+  margin-bottom: 2em;
+  vertical-align: middle;
+}
+input[type=submit] {
+  width: 20%;
+}
 #files {
   padding: 1em;
+}
+
+.right {
+  text-align: 'right';
 }

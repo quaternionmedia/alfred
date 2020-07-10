@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks
+from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form
 from starlette.staticfiles import StaticFiles
 from starlette.responses import Response, FileResponse
 from partial import PartialFileResponse
@@ -12,13 +12,12 @@ from bson.json_util import dumps, ObjectId
 
 from db import db
 from users import users
+from logger import DbLogger
 
 from otto.main import app as ottoApi
-from otto.render import render
+from otto.render import renderEdl, renderForm
 from otto.getdata import timestr
-from otto.models import Edl
-from proglog import ProgressBarLogger
-
+from otto.models import Edl, VideoForm
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
 
@@ -77,9 +76,12 @@ app.mount('/otto', ottoApi)
 
 @app.on_event("startup")
 async def seedDb():
-    if not db.edls.find({}).count():
+    if not db.edls.count_documents({}):
         from seed import seed
         db.edls.insert_many(seed)
+    if not db.projects.count_documents({}):
+        from otto.defaults import sample_forms
+        db.projects.insert_many(sample_forms)
 
 @app.get('/edl')
 def returnEdl(filename: str):
@@ -99,16 +101,13 @@ async def download(filename: str):
 @app.post('/render')
 async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str):
     filename = f'{project}_{timestr()}.mp4'
-    id = db.renders.insert_one({'filename': filename, 'edl': edl.edl, 'progress': 0, 'link': join('videos', filename)}).inserted_id
-    class DbLogger(ProgressBarLogger):
-        def callback(self, **kwargs):
-            if self.state['bars']:
-                bar = self.state['bars']
-                if bar.get('t'):
-                    t = bar.get('t')
-                    p = 100 * t['index'] / t['total']
-                    db.renders.update({'filename': filename}, {'$set': {'progress': p}})
-    renderer.add_task(render, edl.edl, filename=join('videos', filename), logger=DbLogger())
+    id = db.renders.insert_one({
+        'filename': filename,
+        'edl': edl.edl,
+        'progress': 0,
+        'link': join('videos', filename)}
+    ).inserted_id
+    renderer.add_task(renderEdl, edl.edl, filename=join('videos', filename), logger=DbLogger(filename))
     # renderer.add_task(updateProgress, id, 100)
     return str(id)
 
@@ -136,8 +135,8 @@ def cancelRender(user: User = Depends(get_current_active_user)):
     return
 
 
-@app.get('/projects')
-def getProjects(user: User = Depends(get_current_active_user)):
+@app.get('/edls')
+def getEdls(user: User = Depends(get_current_active_user)):
     return [i['filename'] for i in db.edls.find({}, ['filename'])]
 
 @app.get('/videos')
@@ -150,6 +149,34 @@ async def getVideos():
     })
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
+
+@app.get('/projects')
+async def getProjects():
+    return dumps(db.projects.find({}, ['name']))
+
+@app.get('/project/{project}')
+async def getProject(project: str):
+    return db.projects.find_one({'name': project}, ['form'])['form']
+
+@app.post('/save')
+async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
+    result = db.projects.update_one({'name': project}, {'$set': {'form': dict(form)}}, upsert=True)
+    print('saved form', project, form, result)
+    return result.modified_count
+
+@app.post('/form')
+async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):
+    filename = f'{timestr()}_{form.project}.mp4'
+    print('rendering video from form', form, filename)
+    db.renders.insert_one(
+        {'filename': filename,
+        'form': dict(form),
+        'progress': 0,
+        'link': join('videos', filename),
+        })
+    renderer.add_task(renderForm, form=dict(form), filename=join('videos', filename), logger=DbLogger(filename))
+    return filename
+
 
 app.include_router(auth)
 app.include_router(users)

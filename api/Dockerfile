@@ -16,11 +16,15 @@ RUN pip install numpy gizeh pillow
 COPY --from=builder /kburns-slideshow /kburns
 RUN chmod +x /kburns/main.py
 RUN ln -s /kburns/main.py /usr/bin/kburns
+RUN ln -s /usr/bin/ffmpeg /usr/bin/ffmpeg.exe
 
 COPY otto/fonts/* /usr/share/fonts/truetype/
 RUN fc-cache -fv
-RUN pip install moviepy jinja2
+RUN pip install jinja2
+RUN pip install --pre moviepy
 ENV IMAGEMAGICK_BINARY=/usr/bin/magick
+
+RUN mkdir -p /app/data/
 COPY /otto /otto
 RUN pip install /otto/
 ENTRYPOINT ["/start-reload.sh"]
