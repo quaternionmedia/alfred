@@ -1,7 +1,7 @@
 import m from 'mithril'
-import { success, error } from 'alertifyjs'
+import { success, error, message } from 'alertifyjs'
 import { Menu } from './Menu'
-
+import { Field, Input, InputArea, VideoForm, Image, Media, Color, Audio } from './Input'
 
 export function Form() {
 
@@ -18,9 +18,12 @@ export function Form() {
             if (options && i) {
               m.request(`/project/${options[i - 1]}`).then(res => {
                 selected = res['form']
+                for (const property in selected) {
+                  console.log('setting VideoForm', property, selected[property])
+                  VideoForm[property](selected[property])
+                }
                 selected.project = options[i - 1]
                 console.log('selected', selected)
-                // selected['name'] = options[i - 1]
               })
             }
           }
@@ -65,22 +68,6 @@ export function Form() {
       }
     }
   }
-  function Color() {
-    return {
-      view: (vnode) => {
-        return m('', {}, [
-          m('label.formlabel', {
-            for: vnode.attrs.name
-          }, vnode.children),
-          m('input', {
-            type: 'color',
-            ...vnode.attrs,
-            value: selected ? selected[vnode.attrs.name] : ''
-          })
-        ])
-      }
-    }
-  }
 
   return {
     oninit: (vnode) => {
@@ -115,23 +102,32 @@ export function Form() {
           },),
         ]),
         m('hr'),
-        m(Text, {name: 'NAME'}, 'Business Name'),
-        m(Text, {name: 'LOGO'}, 'Logo'),
-        m(TextArea, {name: 'ADDRESS'}, 'Address'),
-        m(Text, {name: 'PHONE'}, 'Phone'),
-        m(Text, {name: 'HOURS'}, 'Hours'),
-        m(Text, {name: 'WEBSITE'}, 'Website'),
-        m(TextArea, {name: 'INITIAL'}, 'Initial text'),
-        m(TextArea, {name: 'BULLETS'}, 'Bullets'),
-        m(TextArea, {name: 'OPTIONAL'}, 'Optional'),
-        m(TextArea, {name: 'MEDIA'}, 'Media'),
-        m(TextArea, {name: 'AUDIO'}, 'Audio'),
-        m(TextArea, {name: 'CALL'}, 'Call'),
-        // m(TextArea, {name: 'CLOSING'}, 'Closing'),
-        m(Color, {name: 'THEMECOLOR', value:'#FF0'}, 'Theme Color'),
-        m(Color, {name: 'FONTCOLOR', value: '#FFF'}, 'Font Clolor'),
-        m(Text, {name: 'FONT'}, 'Font'),
-        m(Text, {name: 'DURATION'}, 'Duration'),
+
+        m(Input, {name: 'name'}, 'Business Name'),
+        m(Image, {name: 'logo'}, 'Logo'),
+        m(InputArea, {name: 'address'}, 'Address'),
+        m(Input, {name: 'phone'}, 'Phone'),
+        m(Input, {name: 'hours'}, 'Hours'),
+        m(Input, {name: 'website'}, 'Website'),
+        m(InputArea, {name: 'initial'}, 'Initial text'),
+        m(InputArea, {name: 'bullets'}, 'Bullets'),
+        m(InputArea, {name: 'optional'}, 'Optional'),
+        m('label', { for: 'media' }, 'Media'),
+        m('.subform', {}, [
+          m(InputArea, {
+            name: 'media',
+            value: VideoForm.media(),
+            style: {display: 'none'}
+          }, ),
+          m(Media, {name: 'media'}, 'Media'),
+        ]),
+        m(Audio, {name: 'audio'}, 'Audio'),
+        m(InputArea, {name: 'call'}, 'Call'),
+        // m(TextArea, {name: 'closing'}, 'Closing'),
+        m(Color, {name: 'themecolor'}, 'Theme Color'),
+        m(Color, {name: 'fontcolor'}, 'Font Clolor'),
+        m(Input, {name: 'font'}, 'Font'),
+        m(Input, {name: 'duration'}, 'Duration'),
         m('hr'),
         m('', {style: {'text-align': 'right'}}, [
           m('input', {type: 'submit', name: 'render', value: 'Preview',
@@ -145,11 +141,11 @@ export function Form() {
                 body: form,
               }).then(e => {
                 console.log('rendering', e)
-                success(`rendering!`)
+                message(`generating preview!`, 3)
                 m.route.set(`/otto?project=${proj}`)
               }, e => {
                 console.log('error rendering', e)
-                error('oops... something went wrong.')
+                error('oops... something went wrong.', 3)
               })
             }
           }, )
