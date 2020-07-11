@@ -1,4 +1,6 @@
 {
   "projectId": "nav89r",
-  "reporter": "json"
+  "reporter": "json",
+  "viewportWidth": 800,
+  "viewportHeight": 600
 }

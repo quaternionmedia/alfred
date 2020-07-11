@@ -23,3 +23,8 @@ require('./commands')
 beforeEach(() => {
   cy.log('Starting alfred tests. Places.')
 })
+// 
+// before(() => {
+//   cy.testingLogin()
+//   cy.wait(50)
+// })
