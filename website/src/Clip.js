@@ -224,8 +224,8 @@ export default class Clip {
       }, m.trust(this.description)),
       m('i.material-icons#progress.progress',  {
         style: {
-          display: (Edl.current == this.pos) && (this.inpoint < Video.time < this.outpoint) ? 'inherit': 'none',
-          left: (Video.time - this.inpoint)*state.scale(),
+          display: (Edl.current == this.pos) && (this.inpoint < Video.time() < this.outpoint) ? 'inherit': 'none',
+          left: (Video.time() - this.inpoint)*state.scale(),
         }
       }),
     ])

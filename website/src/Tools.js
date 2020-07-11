@@ -15,7 +15,7 @@ export function downloadFile(url) {
 }
 export default class Tools {
   view(vnode) {
-    return m('#tools.tools.', {}, [
+    return m('#tools.tools.toolbar', {}, [
 
       m('i.material-icons', {
         title: 'start',
@@ -75,11 +75,15 @@ export default class Tools {
               m.request({
                 url: '/render',
                 method: 'post',
-                params: { project: m.route.param('edl') },
+                params: {
+                  project: m.route.param('project'),
+                  width: state.width(),
+                  height: state.height(),
+                },
                 body: { edl: Edl.edl },
               }).then(e => {
                 console.log('got result', e)
-                message(`Added ${m.route.param("edl")} to render queue`, 5)
+                message(`Added ${m.route.param("project")} to render queue`, 5)
                 m.route.set('/renders')
               }
             )

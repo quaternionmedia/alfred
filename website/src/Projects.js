@@ -8,7 +8,7 @@ function Projects() {
   var projects = []
   return {
     oninit: (vnode) => {
-      m.request('/edls', {
+      m.request('/projects', {
         headers: {
           Authorization: User.token
         }
@@ -34,7 +34,7 @@ function Projects() {
               return m('tr', [
                 m('td', {onclick: (e) => {
                   Edl.edl = []
-                  m.route.set('/otto?edl=' + p)
+                  m.route.set('/otto?project=' + p)
                   }}, p),
               ])
             })

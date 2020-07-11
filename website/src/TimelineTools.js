@@ -8,7 +8,7 @@ export default class TimelineTools {
   }
   view() {
     let t = document.getElementById('timeline')
-    return m('#TTools.tools', {}, [
+    return m('#TTools.tools.toolbar', {}, [
       m('i', {
         title: 'time selector',
           onclick: (vnode) => {

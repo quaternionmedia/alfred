@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form
+from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form, HTTPException
 from starlette.staticfiles import StaticFiles
 from starlette.responses import Response, FileResponse
 from partial import PartialFileResponse
@@ -13,11 +13,16 @@ from bson.json_util import dumps, ObjectId
 from db import db
 from users import users
 from logger import DbLogger
+from seed import seed, formToEdl
 
 from otto.main import app as ottoApi
 from otto.render import renderEdl, renderForm
-from otto.getdata import timestr
+from otto.getdata import timestr, download
 from otto.models import Edl, VideoForm
+
+from moviepy.editor import ImageClip, VideoFileClip
+from math import floor
+
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
 
@@ -94,27 +99,39 @@ async def saveEdl(filename: str, edl: Edl):
 
 
 @app.get('/download')
-async def download(filename: str):
+async def download_file(filename: str):
     return FileResponse(filename, filename=filename)
 
 
 @app.post('/render')
-async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str):
-    filename = f'{project}_{timestr()}.mp4'
+async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: int = 1920, height: int = 1080):
+    ts = timestr()
+    duration = sum(c['duration'] for c in edl.edl)
+    filename = f'{project}_{width}x{height}_{duration}s_{ts}.mp4'
+    media = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
     id = db.renders.insert_one({
+        'project': project,
         'filename': filename,
+        'duration': duration,
+        'resolution': (width, height),
+        'media': media,
         'edl': edl.edl,
         'progress': 0,
-        'link': join('videos', filename)}
+        'started': ts,
+        'link': join('videos', filename),
+        }
     ).inserted_id
-    renderer.add_task(renderEdl, edl.edl, filename=join('videos', filename), logger=DbLogger(filename))
+    proj = db.projects.find_one({'name': project}, ['form'])['form']
+    print('rendering!', filename, proj)
+    media = [ download(m) for m in proj['MEDIA'] ]
+    renderer.add_task(renderEdl, edl.edl, media=media, audio=download(proj['AUDIO'][0]), filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
     # renderer.add_task(updateProgress, id, 100)
     return str(id)
 
 
 @app.get('/renders')
 def renders(user: User = Depends(get_current_active_user)):
-    return dumps(db.renders.find({}, ['filename', 'progress', 'link']).sort([('_id', -1)]))
+    return dumps(db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'duration', 'started']).sort([('_id', -1)]))
 
 
 @app.get('/renders/{render}')
@@ -130,14 +147,23 @@ def pauseRender(user: User = Depends(get_current_active_user)):
 
 
 @app.put('/renders/{render}/cancel')
-def cancelRender(user: User = Depends(get_current_active_user)):
+def cancelRender(render: str, user: User = Depends(get_current_active_user)):
     # cancel selected render
-    return
+    res = db.renders.delete_one({'filename': render})
+    if res.deleted_count:
+        print('deleted render', render, res, res.deleted_count)
+        return res.deleted_count
+    else:
+        return HTTPException(status_code=406, detail='no such entry in database')
 
 
 @app.get('/edls')
 def getEdls(user: User = Depends(get_current_active_user)):
     return [i['filename'] for i in db.edls.find({}, ['filename'])]
+
+@app.get('/templates')
+async def getTemplates():
+    return seed[0]['edl']
 
 @app.get('/videos')
 async def getVideos():
@@ -152,11 +178,16 @@ async def buffer(video:str, response: Response, bits: int = Header(0)):
 
 @app.get('/projects')
 async def getProjects():
-    return dumps(db.projects.find({}, ['name']))
+    return [ p['name'] for p in db.projects.find({})]
 
 @app.get('/project/{project}')
 async def getProject(project: str):
-    return db.projects.find_one({'name': project}, ['form'])['form']
+    c = db.projects.find_one({'name': project}, ['name', 'form', 'edl'])
+    res = {}
+    for a in ['name', 'edl', 'form']:
+        if c.get(a):
+            res[a] = c.get(a)
+    return res
 
 @app.post('/save')
 async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
@@ -164,9 +195,45 @@ async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
     print('saved form', project, form, result)
     return result.modified_count
 
+@app.post('/formToEdl')
+async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
+    form.MEDIA = [ m.strip() for m in form.MEDIA[0].split(',') ]
+    edl = formToEdl(form)
+    print('edl from form', edl, dict(form))
+    db.projects.update_one({'name': form.project},
+        {'$set':
+            {
+                'form': dict(form),
+                'edl': edl['edl'],
+            }}, upsert=True)
+    return True
+
+@app.get('/bkg/{project}')
+async def get_bkg(project: str, width: int, height: int, t: float):
+    clips = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
+    clip = clips[floor(t / 5)]
+    print('making bkg', clip)
+    try:
+        if clip.endswith('mp4'):
+            clip = VideoFileClip(download(clip))
+        else:
+            clip = ImageClip(clip)
+        if width >= height:
+            clip = clip.resize(width=width)
+        else:
+            clip = clip.resize(height=height)
+        clip.save_frame('bkg.jpg', t=t % 5)
+        return FileResponse('bkg.jpg')
+    except Exception as e:
+        print('error making kburns frame', e)
+        raise HTTPException(status_code=500, detail='error making kburns frame')
+
+
+
 @app.post('/form')
 async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):
     filename = f'{timestr()}_{form.project}.mp4'
+    form.MEDIA = [ m.strip() for m in form.MEDIA[0].split(',') ]
     print('rendering video from form', form, filename)
     db.renders.insert_one(
         {'filename': filename,

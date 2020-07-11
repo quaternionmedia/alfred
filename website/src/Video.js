@@ -1,16 +1,17 @@
 import m from 'mithril'
+var Stream = require("mithril/stream")
 
-var Video = {
+export var Video = {
   clip: null,
   paused: true,
   filename: "",
-  time: 0,
+  time: Stream(0),
   duration: 0,
   volume: .1,
   speed: 1,
 }
 
-var Edl = {
+export var Edl = {
   edl: [],
   current: 0,
   time: 0,
@@ -49,9 +50,7 @@ var Edl = {
       Edl.current = n
     }
     Edl.time = t
-    Video.time = t - Edl.durations(Edl.edl.slice(0, n))
+    Video.time(t - Edl.durations(Edl.edl.slice(0, n)))
     m.redraw.sync()
   }
 }
-
-module.exports = {Video, Edl}

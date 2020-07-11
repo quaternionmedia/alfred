@@ -32,3 +32,47 @@ def migrate1to2(db):
         i['edl'] = edl1to2(edl)
         res.append(i)
     return res
+
+from otto.models import VideoForm
+def formToEdl(form: VideoForm):
+    clips = [
+        {'type': 'template',
+        'name': 'title',
+        'data': {'text': form.NAME, 'themecolor': form.THEMECOLOR},
+        'duration': min(form.DURATION, 5)},
+    ]
+    if form.DURATION > 15:
+        clips.append(
+            {'type': 'template',
+            'name': 'initial',
+            'data': {'text': form.INITIAL, 'themecolor': form.THEMECOLOR},
+            'duration': min(5, form.DURATION - 15)}
+        )
+    if form.DURATION > 20:
+        clips.append(
+            {'type': 'template',
+            'name': 'bullets',
+            'data': {'text': form.BULLETS, 'themecolor': form.THEMECOLOR},
+            'duration': form.DURATION - 20}
+        )
+    if form.DURATION > 10:
+        clips.append(
+            {'type': 'template',
+            'name': 'initial',
+            'data': {'text': form.CALL, 'themecolor': form.THEMECOLOR},
+            'duration': min(5, form.DURATION - 10)}
+        )
+    if form.DURATION > 5:
+        clips.append(
+            {'type': 'template',
+            'name': 'final',
+            'data': {
+            'text': form.NAME,
+            'address': form.ADDRESS,
+            'website': form.WEBSITE,
+            'phone': form.PHONE,
+            'themecolor': form.THEMECOLOR},
+            'duration': min(5, form.DURATION - 5)}
+        )
+
+    return {'name': form.project, 'edl': clips, 'media': form.MEDIA}

@@ -53,7 +53,7 @@ export function Clip() {
           Edl.current = vnode.attrs.i
           Edl.time = d + Edl.durations(Edl.edl.slice(0, vnode.attrs.i))
           Video.clip = data
-          Video.time = d
+          Video.time(d)
           console.log('clicked on clip', this, vnode, e, p, d, Edl, Video)
           m.redraw()
         }
@@ -70,7 +70,7 @@ export function Clip() {
           m('i.material-icons.progress', {
             style: {
               display: (Edl.current == vnode.attrs.i) ? 'inherit': 'none',
-              left: Video.time*state.scale(),
+              left: Video.time()*state.scale(),
             }
           }),
           ...vnode.children
@@ -145,15 +145,12 @@ export function VideoClip() {
 export function OttoTimeline() {
   return {
     oninit: (vnode) => {
-      m.request('/edl', {
-        params: {
-          filename: m.route.param('edl')
-        }
-      }).then(e => {
+      m.request(`/project/${m.route.param('project')}`, {}).then(e => {
         console.log('got otto', e)
-        Edl.edl = e
+        Edl.edl = e.edl
         Edl.current = 0
         Edl.time = 0
+        Edl.update()
       })
     },
     oncreate: (vnode) => {
