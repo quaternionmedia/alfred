@@ -32,9 +32,16 @@ export function Renders() {
       // console.log('render list:', e)
       renders = JSON.parse(e)
     }, (err) => {
-      error('Not authorized!', 3)
       console.log('error loading renders from server', err)
-      m.route.set('/login?redirect=/renders')
+      m.request('/refresh', {
+          method: 'post',
+      }).then(e => {
+        console.log('refreshed token', e)
+        User.login(e)
+      }, err => {
+        error('Not authorized!', 3)
+        m.route.set('/login?redirect=/renders')
+      })
     })
   }
   return {

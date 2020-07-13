@@ -15,6 +15,11 @@ SECRET_KEY = '645e87ee8bd522e5f93bca30be7bf580a64270cf1d50fb77c68f4b58124dd0f7'
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 90
 
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
 class Token(BaseModel):
     access_token: str
@@ -82,11 +87,6 @@ def create_access_token(*, data: dict, expires_delta: timedelta = None):
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme), mcguffin: str = Cookie(None)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -99,7 +99,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme), mcguffin: str = 
     if user is None:
         raise credentials_exception
     if mcguffin != payload.get('mcguffin'):
-        return credentials_exception
+        raise credentials_exception
     return user
 
 
@@ -113,15 +113,35 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise credentials_exception
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     mcguffin = token_urlsafe(32)
+    db.mcguffins.insert_one({'name': mcguffin, 'username': user.username})
+    response.set_cookie(key='mcguffin', value=mcguffin)
     access_token = create_access_token(
         data={"sub": user.username, 'mcguffin': mcguffin}, expires_delta=access_token_expires
     )
-    response.set_cookie(key='mcguffin', value=mcguffin)
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@auth.post('/refresh', response_model=Token)
+async def refresh_access_token(response: Response, mcguffin: str = Cookie(None)):
+    try:
+        token = db.mcguffins.find_one({'name': mcguffin})
+        print('refresh. checking mcguffin', mcguffin, token)
+        if token:
+            # TODO remove token from db
+            username: str = token['username']
+            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            mcguffin = token_urlsafe(32)
+            print('making token', username, access_token_expires, mcguffin)
+            response.set_cookie(key='mcguffin', value=mcguffin)
+            # print('making new token', username, access_token_expires, mcguffin)
+            access_token = create_access_token(
+                data={"sub": username, 'mcguffin': mcguffin}, expires_delta=access_token_expires
+            )
+            return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        print('error refreshing', e)
+        raise credentials_exception
+    # raise credentials_exception
