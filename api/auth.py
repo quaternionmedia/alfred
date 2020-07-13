@@ -1,9 +1,10 @@
 from datetime import datetime, timedelta
 import jwt
-from fastapi import Depends, FastAPI, APIRouter, HTTPException, status
+from fastapi import Depends, FastAPI, APIRouter, Response, Cookie, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt import PyJWTError
 from passlib.context import CryptContext
+from secrets import token_urlsafe
 from pydantic import BaseModel
 from typing import List
 from db import db
@@ -22,6 +23,7 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: str = None
+    mcguffin: str = None
 
 
 class User(BaseModel):
@@ -79,7 +81,7 @@ def create_access_token(*, data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)):
+async def get_current_user(token: str = Depends(oauth2_scheme), mcguffin: str = Cookie(None)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -96,6 +98,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     user = get_user(username=token_data.username)
     if user is None:
         raise credentials_exception
+    if mcguffin != payload.get('mcguffin'):
+        return credentials_exception
     return user
 
 
@@ -106,7 +110,7 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 
 @auth.post("/token", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -115,7 +119,9 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    mcguffin = token_urlsafe(32)
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
+        data={"sub": user.username, 'mcguffin': mcguffin}, expires_delta=access_token_expires
     )
+    response.set_cookie(key='mcguffin', value=mcguffin)
     return {"access_token": access_token, "token_type": "bearer"}

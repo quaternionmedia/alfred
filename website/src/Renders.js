@@ -25,7 +25,8 @@ export function Renders() {
   function getRenders() {
     m.request('/renders', {
       headers: {
-        Authorization: User.token
+        Authorization: User.token,
+        mcguffin: User.mcguffin,
       }
     }).then( e => {
       // console.log('render list:', e)
