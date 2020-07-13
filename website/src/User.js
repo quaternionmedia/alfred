@@ -16,6 +16,8 @@ export var User = {
     console.log('logged in as: ', User)
     if (m.route.param('redirect')) {
       m.route.set(m.route.param('redirect'))
+    } else if (m.route.get() == '/login') {
+      m.route.set('/')
     } else {
       m.route.set(m.route.get())
     }

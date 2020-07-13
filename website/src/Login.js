@@ -40,7 +40,6 @@ export const Login = () => {
               }).then( (token) => {
                 User.login(token)
                 success(`${User.username} logged in!`, 4)
-                m.route.set('/')
               }, (res) => {
                 console.log('error logging in!', res)
                 error('error logging in', 3)
