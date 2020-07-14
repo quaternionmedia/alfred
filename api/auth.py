@@ -146,3 +146,16 @@ async def refresh_access_token(response: Response, mcguffin: str = Cookie(None))
     except Exception as e:
         print('error refreshing', e)
         raise credentials_exception
+
+
+@auth.post('/logout')
+async def logout(response: Response, mcguffin: str = Cookie(None)):
+    try:
+        response.delete_cookie(key='mcguffin')
+        token = db.mcguffins.find_one({'name': mcguffin})
+        print('refresh. checking mcguffin', mcguffin, token)
+        if token:
+            db.mcguffins.delete_one({'name': mcguffin})
+    except Exception as e:
+        print('error logging out', e)
+        raise credentials_exception

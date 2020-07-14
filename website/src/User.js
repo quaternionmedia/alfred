@@ -27,6 +27,7 @@ export var User = {
   },
   logout: () => {
     console.log('logging out', User)
+    m.request('/logout', {method: 'post'})
     User.jwt = null
     User.username = null
     User.token = null
