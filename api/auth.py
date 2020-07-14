@@ -8,7 +8,7 @@ from secrets import token_urlsafe
 from pydantic import BaseModel
 from typing import List
 from db import db
-
+from config import PRODUCTION
 # openssl rand -hex 32
 SECRET_KEY = '645e87ee8bd522e5f93bca30be7bf580a64270cf1d50fb77c68f4b58124dd0f7'
 
@@ -117,7 +117,7 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     mcguffin = token_urlsafe(32)
     db.mcguffins.insert_one({'name': mcguffin, 'username': user.username})
-    response.set_cookie(key='mcguffin', value=mcguffin)
+    response.set_cookie(key='mcguffin', value=mcguffin, httponly=True, secure=PRODUCTION)
     access_token = create_access_token(
         data={"sub": user.username, 'mcguffin': mcguffin}, expires_delta=access_token_expires
     )
@@ -135,7 +135,7 @@ async def refresh_access_token(response: Response, mcguffin: str = Cookie(None))
             access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
             mcguffin = token_urlsafe(32)
             print('making token', username, access_token_expires, mcguffin)
-            response.set_cookie(key='mcguffin', value=mcguffin)
+            response.set_cookie(key='mcguffin', value=mcguffin, httponly=True, secure=PRODUCTION)
             # print('making new token', username, access_token_expires, mcguffin)
             access_token = create_access_token(
                 data={"sub": username, 'mcguffin': mcguffin}, expires_delta=access_token_expires
