@@ -1,6 +1,7 @@
 import m from 'mithril'
 import { Menu, Link} from './Menu'
 import { User } from './User'
+import { auth } from './Login'
 import { error, message } from 'alertifyjs'
 import { downloadFile } from './Tools'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
@@ -22,31 +23,12 @@ export function RenderPreview() {
 export function Renders() {
   var preview = Stream(null)
   var renders = []
-  function getRenders() {
-    m.request('/renders', {
-      headers: {
-        Authorization: User.token,
-        mcguffin: User.mcguffin,
-      }
-    }).then( e => {
-      // console.log('render list:', e)
-      renders = JSON.parse(e)
-    }, (err) => {
-      console.log('error loading renders from server', err)
-      m.request('/refresh', {
-          method: 'post',
-      }).then(e => {
-        console.log('refreshed token', e)
-        User.login(e)
-      }, err => {
-        error('Not authorized!', 3)
-        m.route.set('/login?redirect=/renders')
-      })
-    })
-  }
   return {
     oninit: vnode => {
-      getRenders()
+      auth('/renders').then(e => {
+        console.log('renders init')
+        renders = JSON.parse(e)
+      })
     },
     view: vnode => {
       return [

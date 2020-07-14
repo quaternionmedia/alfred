@@ -3,6 +3,41 @@ import { Menu } from './Menu'
 import { User } from './User'
 import { success, error, message, prompt } from 'alertifyjs'
 
+export function auth(url, opts) {
+  const req = new Promise((resolve, reject) => {
+      m.request(url, {
+        headers: {
+          Authorization: User.token,
+        },
+        ...opts
+      }).then(res => {
+        console.log('auth success')
+        resolve(res)
+        // return res
+      }).catch( e => {
+        if (e.code == 401) {
+          m.request('/refresh', {
+            method: 'post'
+        }).then(token => {
+            User.login(token)
+            auth(url, opts).then(res => {
+              console.log('resolved refresh')
+              resolve(res)
+            })
+          }).catch(err => {
+            console.log('error making auth request', url, opts, err)
+            error('Not authorized')
+            m.route.set('/login', {
+                redirect: m.route.get()
+              })
+            reject(err)
+          })
+        }
+      })
+    })
+    return req
+}
+
 export const Login = () => {
   return {
     view: (vnode) => {
