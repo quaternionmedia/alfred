@@ -86,7 +86,7 @@ def create_access_token(*, data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme), mcguffin: str = Cookie(None)):
+async def get_current_user(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -97,8 +97,6 @@ async def get_current_user(token: str = Depends(oauth2_scheme), mcguffin: str = 
         raise credentials_exception
     user = get_user(username=token_data.username)
     if user is None:
-        raise credentials_exception
-    if mcguffin != payload.get('mcguffin'):
         raise credentials_exception
     return user
 
@@ -130,10 +128,12 @@ async def refresh_access_token(response: Response, mcguffin: str = Cookie(None))
         token = db.mcguffins.find_one({'name': mcguffin})
         print('refresh. checking mcguffin', mcguffin, token)
         if token:
-            # TODO remove token from db
             username: str = token['username']
             access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            # TODO update token status to 'used' instead of deleting
+            db.mcguffins.delete_one({'name': mcguffin})
             mcguffin = token_urlsafe(32)
+            db.mcguffins.insert_one({'name': mcguffin, 'username': username})
             print('making token', username, access_token_expires, mcguffin)
             response.set_cookie(key='mcguffin', value=mcguffin, httponly=True, secure=PRODUCTION)
             # print('making new token', username, access_token_expires, mcguffin)
@@ -141,7 +141,8 @@ async def refresh_access_token(response: Response, mcguffin: str = Cookie(None))
                 data={"sub": username, 'mcguffin': mcguffin}, expires_delta=access_token_expires
             )
             return {"access_token": access_token, "token_type": "bearer"}
+        else:
+            raise credentials_exception
     except Exception as e:
         print('error refreshing', e)
         raise credentials_exception
-    # raise credentials_exception
