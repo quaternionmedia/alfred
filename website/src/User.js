@@ -5,13 +5,11 @@ export var User = {
   jwt: null,
   username: null,
   token: null,
-  mcguffin: null,
   loggedIn: false,
   login: (token) => {
     User.jwt = token
     let decoded = jwt_decode(token['access_token'])
     User.username = decoded['sub']
-    User.mcguffin = decoded['mcguffin']
     console.log('authenticated!', decoded)
     User.token = token['token_type'] + ' ' + token['access_token']
     User.loggedIn = true
@@ -31,7 +29,6 @@ export var User = {
     User.jwt = null
     User.username = null
     User.token = null
-    User.mcguffin = null
     User.loggedIn = false
     window.localStorage.setItem('CREDENTIALS_FLUSH', Date.now().toString())
     window.localStorage.removeItem('CREDENTIALS_FLUSH')
