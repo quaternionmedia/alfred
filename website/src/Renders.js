@@ -23,12 +23,15 @@ export function RenderPreview() {
 export function Renders() {
   var preview = Stream(null)
   var renders = []
+  function getRenders() {
+    auth('/renders').then(e => {
+      console.log('renders init')
+      renders = JSON.parse(e)
+    })
+  }
   return {
     oninit: vnode => {
-      auth('/renders').then(e => {
-        console.log('renders init')
-        renders = JSON.parse(e)
-      })
+      getRenders()
     },
     view: vnode => {
       return [
@@ -84,11 +87,8 @@ export function Renders() {
                   m('.tools',
                     m('i.material-icons', {
                       onclick: e => {
-                        m.request(`/renders/${r['filename']}/cancel`, {
+                        auth(`/renders/${r['filename']}/cancel`, {
                           method: 'put',
-                          headers: {
-                            Authorization: User.token
-                          }
                         }).then(res => {
                           console.log('deleted', res)
                           if (res.status_code == 406) {
