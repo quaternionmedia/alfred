@@ -9,7 +9,8 @@ services:
     build: ./website/
     image: alfred_site
     volumes:
-      - "./website/:/app/"
+      - ./website/:/app/
+
   # TODO API description
   api:
     build: ./api/
@@ -18,15 +19,15 @@ services:
       - website
       - db
     volumes:
-      - "./api/:/app/"
-      - "./website/dist/:/app/dist/"
-      - "./videos/:/app/videos/"
+      - ./api/:/app/
+      - ./website/dist/:/app/dist/
+      - ./videos/:/app/videos/
     networks:
       - alfred_isolated
       - alfred_outgoing
   db:
     image: mongo:4.2
     volumes:
-      - './database:/data/db'
+      - ./database:/data/db
     networks:
       - alfred_isolated

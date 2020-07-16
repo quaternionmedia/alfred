@@ -1,4 +1,5 @@
 from pymongo import MongoClient
+from config import DB_URL
 
-client = MongoClient('mongodb://db:27017', connect=False)
+client = MongoClient(DB_URL, connect=False)
 db = client.alfred

@@ -4,9 +4,13 @@ services:
   # TODO Development Reloader description
   website:
     ports:
-      - "1234:1234"
+      - 1234:1234
     command: npm run dev
 # TODO API description
   api:
     ports:
-      - "8000:80"
+      - 8000:80
+    environment:
+      - CELERY_BROKER=pyamqp://guest@rabbit//
+      - CELERY_BACKEND=rpc://
+      - DB_URL=mongodb://db:27017

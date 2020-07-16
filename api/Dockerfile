@@ -28,4 +28,4 @@ ENV IMAGEMAGICK_BINARY=/usr/bin/magick
 RUN mkdir -p /app/data/
 COPY /otto /otto
 RUN pip install /otto/
-ENTRYPOINT ["/start-reload.sh"]
+CMD ["/start-reload.sh"]
