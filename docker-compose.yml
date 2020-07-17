@@ -25,9 +25,32 @@ services:
     networks:
       - alfred_isolated
       - alfred_outgoing
+
+  renderer:
+    build: ./api/
+    command: celery -A tasks worker --loglevel=debug
+    networks:
+      - alfred_isolated
+    volumes:
+      - ./api/:/app/
+      - ./videos/:/app/videos/
+    depends_on:
+      - rabbit
+    environment:
+      - CELERY_BROKER=pyamqp://guest@rabbit//
+      - CELERY_BACKEND=rpc://
+      - DB_URL=mongodb://db:27017
+
   db:
     image: mongo:4.2
     volumes:
       - ./database:/data/db
     networks:
       - alfred_isolated
+
+  rabbit:
+    image: rabbitmq
+    networks:
+      - alfred_isolated
+    ports:
+      - 5672:5672
