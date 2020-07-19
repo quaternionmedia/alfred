@@ -6,10 +6,22 @@ services:
     ports:
       - 1234:1234
     command: npm run dev
+
 # TODO API description
   api:
     ports:
       - 8000:80
+
+  renderer:
+    build: ./api/
+    command: celery -A tasks worker --loglevel=debug
+    networks:
+      - alfred_isolated
+    volumes:
+      - ./api/:/app/
+      - ./videos/:/app/videos/
+    depends_on:
+      - rabbit
     environment:
       - CELERY_BROKER=pyamqp://guest@rabbit//
       - CELERY_BACKEND=rpc://

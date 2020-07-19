@@ -13,8 +13,9 @@ from bson.json_util import dumps, ObjectId
 
 from db import db
 from users import users
-from logger import DbLogger
+from logger import DbLogger, celeryLogger
 from seed import seed, formToEdl
+from tasks import renderRemote
 
 from otto.main import app as ottoApi
 from otto.render import renderEdl, renderForm
@@ -105,7 +106,7 @@ async def download_file(filename: str):
 
 
 @app.post('/render')
-async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: int = 1920, height: int = 1080):
+async def queueRender(edl: Edl, project: str, width: int = 1920, height: int = 1080):
     ts = timestr()
     duration = sum(c['duration'] for c in edl.edl)
     filename = f'{project}_{width}x{height}_{duration}s_{ts}.mp4'
@@ -125,7 +126,7 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: 
     proj = db.projects.find_one({'name': project}, ['form'])['form']
     print('rendering!', filename, proj)
     media = [ download(m) for m in proj['media'] ]
-    renderer.add_task(renderEdl, edl.edl, media=media, audio=download(proj['audio'][0]), filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
+    renderRemote.delay(edl.edl, media=media, audio=download(proj['audio'][0]), filename=join('videos', filename), moviesize=(width, height))
     # renderer.add_task(updateProgress, id, 100)
     return str(id)
 

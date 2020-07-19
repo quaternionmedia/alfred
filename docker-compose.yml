@@ -25,17 +25,6 @@ services:
     networks:
       - alfred_isolated
       - alfred_outgoing
-
-  renderer:
-    build: ./api/
-    command: celery -A tasks worker --loglevel=debug
-    networks:
-      - alfred_isolated
-    volumes:
-      - ./api/:/app/
-      - ./videos/:/app/videos/
-    depends_on:
-      - rabbit
     environment:
       - CELERY_BROKER=pyamqp://guest@rabbit//
       - CELERY_BACKEND=rpc://
