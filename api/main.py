@@ -1,6 +1,7 @@
-from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form, HTTPException
+from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form, HTTPException, File, UploadFile
 from starlette.staticfiles import StaticFiles
 from starlette.responses import Response, FileResponse
+from typing import List
 from partial import PartialFileResponse
 from uvicorn import run
 from os.path import join, isfile
@@ -108,7 +109,7 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: 
     ts = timestr()
     duration = sum(c['duration'] for c in edl.edl)
     filename = f'{project}_{width}x{height}_{duration}s_{ts}.mp4'
-    media = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
+    media = db.projects.find_one({'name': project}, ['form'])['form']['media']
     id = db.renders.insert_one({
         'project': project,
         'filename': filename,
@@ -123,8 +124,8 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: 
     ).inserted_id
     proj = db.projects.find_one({'name': project}, ['form'])['form']
     print('rendering!', filename, proj)
-    media = [ download(m) for m in proj['MEDIA'] ]
-    renderer.add_task(renderEdl, edl.edl, media=media, audio=download(proj['AUDIO'][0]), filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
+    media = [ download(m) for m in proj['media'] ]
+    renderer.add_task(renderEdl, edl.edl, media=media, audio=download(proj['audio'][0]), filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
     # renderer.add_task(updateProgress, id, 100)
     return str(id)
 
@@ -176,6 +177,10 @@ async def getVideos():
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
 
+@app.get('/data/{media}')
+async def getMedia(media: str):
+    return FileResponse(join('data', media))
+
 @app.get('/projects')
 async def getProjects():
     return [ p['name'] for p in db.projects.find({})]
@@ -191,13 +196,14 @@ async def getProject(project: str):
 
 @app.post('/save')
 async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
+    form.media = [ m.strip() for m in form.media[0].split(',') ]
     result = db.projects.update_one({'name': project}, {'$set': {'form': dict(form)}}, upsert=True)
     print('saved form', project, form, result)
     return result.modified_count
 
 @app.post('/formToEdl')
 async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
-    form.MEDIA = [ m.strip() for m in form.MEDIA[0].split(',') ]
+    form.media = [ m.strip() for m in form.media[0].split(',') ]
     edl = formToEdl(form)
     print('edl from form', edl, dict(form))
     db.projects.update_one({'name': form.project},
@@ -210,12 +216,12 @@ async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
 
 @app.get('/bkg/{project}')
 async def get_bkg(project: str, width: int, height: int, t: float):
-    clips = db.projects.find_one({'name': project}, ['form'])['form']['MEDIA']
-    clip = clips[floor(t / 5)]
+    clips = db.projects.find_one({'name': project}, ['form'])['form']['media']
+    clip = download(clips[floor(t / 5)])
     print('making bkg', clip)
     try:
         if clip.endswith('mp4'):
-            clip = VideoFileClip(download(clip))
+            clip = VideoFileClip(clip)
         else:
             clip = ImageClip(clip)
         if width >= height:
@@ -228,12 +234,10 @@ async def get_bkg(project: str, width: int, height: int, t: float):
         print('error making kburns frame', e)
         raise HTTPException(status_code=500, detail='error making kburns frame')
 
-
-
 @app.post('/form')
 async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):
     filename = f'{timestr()}_{form.project}.mp4'
-    form.MEDIA = [ m.strip() for m in form.MEDIA[0].split(',') ]
+    form.media = [ m.strip() for m in form.media[0].split(',') ]
     print('rendering video from form', form, filename)
     db.renders.insert_one(
         {'filename': filename,
@@ -244,6 +248,16 @@ async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(Vid
     renderer.add_task(renderForm, form=dict(form), filename=join('videos', filename), logger=DbLogger(filename))
     return filename
 
+@app.post('/upload')
+async def upload(file: UploadFile = File(...)):
+    print('saving files', file.filename)
+    await saveFile(file)
+    return {'filename': join('data', file.filename)}
+
+async def saveFile(file, location='data'):
+    data = await file.read()
+    with open(join(location, file.filename), 'wb') as f:
+        f.write(data)
 
 app.include_router(auth)
 app.include_router(users)

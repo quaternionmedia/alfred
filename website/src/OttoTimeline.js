@@ -4,15 +4,8 @@ import { ContentEditable } from 'mithril-contenteditable'
 
 Sortable.mount(new MultiDrag());
 var state = require("./Globals").state
-import { Video, Edl } from './Video'
+import { Video, Edl, array_move } from './Video'
 import { Preview } from './Preview'
-
-function array_move(arr, old_index, new_index) {
-  let element = arr[old_index];
-  arr.splice(old_index, 1);
-  arr.splice(new_index, 0, element);
-  return arr
-};
 
 
 export function Clip() {
