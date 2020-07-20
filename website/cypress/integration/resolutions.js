@@ -17,11 +17,11 @@ describe('homerescheck', () => {
         cy.viewport(size)
       }
 
-      cy.visit('localhost:8000')
-      cy.get(':nth-child(4) > #home-link').should('be.visible')
-      cy.get(':nth-child(5) > #projects-link').should('be.visible')
-      cy.get(':nth-child(6) > #renders-link').should('be.visible')
-      cy.get(':nth-child(7) > #login-link').should('be.visible')
+      cy.visit('http://api')
+      cy.contains('home')
+      // cy.get(':nth-child(5) > #projects-link').should('be.visible')
+      // cy.get(':nth-child(6) > #renders-link').should('be.visible')
+      // cy.get(':nth-child(7) > #login-link').should('be.visible')
     })
   })
 })
@@ -37,14 +37,15 @@ describe('ottorescheck', () => {
         cy.viewport(size)
       }
 
-      cy.visit('localhost:8000')
+      cy.visit('http://api')
 
       cy.testingLogin()
       cy.wait(100)
 
       // cy.contains('menu').click()
-      cy.get(':nth-child(6) > #projects-link').click()
-      cy.contains('tala').click()
+      // cy.get(':nth-child(6) > #projects-link').click()
+      cy.contains('project').click()
+      cy.contains('salon').click()
       cy.get('[title="start"]').should('be.visible')
     })
   })
