@@ -7,7 +7,7 @@ package-lock.json
 yarn.lock
 media/
 /website/cypress/screenshots/
-/website/cypress/videos/
+/website/cypress/videos/*
 .hypothesis/
 api/data/
 

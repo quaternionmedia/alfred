@@ -81,6 +81,7 @@ elif [ $1 = "log" -o $1 = "logs" -o $1 = "l" ]; then
 
 elif [ $1 = "test" -o $1 = "tests" -o $1 = "t" ]; then
   shift
-  docker run -it -v $PWD/website:/e2e -w /e2e cypress/included:3.2.0   --config baseUrl=http://host.docker.internal:2222
+  # docker run -it -v $PWD/website:/e2e -w /e2e cypress/included:3.2.0   --config baseUrl=http://host.docker.internal:2222
+  docker-compose -f docker-compose.yml -f test.yml up
 
 fi
