@@ -1,6 +1,6 @@
 describe('render', () => {
   it('opens the editor and loads then renderes the otto demo', () => {
-    cy.visit('http://localhost:8000/')
+    cy.visit('http://api/')
 
 
     cy.contains('menu').click()

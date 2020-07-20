@@ -1,6 +1,6 @@
 describe('form test', () => {
   it('tests filling out the form', () => {
-    cy.visit('localhost:8000/#!/form')
+    cy.visit('api/#!/form')
 
     cy.get('input[name="NAME"]').type("QM")
     cy.get('input[name="LOGO"]').type("qmlogo.png")
