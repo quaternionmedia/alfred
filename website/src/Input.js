@@ -33,6 +33,7 @@ export function Field() {
       return [
         m('label', { for: vnode.attrs.name }, vnode.children),
         m(ContentEditable, {
+          id: vnode.attrs.name,
           // html: VideoForm[vnode.attrs.name],
           html: this.html,
           oncreate: html => {
@@ -66,15 +67,16 @@ export function Input() {
       return m('', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
         m('input[type=text]', {
-        oninput: e => {
-          console.log('input ', vnode.dom.value, e.target.value)
-          VideoForm[vnode.attrs.name](e.target.value)
-        },
-        value: VideoForm[vnode.attrs.name](),
-        ...vnode.attrs,
-      }),
-      m('p.textthumb', vnode.attrs, VideoForm[vnode.attrs.name]())
-    ])
+          id: vnode.attrs.name,
+          oninput: e => {
+            console.log('input ', vnode.dom.value, e.target.value)
+            VideoForm[vnode.attrs.name](e.target.value)
+          },
+          value: VideoForm[vnode.attrs.name](),
+          ...vnode.attrs,
+        }),
+        m('p.textthumb', vnode.attrs, VideoForm[vnode.attrs.name]())
+      ])
     }
   }
 }
@@ -86,15 +88,16 @@ export function InputArea() {
       return m('', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
         m('textarea', {
-        oninput: e => {
-          console.log('input ', vnode.dom.value, e.target.value)
-          VideoForm[vnode.attrs.name](e.target.value)
-        },
-        value: VideoForm[vnode.attrs.name](),
-        ...vnode.attrs,
-      }),
-      m('p.textthumb', vnode.attrs, VideoForm[vnode.attrs.name]())
-    ])
+          id: vnode.attrs.name,
+          oninput: e => {
+            console.log('input ', vnode.dom.value, e.target.value)
+            VideoForm[vnode.attrs.name](e.target.value)
+          },
+          value: VideoForm[vnode.attrs.name](),
+          ...vnode.attrs,
+        }),
+        m('p.textthumb', vnode.attrs, VideoForm[vnode.attrs.name]())
+      ])
     }
   }
 }
@@ -106,17 +109,18 @@ export function Image() {
       return m('.bar', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
         m('textarea', {
-        oninput: e => {
-          console.log('input ', vnode.dom.value, e.target.value)
-          VideoForm[vnode.attrs.name](e.target.value)
-        },
-        value: VideoForm[vnode.attrs.name](),
-        ...vnode.attrs,
-      }),
-      m('img.formthumb', {
-        src: VideoForm[vnode.attrs.name](),
-      }),
-    ])
+          id: vnode.attrs.name,
+          oninput: e => {
+            console.log('input ', vnode.dom.value, e.target.value)
+            VideoForm[vnode.attrs.name](e.target.value)
+          },
+          value: VideoForm[vnode.attrs.name](),
+          ...vnode.attrs,
+        }),
+        m('img.formthumb', {
+          src: VideoForm[vnode.attrs.name](),
+        }),
+      ])
     }
   }
 }
@@ -212,7 +216,7 @@ export function Media() {
       console.log('element changed', vnode)
     },
     view: (vnode) => {
-      return m('', {}, [
+      return m(`#${vnode.attrs.name}`, {}, [
         VideoForm.media().map(medium => {
           if (medium && medium.endsWith('.mp4')) {
             return m('.media.bar', [
@@ -269,16 +273,17 @@ export function Color() {
       return m('', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
         m('input[type=color]', {
-        oninput: e => {
-          VideoForm[vnode.attrs.name](e.target.value)
-          console.log('input ',e.target.value, VideoForm[vnode.attrs.name]())
-          m.redraw()
-        },
-        value: VideoForm[vnode.attrs.name](),
-        ...vnode.attrs,
-      }),
-      m('.textthumb', {style: {background: VideoForm[vnode.attrs.name]()}})
-    ])
+          id: vnode.attrs.name,
+          oninput: e => {
+            VideoForm[vnode.attrs.name](e.target.value)
+            console.log('input ',e.target.value, VideoForm[vnode.attrs.name]())
+            m.redraw()
+          },
+          value: VideoForm[vnode.attrs.name](),
+          ...vnode.attrs,
+        }),
+        m('.textthumb', {style: {background: VideoForm[vnode.attrs.name]()}})
+      ])
     }
   }
 }
@@ -289,12 +294,13 @@ export function Audio() {
       return m('', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
         m('textarea', {
-        oninput: e => {
-          console.log('input ', vnode.dom.value, e.target.value)
-          VideoForm[vnode.attrs.name](e.target.value)
-        },
-        value: VideoForm[vnode.attrs.name](),
-        ...vnode.attrs,
+          id: vnode.attrs.name,
+          oninput: e => {
+            console.log('input ', vnode.dom.value, e.target.value)
+            VideoForm[vnode.attrs.name](e.target.value)
+          },
+          value: VideoForm[vnode.attrs.name](),
+          ...vnode.attrs,
         }),
         m('audio[controls].audiothumb', {
             src: VideoForm[vnode.attrs.name](),
