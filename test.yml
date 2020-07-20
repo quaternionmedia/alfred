@@ -1,0 +1,16 @@
+version: '3.3'
+
+services:
+
+  tester:
+    image: cypress/included:3.2.0
+    environment:
+      - CYPRESS_baseUrl=http://api
+    working_dir: /e2e
+    volumes:
+      - ./website:/e2e
+    depends_on:
+      - api
+      - website
+    networks:
+      - alfred_isolated
