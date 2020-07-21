@@ -12,7 +12,7 @@ RUN apk add g++ wget libffi-dev openssl-dev jpeg-dev cairo cairo-dev imagemagick
 COPY requirements.txt /
 RUN pip install -Ur /requirements.txt
 RUN pip install numpy gizeh pillow
-RUN pip install celery
+RUN pip install celery google-cloud-storage
 
 COPY --from=builder /kburns-slideshow /kburns
 RUN chmod +x /kburns/main.py

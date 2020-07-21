@@ -120,7 +120,7 @@ async def queueRender(prog: BackgroundTasks, edl: Edl, project: str, width: int 
         'edl': edl.edl,
         'progress': 0,
         'started': ts,
-        'link': join('videos', filename),
+        'link': join('https://storage.googleapis.com/tower-bucket/videos/', filename),
         }
     ).inserted_id
     proj = db.projects.find_one({'name': project}, ['form'])['form']

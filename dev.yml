@@ -20,13 +20,14 @@ services:
     volumes:
       - ./api/:/app/
       - ./videos/:/app/videos/
+      - ./cred.json:/cred.json
     depends_on:
       - rabbit
     environment:
       - CELERY_BROKER=pyamqp://guest@rabbit//
       - CELERY_BACKEND=rpc://
       - DB_URL=mongodb://db:27017
-
+      - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
   flower:
     build: ./flower/
     networks:

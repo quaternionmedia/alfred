@@ -39,6 +39,7 @@ Thumbs.db
 
 database/
 
+cred.json
 github_key*
 output/*
 api/output/*
