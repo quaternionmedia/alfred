@@ -127,11 +127,15 @@ async def queueRender(prog: BackgroundTasks, edl: Edl, project: str, width: int 
     print('rendering!', filename, proj)
     media = [ download(m) for m in proj['media'] ]
     task = renderRemote.delay(edl=edl.edl, media=media, audio=download(proj['audio'][0]), filename=join('videos', filename), moviesize=(width, height))
-    def updateRenderProgress(p):
-        r = p['result']
-        db.renders.update_one({'filename': filename}, {'$set': {'progress': 100 * (r['index'] / r['total'])}})
-    prog.add_task(task.get, on_message = updateRenderProgress, propagate=False)
-    # renderer.add_task(updateProgress, id, 100)
+    def updateRenderProgress(progress):
+        r = progress.get('result')
+        # print('updating progress', r)
+        if r and r.get('index'):
+            p = 100 * r['index'] / r['total']
+            db.renders.update_one({'filename': filename}, {'$set': {'progress': p}})
+    prog.add_task(task.get,
+                    on_message = updateRenderProgress,
+                    propagate=False)
     return str(id)
 
 
