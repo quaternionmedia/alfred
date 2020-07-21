@@ -13,7 +13,7 @@ from bson.json_util import dumps, ObjectId
 
 from db import db
 from users import users
-from logger import DbLogger, celeryLogger
+from logger import DbLogger
 from seed import seed, formToEdl
 from tasks import renderRemote
 

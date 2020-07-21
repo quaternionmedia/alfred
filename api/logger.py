@@ -40,12 +40,13 @@ class DbLogger(ProgressBarLogger):
             db.renders.update({'filename': self.filename}, {'$set': {'progress': p}})
 
 from celery import Task
-class celeryLogger(Task):
-    def __init__(self, filename='test'):
-        super().__init__(self, filename)
-        self.filename=filename
+class CeleryLogger(ProgressBarLogger):
+    def __init__(self, task):
+        super(CeleryLogger, self).__init__()
+        self.task = task
     def callback(self, **kwargs):
         bar = self.state['bars']
         if bar.get('t'):
             t = bar.get('t')
-            self.task.update_state(state='PROGRESS', meta={'done': t['index'], 'total': t['total']})
+            # print('progress', t)
+            self.task.update_state(state='PROGRESS', meta={'index': t['index'], 'total': t['total']})
