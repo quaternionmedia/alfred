@@ -58,7 +58,7 @@ export function Renders() {
             m('th', 'start time'),
             m('th', 'progress'),
             m('th', 'preview'),
-            m('th', 'download'),
+            m('th', 'link'),
             m('th', 'delete'),
           ],),
           renders.map(r => {
@@ -80,9 +80,10 @@ export function Renders() {
                     onclick: e => { preview(r['link']) }}, 'missed_video_call')) : ''),
               m('td', r['progress'] >= 100 ?
                 m('.tools',
-                  m('a[download]', {
-                    href: `download?filename=${r['link']}`,
-                  }, m('i.material-icons', 'file_download'))) : ''),
+                  m('a', {
+                    target: '_blank',
+                    href: r['link'],
+                  }, m('i.material-icons', 'link'))) : ''),
                 m('td',
                   m('.tools',
                     m('i.material-icons', {
