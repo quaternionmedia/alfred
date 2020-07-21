@@ -130,9 +130,12 @@ async def queueRender(prog: BackgroundTasks, edl: Edl, project: str, width: int 
     def updateRenderProgress(progress):
         r = progress.get('result')
         # print('updating progress', r)
-        if r and r.get('index'):
-            p = 100 * r['index'] / r['total']
-            db.renders.update_one({'filename': filename}, {'$set': {'progress': p}})
+        if r:
+            if r.get('index'):
+                p = max((100 * r['index'] / r['total']) - 1, 0)
+                db.renders.update_one({'filename': filename}, {'$set': {'progress': p}})
+            if r.get('status') == 'uploaded':
+                db.renders.update_one({'filename': filename}, {'$set': {'progress': 100}})
     prog.add_task(task.get,
                     on_message = updateRenderProgress,
                     propagate=False)

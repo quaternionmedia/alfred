@@ -15,5 +15,7 @@ def upload(filename, location=BUCKET_NAME):
 
 @renderer.task(bind=True)
 def renderRemote(self, edl, media, audio, filename, moviesize):
-    renderEdl(edl, media, audio, filename, moviesize, CeleryLogger(self))
+    log = CeleryLogger(self)
+    renderEdl(edl, media, audio, filename, moviesize, log)
     upload(filename)
+    self.update_state(state='PROGRESS', meta={'status': 'uploaded'})
