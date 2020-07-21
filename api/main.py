@@ -106,7 +106,7 @@ async def download_file(filename: str):
 
 
 @app.post('/render')
-async def queueRender(edl: Edl, project: str, width: int = 1920, height: int = 1080):
+async def queueRender(prog: BackgroundTasks, edl: Edl, project: str, width: int = 1920, height: int = 1080):
     ts = timestr()
     duration = sum(c['duration'] for c in edl.edl)
     filename = f'{project}_{width}x{height}_{duration}s_{ts}.mp4'
@@ -126,7 +126,11 @@ async def queueRender(edl: Edl, project: str, width: int = 1920, height: int = 1
     proj = db.projects.find_one({'name': project}, ['form'])['form']
     print('rendering!', filename, proj)
     media = [ download(m) for m in proj['media'] ]
-    renderRemote.delay(edl.edl, media=media, audio=download(proj['audio'][0]), filename=join('videos', filename), moviesize=(width, height))
+    task = renderRemote.delay(edl=edl.edl, media=media, audio=download(proj['audio'][0]), filename=join('videos', filename), moviesize=(width, height))
+    def updateRenderProgress(p):
+        r = p['result']
+        db.renders.update_one({'filename': filename}, {'$set': {'progress': 100 * (r['index'] / r['total'])}})
+    prog.add_task(task.get, on_message = updateRenderProgress, propagate=False)
     # renderer.add_task(updateProgress, id, 100)
     return str(id)
 
