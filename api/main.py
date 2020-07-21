@@ -127,7 +127,7 @@ async def queueRender(prog: BackgroundTasks, edl: Edl, project: str, width: int 
     proj = db.projects.find_one({'name': project}, ['form'])['form']
     print('rendering!', filename, proj)
     media = [ download(m) for m in proj['media'] ]
-    task = renderRemote.delay(edl=edl.edl, media=media, audio=download(proj['audio'][0]), filename=join('videos', filename), moviesize=(width, height))
+    task = renderRemote.delay(edl=edl.edl, media=media, audio=download(proj['audio'][0]), filename=filename, moviesize=(width, height))
     def updateRenderProgress(progress):
         r = progress.get('result')
         # print('updating progress', r)
