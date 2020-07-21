@@ -26,7 +26,7 @@ elif [ $1 = "dev" ] || [ -z $1 ]; then
   docker-compose -f docker-compose.yml -f dev.yml up $1
 
 # Starts in production.
-elif [ $1 = "prod" -o $1 = "production" ]; then
+elif [ $1 = "prod" -o $1 = "production" -o $1 = "p" ]; then
   shift
   echo "Alfred! running production $1"
   docker-compose down && \

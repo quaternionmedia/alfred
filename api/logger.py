@@ -48,5 +48,6 @@ class CeleryLogger(ProgressBarLogger):
         bar = self.state['bars']
         if bar.get('t'):
             t = bar.get('t')
-            # print('progress', t)
-            self.task.update_state(state='PROGRESS', meta={'index': t['index'], 'total': t['total']})
+            if t.get('index'):
+                # print('progress', t)
+                self.task.update_state(state='PROGRESS', meta={'index': t['index'], 'total': t['total']})
