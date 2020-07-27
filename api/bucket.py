@@ -6,6 +6,10 @@ def get_bucket(bucket=BUCKET_NAME):
     client = storage.Client()
     return client.bucket(bucket)
 
+def upload(filename, directory=None):
+    blob = get_bucket().blob(filename)
+    blob.upload_from_filename(join(directory, filename) if directory else filename)
+
 def generate_signed_url(filename):
     """Generates a v4 signed URL for downloading a blob.
 
