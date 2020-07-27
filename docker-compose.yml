@@ -22,6 +22,7 @@ services:
       - ./api/:/app/
       - ./website/dist/:/app/dist/
       - ./videos/:/app/videos/
+      - ./cred_api.json:/cred.json
     networks:
       - alfred_isolated
       - alfred_outgoing
@@ -29,6 +30,8 @@ services:
       - CELERY_BROKER=pyamqp://guest@rabbit//
       - CELERY_BACKEND=rpc://
       - DB_URL=mongodb://db:27017
+      - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+
 
   db:
     image: mongo:4.2
