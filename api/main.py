@@ -25,6 +25,7 @@ from otto.models import Edl, VideoForm
 from moviepy.editor import ImageClip, VideoFileClip
 from math import floor
 from config import BUCKET_NAME
+from bucket import generate_signed_url
 
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
@@ -141,6 +142,10 @@ async def queueRender(prog: BackgroundTasks, edl: Edl, project: str, width: int 
                     on_message = updateRenderProgress,
                     propagate=False)
     return str(id)
+
+@app.get('/render')
+def getSignedRenderLink(name: str, user: User = Depends(get_current_active_user)):
+    return generate_signed_url(name)
 
 
 @app.get('/renders')

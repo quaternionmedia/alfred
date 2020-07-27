@@ -77,7 +77,12 @@ export function Renders() {
               m('td', r['progress'] >= 100 ?
                 m('.tools',
                   m('i.material-icons', {
-                    onclick: e => { preview(r['link']) }}, 'missed_video_call')) : ''),
+                    onclick: e => { auth('/render', {
+                      params: { name: r['filename'] }
+                    }).then(res => {
+                      console.log('got signed link', res)
+                      preview(res)
+                    }) }}, 'missed_video_call')) : ''),
               m('td', r['progress'] >= 100 ?
                 m('.tools',
                   m('a', {
