@@ -2,11 +2,41 @@ import m from 'mithril'
 import { Menu, Link} from './Menu'
 import { User } from './User'
 import { auth } from './Login'
-import { error, message } from 'alertifyjs'
+import { success, error, message } from 'alertifyjs'
 import { downloadFile } from './Tools'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 var Stream = require("mithril/stream")
 
+export function RenderLink() {
+  var link = null
+  return {
+    view: vnode => {
+      return link ? m('.bar', {}, [
+        m('textarea', {
+          id: vnode.children[0]
+        }, link),
+        m('i.material-icons', {
+          onclick: e => {
+            // console.log('copied ', e)
+            success('copied link to clipboard!', 3)
+            let txt = document.getElementById(vnode.children[0])
+            txt.select()
+            document.execCommand('copy')
+          }
+        }, 'content_copy')
+      ]) : m('.tools',
+          m('i.material-icons', {
+            onclick: e => {
+              // console.log('getting render link', vnode.children)
+              auth('/render', {
+                params: { name: vnode.children[0] }
+              }).then(res => {
+                link = res
+              })
+            }}, 'link'))
+    }
+  }
+}
 export function RenderPreview() {
   return {
     view: (vnode) => {
@@ -77,18 +107,16 @@ export function Renders() {
               m('td', r['progress'] >= 100 ?
                 m('.tools',
                   m('i.material-icons', {
-                    onclick: e => { auth('/render', {
-                      params: { name: r['filename'] }
-                    }).then(res => {
-                      console.log('got signed link', res)
-                      preview(res)
-                    }) }}, 'missed_video_call')) : ''),
+                    onclick: e => {
+                      auth('/render', {
+                        params: { name: r['filename'] }
+                      }).then(res => {
+                        // console.log('got signed link', res)
+                        preview(res)
+                      })
+                    }}, 'missed_video_call')) : ''),
               m('td', r['progress'] >= 100 ?
-                m('.tools',
-                  m('a', {
-                    target: '_blank',
-                    href: r['link'],
-                  }, m('i.material-icons', 'link'))) : ''),
+                m(RenderLink, {}, r['filename']) : ''),
                 m('td',
                   m('.tools',
                     m('i.material-icons', {
