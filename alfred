@@ -81,7 +81,18 @@ elif [ $1 = "log" -o $1 = "logs" -o $1 = "l" ]; then
 
 elif [ $1 = "worker" -o $1 = "w" ]; then
   shift
-  # cd api &&
   celery worker --workdir api -A tasks:renderer -l debug -b pyamqp://192.168.192.13 --result-backend rpc://
+
+elif [ $1 = "dump" ]; then
+  shift
+  DATE=`date "+%Y-%m-%d-%H%M%S"`
+  FILENAME=alfred_db_$DATE.gz
+  docker-compose exec db sh -c "mongodump --db alfred --gzip --archive=$FILENAME"
+  docker container cp alfred_db_1:$FILENAME $FILENAME
+
+elif [ $1 = "restore" ]; then
+  shift
+  docker container cp $1 alfred_db_1:/$1
+  docker-compose exec db sh -c "mongorestore --gzip --db alfred --archive=/$1 --drop"
 
 fi
