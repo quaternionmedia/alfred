@@ -79,4 +79,9 @@ elif [ $1 = "log" -o $1 = "logs" -o $1 = "l" ]; then
   shift
   docker-compose logs -f
 
+elif [ $1 = "worker" -o $1 = "w" ]; then
+  shift
+  # cd api &&
+  celery worker --workdir api -A tasks:renderer -l debug -b pyamqp://192.168.192.13 --result-backend rpc://
+
 fi
