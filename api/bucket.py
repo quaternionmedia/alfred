@@ -1,6 +1,7 @@
 from datetime import timedelta
 from google.cloud import storage
 from config import BUCKET_NAME
+from os.path import join
 
 def get_bucket(bucket=BUCKET_NAME):
     client = storage.Client()
