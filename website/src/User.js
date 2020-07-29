@@ -16,6 +16,8 @@ export var User = {
     console.log('logged in as: ', User)
     if (m.route.param('redirect')) {
       m.route.set(m.route.param('redirect'))
+    } else if (m.route.get() == '/login') {
+      m.route.set('/')
     } else {
       m.route.set(m.route.get())
     }
@@ -23,6 +25,7 @@ export var User = {
   },
   logout: () => {
     console.log('logging out', User)
+    m.request('/logout', {method: 'post'})
     User.jwt = null
     User.username = null
     User.token = null

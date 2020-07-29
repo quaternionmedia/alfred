@@ -1,6 +1,7 @@
 import m from 'mithril'
 import { Menu, Link} from './Menu'
 import { User } from './User'
+import { auth } from './Login'
 import { error, message } from 'alertifyjs'
 import { downloadFile } from './Tools'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
@@ -23,17 +24,9 @@ export function Renders() {
   var preview = Stream(null)
   var renders = []
   function getRenders() {
-    m.request('/renders', {
-      headers: {
-        Authorization: User.token
-      }
-    }).then( e => {
-      // console.log('render list:', e)
+    auth('/renders').then(e => {
+      console.log('renders init')
       renders = JSON.parse(e)
-    }, (err) => {
-      error('Not authorized!', 3)
-      console.log('error loading renders from server', err)
-      m.route.set('/login?redirect=/renders')
     })
   }
   return {
@@ -94,11 +87,8 @@ export function Renders() {
                   m('.tools',
                     m('i.material-icons', {
                       onclick: e => {
-                        m.request(`/renders/${r['filename']}/cancel`, {
+                        auth(`/renders/${r['filename']}/cancel`, {
                           method: 'put',
-                          headers: {
-                            Authorization: User.token
-                          }
                         }).then(res => {
                           console.log('deleted', res)
                           if (res.status_code == 406) {

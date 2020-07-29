@@ -1,6 +1,6 @@
 import m from "mithril";
 import Slider from './Slider'
-import { Timeline } from './Timeline'
+// import { Timeline } from './Timeline'
 import Monitor from './Monitor'
 import Project from './Project'
 import Tools from './Tools'
@@ -44,30 +44,6 @@ window.addEventListener('storage', (event) => {
 
 window.localStorage.setItem('REQUESTING_SHARED_CREDENTIALS', Date.now().toString())
 window.localStorage.removeItem('REQUESTING_SHARED_CREDENTIALS')
-
-var Editor = {
-  view: (vnode) => {
-    return [
-      m(Menu),
-      m('#head.head', [
-        m(Monitor, {}),
-      ]),
-      m(Tools),
-      m(Slider),
-      m(TimelineTools),
-      m(Timeline),
-      m('#scalecontainer', {style:
-        {display: 'inline-flex', width:'95vw'}}, [
-        m('i.material-icons', {style: {position: 'absolute',}}, 'zoom_out'),
-        m('i.material-icons', {style: {position: 'absolute', right:0}}, 'zoom_in'),
-        m(Scale),
-      ]),
-      m(Project),
-      m(Import),
-      m(Bin),
-    ]
-  }
-}
 
 var Otto = {
   view: (vnode) => {
@@ -113,7 +89,6 @@ console.log('sup!')
 m.route(document.body, "/", {
   "/": Home,
   '/projects': Projects,
-  '/editor': Editor,
   '/otto': Otto,
   '/renders': Renders,
   '/login': Login,

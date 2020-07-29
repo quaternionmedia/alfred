@@ -1,19 +1,25 @@
 from datetime import datetime, timedelta
 import jwt
-from fastapi import Depends, FastAPI, APIRouter, HTTPException, status
+from fastapi import Depends, FastAPI, APIRouter, Response, Cookie, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jwt import PyJWTError
 from passlib.context import CryptContext
+from secrets import token_urlsafe
 from pydantic import BaseModel
 from typing import List
 from db import db
-
+from config import PRODUCTION
 # openssl rand -hex 32
 SECRET_KEY = '645e87ee8bd522e5f93bca30be7bf580a64270cf1d50fb77c68f4b58124dd0f7'
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 90
 
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not validate credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
 
 class Token(BaseModel):
     access_token: str
@@ -80,11 +86,6 @@ def create_access_token(*, data: dict, expires_delta: timedelta = None):
 
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -106,16 +107,53 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 
 @auth.post("/token", response_model=Token)
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise credentials_exception
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    mcguffin = token_urlsafe(32)
+    db.mcguffins.insert_one({'name': mcguffin, 'username': user.username})
+    response.set_cookie(key='mcguffin', value=mcguffin, httponly=True, secure=PRODUCTION)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
+
+@auth.post('/refresh', response_model=Token)
+async def refresh_access_token(response: Response, mcguffin: str = Cookie(None)):
+    try:
+        token = db.mcguffins.find_one({'name': mcguffin})
+        # print('refresh. checking mcguffin', mcguffin, token)
+        if token:
+            username: str = token['username']
+            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            # TODO update token status to 'used' instead of deleting
+            db.mcguffins.delete_one({'name': mcguffin})
+            mcguffin = token_urlsafe(32)
+            db.mcguffins.insert_one({'name': mcguffin, 'username': username})
+            response.set_cookie(key='mcguffin', value=mcguffin, httponly=True, secure=PRODUCTION)
+            # print('making new token', username, access_token_expires, mcguffin)
+            access_token = create_access_token(
+                data={"sub": username}, expires_delta=access_token_expires
+            )
+            return {"access_token": access_token, "token_type": "bearer"}
+        else:
+            raise credentials_exception
+    except Exception as e:
+        print('error refreshing', e)
+        raise credentials_exception
+
+
+@auth.post('/logout')
+async def logout(response: Response, mcguffin: str = Cookie(None)):
+    try:
+        response.delete_cookie(key='mcguffin')
+        token = db.mcguffins.find_one({'name': mcguffin})
+        print('refresh. checking mcguffin', mcguffin, token)
+        if token:
+            db.mcguffins.delete_one({'name': mcguffin})
+    except Exception as e:
+        print('error logging out', e)
+        raise credentials_exception

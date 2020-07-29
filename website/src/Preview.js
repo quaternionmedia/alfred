@@ -94,7 +94,7 @@ export var Preview = ( () => {
         if (clip.type == 'template') {
           return m('.bkg#preview', {
             style: {
-              'background-image': `url(bkg/${m.route.param('project')}?width=${state.width()}&height=${state.height()}&t=${Edl.time})`
+              'background-image': `url(bkg/${encodeURIComponent(m.route.param('project'))}?width=${state.width()}&height=${state.height()}&t=${Edl.time})`
             }
           }, [m(ImagePreview, {
             id: 'preview',
