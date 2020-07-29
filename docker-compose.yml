@@ -9,7 +9,8 @@ services:
     build: ./website/
     image: alfred_site
     volumes:
-      - "./website/:/app/"
+      - ./website/:/app/
+
   # TODO API description
   api:
     build: ./api/
@@ -18,15 +19,38 @@ services:
       - website
       - db
     volumes:
-      - "./api/:/app/"
-      - "./website/dist/:/app/dist/"
-      - "./videos/:/app/videos/"
+      - ./api/:/app/
+      - ./website/dist/:/app/dist/
+      - ./videos/:/app/videos/
+      - ./cred_api.json:/cred.json
     networks:
       - alfred_isolated
       - alfred_outgoing
+    environment:
+      - CELERY_BROKER=pyamqp://guest@rabbit//
+      - CELERY_BACKEND=rpc://
+      - DB_URL=mongodb://db:27017
+      - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+
+
   db:
     image: mongo:4.2
     volumes:
-      - './database:/data/db'
+      - ./database:/data/db
     networks:
       - alfred_isolated
+
+  rabbit:
+    image: rabbitmq
+    networks:
+      - alfred_isolated
+    ports:
+      - 5672:5672
+
+  flower:
+    build: ./flower/
+    networks:
+      - alfred_isolated
+    ports:
+      - 5555:5555
+    command: flower --port=5555 --broker=pyamqp://guest@rabbit//

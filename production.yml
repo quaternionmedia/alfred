@@ -16,4 +16,4 @@ services:
       - traefik.http.routers.alfred.entrypoints=websecure
       - traefik.docker.network=web
     environment:
-      - ALFRED_PRODUCTION='true'
+      - ALFRED_PRODUCTION=true

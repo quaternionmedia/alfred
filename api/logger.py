@@ -3,8 +3,14 @@ from collections import OrderedDict
 from db import db
 
 class DbLogger(ProgressBarLogger):
-    def __init__(self, filename=None, init_state=None, bars=None, ignored_bars=None,
-                 logged_bars='all', min_time_interval=0, ignore_bars_under=0):
+    def __init__(self,
+                filename=None,
+                init_state=None,
+                bars=None,
+                ignored_bars=None,
+                logged_bars='all',
+                min_time_interval=0,
+                ignore_bars_under=0):
         ProgressLogger.__init__(self, init_state)
         if bars is None:
             bars = OrderedDict()
@@ -32,3 +38,16 @@ class DbLogger(ProgressBarLogger):
             p = 100 * t['index'] / t['total']
             # print('progress', p)
             db.renders.update({'filename': self.filename}, {'$set': {'progress': p}})
+
+from celery import Task
+class CeleryLogger(ProgressBarLogger):
+    def __init__(self, task):
+        super(CeleryLogger, self).__init__()
+        self.task = task
+    def callback(self, **kwargs):
+        bar = self.state['bars']
+        if bar.get('t'):
+            t = bar.get('t')
+            if t.get('index'):
+                # print('progress', t)
+                self.task.update_state(state='PROGRESS', meta={'index': t['index'], 'total': t['total']})

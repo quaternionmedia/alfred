@@ -39,9 +39,12 @@ Thumbs.db
 
 database/
 
+cred.json
+cred_api.json
 github_key*
 output/*
 api/output/*
+api/data
 
 *.mp3
 *.mp4

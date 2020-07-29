@@ -15,6 +15,7 @@ from db import db
 from users import users
 from logger import DbLogger
 from seed import seed, formToEdl
+from tasks import renderRemote
 
 from otto.main import app as ottoApi
 from otto.render import renderEdl, renderForm
@@ -23,6 +24,8 @@ from otto.models import Edl, VideoForm
 
 from moviepy.editor import ImageClip, VideoFileClip
 from math import floor
+from config import BUCKET_NAME
+from bucket import generate_signed_url
 
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
@@ -105,7 +108,7 @@ async def download_file(filename: str):
 
 
 @app.post('/render')
-async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: int = 1920, height: int = 1080):
+async def queueRender(prog: BackgroundTasks, edl: Edl, project: str, width: int = 1920, height: int = 1080):
     ts = timestr()
     duration = sum(c['duration'] for c in edl.edl)
     filename = f'{project}_{width}x{height}_{duration}s_{ts}.mp4'
@@ -119,15 +122,34 @@ async def queueRender(renderer: BackgroundTasks, edl: Edl, project: str, width: 
         'edl': edl.edl,
         'progress': 0,
         'started': ts,
-        'link': join('videos', filename),
+        'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
         }
     ).inserted_id
     proj = db.projects.find_one({'name': project}, ['form'])['form']
     print('rendering!', filename, proj)
     media = [ download(m) for m in proj['media'] ]
-    renderer.add_task(renderEdl, edl.edl, media=media, audio=download(proj['audio'][0]), filename=join('videos', filename), moviesize=(width, height), logger=DbLogger(filename))
-    # renderer.add_task(updateProgress, id, 100)
+    task = renderRemote.delay(edl=edl.edl, media=media, audio=download(proj['audio'][0]), filename=filename, moviesize=(width, height))
+    def updateRenderProgress(progress):
+        r = progress.get('result')
+        # print('updating progress', r)
+        if r:
+            if r.get('index'):
+                p = max((100 * r['index'] / r['total']) - 1, 0)
+                db.renders.update_one({'filename': filename}, {'$set': {'progress': p}})
+            elif r.get('status') == 'uploaded':
+                db.renders.update_one({'filename': filename}, {'$set': {'progress': 100}})
+            else:
+                print('got other progress message', r)
+        else:
+            print('got other message', progress)
+    prog.add_task(task.get,
+                    on_message = updateRenderProgress,
+                    propagate=False)
     return str(id)
+
+@app.get('/render')
+def getSignedRenderLink(name: str, user: User = Depends(get_current_active_user)):
+    return generate_signed_url(name)
 
 
 @app.get('/renders')

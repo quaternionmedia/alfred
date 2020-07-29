@@ -12,6 +12,9 @@ RUN apk add g++ wget libffi-dev openssl-dev jpeg-dev cairo cairo-dev imagemagick
 COPY requirements.txt /
 RUN pip install -Ur /requirements.txt
 RUN pip install numpy gizeh pillow
+RUN pip install celery google-cloud-storage
+RUN pip uninstall amqplib
+RUN pip install librabbitmq
 
 COPY --from=builder /kburns-slideshow /kburns
 RUN chmod +x /kburns/main.py
@@ -28,4 +31,4 @@ ENV IMAGEMAGICK_BINARY=/usr/bin/magick
 RUN mkdir -p /app/data/
 COPY /otto /otto
 RUN pip install /otto/
-ENTRYPOINT ["/start-reload.sh"]
+CMD ["/start-reload.sh"]
