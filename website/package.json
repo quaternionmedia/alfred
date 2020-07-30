@@ -1,6 +1,6 @@
 {
   "name": "alfred",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "online video management",
   "main": "dist/index.html",
   "source": "src/index.html",
