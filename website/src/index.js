@@ -21,6 +21,7 @@ import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'
 import { FormPage } from './Form'
 import { Resolution, Aspect } from './Resolution'
+import { Record } from './Record'
 
 defaults.transition = "zoom"
 defaults.theme.ok = "ui positive button"
@@ -93,4 +94,5 @@ m.route(document.body, "/", {
   '/renders': Renders,
   '/login': Login,
   '/form': FormPage,
+  '/record': Record,
 } );

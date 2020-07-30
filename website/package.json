@@ -23,6 +23,8 @@
     "material-design-icons-iconfont": "^5.0.1",
     "mithril": "^2.0.4",
     "mithril-contenteditable": "^0.1.2",
+    "rrweb": "^0.8.5",
+    "rrweb-player": "^0.4.6",
     "sortablejs": "^1.10.1"
   },
   "devDependencies": {

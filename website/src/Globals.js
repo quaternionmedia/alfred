@@ -34,4 +34,5 @@ export var state = {
   resolution: Stream(1080),
   aspectWidth: Stream(16),
   aspectHeight: Stream(9),
+  events: [],
 }
