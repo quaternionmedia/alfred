@@ -1,5 +1,6 @@
 import m from 'mithril'
 import '../node_modules/rrweb/dist/rrweb.min.css'
+import './watch.css'
 import { Menu } from './Menu'
 import { Replayer } from 'rrweb'
 
