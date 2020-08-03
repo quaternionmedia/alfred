@@ -13,7 +13,7 @@ class Record(WebSocketEndpoint):
     events = []
     async def on_connect(self, websocket, **kwargs):
         self.name = timestr()
-        self.connection = await connect_robust(CELERY_BROKER[2:])
+        self.connection = await connect_robust(CELERY_BROKER[2:], reconnect_interval=2)
         self.channel = await self.connection.channel()
         self.exchange = await self.channel.declare_exchange('record', ExchangeType.FANOUT)
         db.recordings.insert_one({'active': True, 'name': self.name})
@@ -42,7 +42,7 @@ class Watch(WebSocketEndpoint):
             await self.websocket.send_json(loads(message.body.decode()))
 
     async def on_connect(self, websocket, **kwargs):
-        self.connection = await connect_robust(CELERY_BROKER[2:])
+        self.connection = await connect_robust(CELERY_BROKER[2:], reconnect_interval=2)
         self.channel = await self.connection.channel()
         await self.channel.set_qos(prefetch_count=10)
         self.exchange = await self.channel.declare_exchange('record', ExchangeType.FANOUT)
