@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Path, Body, Header, Depends, BackgroundTasks, Form, HTTPException, File, UploadFile
 from starlette.staticfiles import StaticFiles
 from starlette.responses import Response, FileResponse
+from starlette.routing import WebSocketRoute
+
 from typing import List
 from partial import PartialFileResponse
 from uvicorn import run
@@ -16,6 +18,7 @@ from users import users
 from logger import DbLogger
 from seed import seed, formToEdl
 from tasks import renderRemote
+from websocket import Record, Watch
 
 from otto.main import app as ottoApi
 from otto.render import renderEdl, renderForm
@@ -80,7 +83,10 @@ def updateProgress(id, progress):
 
 # REST Routing :
 # TODO: as it grows length -> breakout file into suporting files as needed, e.g. dbm'database manager', util'utiliy', etc.
-app = FastAPI()
+app = FastAPI(routes=[
+    WebSocketRoute('/record', Record),
+    WebSocketRoute('/watch', Watch)
+    ])
 app.mount('/otto', ottoApi)
 
 @app.on_event("startup")

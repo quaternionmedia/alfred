@@ -8,10 +8,16 @@ import { Menu, Link} from './Menu'
 let recorder = null
 let replayer = null
 
+let ws = null
+
 export function Record() {
   return {
-    oncreate: vnode => {
-
+    oninit: vnode => {
+      ws = new WebSocket(`ws://${location.host}/record`)
+      ws.onopen = () => {
+        console.log('opened ws connection')
+        // ws.send(JSON.stringify({events: 'asdf'}))
+      }
     },
     view: vnode => {
       return [
@@ -30,14 +36,13 @@ export function Record() {
             type: 'submit',
             value: 'record',
             onclick: e => {
-              console.log(e)
-              e.preventDefault()
               recorder = record({
                 emit(event) {
                   console.log('event', event)
-                  state.events.push(event)
+                  ws.send(JSON.stringify(event))
                 }
               })
+              m.redraw.sync()
 
             }
           }),
