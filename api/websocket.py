@@ -5,11 +5,12 @@ from aio_pika import connect_robust, Message, IncomingMessage, ExchangeType
 from config import CELERY_BROKER
 from otto.getdata import timestr
 from db import db
-
+from aiofiles import open
+from os.path import join
 
 class Record(WebSocketEndpoint):
     encoding = "json"
-
+    events = []
     async def on_connect(self, websocket, **kwargs):
         self.name = timestr()
         self.connection = await connect_robust(CELERY_BROKER[2:])
@@ -23,10 +24,13 @@ class Record(WebSocketEndpoint):
         await self.exchange.publish(Message(
             body=dumps(data).encode()
         ), routing_key='record')
+        self.events.append(data)
 
     async def on_disconnect(self, websocket, close_code, **kwargs):
         await self.channel.close()
         db.recordings.update_one({'name': self.name}, {'$set' : {'active': False, 'close_code': close_code}})
+        async with open(join('output/', f'{self.name}.session'), 'w') as f:
+            await f.write(dumps({'events': self.events}))
 
 
 class Watch(WebSocketEndpoint):
@@ -34,7 +38,7 @@ class Watch(WebSocketEndpoint):
 
     async def processMessage(self, message: IncomingMessage):
         with message.process():
-            print('message', message.body)
+            # print('message', message.body)
             await self.websocket.send_json(loads(message.body.decode()))
 
     async def on_connect(self, websocket, **kwargs):
