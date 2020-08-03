@@ -7,12 +7,8 @@ let replayer = null
 let ws = null
 
 export function Watch() {
-  let sessions = []
   return {
     oninit: vnode => {
-      m.request('/sessions').then(res => {
-        sessions = res
-      })
     },
     oncreate: vnode => {
       replayer = new Replayer([], {
@@ -27,34 +23,21 @@ export function Watch() {
       //     showController: true,
       //     events: [],
       //   }})}
+
+      if (!ws) {
+        ws = new WebSocket(`ws://${location.host}/watch`)
+        ws.onopen = () => {
+          console.log('opened ws connection')
+        }
+        ws.onmessage = (m) => {
+          console.log('got event ', m)
+            replayer.addEvent(JSON.parse(m.data))
+        }
+      }
     },
     view: vnode => {
       return [
         m(Menu),
-        sessions.map(s => {
-          return m('', {
-            onclick: e => {
-
-
-            }
-          }, s)
-        }),
-        m('input', {
-          type: 'submit',
-          value: 'play',
-          onclick: e => {
-            if (!ws) {
-              ws = new WebSocket(`ws://${location.host}/watch`)
-              ws.onopen = () => {
-                console.log('opened ws connection')
-              }
-              ws.onmessage = (m) => {
-                console.log('got event ', m)
-                  replayer.addEvent(JSON.parse(m.data))
-              }
-            }
-          }
-        }),
         m('#replay'),
       ]
     }
