@@ -71,6 +71,10 @@ db.projects.drop()
 db.projects.insert_many(sample_forms)
 """
 
+elif [ $1 = "update" -o $1 = "u" ]; then
+  shift
+  git pull && git submodule update
+
 elif [ $1 = "sh" ]; then
   shift
   docker-compose exec api sh
