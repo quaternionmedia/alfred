@@ -39,7 +39,7 @@ export function Record() {
             onclick: e => {
               // e.preventDefault()
               if (!ws) {
-                ws = new WebSocket(`ws://${location.host}/record`)
+                ws = new WebSocket(`ws${ location.protocol !== 'https:' ? '' : 's' }://${location.host}/record`)
                 ws.onopen = () => {
                   recording(true)
                   m.redraw.sync()

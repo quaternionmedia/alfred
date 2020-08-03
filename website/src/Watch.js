@@ -26,7 +26,7 @@ export function Watch() {
       //   }})}
 
       if (!ws) {
-        ws = new WebSocket(`ws://${location.host}/watch`)
+        ws = new WebSocket(`ws${ location.protocol !== 'https:' ? '' : 's' }://${location.host}/watch`)
         ws.onopen = () => {
           console.log('opened ws connection')
         }
