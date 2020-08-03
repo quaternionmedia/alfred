@@ -6,3 +6,4 @@ tinydb
 pyjwt
 passlib[bcrypt]
 pymongo
+aio-pika
