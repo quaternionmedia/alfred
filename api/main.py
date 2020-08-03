@@ -281,6 +281,10 @@ async def saveFile(file, location='data'):
     with open(join(location, file.filename), 'wb') as f:
         f.write(data)
 
+@app.get('/sessions')
+async def getSessions():
+    return [ i['name'] for i in db.recordings.find({'active': True}, ['name']) ]
+
 app.include_router(auth)
 app.include_router(users)
 

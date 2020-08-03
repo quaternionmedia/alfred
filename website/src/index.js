@@ -22,6 +22,7 @@ import { Preview } from './Preview'
 import { FormPage } from './Form'
 import { Resolution, Aspect } from './Resolution'
 import { Record } from './Record'
+import { Watch } from './Watch'
 
 defaults.transition = "zoom"
 defaults.theme.ok = "ui positive button"
@@ -95,4 +96,5 @@ m.route(document.body, "/", {
   '/login': Login,
   '/form': FormPage,
   '/record': Record,
+  '/watch': Watch,
 } );

@@ -40,6 +40,7 @@ function Links() {
           m(Link, {href:'/projects', id: 'projects-link'}, 'projects'),
           m(Link, {href: '/renders', id: 'renders-link'}, 'renders'),
           m(Link, {href: '/record', id: 'record-link'}, 'record'),
+          m(Link, {href: '/watch', id: 'watch-link'}, 'watch'),
           m(Link, {
             href:'/login',
             id: 'login-link',
