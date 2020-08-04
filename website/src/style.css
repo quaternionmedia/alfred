@@ -330,14 +330,15 @@ input[type=submit] {
   min-width: 10vw;
   max-width: 20vw;
 }
-.subform img {
-  max-width: 48%;
-  max-height: 20vh;
-  padding: 1em;
+.subform span {
+  display: inline-block;
 }
 .formthumb {
-  max-width: 30%;
-  padding: 1em;
+  padding: .5em;
+  min-width: 5vw;
+  max-width: 50vw;
+  min-height: 5vh;
+  max-height: 20vh;
 }
 .textthumb {
   display: inline-block;
