@@ -319,6 +319,13 @@ form textarea {
   margin-bottom: 1em;
   vertical-align: middle;
 }
+form select {
+  min-width: 40%;
+  height: 2em;
+  margin-top: 1em;
+  margin-bottom: 1em;
+  vertical-align: middle;
+}
 input[type=submit] {
   min-width: 10vw;
   max-width: 20vw;

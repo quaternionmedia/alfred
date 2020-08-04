@@ -11,7 +11,11 @@ export function Form() {
   function Dropdown() {
     return {
       view: (vnode) => {
-        return m('select', {
+        return [
+          m('label.formlabel', {
+            for: vnode.attrs.name
+          }, vnode.attrs.label),
+          m('select', {
           ...vnode.attrs
         }, [
           m('option', {value: ''}, ''),
@@ -19,7 +23,7 @@ export function Form() {
             return m('option', {
             value: opt
           }, opt)})
-        ])
+        ])]
       }
     }
   }
@@ -132,7 +136,7 @@ export function Form() {
         // m(TextArea, {name: 'closing'}, 'Closing'),
         m(Color, {name: 'themecolor'}, 'Theme Color'),
         m(Color, {name: 'fontcolor'}, 'Font Clolor'),
-        m(Dropdown, {name: 'font'}, fonts),
+        m(Dropdown, {name: 'font', label: 'Font'}, fonts),
         m(Input, {name: 'duration'}, 'Duration'),
         m('hr'),
         m('', {style: {'text-align': 'right'}}, [
