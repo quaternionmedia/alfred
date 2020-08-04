@@ -61,25 +61,40 @@ export function Form() {
 
   return {
     oninit: (vnode) => {
-      m.request('/projects').then(e => {
-        options = e
-        console.log('projects', options)
-      })
+
       m.request('/fonts').then( e => {
         console.log('got fonts', e)
         fonts = e
       })
     },
-
+    oncreate: vnode => {
+      m.request('/projects').then(e => {
+        options = e
+        console.log('projects', options)
+        let project = m.route.param('project')
+        if (project) {
+          m.request(`/project/${project}`).then(res => {
+            selected = res['form']
+            for (const property in selected) {
+              console.log('setting VideoForm', property, selected[property])
+              VideoForm[property](selected[property])
+            }
+          console.log('setting project', project)
+          document.getElementById('projectSelect').value = project
+        })
+      }})
+    },
     view: (vnode) => {
       return m('form.form#form', {
 
       }, [
         m(Dropdown, {
+          id: 'projectSelect',
           onchange: e => {
             let i = e.target.selectedIndex
             console.log('form res', options, i)
             if (options && i) {
+              m.route.set('/form', {'project': options[i - 1]})
               m.request(`/project/${options[i - 1]}`).then(res => {
                 selected = res['form']
                 for (const property in selected) {
