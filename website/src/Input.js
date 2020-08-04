@@ -126,7 +126,7 @@ export function Media() {
     oncreate: (vnode) => {
       new Sortable(vnode.dom, {
         multiDrag: true,
-        // group: 'media',
+        group: 'media',
         selectedClass: "selected",
         swapThreshold: 0.50,
         animation: 150,
@@ -215,13 +215,13 @@ export function Media() {
       return m('', {}, [
         VideoForm.media().map(medium => {
           if (medium && medium.endsWith('.mp4')) {
-            return m('.media.bar', [
-              m('textarea', { value: medium , name: `${vnode.attrs.name}[]`}),
+            return m('span.media', [
+              m('input', { value: medium , name: `${vnode.attrs.name}[]`, type: 'hidden'}),
               m('video[controls].formthumb', { src: medium }),
             ])
           } else {
-          return m('.media.bar', [
-            m('textarea', { value: medium , name: `${vnode.attrs.name}[]`}),
+          return m('span.media', [
+            m('input', { value: medium , name: `${vnode.attrs.name}[]`, type: 'hidden'}),
             m('img.formthumb', { src: medium }),
           ])}
         }),
