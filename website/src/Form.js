@@ -7,6 +7,7 @@ export function Form() {
 
   let options = []
   let selected = {}
+  let fonts = []
   function Dropdown() {
     return {
       view: (vnode) => {
@@ -59,6 +60,10 @@ export function Form() {
       m.request('/projects').then(e => {
         options = e
         console.log('projects', options)
+      })
+      m.request('/fonts').then( e => {
+        console.log('got fonts', e)
+        fonts = e
       })
     },
 
@@ -127,7 +132,7 @@ export function Form() {
         // m(TextArea, {name: 'closing'}, 'Closing'),
         m(Color, {name: 'themecolor'}, 'Theme Color'),
         m(Color, {name: 'fontcolor'}, 'Font Clolor'),
-        m(Input, {name: 'font'}, 'Font'),
+        m(Dropdown, {name: 'font'}, fonts),
         m(Input, {name: 'duration'}, 'Duration'),
         m('hr'),
         m('', {style: {'text-align': 'right'}}, [

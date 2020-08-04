@@ -100,10 +100,12 @@ async def checkFonts():
         if f:
             font = f.split('-')
             for fam in font[0].split(','):
-                db.fonts.update_one({'family': fam}, {'$set': { 'style': font[1].split(',') }}, upsert=True)
+                db.fonts.update_one({'family': fam.replace(' ', '-')}, {'$set': { 'style': [i.replace(' ', '-') for i in font[1].split(',')] }}, upsert=True)
     # db.fonts.update_many(results, upsert=True)
 
-
+@app.get('/fonts')
+def getFonts():
+    return [i['family'] for i in db.fonts.find({}, ['family'])]
 
 @app.get('/edl')
 def returnEdl(filename: str):
