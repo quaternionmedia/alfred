@@ -38,28 +38,28 @@ def formToEdl(form: VideoForm):
     clips = [
         {'type': 'template',
         'name': 'title',
-        'data': {'text': form.name, 'themecolor': form.themecolor},
+        'data': {'text': form.name, 'themecolor': form.themecolor, 'font': form.font},
         'duration': min(form.duration, 5)},
     ]
     if form.duration > 15:
         clips.append(
             {'type': 'template',
             'name': 'initial',
-            'data': {'text': form.initial, 'themecolor': form.themecolor},
+            'data': {'text': form.initial, 'themecolor': form.themecolor, 'font': form.font},
             'duration': min(5, form.duration - 15)}
         )
     if form.duration > 20:
         clips.append(
             {'type': 'template',
             'name': 'bullets',
-            'data': {'text': form.bullets, 'themecolor': form.themecolor},
+            'data': {'text': form.bullets, 'themecolor': form.themecolor, 'font': form.font},
             'duration': form.duration - 20}
         )
     if form.duration > 10:
         clips.append(
             {'type': 'template',
             'name': 'initial',
-            'data': {'text': form.call, 'themecolor': form.themecolor},
+            'data': {'text': form.call, 'themecolor': form.themecolor, 'font': form.font},
             'duration': min(5, form.duration - 10)}
         )
     if form.duration > 5:
@@ -67,12 +67,15 @@ def formToEdl(form: VideoForm):
             {'type': 'template',
             'name': 'final',
             'data': {
-            'text': form.name,
-            'address': form.address,
-            'website': form.website,
-            'phone': form.phone,
-            'themecolor': form.themecolor},
-            'duration': min(5, form.duration - 5)}
+                'text': form.name,
+                'address': form.address,
+                'website': form.website,
+                'phone': form.phone,
+                'themecolor': form.themecolor,
+                'font': form.font
+                },
+            'duration': min(5, form.duration - 5),
+            }
         )
 
     return {'name': form.project, 'edl': clips, 'media': form.media}
