@@ -77,7 +77,6 @@ var Otto = {
         m('i.material-icons', {style: {position: 'absolute', right:0}}, 'zoom_in'),
         m(Scale),
       ]),
-      m(Import),
       m(Bin),
     ]
   }
