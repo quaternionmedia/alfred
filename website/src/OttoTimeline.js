@@ -178,6 +178,7 @@ export function OttoTimeline() {
           Edl.update()
         },
       })
+      window.scroll(0,0)
     },
     view: (vnode) => {
       return m('#timeline.timeline', [
