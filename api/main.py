@@ -92,6 +92,19 @@ async def seedDb():
         from otto.defaults import sample_forms
         db.projects.insert_many(sample_forms)
 
+@app.on_event('startup')
+async def checkFonts():
+    fonts = bash(['fc-list', '-f', '"%{family}-%{style}\n"'], capture_output=True).stdout.decode().replace('"', '').split('\n')
+    results = []
+    for f in fonts:
+        if f:
+            font = f.split('-')
+            for fam in font[0].split(','):
+                db.fonts.update_one({'family': fam}, {'$set': { 'style': font[1].split(',') }}, upsert=True)
+    # db.fonts.update_many(results, upsert=True)
+
+
+
 @app.get('/edl')
 def returnEdl(filename: str):
     return getEdl(filename)
