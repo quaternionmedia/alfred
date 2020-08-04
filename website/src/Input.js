@@ -15,7 +15,6 @@ export var VideoForm = {
   website: Stream(''), //AnyUrl = 'talahairstudio.com'
   initial: Stream(''),
   bullets: Stream(''),
-  optional: Stream(''),
   media: Stream([]),
   audio: Stream([]),
   call: Stream(''),

@@ -137,7 +137,6 @@ export function Form() {
         m(Input, {name: 'website'}, 'Website'),
         m(InputArea, {name: 'initial'}, 'Initial text'),
         m(InputArea, {name: 'bullets'}, 'Bullets'),
-        m(InputArea, {name: 'optional'}, 'Optional'),
         m('label', { for: 'media' }, 'Media'),
         m('.subform', {}, [
           m(InputArea, {
