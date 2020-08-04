@@ -5,30 +5,15 @@ import { Field, Input, InputArea, VideoForm, Image, Media, Color, Audio } from '
 
 export function Form() {
 
-  var options = []
-  var selected = {}
-
+  let options = []
+  let selected = {}
   function Dropdown() {
     return {
       view: (vnode) => {
         return m('select', {
-          onchange: e => {
-            let i = e.target.selectedIndex
-            console.log('form res', options, i)
-            if (options && i) {
-              m.request(`/project/${options[i - 1]}`).then(res => {
-                selected = res['form']
-                for (const property in selected) {
-                  console.log('setting VideoForm', property, selected[property])
-                  VideoForm[property](selected[property])
-                }
-                selected.project = options[i - 1]
-                console.log('selected', selected)
-              })
-            }
-          }
+          ...vnode.attrs
         }, [
-          m('option', {value: '', ...vnode.attrs}, ''),
+          m('option', {value: ''}, ''),
           vnode.children.map( opt => {
             return m('option', {
             value: opt
@@ -81,7 +66,23 @@ export function Form() {
       return m('form.form#form', {
 
       }, [
-        m(Dropdown, options),
+        m(Dropdown, {
+          onchange: e => {
+            let i = e.target.selectedIndex
+            console.log('form res', options, i)
+            if (options && i) {
+              m.request(`/project/${options[i - 1]}`).then(res => {
+                selected = res['form']
+                for (const property in selected) {
+                  console.log('setting VideoForm', property, selected[property])
+                  VideoForm[property](selected[property])
+                }
+                selected.project = options[i - 1]
+                console.log('selected', selected)
+              })
+            }
+          }
+        }, options),
         m('br'),
         m(Text, {name: 'project', id:'projectName'}, 'Project Name'),
         m('', {style: {'text-align': 'right'}}, [
