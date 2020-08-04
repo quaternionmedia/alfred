@@ -64,7 +64,7 @@ export function Input() {
     view: (vnode) => {
       return m('', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
-        m('input[type=text]', {
+        m('input', {
         oninput: e => {
           console.log('input ', vnode.dom.value, e.target.value)
           VideoForm[vnode.attrs.name](e.target.value)
