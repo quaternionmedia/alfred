@@ -16,7 +16,8 @@ export function Form() {
             for: vnode.attrs.name
           }, vnode.attrs.label),
           m('select', {
-          ...vnode.attrs
+          ...vnode.attrs,
+          value: selected ? selected[vnode.attrs.name] : ''
         }, [
           m('option', {value: ''}, ''),
           vnode.children.map( opt => {
