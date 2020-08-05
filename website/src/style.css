@@ -168,6 +168,11 @@ body {
 .tools i:active {
   animation: blinker .2s 1;
 }
+.vl {
+  /* border-left: 2px #393939;
+  height: 100%; */
+  width: 25px;
+}
 .renders {
   display: inline-block;
 }

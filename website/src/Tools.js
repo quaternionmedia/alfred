@@ -40,6 +40,7 @@ export default class Tools {
             title: 'end',
             onclick: (vnode) => {Edl.jump(Edl.duration())}
           }, 'last_page'),
+          m('.vl'),
           m('i.material-icons', {
             title: 'slower',
             onclick: (vnode) => {Monitor.slower()}
@@ -52,6 +53,7 @@ export default class Tools {
             title: 'faster',
             onclick: (vnode) => {Monitor.faster()}
           }, 'speed'),
+          m('.vl'),
           m(Aspect, [
             '16:9',
             '4:3',
@@ -67,6 +69,7 @@ export default class Tools {
             '480p',
             '240p',
           ]),
+          m('.vl'),
           m('i.material-icons', {
             title: 'save',
             onclick: vnode => {
