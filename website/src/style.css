@@ -205,10 +205,9 @@ select {
 /* the slider bar */
 .slider {
   position: relative;
-  width: 100%;
-  height: 1em;
-  margin: .5em auto;
-  margin-top: 2em;
+  width: 85%;
+  height: .5em;
+  margin: auto 1em auto;
   background-color: #46346E;
   border-radius: 0.5em;
   box-sizing: border-box;

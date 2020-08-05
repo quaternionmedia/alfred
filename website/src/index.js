@@ -63,9 +63,9 @@ var Otto = {
       ]),
       m('#scalecontainer', {style:
         {display: 'inline-flex', width:'95vw'}}, [
-        m('i.material-icons', {style: {position: 'absolute',}}, 'zoom_out'),
-        m('i.material-icons', {style: {position: 'absolute', right:0}}, 'zoom_in'),
+        m('i.material-icons', 'zoom_out'),
         m(Scale),
+        m('i.material-icons', {style: {position: 'absolute', right:0}}, 'zoom_in'),
       ]),
       m(Bin),
     ]
