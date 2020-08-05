@@ -204,9 +204,8 @@ select {
 }
 /* the slider bar */
 .slider {
-  position: relative;
-  width: 85%;
-  height: .5em;
+  width: 100%;
+  height: .4em;
   margin: auto 1em auto;
   background-color: #46346E;
   border-radius: 0.5em;
@@ -222,12 +221,11 @@ select {
   content: "";
   display: block;
   position: relative;
-  top: -0.5em;
-
+  top: -10px;
+  
   width: 2em;
   height: 2em;
-  margin-left: -1em;
-  border: solid 0.25em #b4a0df;
+  border: solid 0.1em #b4a0df;
   border-radius: 1em;
   background-color: inherit;
 
