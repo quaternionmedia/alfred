@@ -177,6 +177,11 @@ body {
 .tools i:active {
   animation: blinker .2s 1;
 }
+@media screen and (max-width: 700px) {
+  body {
+    font-size: large;
+  }
+}
 .vl {
   /* border-left: 2px #393939;
   height: 100%; */
