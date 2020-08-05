@@ -4,6 +4,7 @@ import Monitor from './Monitor'
 import { Video, Edl } from './Video'
 var state = require("./Globals").state
 import { message, success, defaults } from 'alertifyjs'
+import { Resolution, Aspect } from './Resolution'
 
 export function downloadFile(url) {
   var a = document.createElement("a")
@@ -51,6 +52,21 @@ export default class Tools {
             title: 'faster',
             onclick: (vnode) => {Monitor.faster()}
           }, 'speed'),
+          m(Aspect, [
+            '16:9',
+            '4:3',
+            '4:5',
+            '1:1',
+            '5:4',
+            '3:4',
+            '9:16'
+          ]),
+          m(Resolution, [
+            '1080p',
+            '720p',
+            '480p',
+            '240p',
+          ]),
           m('i.material-icons', {
             title: 'save',
             onclick: vnode => {
