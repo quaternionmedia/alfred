@@ -36,8 +36,7 @@ body {
     background-position: center;
 }
 .timeline {
-  /* width: 100%; */
-  width: 90vw;
+  width: calc(100vw - 82px);
   max-height: 40vh;
   /* display: flex; */
   display: -webkit-inline-box;
@@ -146,6 +145,11 @@ body {
   border-radius: 12px;
   padding: 2px;
 }
+.toolcol {
+  display: grid;
+
+}
+
 .tools {
   justify-content: space-between;
 }

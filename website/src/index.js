@@ -73,8 +73,10 @@ var Otto = {
       ]),
       m(Tools),
       m(Slider),
-      m(TimelineTools),
-      m(OttoTimeline),
+      m('.bar', {}, [
+        m(TimelineTools),
+        m(OttoTimeline),
+      ]),
       m('#scalecontainer', {style:
         {display: 'inline-flex', width:'95vw'}}, [
         m('i.material-icons', {style: {position: 'absolute',}}, 'zoom_out'),
