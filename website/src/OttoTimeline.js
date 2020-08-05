@@ -59,7 +59,6 @@ export function Clip() {
         },
         ...vnode.attrs
         }, [
-          m('p#i.i', vnode.attrs.i),
           m('i.material-icons.progress', {
             style: {
               display: (Edl.current == vnode.attrs.i) ? 'inherit': 'none',
@@ -81,6 +80,7 @@ export function Template() {
           ...vnode.attrs,
         }, [
         m(ContentEditable, {
+          style: {margin: '5px'},
           // Original HTML input
           html: this.html,
           // Returns the updated HTML code
