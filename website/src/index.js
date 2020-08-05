@@ -21,6 +21,7 @@ import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'
 import { FormPage } from './Form'
 import { Resolution, Aspect } from './Resolution'
+var state = require("./Globals").state
 
 defaults.transition = "zoom"
 defaults.theme.ok = "ui positive button"
@@ -49,7 +50,10 @@ var Otto = {
   view: (vnode) => {
     return [
       m(Menu),
-      m('#head.head', [
+      m('#head.head', {style: {
+        width: `calc(${state.width()/state.height()*100*9/16}vw - 39px)`,
+        height: '56.25vw'
+      }}, [
         m(Preview)
       ]),
       m(Aspect, [
