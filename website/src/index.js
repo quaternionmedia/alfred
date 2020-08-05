@@ -20,6 +20,7 @@ import { Renders } from './Renders'
 import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'
 import { FormPage } from './Form'
+import { Timecode } from './Timecode'
 var state = require("./Globals").state
 
 defaults.transition = "zoom"
@@ -56,7 +57,10 @@ var Otto = {
         m(Preview)
       ]),
       m(Tools),
-      m(Slider),
+      m('.bar', {}, [
+        m(Timecode),
+        m(Slider),
+      ]),
       m('.bar', {}, [
         m(TimelineTools),
         m(OttoTimeline),
