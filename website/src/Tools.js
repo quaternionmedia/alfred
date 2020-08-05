@@ -45,7 +45,7 @@ export default class Tools {
             title: 'slower',
             onclick: (vnode) => {Monitor.slower()}
           }, 'slow_motion_video'),
-          m('i', {
+          m('i.custom', {
             title: 'reset speed',
             onclick: (vnode) => {Monitor.resetSpeed()}
           }, Video.speed + 'x'),

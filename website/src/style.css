@@ -177,10 +177,17 @@ body {
 .tools i:active {
   animation: blinker .2s 1;
 }
+.tools .custom {
+  padding: 10px;
+}
 @media screen and (max-width: 700px) {
   body {
     font-size: large;
   }
+  .tools .custom {
+    padding: 9px;
+  }
+
 }
 .vl {
   /* border-left: 2px #393939;
