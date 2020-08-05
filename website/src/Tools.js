@@ -25,7 +25,7 @@ export default class Tools {
       m('i.material-icons', {
         title: 'back 5s',
         onclick: (vnode) => {
-          Edl.jump(Edl.time - 5 || 0)}
+          Edl.jump(Math.max(Edl.time - 5, 0))}
         }, 'fast_rewind'),
         m('i.material-icons', {
           title: 'pause',
