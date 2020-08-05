@@ -63,14 +63,18 @@ export function Scale() {
           }, [
         m('i.material-icons', {
           onclick: e => {
-            state.scale(Math.max(state.scale() - 1, 1))
+            let s = logslider(Math.max(inverseLog(state.scale()) - .05, .01))
+            state.scale(s)
+            console.log('zooming out', s)
           }
         }, 'zoom_out'),
         m(ScaleBar),
         m('i.material-icons', {
           style: {position: 'absolute', right:0},
           onclick: e => {
-            state.scale(state.scale() + 1)
+            let s = logslider(inverseLog(state.scale()) + .05)
+            state.scale(s)
+            console.log('zooming in', s)
           }
         }, 'zoom_in'),
       ])
