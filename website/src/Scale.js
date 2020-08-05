@@ -15,40 +15,66 @@ var maxv = Math.log(1000);
 // calculate adjustment factor
 var scale = (maxv-minv) / (maxp-minp);
 
-function logslider(position) {
+export function logslider(position) {
 
   return Math.exp( minv + scale * ( position - minp ) );
 }
 
-function inverseLog(value) {
+export function inverseLog(value) {
   return ( ( Math.log(value) - minv ) / scale ) + minp
 }
 
-module.exports = {
-  view: (vnode) => {
-    return m('.slider#scale', {min: 1, max: 100, style: {paddingLeft: `${inverseLog(state.scale())*100}%`, 'background-color': '#393939'}})
-  },
-  oncreate: (vnode) => {
-    const slider = interact(vnode.dom)
-    slider.draggable({
-        origin: 'self',
-        inertia: true,
-        modifiers: [
-          interact.modifiers.restrict({
-            restriction: 'self'
-          })
-        ]
+export function ScaleBar() {
+  return {
+    view: (vnode) => {
+      return m('.slider#scale', {min: 1, max: 100, style: {paddingLeft: `${inverseLog(state.scale())*100}%`, 'background-color': '#393939'}})
+    },
+    oncreate: (vnode) => {
+      const slider = interact(vnode.dom)
+      slider.draggable({
+          origin: 'self',
+          inertia: true,
+          modifiers: [
+            interact.modifiers.restrict({
+              restriction: 'self'
+            })
+          ]
+        })
+        .on('dragmove',  (event) => {
+          // const sliderWidth = interact.getElementRect(event.target.parentNode).width
+          let sliderWidth = event.target.offsetWidth
+          let p = event.pageX / sliderWidth
+          // event.target.style.paddingLeft = p*100 + '%'
+          const value = logslider(p).toFixed(4)
+          console.log('scale:', value, 'padding:', p)
+          // event.target.setAttribute('data-value', value)
+          state.scale(value)
+          m.redraw()
       })
-      .on('dragmove',  (event) => {
-        // const sliderWidth = interact.getElementRect(event.target.parentNode).width
-        let sliderWidth = event.target.offsetWidth
-        let p = event.pageX / sliderWidth
-        // event.target.style.paddingLeft = p*100 + '%'
-        const value = logslider(p).toFixed(4)
-        console.log('scale:', value, 'padding:', p)
-        // event.target.setAttribute('data-value', value)
-        state.scale(value)
-        m.redraw()
-    })
-  },
+    },
+  }
+}
+
+export function Scale() {
+  return {
+    view: vnode => {
+      return m('#scalecontainer.tools', {
+          style: {display: 'inline-flex', width:'90vw'}
+          }, [
+        m('i.material-icons', {
+          onclick: e => {
+            state.scale(Math.max(state.scale() - 1, 1))
+          }
+        }, 'zoom_out'),
+        m(ScaleBar),
+        m('i.material-icons', {
+          style: {position: 'absolute', right:0},
+          onclick: e => {
+            state.scale(state.scale() + 1)
+          }
+        }, 'zoom_in'),
+      ])
+    }
+  }
+
 }

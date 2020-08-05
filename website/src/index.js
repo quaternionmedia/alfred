@@ -5,7 +5,7 @@ import Monitor from './Monitor'
 import Project from './Project'
 import Tools from './Tools'
 import TimelineTools from './TimelineTools'
-import Scale from './Scale'
+import { Scale } from './Scale'
 import { Menu } from './Menu'
 import Home from './Home'
 import Projects from './Projects'
@@ -65,12 +65,7 @@ var Otto = {
         m(TimelineTools),
         m(OttoTimeline),
       ]),
-      m('#scalecontainer', {style:
-        {display: 'inline-flex', width:'95vw'}}, [
-        m('i.material-icons', 'zoom_out'),
-        m(Scale),
-        m('i.material-icons', {style: {position: 'absolute', right:0}}, 'zoom_in'),
-      ]),
+      m(Scale),
       m(Bin),
     ]
   }
