@@ -36,7 +36,7 @@ body {
     background-position: center;
 }
 .timeline {
-  width: calc(100vw - 82px);
+  width: calc(100vw - 123px);
   max-height: 40vh;
   /* display: flex; */
   display: -webkit-inline-box;
@@ -122,7 +122,7 @@ body {
   border: #46346E;
   border-width: 4px;
   border-style: solid;
-  margin-bottom: .5em;
+  margin-bottom: 0px;
   margin-left: auto;
   margin-right: auto;
   border-radius: 6px;
@@ -132,7 +132,11 @@ body {
     opacity: 0;
   }
 }
-
+.vcenter {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
 .bar {
   display: flex;
 }

@@ -181,7 +181,8 @@ export function OttoTimeline() {
       window.scroll(0,0)
     },
     view: (vnode) => {
-      return m('#timeline.timeline', [
+      return m('.vcenter', {}, [
+        m('#timeline.timeline', [
         Edl.edl.map((c, i) => {
           if (c) {
             c.i = i
@@ -192,7 +193,8 @@ export function OttoTimeline() {
             }
           } else return m('')
         })
-      ])
+      ]),
+    ])
     },
   }
 }
