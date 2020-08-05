@@ -50,8 +50,8 @@ var Otto = {
     return [
       m(Menu),
       m('#head.head', {style: {
-        width: `calc(${state.width()/state.height()*100*9/16}vw - 39px)`,
-        height: '56.25vw'
+        width: `${state.width()/state.height()*40}vh`,
+        height: '40vh'
       }}, [
         m(Preview)
       ]),
