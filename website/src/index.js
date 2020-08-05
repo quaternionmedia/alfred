@@ -63,7 +63,9 @@ var Otto = {
       ]),
       m('.bar', {}, [
         m(TimelineTools),
-        m(OttoTimeline),
+        m('.vcenter', {}, [
+          m(OttoTimeline),
+        ]),
       ]),
       m(Scale),
       m(Bin),

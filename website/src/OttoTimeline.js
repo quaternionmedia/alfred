@@ -149,7 +149,7 @@ export function OttoTimeline() {
     oncreate: (vnode) => {
       new Sortable(vnode.dom, {
         multiDrag: true,
-        group: 'media',
+        group: 'clip',
         selectedClass: "selected",
         swapThreshold: 0.50,
         animation: 150,
@@ -181,8 +181,7 @@ export function OttoTimeline() {
       window.scroll(0,0)
     },
     view: (vnode) => {
-      return m('.vcenter', {}, [
-        m('#timeline.timeline', [
+      return m('#timeline.timeline', [
         Edl.edl.map((c, i) => {
           if (c) {
             c.i = i
@@ -192,9 +191,8 @@ export function OttoTimeline() {
               // default: return m(Clip, c)
             }
           } else return m('')
-        })
-      ]),
-    ])
-    },
+        }),
+      ])
+    }
   }
 }
