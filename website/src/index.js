@@ -3,7 +3,7 @@ import Slider from './Slider'
 // import { Timeline } from './Timeline'
 import Monitor from './Monitor'
 import Project from './Project'
-import { PlaybackTools, ProjectTools } from './Tools'
+import { PlaybackTools, SpeedTools, ProjectTools } from './Tools'
 import TimelineTools from './TimelineTools'
 import { Scale } from './Scale'
 import { Menu } from './Menu'
@@ -78,6 +78,7 @@ var Otto = {
         m(Timecode),
         m(Slider),
       ]),
+      m(SpeedTools),
       m('.bar', {}, [
         m(TimelineTools),
         m('.vcenter', {}, [

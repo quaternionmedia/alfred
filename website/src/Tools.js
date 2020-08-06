@@ -41,21 +41,29 @@ export function PlaybackTools() {
               title: 'end',
               onclick: (vnode) => {Edl.jump(Edl.duration())}
             }, 'last_page'),
-            m('.vl'),
-            m('i.material-icons', {
-              title: 'slower',
-              onclick: (vnode) => {Monitor.slower()}
-            }, 'slow_motion_video'),
-            m('i.custom', {
-              title: 'reset speed',
-              onclick: (vnode) => {Monitor.resetSpeed()}
-            }, Video.speed + 'x'),
-            m('i.material-icons', {
-              title: 'faster',
-              onclick: (vnode) => {Monitor.faster()}
-            }, 'speed'),
         ]
       )
+    }
+  }
+}
+
+export function SpeedTools() {
+  return {
+    view: vnode => {
+      return m('.tools.toolbar', {}, [
+        m('i.material-icons', {
+          title: 'slower',
+          onclick: (vnode) => {Monitor.slower()}
+        }, 'slow_motion_video'),
+        m('i.custom', {
+          title: 'reset speed',
+          onclick: (vnode) => {Monitor.resetSpeed()}
+        }, Video.speed + 'x'),
+        m('i.material-icons', {
+          title: 'faster',
+          onclick: (vnode) => {Monitor.faster()}
+        }, 'speed'),
+      ])
     }
   }
 }
