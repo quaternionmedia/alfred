@@ -21,6 +21,9 @@ import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'
 import { FormPage } from './Form'
 import { Timecode } from './Timecode'
+import { Head } from './Head'
+import { Resolution, Aspect } from './Resolution'
+
 var state = require("./Globals").state
 
 defaults.transition = "zoom"
@@ -50,10 +53,7 @@ var Otto = {
   view: (vnode) => {
     return [
       m(Menu),
-      m('#head.head', {style: {
-        width: `${state.width()/state.height()*40}vh`,
-        height: '40vh'
-      }}, [
+      m(Head, [
         m(Preview)
       ]),
       m('.bar.right', {}, [
