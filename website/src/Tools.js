@@ -54,22 +54,6 @@ export default class Tools {
             onclick: (vnode) => {Monitor.faster()}
           }, 'speed'),
           m('.vl'),
-          m(Aspect, [
-            '16:9',
-            '4:3',
-            '4:5',
-            '1:1',
-            '5:4',
-            '3:4',
-            '9:16'
-          ]),
-          m(Resolution, [
-            '1080p',
-            '720p',
-            '480p',
-            '240p',
-          ]),
-          m('.vl'),
           m('i.material-icons', {
             title: 'save',
             onclick: vnode => {

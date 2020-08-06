@@ -396,5 +396,5 @@ input[type=submit] {
 }
 
 .right {
-  text-align: 'right';
+  float: right;
 }
