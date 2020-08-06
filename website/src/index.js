@@ -78,17 +78,19 @@ var Otto = {
         m(Timecode),
         m(Slider),
       ]),
-      m(SpeedTools),
-      m('.bar', {}, [
+      m('.bar.fullwidth', {}, [
         m(TimelineTools),
         m('.vcenter', {}, [
+          m('.bar.right', {}, [
+            m(SpeedTools),
+            m('.right', {}, [
+              m(ProjectTools),
+            ]),
+          ]),
           m(OttoTimeline),
         ]),
       ]),
       m(Scale),
-      m('.bar.right', {}, [
-        m(ProjectTools),
-      ]),
       m('.spacer', {style:{height:'3em'}}, []),
       m(Bin),
     ]
