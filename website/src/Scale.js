@@ -58,9 +58,7 @@ export function ScaleBar() {
 export function Scale() {
   return {
     view: vnode => {
-      return m('#scalecontainer.tools', {
-          style: {display: 'inline-flex', width:'90vw'}
-          }, [
+      return m('.tools.toolbar', {style:{width: 'auto'}}, [
         m('i.material-icons', {
           onclick: e => {
             let s = logslider(Math.max(inverseLog(state.scale()) - .05, .01))
