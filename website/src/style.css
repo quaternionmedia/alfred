@@ -154,6 +154,7 @@ body {
 }
 .toolcol {
   display: grid;
+  grid-template-columns: 50% 50%;
 }
 
 .tools {
@@ -186,6 +187,9 @@ body {
   }
   .tools .custom {
     padding: 9px;
+  }
+  .toolcol {
+    grid-template-columns: 100%;
   }
 
 }
