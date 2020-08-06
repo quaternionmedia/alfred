@@ -14,46 +14,56 @@ export function downloadFile(url) {
   a.click()
   document.body.removeChild(a)
 }
-export default class Tools {
-  view(vnode) {
-    return m('#tools.tools.toolbar', {}, [
+export function PlaybackTools() {
+  return {
+    view(vnode) {
+      return m('#PlaybackTools.tools.toolbar', {}, [
 
-      m('i.material-icons', {
-        title: 'start',
-        onclick: (vnode) => {Edl.jump(0)}
-      }, 'first_page'),
-      m('i.material-icons', {
-        title: 'back 5s',
-        onclick: (vnode) => {
-          Edl.jump(Math.max(Edl.time - 5, 0))}
-        }, 'fast_rewind'),
         m('i.material-icons', {
-          title: 'pause',
-          onclick: Monitor.play,
-        }, Video.paused ? 'play_arrow': 'pause' ),
+          title: 'start',
+          onclick: (vnode) => {Edl.jump(0)}
+        }, 'first_page'),
         m('i.material-icons', {
-          title: 'forward 5s',
+          title: 'back 5s',
           onclick: (vnode) => {
-            Edl.jump(Math.min(Edl.time + 5, Edl.duration()))}
-          }, 'fast_forward'),
+            Edl.jump(Math.max(Edl.time - 5, 0))}
+          }, 'fast_rewind'),
           m('i.material-icons', {
-            title: 'end',
-            onclick: (vnode) => {Edl.jump(Edl.duration())}
-          }, 'last_page'),
-          m('.vl'),
+            title: 'pause',
+            onclick: Monitor.play,
+          }, Video.paused ? 'play_arrow': 'pause' ),
           m('i.material-icons', {
-            title: 'slower',
-            onclick: (vnode) => {Monitor.slower()}
-          }, 'slow_motion_video'),
-          m('i.custom', {
-            title: 'reset speed',
-            onclick: (vnode) => {Monitor.resetSpeed()}
-          }, Video.speed + 'x'),
-          m('i.material-icons', {
-            title: 'faster',
-            onclick: (vnode) => {Monitor.faster()}
-          }, 'speed'),
-          m('.vl'),
+            title: 'forward 5s',
+            onclick: (vnode) => {
+              Edl.jump(Math.min(Edl.time + 5, Edl.duration()))}
+            }, 'fast_forward'),
+            m('i.material-icons', {
+              title: 'end',
+              onclick: (vnode) => {Edl.jump(Edl.duration())}
+            }, 'last_page'),
+            m('.vl'),
+            m('i.material-icons', {
+              title: 'slower',
+              onclick: (vnode) => {Monitor.slower()}
+            }, 'slow_motion_video'),
+            m('i.custom', {
+              title: 'reset speed',
+              onclick: (vnode) => {Monitor.resetSpeed()}
+            }, Video.speed + 'x'),
+            m('i.material-icons', {
+              title: 'faster',
+              onclick: (vnode) => {Monitor.faster()}
+            }, 'speed'),
+        ]
+      )
+    }
+  }
+}
+
+export function ProjectTools() {
+  return {
+    view: vnode => {
+      return m('.tools.toolbar', {}, [
           m('i.material-icons', {
             title: 'save',
             onclick: vnode => {
@@ -92,7 +102,7 @@ export default class Tools {
             )
           }
         }, 'file_upload'),
-      ]
-    )
+      ])
+    }
   }
 }

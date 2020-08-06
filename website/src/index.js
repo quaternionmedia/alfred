@@ -3,7 +3,7 @@ import Slider from './Slider'
 // import { Timeline } from './Timeline'
 import Monitor from './Monitor'
 import Project from './Project'
-import Tools from './Tools'
+import { PlaybackTools, ProjectTools } from './Tools'
 import TimelineTools from './TimelineTools'
 import { Scale } from './Scale'
 import { Menu } from './Menu'
@@ -73,7 +73,7 @@ var Otto = {
           '240p',
         ]),
       ]),
-      m(Tools),
+      m(PlaybackTools),
       m('.bar', {}, [
         m(Timecode),
         m(Slider),
@@ -85,6 +85,10 @@ var Otto = {
         ]),
       ]),
       m(Scale),
+      m('.bar.right', {}, [
+        m(ProjectTools),
+      ]),
+      m('.spacer', {style:{height:'3em'}}, []),
       m(Bin),
     ]
   }
