@@ -36,7 +36,7 @@ body {
     background-position: center;
 }
 .timeline {
-  max-width: calc(100vw - 2em);
+  max-width: calc(100vw - 175px);
   /* max-width: 100%; */
   max-height: 40vh;
   /* display: flex; */
