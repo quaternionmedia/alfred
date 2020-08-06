@@ -56,7 +56,7 @@ var Otto = {
       m(Head, [
         m(Preview)
       ]),
-      m('.bar.right', {}, [
+      m('.fit.center', {}, [
         m(Aspect, [
           '16:9',
           '4:3',
