@@ -34,16 +34,16 @@ module.exports = {
         ]
       })
       .on('dragmove',  (event) => {
-        const sliderWidth = interact.getElementRect(event.target.parentNode).width
-        const value = (event.pageX / sliderWidth).toFixed(2)
+        const sliderWidth = interact.getElementRect(event.target).width
+        const value = (Math.max(event.pageX - event.target.offsetLeft, 0) / sliderWidth).toFixed(2)
         const t = value*Edl.duration().toFixed(2)
-        // console.log('sliding to', t, value)
+        console.log('sliding to', t, value, sliderWidth, event)
         event.target.style.paddingLeft = 100*value + '%'
         event.target.setAttribute('data-value', t)
     })
     .on('dragend', (event) => {
-      const sliderWidth = interact.getElementRect(event.target.parentNode).width
-      const value = (event.pageX / sliderWidth).toFixed(2)
+      const sliderWidth = interact.getElementRect(event.target).width
+      const value = (Math.max(event.pageX - event.target.offsetLeft, 0) / sliderWidth).toFixed(2)
       const t = value*Edl.duration().toFixed(2)
       Edl.jump(t)
     })
