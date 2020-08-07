@@ -100,22 +100,28 @@ export const Login = () => {
             },
             onclick: e => {
               e.preventDefault()
-              prompt('register', 'what is your email address?', 'e@mail.com', (e, v) => {
-                let form = new FormData(document.getElementById('login'))
-                form.append('email', v)
-                console.log('registering user', e, v, form)
-                m.request({
-                  url: '/register',
-                  method: 'post',
-                  body: form
-                }).then( res => {
-                  console.log('successfully registered', res)
-                  success(`${v} is now registered!`)
-                }).catch( err => {
-                  error('error regestering')
+              if (document.getElementById('username').value == '') {
+                error('please enter a username')
+              } else if (document.getElementById('password').value.length < 8) {
+                error('password must be at least 8 characters')
+              } else {
+                prompt('register', 'what is your email address?', 'e@mail.com', (e, v) => {
+                  let form = new FormData(document.getElementById('login'))
+                  form.append('email', v)
+                  console.log('registering user', e, v, form)
+                  m.request({
+                    url: '/register',
+                    method: 'post',
+                    body: form
+                  }).then( res => {
+                    console.log('successfully registered', res)
+                    success(`${v} is now registered!`)
+                  }).catch( err => {
+                    error('error regestering')
+                  })
+                }, () => {
                 })
-              }, () => {
-              })
+              }
             },
           }, 'register')
         ]
