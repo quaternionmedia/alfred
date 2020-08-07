@@ -222,7 +222,7 @@ body {
   display: inline-block;
 }
 .renders td {
-  text-align: center;
+  text-align: -webkit-center;
 }
 .renders tr td:FIRST-CHILD {
   text-align: left;
