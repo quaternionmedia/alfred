@@ -89,7 +89,7 @@ body {
 
 .project {
   display: inline-table;
-  overflow-y: scroll;
+  overflow-y: auto;
   border: 3px solid #210D4D;
   padding: .5em;
   border-radius: 1em;
