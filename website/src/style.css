@@ -42,7 +42,7 @@ body {
   /* display: flex; */
   display: -webkit-inline-box;
   overflow: auto;
-  border: 8px solid #210D4D;
+  border: 3px solid #46346E;
   border-radius: 1em;
   padding: 1em;
   background-color: #101010;
@@ -89,11 +89,11 @@ body {
 
 .project {
   display: inline-table;
-  overflow: scroll;
-  border: 4px solid #210D4D;
+  overflow-y: scroll;
+  border: 3px solid #210D4D;
   padding: .5em;
   border-radius: 1em;
-  background-color: #1d1d1d;
+  background-color: #292929;
 
 }
 .project tr:nth-child(even){background-color: #2b2b2b;}
@@ -120,8 +120,7 @@ body {
   display: flex;
   height: 40vh;
   background-color: black;
-  border: #46346E;
-  border-width: 4px;
+  border: 3px #46346E;
   border-style: solid;
   margin-bottom: 0px;
   margin-left: auto;
@@ -340,7 +339,7 @@ a:visited {
 form {
   padding: 1em;
   margin: 1em;
-  border: 4px solid #210D4D;
+  border: 3px solid #46346E;
   border-radius: 1em;
   background-color: #393939;
 }
