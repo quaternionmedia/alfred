@@ -112,7 +112,7 @@ body {
 
 .bin {
   display: inherit;
-  max-height: 50vh;
+  max-height: 40vh;
   margin-top: .5em;
   padding: .5em;
 }

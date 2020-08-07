@@ -74,7 +74,7 @@ var Otto = {
         ]),
       ]),
       m(PlaybackTools),
-      m('.bar', {}, [
+      m('.bar.fullwidth', {}, [
         m(Timecode),
         m(Slider),
       ]),
