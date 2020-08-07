@@ -43,7 +43,7 @@ export function ScaleBar() {
         .on('dragmove',  (event) => {
           // const sliderWidth = interact.getElementRect(event.target.parentNode).width
           let sliderWidth = event.target.offsetWidth
-          let p = event.pageX / sliderWidth
+          let p = Math.max(event.pageX - event.target.offsetLeft, 0) / sliderWidth
           // event.target.style.paddingLeft = p*100 + '%'
           const value = logslider(p).toFixed(4)
           console.log('scale:', value, 'padding:', p)
