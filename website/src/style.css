@@ -132,6 +132,10 @@ body {
     opacity: 0;
   }
 }
+.flexwrap {
+  display: flex;
+  flex-wrap: wrap;
+}
 .vcenter {
   display: flex;
   flex-direction: column;
@@ -140,6 +144,10 @@ body {
 .center {
   margin-left: auto;
   margin-right: auto;
+}
+.break {
+  flex-basis: 100%;
+  height: 0;
 }
 .fit {
   width: fit-content;
