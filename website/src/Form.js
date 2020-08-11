@@ -123,6 +123,8 @@ export function Form() {
                   project: proj
                 },
                 body: form
+              }).then(e => {
+                message('saved!')
               })
             },
           },),
