@@ -140,6 +140,7 @@ body {
   flex-basis: 0;
 }
 .vcenter {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
