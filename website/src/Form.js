@@ -111,7 +111,7 @@ export function Form() {
         m('br'),
         m(Text, {name: 'project', id:'projectName'}, 'Project Name'),
         m('', {style: {'text-align': 'right'}}, [
-          m('input', {type: 'submit', name: 'save', value: 'save',
+          m('input.button', {type: 'submit', name: 'save', value: 'save',
             onclick: e => {
               e.preventDefault()
               let form = new FormData(document.getElementById('form'))
@@ -155,7 +155,7 @@ export function Form() {
         m(Input, {name: 'duration'}, 'Duration'),
         m('hr'),
         m('', {style: {'text-align': 'right'}}, [
-          m('input', {type: 'submit', name: 'render', value: 'Preview',
+          m('input.button', {type: 'submit', name: 'render', value: 'Preview',
             onclick: (e) => {
               e.preventDefault()
               let form = new FormData(document.getElementById('form'))
