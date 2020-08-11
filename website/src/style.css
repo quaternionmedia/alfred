@@ -384,10 +384,14 @@ form select {
   border-radius: 1em;
   color: #aaa;
   background-color: #46346E;
+  opacity: .8;
   box-shadow: -2px 2px #222;
 }
 .button:hover {
-  background-color: #7059A2
+  /* background-color: #7059A2; */
+  transition: 0.3s;
+  opacity: 1;
+
 }
 .button:active {
   background-color: #4F1FB8;
