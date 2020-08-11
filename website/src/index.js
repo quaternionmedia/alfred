@@ -74,13 +74,13 @@ var Otto = {
         ]),
       ]),
       m(PlaybackTools),
-      m('.bar.fullwidth', {}, [
-        m(Timecode),
-        m(Slider),
-      ]),
-      m('.bar.fullwidth', {}, [
+      m('.bar.fullwidth.timelinegrid', {}, [
         m(TimelineTools),
         m('.vcenter', {}, [
+          m('.bar', {}, [
+            m(Timecode),
+            m(Slider),
+          ]),
           m('.bar.right', {}, [
             m(SpeedTools),
             m('.right', {}, [

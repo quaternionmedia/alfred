@@ -36,8 +36,6 @@ body {
     background-position: center;
 }
 .timeline {
-  max-width: calc(100vw - 175px);
-  /* max-width: 100%; */
   max-height: 40vh;
   /* display: flex; */
   display: -webkit-inline-box;
@@ -135,6 +133,11 @@ body {
 .flexwrap {
   display: flex;
   flex-wrap: wrap;
+}
+.timelinegrid {
+  display: inline-grid;
+  grid-template-columns: 10% 90%;
+  flex-basis: 0;
 }
 .vcenter {
   display: flex;
