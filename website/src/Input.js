@@ -23,6 +23,26 @@ export var VideoForm = {
   themecolor: Stream('#CC5500'),
   font: Stream('Segoe_UI_Bold'),
   duration: Stream(5),
+  clear: () => {
+    console.log('clearing form')
+    VideoForm.project = Stream('')
+    VideoForm.name = Stream('')
+    VideoForm.logo = Stream('')
+    VideoForm.address = Stream('')
+    VideoForm.phone = Stream('')
+    VideoForm.hours = Stream('')
+    VideoForm.website = Stream('')
+    VideoForm.initial = Stream('')
+    VideoForm.bullets = Stream('')
+    VideoForm.media = Stream([])
+    VideoForm.audio = Stream([])
+    VideoForm.call = Stream('')
+    VideoForm.closing = Stream('')
+    VideoForm.fontcolor = Stream('#FFFFFF')
+    VideoForm.themecolor = Stream('#CC5500')
+    VideoForm.font = Stream('Segoe_UI_Bold')
+    VideoForm.duration = Stream(5)
+  }
 }
 
 

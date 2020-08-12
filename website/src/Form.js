@@ -105,6 +105,8 @@ export function Form() {
                 selected.project = options[i - 1]
                 console.log('selected', selected)
               })
+            } else if (i == 0) {
+              VideoForm.clear()
             }
           }
         }, options),
