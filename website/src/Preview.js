@@ -17,14 +17,22 @@ export function ImagePreview() {
   }
 }
 export function VideoPreview() {
+
+  function updateTime(e) {
+    Video.time(e.target.currentTime)
+    Edl.time = Video.time() + Edl.durations(Edl.edl.slice(0,Edl.current))
+    m.redraw()
+  }
   function play() {
     let d = document.getElementById('preview')
     if (Video.paused) {
       d.play()
       Video.paused = false
+      d.addEventListener('timeupdate', updateTime)
     } else {
       d.pause()
       Video.paused = true
+      d.removeEventListener('timeupdate', updateTime)
     }
     m.redraw()
   }
