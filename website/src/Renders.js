@@ -45,6 +45,7 @@ export function RenderPreview() {
         'object-fit': 'contain',
         src: vnode.attrs.src,
         controls: true,
+        autoplay: true,
       })
     }
   }
