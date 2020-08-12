@@ -59,7 +59,6 @@ export function Clip() {
         },
         ...vnode.attrs
         }, [
-          m('p#i.i', vnode.attrs.i),
           m('i.material-icons.progress', {
             style: {
               display: (Edl.current == vnode.attrs.i) ? 'inherit': 'none',
@@ -81,6 +80,7 @@ export function Template() {
           ...vnode.attrs,
         }, [
         m(ContentEditable, {
+          style: {margin: '5px'},
           // Original HTML input
           html: this.html,
           // Returns the updated HTML code
@@ -95,15 +95,14 @@ export function Template() {
           // Example to prevent the user from entering commas
           onkeydown: e => {
             switch (e.key) {
-              case ',': e.preventDefault()
               case 'Enter': e.preventDefault()
               e.stopPropagation()
               console.log('enter')
-              Edl.edl[vnode.attrs.i].data['text'] = this.html
               Edl.update()
               case 'ArrowLeft': e.stopPropagation()
               case 'ArrowRight': e.stopPropagation()
             }
+            Edl.edl[vnode.attrs.i].data['text'] = this.html
           },
 
           // Replace the base tag, if needed
@@ -149,7 +148,7 @@ export function OttoTimeline() {
     oncreate: (vnode) => {
       new Sortable(vnode.dom, {
         multiDrag: true,
-        group: 'media',
+        group: 'clip',
         selectedClass: "selected",
         swapThreshold: 0.50,
         animation: 150,
@@ -178,6 +177,7 @@ export function OttoTimeline() {
           Edl.update()
         },
       })
+      window.scroll(0,0)
     },
     view: (vnode) => {
       return m('#timeline.timeline', [
@@ -190,8 +190,8 @@ export function OttoTimeline() {
               // default: return m(Clip, c)
             }
           } else return m('')
-        })
+        }),
       ])
-    },
+    }
   }
 }

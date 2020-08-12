@@ -15,7 +15,6 @@ export var VideoForm = {
   website: Stream(''), //AnyUrl = 'talahairstudio.com'
   initial: Stream(''),
   bullets: Stream(''),
-  optional: Stream(''),
   media: Stream([]),
   audio: Stream([]),
   call: Stream(''),
@@ -24,6 +23,26 @@ export var VideoForm = {
   themecolor: Stream('#CC5500'),
   font: Stream('Segoe_UI_Bold'),
   duration: Stream(5),
+  clear: () => {
+    console.log('clearing form')
+    VideoForm.project = Stream('')
+    VideoForm.name = Stream('')
+    VideoForm.logo = Stream('')
+    VideoForm.address = Stream('')
+    VideoForm.phone = Stream('')
+    VideoForm.hours = Stream('')
+    VideoForm.website = Stream('')
+    VideoForm.initial = Stream('')
+    VideoForm.bullets = Stream('')
+    VideoForm.media = Stream([])
+    VideoForm.audio = Stream([])
+    VideoForm.call = Stream('')
+    VideoForm.closing = Stream('')
+    VideoForm.fontcolor = Stream('#FFFFFF')
+    VideoForm.themecolor = Stream('#CC5500')
+    VideoForm.font = Stream('Segoe_UI_Bold')
+    VideoForm.duration = Stream(5)
+  }
 }
 
 
@@ -65,7 +84,7 @@ export function Input() {
     view: (vnode) => {
       return m('', {}, [
         m('label', { for: vnode.attrs.name }, vnode.children),
-        m('input[type=text]', {
+        m('input', {
         oninput: e => {
           console.log('input ', vnode.dom.value, e.target.value)
           VideoForm[vnode.attrs.name](e.target.value)
@@ -126,7 +145,7 @@ export function Media() {
     oncreate: (vnode) => {
       new Sortable(vnode.dom, {
         multiDrag: true,
-        // group: 'media',
+        group: 'media',
         selectedClass: "selected",
         swapThreshold: 0.50,
         animation: 150,
@@ -215,13 +234,13 @@ export function Media() {
       return m('', {}, [
         VideoForm.media().map(medium => {
           if (medium && medium.endsWith('.mp4')) {
-            return m('.media.bar', [
-              m('textarea', { value: medium , name: `${vnode.attrs.name}[]`}),
+            return m('span.media', [
+              m('input', { value: medium , name: `${vnode.attrs.name}[]`, type: 'hidden'}),
               m('video[controls].formthumb', { src: medium }),
             ])
           } else {
-          return m('.media.bar', [
-            m('textarea', { value: medium , name: `${vnode.attrs.name}[]`}),
+          return m('span.media', [
+            m('input', { value: medium , name: `${vnode.attrs.name}[]`, type: 'hidden'}),
             m('img.formthumb', { src: medium }),
           ])}
         }),

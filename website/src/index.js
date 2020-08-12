@@ -3,9 +3,9 @@ import Slider from './Slider'
 // import { Timeline } from './Timeline'
 import Monitor from './Monitor'
 import Project from './Project'
-import Tools from './Tools'
+import { PlaybackTools, SpeedTools, ProjectTools } from './Tools'
 import TimelineTools from './TimelineTools'
-import Scale from './Scale'
+import { Scale } from './Scale'
 import { Menu } from './Menu'
 import Home from './Home'
 import Projects from './Projects'
@@ -20,7 +20,11 @@ import { Renders } from './Renders'
 import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'
 import { FormPage } from './Form'
+import { Timecode } from './Timecode'
+import { Head } from './Head'
 import { Resolution, Aspect } from './Resolution'
+
+var state = require("./Globals").state
 
 defaults.transition = "zoom"
 defaults.theme.ok = "ui positive button"
@@ -49,35 +53,45 @@ var Otto = {
   view: (vnode) => {
     return [
       m(Menu),
-      m('#head.head', [
+      m(Head, [
         m(Preview)
       ]),
-      m(Aspect, [
-        '16:9',
-        '4:3',
-        '4:5',
-        '1:1',
-        '5:4',
-        '3:4',
-        '9:16'
+      m('.fit.center', {}, [
+        m(Aspect, [
+          '16:9',
+          '4:3',
+          '4:5',
+          '1:1',
+          '5:4',
+          '3:4',
+          '9:16'
+        ]),
+        m(Resolution, [
+          '1080p',
+          '720p',
+          '480p',
+          '240p',
+        ]),
       ]),
-      m(Resolution, [
-        '1080p',
-        '720p',
-        '480p',
-        '240p',
+      m(PlaybackTools),
+      m('.bar.fullwidth.timelinegrid', {}, [
+        m(TimelineTools),
+        m('.vcenter', {}, [
+          m('.bar', {}, [
+            m(Timecode),
+            m(Slider),
+          ]),
+          m('.bar.right', {}, [
+            m(SpeedTools),
+            m('.right', {}, [
+              m(ProjectTools),
+            ]),
+          ]),
+          m(OttoTimeline),
+        ]),
       ]),
-      m(Tools),
-      m(Slider),
-      m(TimelineTools),
-      m(OttoTimeline),
-      m('#scalecontainer', {style:
-        {display: 'inline-flex', width:'95vw'}}, [
-        m('i.material-icons', {style: {position: 'absolute',}}, 'zoom_out'),
-        m('i.material-icons', {style: {position: 'absolute', right:0}}, 'zoom_in'),
-        m(Scale),
-      ]),
-      m(Import),
+      m(Scale),
+      m('.spacer', {style:{height:'3em'}}, []),
       m(Bin),
     ]
   }

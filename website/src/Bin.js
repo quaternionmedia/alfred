@@ -88,7 +88,7 @@ var Bin = {
     return [
       m('table#bin.bin.project', {}, [
         Bin.templates.map(clip => {
-          console.log('making template', clip, typeof(clip))
+          // console.log('making template', clip, typeof(clip))
           return m(Template, {...clip, datastr: JSON.stringify(clip.data)})
         }),
         Bin.videos.map(f => {

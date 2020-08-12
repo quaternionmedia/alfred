@@ -8,8 +8,8 @@ export default class TimelineTools {
   }
   view() {
     let t = document.getElementById('timeline')
-    return m('#TTools.tools.toolbar', {}, [
-      m('i', {
+    return m('span#TTools.tools.toolcol', {}, [
+      m('i.custom', {
         title: 'time selector',
           onclick: (vnode) => {
             t.style.cursor = 'text'
@@ -19,7 +19,7 @@ export default class TimelineTools {
             'background-color': state.tool() == 'time' ? '#393939' : 'transparent'
           }
       }, '|'),
-      m('i', {
+      m('i.custom', {
         title: 'trim',
         onclick: (vnode) => {
           t.style.cursor = 'ew-resize'

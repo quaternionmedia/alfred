@@ -5,35 +5,26 @@ import { Field, Input, InputArea, VideoForm, Image, Media, Color, Audio } from '
 
 export function Form() {
 
-  var options = []
-  var selected = {}
-
+  let options = []
+  let selected = {}
+  let fonts = []
   function Dropdown() {
     return {
       view: (vnode) => {
-        return m('select', {
-          onchange: e => {
-            let i = e.target.selectedIndex
-            console.log('form res', options, i)
-            if (options && i) {
-              m.request(`/project/${options[i - 1]}`).then(res => {
-                selected = res['form']
-                for (const property in selected) {
-                  console.log('setting VideoForm', property, selected[property])
-                  VideoForm[property](selected[property])
-                }
-                selected.project = options[i - 1]
-                console.log('selected', selected)
-              })
-            }
-          }
+        return [
+          m('label.formlabel', {
+            for: vnode.attrs.name
+          }, vnode.attrs.label),
+          m('select', {
+          ...vnode.attrs,
+          value: selected ? selected[vnode.attrs.name] : ''
         }, [
-          m('option', {value: '', ...vnode.attrs}, ''),
+          m('option', {value: ''}, ''),
           vnode.children.map( opt => {
             return m('option', {
             value: opt
           }, opt)})
-        ])
+        ])]
       }
     }
   }
@@ -71,21 +62,58 @@ export function Form() {
 
   return {
     oninit: (vnode) => {
+
+      m.request('/fonts').then( e => {
+        console.log('got fonts', e)
+        fonts = e
+      })
+    },
+    oncreate: vnode => {
       m.request('/projects').then(e => {
         options = e
         console.log('projects', options)
-      })
+        let project = m.route.param('project')
+        if (project) {
+          m.request(`/project/${project}`).then(res => {
+            selected = res['form']
+            for (const property in selected) {
+              console.log('setting VideoForm', property, selected[property])
+              VideoForm[property](selected[property])
+            }
+          console.log('setting project', project)
+          document.getElementById('projectSelect').value = project
+        })
+      }})
     },
-
     view: (vnode) => {
       return m('form.form#form', {
 
       }, [
-        m(Dropdown, options),
+        m(Dropdown, {
+          id: 'projectSelect',
+          onchange: e => {
+            let i = e.target.selectedIndex
+            console.log('form res', options, i)
+            if (options && i) {
+              m.route.set('/form', {'project': options[i - 1]})
+              m.request(`/project/${options[i - 1]}`).then(res => {
+                selected = res['form']
+                for (const property in selected) {
+                  console.log('setting VideoForm', property, selected[property])
+                  VideoForm[property](selected[property])
+                }
+                selected.project = options[i - 1]
+                console.log('selected', selected)
+              })
+            } else if (i == 0) {
+              VideoForm.clear()
+            }
+          }
+        }, options),
         m('br'),
         m(Text, {name: 'project', id:'projectName'}, 'Project Name'),
         m('', {style: {'text-align': 'right'}}, [
-          m('input', {type: 'submit', name: 'save', value: 'save',
+          m('input.button', {type: 'submit', name: 'save', value: 'save',
             onclick: e => {
               e.preventDefault()
               let form = new FormData(document.getElementById('form'))
@@ -97,6 +125,8 @@ export function Form() {
                   project: proj
                 },
                 body: form
+              }).then(e => {
+                message('saved!')
               })
             },
           },),
@@ -111,7 +141,6 @@ export function Form() {
         m(Input, {name: 'website'}, 'Website'),
         m(InputArea, {name: 'initial'}, 'Initial text'),
         m(InputArea, {name: 'bullets'}, 'Bullets'),
-        m(InputArea, {name: 'optional'}, 'Optional'),
         m('label', { for: 'media' }, 'Media'),
         m('.subform', {}, [
           m(InputArea, {
@@ -126,11 +155,11 @@ export function Form() {
         // m(TextArea, {name: 'closing'}, 'Closing'),
         m(Color, {name: 'themecolor'}, 'Theme Color'),
         m(Color, {name: 'fontcolor'}, 'Font Clolor'),
-        m(Input, {name: 'font'}, 'Font'),
+        m(Dropdown, {name: 'font', label: 'Font'}, fonts),
         m(Input, {name: 'duration'}, 'Duration'),
         m('hr'),
         m('', {style: {'text-align': 'right'}}, [
-          m('input', {type: 'submit', name: 'render', value: 'Preview',
+          m('input.button', {type: 'submit', name: 'render', value: 'Preview',
             onclick: (e) => {
               e.preventDefault()
               let form = new FormData(document.getElementById('form'))

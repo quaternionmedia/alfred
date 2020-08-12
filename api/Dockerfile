@@ -22,6 +22,10 @@ RUN ln -s /kburns/main.py /usr/bin/kburns
 RUN ln -s /usr/bin/ffmpeg /usr/bin/ffmpeg.exe
 RUN ln -s /usr/bin/ffprobe /usr/bin/ffprobe.exe
 
+# fonts
+RUN apk add --no-cache msttcorefonts-installer fontconfig
+RUN update-ms-fonts
+
 COPY otto/fonts/* /usr/share/fonts/truetype/
 RUN fc-cache -fv
 RUN pip install jinja2

@@ -20,7 +20,7 @@ module.exports = {
     return d.reduce((a, b) => a + b, 0)
   },
   view: (vnode) => {
-    return m('.slider#slider', {min: 1, max: Edl.duration(), value: Edl.time}, Edl.time > 60 ? module.exports.formatTime(Edl.time.toFixed(2)) : Edl.time.toFixed(2))
+    return m('.slider#slider', {min: 1, max: Edl.duration()})
   },
   oncreate: (vnode) => {
     const slider = interact(vnode.dom)
@@ -34,24 +34,25 @@ module.exports = {
         ]
       })
       .on('dragmove',  (event) => {
-        const sliderWidth = interact.getElementRect(event.target.parentNode).width
-        const value = (event.pageX / sliderWidth).toFixed(2)
-        const t = value*Edl.duration().toFixed(2)
-        // console.log('sliding to', t, value)
-        event.target.style.paddingLeft = 100*value + '%'
+        const sliderWidth = event.target.offsetWidth - event.target.offsetLeft
+        const value = Math.max((event.pageX - event.target.offsetLeft) / sliderWidth, 0)
+        const t = (value*Edl.duration()).toFixed(2)
+        console.log('sliding to', t, value, event, event.pageX, sliderWidth, event.target.offsetLeft)
+        event.target.style.paddingLeft = 100*value.toFixed(4) + '%'
         event.target.setAttribute('data-value', t)
-        event.target.setAttribute('value', t)
     })
     .on('dragend', (event) => {
-      const sliderWidth = interact.getElementRect(event.target.parentNode).width
-      const value = (event.pageX / sliderWidth).toFixed(2)
-      const t = value*Edl.duration().toFixed(2)
-      Edl.jump(t)
+      const sliderWidth = event.target.offsetWidth - event.target.offsetLeft
+      const value = Math.max((event.pageX - event.target.offsetLeft) / sliderWidth, 0)
+      const t = (value*Edl.duration()).toFixed(2)
+      console.log('slide end. Jumping', t, value, sliderWidth, event)
+      Edl.jump(Number(t))
     })
   },
   onupdate: (vnode) => {
-    // console.log('updating slider', vnode, t)
     vnode.dom.setAttribute('data-value', Edl.time.toFixed(2))
-    vnode.dom.style.paddingLeft = Edl.time/Edl.duration()*vnode.dom.offsetWidth
+    let p = (Edl.time / Edl.duration())*100
+    console.log('updating slider', vnode, p)
+    vnode.dom.style.paddingLeft = `${p.toFixed(2)}%`
   },
 }
