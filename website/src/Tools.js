@@ -1,6 +1,5 @@
 import m from 'mithril'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
-import Monitor from './Monitor'
 import { Video, Edl } from './Video'
 var state = require("./Globals").state
 import { message, success, defaults } from 'alertifyjs'
@@ -30,7 +29,7 @@ export function PlaybackTools() {
           }, 'fast_rewind'),
           m('i.material-icons', {
             title: 'pause',
-            onclick: Monitor.play,
+            onclick: Edl.play,
           }, Video.paused ? 'play_arrow': 'pause' ),
           m('i.material-icons', {
             title: 'forward 5s',
@@ -53,15 +52,15 @@ export function SpeedTools() {
       return m('.tools.toolbar', {}, [
         m('i.material-icons', {
           title: 'slower',
-          onclick: (vnode) => {Monitor.slower()}
+          // onclick: (vnode) => {Monitor.slower()}
         }, 'slow_motion_video'),
         m('i.custom', {
           title: 'reset speed',
-          onclick: (vnode) => {Monitor.resetSpeed()}
+          // onclick: (vnode) => {Monitor.resetSpeed()}
         }, Video.speed + 'x'),
         m('i.material-icons', {
           title: 'faster',
-          onclick: (vnode) => {Monitor.faster()}
+          // onclick: (vnode) => {Monitor.faster()}
         }, 'speed'),
       ])
     }
