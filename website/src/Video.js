@@ -52,7 +52,37 @@ export var Edl = {
     Edl.time = t
     Video.time(t - Edl.durations(Edl.edl.slice(0, n)))
     m.redraw.sync()
+  },
+  play: play
+}
+
+function updateTime(e) {
+  let t = e.target.currentTime
+  let p = Edl.durations(Edl.edl.slice(0,Edl.current))
+  let d = Edl.edl[Edl.current].duration
+  console.log('timeupdate', Edl.current, p, t)
+  if (t >= d) {
+    // switch to next clip
+    Edl.jump(t + d)
+  } else {
+    // update playback time
+    Video.time(t)
+    Edl.time = t + p
   }
+  m.redraw()
+}
+function play() {
+  let d = document.getElementById('preview')
+  if (Video.paused) {
+    d.play()
+    Video.paused = false
+    d.addEventListener('timeupdate', updateTime)
+  } else {
+    d.pause()
+    Video.paused = true
+    d.removeEventListener('timeupdate', updateTime)
+  }
+  m.redraw()
 }
 
 export function array_move(arr, old_index, new_index) {
