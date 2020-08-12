@@ -82,7 +82,7 @@ function play() {
     d.addEventListener('timeupdate', updateTime)
   } else {
     d.pause()
-    Video.paused = true
+    state.paused(true)
     d.removeEventListener('timeupdate', updateTime)
   }
   m.redraw()

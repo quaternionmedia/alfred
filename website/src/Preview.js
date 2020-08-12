@@ -19,7 +19,7 @@ export function ImagePreview() {
 export function VideoPreview() {
   return {
     onbeforeupdate: (vnode, old) => {
-      return Video.paused
+      return state.paused()
     },
     oncreate: (vnode) => {
       document.addEventListener('keydown', e => {
@@ -31,7 +31,7 @@ export function VideoPreview() {
           }
         })
       vnode.dom.addEventListener('loadeddata', (event) => {
-        if (!Video.paused && vnode.dom.paused) {
+        if (!state.paused() && vnode.dom.paused) {
           console.log('fixing paused video by playing')
           vnode.dom.play()
         }
@@ -45,7 +45,7 @@ export function VideoPreview() {
       return m('video.preview', {
         ...vnode.attrs,
         currentTime: Video.time(),
-        // state: Video.paused ? vnode.dom.pause() : vnode.dom.play(),
+        // state: state.paused() ? vnode.dom.pause() : vnode.dom.play(),
         style: {
           width: '100%',
           height: '100%',

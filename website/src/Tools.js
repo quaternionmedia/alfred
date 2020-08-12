@@ -30,7 +30,7 @@ export function PlaybackTools() {
           m('i.material-icons', {
             title: 'pause',
             onclick: Edl.play,
-          }, Video.paused ? 'play_arrow': 'pause' ),
+          }, state.paused() ? 'play_arrow': 'pause' ),
           m('i.material-icons', {
             title: 'forward 5s',
             onclick: (vnode) => {
