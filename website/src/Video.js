@@ -63,7 +63,8 @@ function updateTime(e) {
   console.log('timeupdate', Edl.current, p, t)
   if (t >= d) {
     // switch to next clip
-    Edl.jump(t + d)
+    document.getElementById('preview').removeEventListener('timeupdate', updateTime)
+    Edl.jump(p + t)
   } else {
     // update playback time
     Video.time(t)
