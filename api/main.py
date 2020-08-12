@@ -224,9 +224,10 @@ async def getProjects():
 
 @app.get('/project/{project}')
 async def getProject(project: str):
-    c = db.projects.find_one({'name': project}, ['name', 'form', 'edl'])
+    fields = ['name', 'form', 'edl']
+    c = db.projects.find_one({'name': project}, fields)
     res = {}
-    for a in ['name', 'edl', 'form']:
+    for a in fields:
         if c.get(a):
             res[a] = c.get(a)
     return res
@@ -252,24 +253,11 @@ async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
     return True
 
 @app.get('/bkg/{project}')
-async def get_bkg(project: str, width: int, height: int, t: float):
+async def get_bkg(project: str, t: float):
     clips = db.projects.find_one({'name': project}, ['form'])['form']['media']
     clip = download(clips[floor(t / 5)])
     print('making bkg', clip)
-    try:
-        if clip.endswith('mp4'):
-            clip = VideoFileClip(clip)
-        else:
-            clip = ImageClip(clip)
-        if width >= height:
-            clip = clip.resize(width=width)
-        else:
-            clip = clip.resize(height=height)
-        clip.save_frame('bkg.jpg', t=t % 5)
-        return FileResponse('bkg.jpg')
-    except Exception as e:
-        print('error making kburns frame', e)
-        raise HTTPException(status_code=500, detail='error making kburns frame')
+    return clip
 
 @app.post('/form')
 async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):

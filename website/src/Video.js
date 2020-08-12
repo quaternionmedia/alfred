@@ -1,5 +1,6 @@
 import m from 'mithril'
 var Stream = require("mithril/stream")
+var state = require("./Globals").state
 
 export var Video = {
   clip: null,
@@ -13,6 +14,7 @@ export var Video = {
 
 export var Edl = {
   edl: [],
+  media: [''],
   current: 0,
   time: 0,
   duration: () => {

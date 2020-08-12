@@ -140,8 +140,10 @@ export function OttoTimeline() {
       m.request(`/project/${m.route.param('project')}`, {}).then(e => {
         console.log('got otto', e)
         Edl.edl = e.edl
+        Edl.media = e.form.media
         Edl.current = 0
         Edl.time = 0
+        Video.clip = Edl.edl[Edl.current]
         Edl.update()
       })
     },
