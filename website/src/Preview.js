@@ -22,14 +22,6 @@ export function VideoPreview() {
       return state.paused()
     },
     oncreate: (vnode) => {
-      document.addEventListener('keydown', e => {
-        switch (e.code) {
-          case 'Space':
-            e.preventDefault()
-            Edl.play()
-            break
-          }
-        })
       vnode.dom.addEventListener('loadeddata', (event) => {
         if (!state.paused() && vnode.dom.paused) {
           console.log('fixing paused video by playing')
@@ -70,6 +62,10 @@ export var Preview = ( () => {
           case 'ArrowRight':
             e.preventDefault()
             Edl.jump(Math.min(Edl.time + 5, Edl.duration()))
+            break
+          case 'Space':
+            e.preventDefault()
+            Edl.play()
             break
         }
     })},
