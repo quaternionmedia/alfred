@@ -64,7 +64,6 @@ export var Preview = ( () => {
             Edl.jump(Math.min(Edl.time + 5, Edl.duration()))
             break
           case 'Space':
-            e.preventDefault()
             Edl.play()
             break
         }

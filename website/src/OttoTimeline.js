@@ -94,13 +94,23 @@ export function Template() {
           },
           // Example to prevent the user from entering commas
           onkeydown: e => {
+            // console.log('key input', e)
             switch (e.key) {
-              case 'Enter': e.preventDefault()
-              e.stopPropagation()
-              console.log('enter')
-              Edl.update()
-              case 'ArrowLeft': e.stopPropagation()
-              case 'ArrowRight': e.stopPropagation()
+              case 'Enter':
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('enter')
+                Edl.update()
+                break
+              case 'ArrowLeft':
+                e.stopPropagation()
+                break
+              case 'ArrowRight':
+                e.stopPropagation()
+                break
+              case ' ':
+                e.stopPropagation()
+                break
             }
             Edl.edl[vnode.attrs.i].data['text'] = this.html
           },
