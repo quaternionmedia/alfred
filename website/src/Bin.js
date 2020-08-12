@@ -23,7 +23,7 @@ var Bin = {
   oncreate: vnode => {
     new Sortable(vnode.dom, {
       group: {
-        name: 'media',
+        name: 'clip',
         pull: 'clone',
         put: false,
       },
