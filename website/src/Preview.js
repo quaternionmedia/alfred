@@ -17,7 +17,19 @@ export function ImagePreview() {
   }
 }
 export function VideoPreview() {
+  function play() {
+    let d = document.getElementById('preview')
+    if (Video.paused) {
+      d.play()
+      Video.paused = false
+    } else {
+      d.pause()
+      Video.paused = true
+    }
+    m.redraw()
+  }
   return {
+    play: play,
     onbeforeupdate: (vnode, old) => {
       return Video.paused
     },
@@ -26,19 +38,7 @@ export function VideoPreview() {
         switch (e.code) {
           case 'Space':
             e.preventDefault()
-            if (Video.paused) {
-              vnode.dom.play()
-              Video.paused = false
-              vnode.dom.addEventListener('timeupdate', (e) => {
-                Video.time(e.target.currentTime)
-                Edl.time = Video.time + Edl.durations(Edl.edl.slice(0,Edl.current))
-                m.redraw()
-              })
-            } else {
-              vnode.dom.pause()
-              Video.paused = true
-            }
-            m.redraw()
+            play()
             break
           }
         })
