@@ -80,9 +80,9 @@ export var Preview = ( () => {
       let clip = Edl.edl[Edl.current]
       if (clip) {
         if (clip.type == 'template') {
-          return m('.bkg#preview', {
+          return m('.bkg#bkg', {
             style: {
-              'background-image': `url(bkg/${encodeURIComponent(m.route.param('project'))}?width=${state.width()}&height=${state.height()}&t=${Edl.time})`
+              'background-image': `url(${Edl.media[Math.floor(Edl.time/5)]})`
             }
           }, [m(ImagePreview, {
             id: 'preview',
