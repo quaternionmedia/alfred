@@ -1,6 +1,7 @@
 import m from 'mithril'
 var Stream = require("mithril/stream")
 var state = require("./Globals").state
+import { urlfy } from './Preview'
 
 export var Video = {
   clip: null,
@@ -52,6 +53,11 @@ export var Edl = {
       Edl.current = n
     }
     Edl.time = t
+    if (Video.clip.type == 'video') {
+      Video.filename = Video.clip.filename
+    } else if (Video.clip.type == 'template') {
+
+    }
     Video.time(t - Edl.durations(Edl.edl.slice(0, n)))
     m.redraw.sync()
   },
@@ -65,7 +71,15 @@ function updateTime(e) {
   console.log('timeupdate', Edl.current, p, t)
   if (t >= d) {
     // switch to next clip
-    document.getElementById('preview').removeEventListener('timeupdate', updateTime)
+    let preview = document.getElementById('preview')
+    console.log('jumping to ', p + t)
+    preview.removeEventListener('timeupdate', updateTime)
+    let nextClip = Edl.edl[Edl.which(p + t)]
+    if (nextClip.type == 'video') {
+      preview.pause()
+    } else if (nextClip.type == 'template' && !state.paused()) {
+      setTimeout(playTemplate, 100, .1)
+    }
     Edl.jump(p + t)
   } else {
     // update playback time
@@ -74,14 +88,34 @@ function updateTime(e) {
   }
   m.redraw()
 }
+function playTemplate(t) {
+  Edl.jump(Edl.time + t)
+  let clip = Edl.edl[Edl.current]
+  if (clip.type == 'template' && !state.paused()) {
+    let preview = document.getElementById('preview')
+    // console.log('playing template', Edl.edl[Edl.current], state.paused(), preview)
+    if (preview.complete) {
+      preview.src = `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time()}`
+    }
+    setTimeout(playTemplate, 100, .1)
+  }
+}
 function play() {
   let d = document.getElementById('preview')
-  if (Video.paused) {
-    d.play()
-    Video.paused = false
-    d.addEventListener('timeupdate', updateTime)
+  let clip = Edl.edl[Edl.current]
+  if (state.paused()) {
+    if (clip.type == 'video') {
+      d.play()
+      d.addEventListener('timeupdate', updateTime)
+    } else if (clip.type == 'template') {
+      setTimeout(playTemplate, 100, .1)
+    }
+    state.paused(false)
   } else {
-    d.pause()
+    if (clip.type == 'video') {
+      d.pause()
+    } else if (clip.type == 'template') {
+    }
     state.paused(true)
     d.removeEventListener('timeupdate', updateTime)
   }

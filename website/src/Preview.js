@@ -2,7 +2,7 @@ import m from 'mithril'
 import { Video, Edl } from './Video'
 var state = require("./Globals").state
 
-const urlfy = obj => Object
+export const urlfy = obj => Object
     .keys(obj)
     .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]))
     .join('&');
@@ -11,7 +11,7 @@ export function ImagePreview() {
   return {
     view: (vnode) => {
       return m('img.preview', {
-        src: vnode.attrs.src
+        ...vnode.attrs
       })
     }
   }
@@ -86,7 +86,9 @@ export var Preview = ( () => {
             }
           }, [m(ImagePreview, {
             id: 'preview',
-            src: `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time()}`
+            oncreate: v => {
+              v.dom.src = `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time()}`
+            },
           })
         ])
         } else {
