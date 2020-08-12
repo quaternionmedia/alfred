@@ -46,6 +46,7 @@ export function RenderPreview() {
         src: vnode.attrs.src,
         controls: true,
         autoplay: true,
+        volume: .2,
       })
     }
   }
