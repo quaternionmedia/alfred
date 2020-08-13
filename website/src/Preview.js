@@ -82,8 +82,8 @@ export var Preview = ( () => {
             }
           }, [m(ImagePreview, {
             id: 'preview',
-            oncreate: v => {
               v.dom.src = `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time()}`
+            onupdate: v => {
             },
           })
         ])
