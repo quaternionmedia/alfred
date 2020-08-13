@@ -18,9 +18,6 @@ export function ImagePreview() {
 }
 export function VideoPreview() {
   return {
-    onbeforeupdate: (vnode, old) => {
-      return state.paused()
-    },
     oncreate: (vnode) => {
       vnode.dom.addEventListener('loadeddata', (event) => {
         if (!state.paused() && vnode.dom.paused) {
@@ -51,6 +48,9 @@ export function VideoPreview() {
 
 export var Preview = ( () => {
   return {
+    onbeforeupdate: (vnode, old) => {
+      return state.paused()
+    },
     oncreate: (vnode) => {
       document.addEventListener('keydown', e => {
         switch (e.code) {
