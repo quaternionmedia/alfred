@@ -61,7 +61,8 @@ export var Edl = {
     Video.time(t - Edl.durations(Edl.edl.slice(0, n)))
     m.redraw.sync()
   },
-  play: play
+  play: play,
+  pause: pause,
 }
 
 function updateTime(e) {
@@ -100,27 +101,29 @@ function playTimeline(t) {
     setTimeout(playTimeline, 50, .05)
   }
 }
-function play() {
+export function play() {
   let d = document.getElementById('preview')
   let clip = Edl.edl[Edl.current]
-  if (state.paused()) {
-    if (clip.type == 'video') {
-      d.play()
-      d.addEventListener('timeupdate', updateTime)
-    } else if (clip.type == 'template') {
-      setTimeout(playTimeline, 50, .05)
-    }
-    state.paused(false)
-  } else {
-    if (clip.type == 'video') {
-      d.pause()
-    } else if (clip.type == 'template') {
-    }
-    state.paused(true)
-    d.removeEventListener('timeupdate', updateTime)
+  if (clip.type == 'video') {
+    d.play()
+    d.addEventListener('timeupdate', updateTime)
+  } else if (clip.type == 'template') {
+    setTimeout(playTimeline, 50, .05)
   }
   m.redraw()
 }
+
+export function pause() {
+  let d = document.getElementById('preview')
+  let clip = Edl.edl[Edl.current]
+  if (clip.type == 'video') {
+    d.pause()
+  } else if (clip.type == 'template') {
+  }
+  d.removeEventListener('timeupdate', updateTime)
+  m.redraw()
+}
+
 
 export function array_move(arr, old_index, new_index) {
   let element = arr[old_index];

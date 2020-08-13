@@ -28,7 +28,7 @@ export function VideoPreview() {
       vnode.dom.addEventListener('loadeddata', (event) => {
         if (!state.paused() && vnode.dom.paused) {
           console.log('fixing paused video by playing')
-          vnode.dom.play()
+          Edl.play()
         }
         if (Video.time() < Edl.edl[Edl.current]['inpoint']) {
           console.log('jumping to inpoint')
@@ -68,7 +68,8 @@ export var Preview = ( () => {
             break
           case 'Space':
             e.preventDefault()
-            Edl.play()
+            state.paused() ? Edl.play() : Edl.pause()
+            state.paused(!state.paused())
             break
         }
     })},
