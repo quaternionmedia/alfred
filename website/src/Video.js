@@ -95,7 +95,7 @@ function playTimeline(t) {
     let preview = document.getElementById('preview')
     // console.log('playing template', Edl.edl[Edl.current], state.paused(), preview)
     if (preview.complete) {
-      preview.src = `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time()}`
+      preview.src = `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time().toFixed(2)}`
     }
     setTimeout(playTimeline, 50, .05)
   }
