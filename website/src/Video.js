@@ -74,9 +74,9 @@ function updateTime(e) {
     let preview = document.getElementById('preview')
     console.log('jumping to ', p + t)
     preview.removeEventListener('timeupdate', updateTime)
+    preview.pause()
     let nextClip = Edl.edl[Edl.which(p + t)]
     if (nextClip.type == 'video') {
-      preview.pause()
     } else if (nextClip.type == 'template' && !state.paused()) {
       setTimeout(playTimeline, 50, .05)
     }
