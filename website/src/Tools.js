@@ -29,7 +29,10 @@ export function PlaybackTools() {
           }, 'fast_rewind'),
           m('i.material-icons', {
             title: 'pause',
-            onclick: Edl.play,
+            onclick: e => {
+              state.paused() ? Edl.play() : Edl.pause()
+              state.paused(!state.paused())
+            },
           }, state.paused() ? 'play_arrow': 'pause' ),
           m('i.material-icons', {
             title: 'forward 5s',
