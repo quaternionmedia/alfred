@@ -78,7 +78,7 @@ function updateTime(e) {
     if (nextClip.type == 'video') {
       preview.pause()
     } else if (nextClip.type == 'template' && !state.paused()) {
-      setTimeout(playTemplate, 100, .1)
+      setTimeout(playTimeline, 50, .05)
     }
     Edl.jump(p + t)
   } else {
@@ -88,7 +88,7 @@ function updateTime(e) {
   }
   m.redraw()
 }
-function playTemplate(t) {
+function playTimeline(t) {
   Edl.jump(Edl.time + t)
   let clip = Edl.edl[Edl.current]
   if (clip.type == 'template' && !state.paused()) {
@@ -97,7 +97,7 @@ function playTemplate(t) {
     if (preview.complete) {
       preview.src = `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time()}`
     }
-    setTimeout(playTemplate, 100, .1)
+    setTimeout(playTimeline, 50, .05)
   }
 }
 function play() {
@@ -108,7 +108,7 @@ function play() {
       d.play()
       d.addEventListener('timeupdate', updateTime)
     } else if (clip.type == 'template') {
-      setTimeout(playTemplate, 100, .1)
+      setTimeout(playTimeline, 50, .05)
     }
     state.paused(false)
   } else {
