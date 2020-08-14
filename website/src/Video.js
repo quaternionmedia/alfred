@@ -90,15 +90,21 @@ function updateTime(e) {
   m.redraw()
 }
 function playTimeline(t) {
-  Edl.jump(Edl.time + t)
-  let clip = Edl.edl[Edl.current]
-  if (clip.type == 'template' && !state.paused()) {
-    let preview = document.getElementById('preview')
-    // console.log('playing template', Edl.edl[Edl.current], state.paused(), preview)
-    if (preview.complete) {
-      preview.src = `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time().toFixed(2)}`
+  let duration = Edl.duration()
+  if (Edl.time + t >= duration) {
+    console.log('end of edl', t, duration)
+    pause()
+  } else {
+    Edl.jump(Edl.time + t)
+    let clip = Edl.edl[Edl.current]
+    if (clip.type == 'template' && !state.paused()) {
+      let preview = document.getElementById('preview')
+      // console.log('playing template', Edl.edl[Edl.current], state.paused(), preview)
+      if (preview.complete) {
+        preview.src = `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time().toFixed(2)}`
+      }
+      setTimeout(playTimeline, 50, .05)
     }
-    setTimeout(playTimeline, 50, .05)
   }
 }
 export function play() {
