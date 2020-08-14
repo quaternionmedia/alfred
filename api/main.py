@@ -125,24 +125,23 @@ async def download_file(filename: str):
 @app.post('/render')
 async def queueRender(prog: BackgroundTasks, edl: Edl, project: str, width: int = 1920, height: int = 1080):
     ts = timestr()
-    duration = sum(c['duration'] for c in edl.edl)
+    duration = sum(float(c['duration']) for c in edl.edl)
     filename = f'{project}_{width}x{height}_{duration}s_{ts}.mp4'
-    media = db.projects.find_one({'name': project}, ['form'])['form']['media']
+    proj = db.projects.find_one({'name': project}, ['form'])['form']
     id = db.renders.insert_one({
         'project': project,
         'filename': filename,
         'duration': duration,
         'resolution': (width, height),
-        'media': media,
+        'form': proj,
         'edl': edl.edl,
         'progress': 0,
         'started': ts,
         'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
         }
     ).inserted_id
-    proj = db.projects.find_one({'name': project}, ['form'])['form']
     print('rendering!', filename, proj)
-    task = renderRemote.delay(edl=edl.edl, media=media, audio=download(proj['audio'][0]), filename=filename, moviesize=(width, height))
+    task = renderRemote.delay(edl=edl.edl, media=proj['media'], audio=proj['audio'][0], filename=filename, moviesize=(width, height))
     def updateRenderProgress(progress):
         r = progress.get('result')
         # print('updating progress', r)
