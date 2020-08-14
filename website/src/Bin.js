@@ -43,7 +43,7 @@ var Bin = {
           if (clip.type.value == 'template') {
             edl.push({
               name: clip.name.value,
-              duration: clip.duration.value,
+              duration: Number(clip.duration.value),
               type: 'template',
               data: JSON.parse(clip.datastr.value),
             })

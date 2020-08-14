@@ -142,7 +142,6 @@ async def queueRender(prog: BackgroundTasks, edl: Edl, project: str, width: int 
     ).inserted_id
     proj = db.projects.find_one({'name': project}, ['form'])['form']
     print('rendering!', filename, proj)
-    media = [ download(m) for m in proj['media'] ]
     task = renderRemote.delay(edl=edl.edl, media=media, audio=download(proj['audio'][0]), filename=filename, moviesize=(width, height))
     def updateRenderProgress(progress):
         r = progress.get('result')
@@ -255,7 +254,7 @@ async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
 @app.get('/bkg/{project}')
 async def get_bkg(project: str, t: float):
     clips = db.projects.find_one({'name': project}, ['form'])['form']['media']
-    clip = download(clips[floor(t / 5)])
+    clip = clips[floor(t / 5)]
     print('making bkg', clip)
     return clip
 
