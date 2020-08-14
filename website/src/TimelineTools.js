@@ -19,7 +19,7 @@ export default class TimelineTools {
             'background-color': state.tool() == 'time' ? '#393939' : 'transparent'
           }
       }, '|'),
-      m('i.custom', {
+      m('i.material-icons', {
         title: 'trim',
         onclick: (vnode) => {
           t.style.cursor = 'ew-resize'
@@ -28,7 +28,7 @@ export default class TimelineTools {
         style: {
           'background-color': state.tool() == 'trim' ? '#393939' : 'transparent'
         }
-      }, '[ ]'),
+      }, 'code'),
       m('i.material-icons', {
         title: 'move',
         onclick: (vnode) => {
