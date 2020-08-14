@@ -28,7 +28,7 @@ export function PlaybackTools() {
             Edl.jump(Math.max(Edl.time - 5, 0))}
           }, 'fast_rewind'),
           m('i.material-icons', {
-            title: 'pause',
+            title: state.paused() ? 'play' : 'pause',
             onclick: e => {
               state.paused() ? Edl.play() : Edl.pause()
               state.paused(!state.paused())
