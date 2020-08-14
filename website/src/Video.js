@@ -110,6 +110,7 @@ export function play() {
   } else if (clip.type == 'template') {
     setTimeout(playTimeline, 50, .05)
   }
+  state.paused(false)
   m.redraw()
 }
 
@@ -121,6 +122,7 @@ export function pause() {
   } else if (clip.type == 'template') {
   }
   d.removeEventListener('timeupdate', updateTime)
+  state.paused(true)
   m.redraw()
 }
 

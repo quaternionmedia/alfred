@@ -69,7 +69,6 @@ export var Preview = ( () => {
           case 'Space':
             e.preventDefault()
             state.paused() ? Edl.play() : Edl.pause()
-            state.paused(!state.paused())
             break
         }
     })},

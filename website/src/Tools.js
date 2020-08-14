@@ -31,7 +31,6 @@ export function PlaybackTools() {
             title: state.paused() ? 'play' : 'pause',
             onclick: e => {
               state.paused() ? Edl.play() : Edl.pause()
-              state.paused(!state.paused())
             },
           }, state.paused() ? 'play_arrow': 'pause' ),
           m('i.material-icons', {
