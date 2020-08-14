@@ -40,7 +40,7 @@ export var Edl = {
   which: (t) => {
     let c = 0
     let i = 0
-    while (c + Edl.edl[i].duration < t) {
+    while (Edl.edl[i] && c + Edl.edl[i].duration < t) {
       c += Edl.edl[i].duration
       i++
     }
