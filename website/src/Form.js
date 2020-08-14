@@ -154,7 +154,7 @@ export function Form() {
         m(InputArea, {name: 'call'}, 'Call'),
         // m(TextArea, {name: 'closing'}, 'Closing'),
         m(Color, {name: 'themecolor'}, 'Theme Color'),
-        m(Color, {name: 'fontcolor'}, 'Font Clolor'),
+        m(Color, {name: 'fontcolor'}, 'Font Color'),
         m(Dropdown, {name: 'font', label: 'Font'}, fonts),
         m(Input, {name: 'duration'}, 'Duration'),
         m('hr'),
