@@ -248,44 +248,50 @@ export function Media() {
             m('img.formthumb', { src: medium }),
           ])}
         }),
-        m('.bar', {}, [
-          m('input', {id: 'newMedia'}),
-          m('input[type=submit]', {
-            value: 'add new media',
-            onclick: e => {
-              e.preventDefault()
-              console.log('adding new media', e)
-              let form = VideoForm.media()
-              let newMedia = document.getElementById('newMedia')
-              m.request(newMedia.value, {
-                type: 'head',
-                extract: (xhr, options) => {
-                  console.log('extracting', xhr)
-                  xhr.onreadystatechange = () => {
-                    if (xhr.readystate == 4) {
-                      console.log(xhr.status);
-                      console.log('type', xhr.getResponseHeader("Content-Type"));
-                    }
-                  }
-                  // return options.deserialize()
-                },
-              }).then(res => {
-                console.log('newMedia head', res)
-
-              })
-              if (newMedia.value) {
-                form.push(newMedia.value)
-                VideoForm.media(form)
-              }
-            }
-          }, )
-        ]),
       ]
       )
     }
   }
 }
 
+export function NewMedia() {
+  return {
+    view: vnode => {
+      return m('.bar', {}, [
+        m('input', {id: 'newMedia'}),
+        m('input[type=submit].button', {
+          value: 'add new media',
+          onclick: e => {
+            e.preventDefault()
+            console.log('adding new media', e)
+            let form = VideoForm.media()
+            let newMedia = document.getElementById('newMedia')
+            m.request(newMedia.value, {
+              type: 'head',
+              extract: (xhr, options) => {
+                console.log('extracting', xhr)
+                xhr.onreadystatechange = () => {
+                  if (xhr.readystate == 4) {
+                    console.log(xhr.status);
+                    console.log('type', xhr.getResponseHeader("Content-Type"));
+                  }
+                }
+                // return options.deserialize()
+              },
+            }).then(res => {
+              console.log('newMedia head', res)
+
+            })
+            if (newMedia.value) {
+              form.push(newMedia.value)
+              VideoForm.media(form)
+            }
+          }
+        }, )
+      ])
+    }
+  }
+}
 export function Color() {
   return {
     view: (vnode) => {
