@@ -4,6 +4,7 @@ var Stream = require("mithril/stream")
 import { Sortable, MultiDrag } from 'sortablejs'
 Sortable.mount(new MultiDrag());
 import { array_move } from './Video'
+import { message, success, error } from 'alertifyjs'
 
 export var VideoForm = {
   project: Stream(''),
@@ -208,12 +209,14 @@ export function Media() {
           // let medium = (URL.createObjectURL(f))
           console.log('adding', files[i])
           form.append('file', files[i])
+          message(`uploading file ${files[i].name}`, 3)
           fetch('/upload', {
             method: 'POST',
             body: form
           })
           .then(response => response.json())
           .then(data => {
+            success(`successfully uploaded ${data.filename}`, 5)
             let media = VideoForm.media()
             media.push(data.filename)
             VideoForm.media(media)
@@ -223,6 +226,7 @@ export function Media() {
           })
           .catch(error => {
             console.error(error)
+            error(`error uploading file ${files[i].name}`)
           })
         }
       }})
