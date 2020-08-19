@@ -153,7 +153,6 @@ export function Media() {
         ghostClass: 'ghost',
         forceFallback: true,
         // delay: 100,
-        invertSwap: true,
         preventOnFilter: false,
         onUpdate: e => {
           let media
