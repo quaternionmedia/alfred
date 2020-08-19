@@ -205,30 +205,45 @@ export function Media() {
       dragdrop(vnode.dom, {onchange: files => {
         console.log('dropped', files, files.length)
         let form = new FormData()
-        for (var i = 0; i < files.length; i++ ){
+        let media = VideoForm.media()
+        let n = media.length
+        for (var i = 0; i < files.length; i++ ) {
           // let medium = (URL.createObjectURL(f))
+          let filename = files[i].name
           console.log('adding', files[i])
           form.append('file', files[i])
-          message(`uploading file ${files[i].name}`, 3)
-          fetch('/upload', {
+          message(`uploading file ${filename}`, 3)
+          media.push(filename)
+          m.request('/upload', {
             method: 'POST',
-            body: form
+            body: form,
+            config: xhr => {
+              xhr.upload.addEventListener('progress', e => {
+                let el = document.getElementById(`${filename}`)
+                let v = 100 * e.loaded / e.total
+                  m.render(el, m('progress', { id: `${filename}-progress`, max: 100, value: v }))
+                console.log('upload progress', e, el, v)
+                el.value = v
+              })
+            }
           })
-          .then(response => response.json())
           .then(data => {
+            let tmp = VideoForm.media()
+            tmp.splice(tmp.indexOf(filename), 1, data.filename)
+            VideoForm.media(tmp)
+            console.log('upload successfully!', data.filename, VideoForm.media(), files[i])
             success(`successfully uploaded ${data.filename}`, 5)
-            let media = VideoForm.media()
-            media.push(data.filename)
-            VideoForm.media(media)
-            console.log('upload successfully!', data.filename, VideoForm.media())
-            m.redraw()
+            let el = document.getElementById(`${filename}`)
+            m.render(el, m('video[controls].formthumb', {src: data.filename}))
 
           })
           .catch(error => {
             console.error(error)
-            error(`error uploading file ${files[i].name}`)
+            error(`error uploading file ${filename}`)
           })
         }
+        VideoForm.media(media)
+        m.redraw()
       }})
     },
     onchange: (vnode) => {
@@ -238,15 +253,10 @@ export function Media() {
       return m('', {}, [
         VideoForm.media().map(medium => {
           if (medium && medium.endsWith('.mp4')) {
-            return m('span.media', [
-              m('input', { value: medium , name: `${vnode.attrs.name}[]`, type: 'hidden'}),
-              m('video[controls].formthumb', { src: medium }),
-            ])
+            return m(`.medium`, { id: medium }, m('video[controls].formthumb.media', { src: medium }))
           } else {
-          return m('span.media', [
-            m('input', { value: medium , name: `${vnode.attrs.name}[]`, type: 'hidden'}),
-            m('img.formthumb', { src: medium }),
-          ])}
+            return m('img.formthumb.media', { src: medium, id: medium })
+        }
         }),
       ]
       )
