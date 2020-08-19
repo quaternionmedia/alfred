@@ -190,7 +190,7 @@ def cancelRender(render: str, user: User = Depends(get_current_active_user)):
         print('deleted render', render, res, res.deleted_count)
         return res.deleted_count
     else:
-        return HTTPException(status_code=406, detail='no such entry in database')
+        raise HTTPException(status_code=406, detail='no such entry in database')
 
 
 @app.get('/edls')
@@ -273,14 +273,21 @@ async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(Vid
 
 @app.post('/upload')
 async def upload(file: UploadFile = File(...)):
-    print('saving files', file.filename)
-    await saveFile(file)
-    return {'filename': join('data', file.filename)}
+    print('saving files', file.filename, file.content_type)
+    if not file.filename:
+        raise HTTPException(status_code=400, detail='file has no filename')
+    if file.content_type.lower() == 'video/mp4':
+        fn = await saveFile(file, location='videos')
+    else:
+        fn = await saveFile(file)
+    return {'filename': fn}
 
 async def saveFile(file, location='data'):
     data = await file.read()
-    with open(join(location, file.filename), 'wb') as f:
+    filename = join(location, file.filename)
+    with open(filename, 'wb') as f:
         f.write(data)
+    return filename
 
 app.include_router(auth)
 app.include_router(users)
