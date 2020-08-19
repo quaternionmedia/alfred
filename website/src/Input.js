@@ -145,7 +145,7 @@ export function Media() {
   return {
     oncreate: (vnode) => {
       new Sortable(vnode.dom, {
-        multiDrag: true,
+        // multiDrag: true,
         group: 'media',
         selectedClass: "selected",
         swapThreshold: 0.50,
