@@ -34,14 +34,14 @@ services:
 
 
   db:
-    image: mongo:4.2
+    image: mongo:bionic
     volumes:
       - ./database:/data/db
     networks:
       - alfred_isolated
 
   rabbit:
-    image: rabbitmq
+    image: rabbitmq:alpine
     networks:
       - alfred_isolated
     ports:
