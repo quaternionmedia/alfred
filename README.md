@@ -7,6 +7,10 @@ Alfred is a video editor that works even without a server, designed for quick ed
 
 Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 
+## install
+`git clone --recurse-submodules git@github.com:quaternionmedia/alfred.git`
+
+
 ## dev
 `./alfred dev`
 
