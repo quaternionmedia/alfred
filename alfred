@@ -36,7 +36,8 @@ elif [ $1 = "prod" -o $1 = "production" -o $1 = "p" ]; then
 elif [ $1 = "i" -o $1 = "install" ]; then
   shift
   echo "installing dependencies"
-  make install
+  # make install
+  docker-compose -f docker-compose.yml run website yarn install
 
 elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
   shift

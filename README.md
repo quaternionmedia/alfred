@@ -10,6 +10,8 @@ Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 ## install
 `git clone --recurse-submodules git@github.com:quaternionmedia/alfred.git`
 
+Install website dependencies
+`./alfred install`
 
 ## dev
 `./alfred dev`
