@@ -49,5 +49,6 @@ function Links() {
               }
             }
           }, User.username ? 'logout' : 'login'),
+          m(Link, {href:'/magnussens', id: 'magnussens-link'}, 'Magnussens'),
         ]}}}
 export { Menu, Links, Link }

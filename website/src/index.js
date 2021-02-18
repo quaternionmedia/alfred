@@ -19,10 +19,11 @@ import { Import } from './Import'
 import { Renders } from './Renders'
 import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'
-import { FormPage } from './Form'
+import { FormPage, Magnussens} from './Form'
 import { Timecode } from './Timecode'
 import { Head } from './Head'
 import { Resolution, Aspect } from './Resolution'
+
 
 var state = require("./Globals").state
 
@@ -107,4 +108,5 @@ m.route(document.body, "/", {
   '/renders': Renders,
   '/login': Login,
   '/form': FormPage,
+  '/magnussens': Magnussens,
 } );
