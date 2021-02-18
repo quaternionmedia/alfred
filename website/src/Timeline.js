@@ -1,5 +1,5 @@
 import m from 'mithril'
-import { Sortable, MultiDrag } from 'sortablejs'
+import Sortable, { MultiDrag } from 'sortablejs'
 Sortable.mount(new MultiDrag());
 // var Clip = require('./Clip').Clip
 import Clip from './Clip'

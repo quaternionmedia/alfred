@@ -1,8 +1,8 @@
 import m from 'mithril'
 import { ContentEditable } from 'mithril-contenteditable'
 var Stream = require("mithril/stream")
-import { Sortable, MultiDrag } from 'sortablejs'
-Sortable.mount(new MultiDrag());
+import Sortable, { MultiDrag } from 'sortablejs'
+// Sortable.mount(new MultiDrag());
 import { array_move } from './Video'
 
 export var VideoForm = {

@@ -1,8 +1,8 @@
 import m from 'mithril'
-import { Sortable, MultiDrag } from 'sortablejs'
+import Sortable, { MultiDrag } from 'sortablejs'
 import { ContentEditable } from 'mithril-contenteditable'
 
-Sortable.mount(new MultiDrag());
+// Sortable.mount(new MultiDrag());
 var state = require("./Globals").state
 import { Video, Edl, array_move } from './Video'
 import { Preview } from './Preview'
