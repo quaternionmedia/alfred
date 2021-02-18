@@ -18,16 +18,16 @@
   },
   "dependencies": {
     "alertifyjs": "^1.13.1",
-    "interactjs": "^1.7.3",
-    "jwt-decode": "^2.2.0",
-    "material-design-icons-iconfont": "^5.0.1",
+    "interactjs": "^1.10.3",
+    "jwt-decode": "^3.1.2",
+    "material-design-icons-iconfont": "^6.1.0",
     "mithril": "^2.0.4",
     "mithril-contenteditable": "^0.1.2",
-    "sortablejs": "^1.10.1"
+    "sortablejs": "^1.13.0"
   },
   "devDependencies": {
     "cssnano": "^4.1.10",
-    "cypress": "^4.3.0",
+    "cypress": "^6.5.0",
     "parcel": "^1.12.4"
   },
   "bugs": {
