@@ -233,14 +233,16 @@ async def getProject(project: str):
 
 @app.post('/save')
 async def saveForm(project: str, form: VideoForm = Depends(VideoForm.as_form)):
-    form.media = [ m.strip() for m in form.media[0].split(',') ]
+    form.media = [ m.strip() for m in form.media.split(',') ]
+    form.audio = [ m.strip() for m in form.audio.split(',') ]
     result = db.projects.update_one({'name': project}, {'$set': {'form': dict(form)}}, upsert=True)
     print('saved form', project, form, result)
     return result.modified_count
 
 @app.post('/formToEdl')
 async def form_to_edl(form: VideoForm = Depends(VideoForm.as_form)):
-    form.media = [ m.strip() for m in form.media[0].split(',') ]
+    form.media = [ m.strip() for m in form.media.split(',') ]
+    form.audio = [ m.strip() for m in form.audio.split(',') ]
     edl = formToEdl(form)
     print('edl from form', edl, dict(form))
     db.projects.update_one({'name': form.project},
@@ -274,7 +276,7 @@ async def get_bkg(project: str, width: int, height: int, t: float):
 @app.post('/form')
 async def form_to_video(renderer: BackgroundTasks, form: VideoForm = Depends(VideoForm.as_form)):
     filename = f'{timestr()}_{form.project}.mp4'
-    form.media = [ m.strip() for m in form.media[0].split(',') ]
+    form.media = [ m.strip() for m in form.media.split(',') ]
     print('rendering video from form', form, filename)
     db.renders.insert_one(
         {'filename': filename,
