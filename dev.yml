@@ -5,7 +5,7 @@ services:
   website:
     ports:
       - 1234:1234
-    command: npm run dev
+    command: yarn run dev
 
 # TODO API description
   api:
