@@ -442,3 +442,6 @@ form select {
 .right {
   float: right;
 }
+ .logo {
+   width: 3em;
+ }

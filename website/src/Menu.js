@@ -16,7 +16,7 @@ function Menu() {
           m('i.material-icons', {onclick: toggle}, 'close'),
         m(Links),
         ]),
-        m('i.material-icons', {onclick: toggle, style: {display: open ? 'none' : '' }}, 'menu'),
+        m('img.logo', {src: 'al-white.svg', onclick: toggle, style: {display: open ? 'none' : '' }}),
       ]
     }
   }

@@ -13,7 +13,7 @@
    version="1.1"
    id="svg8"
    inkscape:version="1.0.2 (1.0.2+r75+1)"
-   sodipodi:docname="al.svg">
+   sodipodi:docname="al-white.svg">
   <defs
      id="defs2">
     <marker
@@ -82,7 +82,7 @@
      inkscape:groupmode="layer"
      id="layer1">
     <path
-       style="fill:none;stroke:#000000;stroke-width:36.1421;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:18.071, 18.07100000000000151;stroke-dashoffset:318.05;stroke-opacity:1;paint-order:normal"
+       style="fill:none;stroke:#ffffff;stroke-width:36.1421;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:18.071, 18.071;stroke-dashoffset:318.05;stroke-opacity:1;paint-order:normal"
        d="m 175.25928,-6.00616 c 0,0 -0.53706,248.94066 -123.869804,218.16152 -84.722956,-21.14362 24.607791,-154.350854 74.014744,-72.999 81.9311,134.90502 108.85817,30.223 108.85817,30.223"
        id="path835"
        sodipodi:nodetypes="cssc" />
