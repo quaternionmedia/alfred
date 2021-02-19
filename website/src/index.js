@@ -19,10 +19,11 @@ import { Import } from './Import'
 import { Renders } from './Renders'
 import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'
-import { FormPage, Magnussens} from './Form'
+import { FormPage } from './Form'
 import { Timecode } from './Timecode'
 import { Head } from './Head'
 import { Resolution, Aspect } from './Resolution'
+import { Magnussens } from './Magnussens'
 
 
 var state = require("./Globals").state
