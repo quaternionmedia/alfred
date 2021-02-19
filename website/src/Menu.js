@@ -16,7 +16,7 @@ function Menu() {
           m('i.material-icons', {onclick: toggle}, 'close'),
         m(Links),
         ]),
-        m('img.logo', {src: 'al-white.svg', onclick: toggle, style: {display: open ? 'none' : '' }}),
+        m('img.logo', {src: '/al-white.svg', onclick: toggle, style: {display: open ? 'none' : '' }}),
       ]
     }
   }

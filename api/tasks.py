@@ -1,5 +1,5 @@
 from celery import Celery
-from otto.render import renderEdl
+from otto.render import renderMultitrack
 import config
 from logger import CeleryLogger
 from os.path import join
@@ -11,6 +11,6 @@ renderer = Celery('renderer', backend=config.CELERY_BACKEND, broker=config.CELER
 @renderer.task(bind=True)
 def renderRemote(self, edl, media, audio, filename, moviesize):
     log = CeleryLogger(self)
-    renderEdl(edl, media, audio, join('videos', filename), moviesize, log)
+    renderMultitrack(edl, media, audio, join('videos', filename), moviesize, log)
     upload(filename, directory='videos')
     self.update_state(state='PROGRESS', meta={'status': 'uploaded'})
