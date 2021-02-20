@@ -56,6 +56,7 @@ export function Magnussens() {
               body: edl
             }).then(e => {
               success('Rendering!')
+              m.route.set('/renders')
             })
           },
         },),
