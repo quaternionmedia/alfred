@@ -96,4 +96,9 @@ elif [ $1 = "restore" ]; then
   docker container cp $1 alfred_db_1:/$1
   docker-compose exec db sh -c "mongorestore --gzip --db alfred --archive=/$1 --drop"
 
+elif [ $1 = "reload" ]; then
+  shift
+  # reload otto
+  docker-compose -f docker-compose.yml -f dev.yml up -d --build api
+
 fi
