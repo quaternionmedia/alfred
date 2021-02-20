@@ -82,6 +82,28 @@ function buildEdl(car, offer, legal) {
         data: {
           text: car,
           clipsize: [1280,720],
+          position: 'top'
+        },
+      },
+      {
+        type: 'template',
+        name: 'initial',
+        duration: 6,
+        start: 17.5,
+        data: {
+          text: offer,
+          clipsize: [1280,720],
+        },
+      },
+      {
+        type: 'template',
+        name: 'initial',
+        duration: 6,
+        start: 17.5,
+        data: {
+          text: legal,
+          clipsize: [1280,720],
+          position: 'bottom'
         },
       }
     ]
