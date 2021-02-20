@@ -117,6 +117,8 @@ export function Layout() {
 }
 
 function buildEdl(car, offer, legal) {
+  let start = 17.5
+  let duration = 6.2
   return {
     duration: 30,
     edl: [
@@ -128,34 +130,59 @@ function buildEdl(car, offer, legal) {
       },
       {
         type: 'template',
+        name: 'makeColor',
+        duration: duration,
+        start: start,
+        data: {
+          size: [1920,1080],
+          color: [255,255,255],
+          opacity: 1,
+        }
+      },
+      {
+        type: 'template',
         name: 'title',
-        duration: 6,
-        start: 17.5,
+        duration: duration,
+        start: start,
         data: {
           text: car,
-          clipsize: [1280,720],
-          position: 'top'
+          color: '#FF0000',
+          textsize: [1280,320],
+          fontsize: 100,
+          position: 'top',
+          opacity: 1,
         },
       },
       {
         type: 'template',
-        name: 'initial',
-        duration: 6,
-        start: 17.5,
+        name: 'textBox',
+        duration: duration,
+        start: start,
         data: {
+          color: '#000000',
           text: offer,
-          clipsize: [1280,720],
+          textsize: [1600,720],
+          fontsize: 50,
+          opacity: 1,
+          position: 'center',
+          align: 'west',
+          // duration: duration,
         },
       },
       {
         type: 'template',
-        name: 'initial',
-        duration: 6,
-        start: 17.5,
+        name: 'textBox',
+        duration: duration,
+        start: start,
         data: {
+          color: '#555555',
           text: legal,
-          clipsize: [1280,720],
-          position: 'bottom'
+          textsize: [1800,400],
+          fontsize: 25,
+          position: 'bottom',
+          align: 'west',
+          opacity: 1,
+          // duration: duration,
         },
       }
     ]
