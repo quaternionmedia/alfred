@@ -6,3 +6,5 @@ tinydb
 pyjwt
 passlib[bcrypt]
 pymongo
+celery
+google-cloud-storage

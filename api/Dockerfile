@@ -11,7 +11,9 @@ RUN apk add g++ wget libffi-dev openssl-dev jpeg-dev cairo cairo-dev imagemagick
 
 COPY requirements.txt /
 RUN pip install -Ur /requirements.txt
+COPY otto/requirements.txt /
 RUN pip install numpy gizeh pillow
+RUN pip install -Ur /requirements.txt
 RUN pip install celery google-cloud-storage
 RUN pip uninstall amqplib
 RUN pip install librabbitmq
