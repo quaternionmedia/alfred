@@ -24,21 +24,49 @@ export function TextBox() {
 export function Button() {
   return {
     view: vnode => {
-      return m('input.button', {type: 'submit', ...vnode.attrs}, vnode.children)
+      return m('input.button', vnode.attrs, vnode.children)
+    }
+  }
+}
+
+export function Img() {
+  return {
+    view: vnode => {
+      return m('img', vnode.attrs, vnode.children)
     }
   }
 }
 
 export function Magnussens() {
+  let preview
   return {
     view: (vnode) => {
       return [
-        m(Menu),
-        m(Form, {id: 'MagnussensForm'}, [
+          m(Form, {id: 'MagnussensForm'}, [
           m(TextBox, { name: 'Car name' }),
           m(TextBox, { name: 'Offer info' }),
           m(TextBox, { name: 'Legal text' }),
-          m(Button, { name: 'save', value: 'render',
+          m(Button, { name: 'preview', value: 'preview', onclick: e => {
+            let form = new FormData(document.getElementById('MagnussensForm'))
+            let edl = buildEdl(form.get('Car name'), form.get('Offer info'), form.get('Legal text'))
+            console.log('previewing ', edl, vnode.dom)
+            m.request('/otto/preview', {
+              params: { 
+                t: 20,
+                // width: window.innerWidth,
+                // height: Math.floor(window.innerWidth*9/16)
+              },
+              method: 'post',
+              body: edl,
+            }).then(res => {
+              console.log('preview available at', res)
+              preview = res
+              m.redraw()
+            }).catch(e => {
+              console.log('error previewing', e)
+            })
+          }},),
+          m(Button, { name: 'save', type: 'submit', value: 'render',
           onclick: e => {
             e.preventDefault()
             let form = new FormData(document.getElementById('MagnussensForm'))
@@ -57,10 +85,33 @@ export function Magnussens() {
             }).then(e => {
               success('Rendering!')
               m.route.set('/renders')
+            }).catch(e => {
+              console.log('error rendering', e)
             })
           },
         },),
-      ])]
+        m(Img, {src: preview, class: 'preview'})
+      ]),
+    ]
+    }
+  }
+}
+
+export function Section() {
+  return {
+    view: vnode => {
+      return m('section', vnode.attrs, vnode.children)
+    }
+  }
+}
+
+export function Layout() {
+  return {
+    view: vnode => {
+      return [
+        m(Menu),
+        m(Section, vnode.attrs, vnode.children)
+      ]
     }
   }
 }
