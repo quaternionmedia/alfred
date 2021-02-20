@@ -125,12 +125,11 @@ async def download_file(filename: str):
 @app.post('/render')
 async def queueRender(prog: BackgroundTasks, project: str, width: int = 1920, height: int = 1080, edl: Edl = Body(...)):
     ts = timestr()
-    duration = int(edl.time)
-    filename = f'{project}_{width}x{height}_{duration}s_{ts}.mp4'
+    filename = f'{project}_{width}x{height}_{edl.duration}s_{ts}.mp4'
     render = {
         'project': project,
         'filename': filename,
-        'duration': duration,
+        'duration': edl.duration,
         'resolution': (width, height),
         'edl': edl.edl,
         'progress': 0,

@@ -67,7 +67,7 @@ export function Magnussens() {
 
 function buildEdl(car, offer, legal) {
   return {
-    time: 30,
+    duration: 30,
     edl: [
       {
         type: 'video',
