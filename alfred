@@ -82,7 +82,9 @@ elif [ $1 = "log" -o $1 = "logs" -o $1 = "l" ]; then
 
 elif [ $1 = "worker" -o $1 = "w" ]; then
   shift
-  celery worker --workdir api -A tasks:renderer -l debug -b pyamqp://192.168.192.13 --result-backend rpc://
+  # . operator used in place of source
+  . ./.cred
+  celery -A tasks:renderer --workdir api/ -b pyamqp://192.168.192.52 --result-backend rpc:// worker
 
 elif [ $1 = "dump" ]; then
   shift
