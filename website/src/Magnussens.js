@@ -49,12 +49,11 @@ export function Magnussens() {
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             let form = new FormData(document.getElementById('MagnussensForm'))
             let edl = buildEdl(form.get('Car name'), form.get('Offer info'), form.get('Legal text'))
+            edl.edl.shift()
             console.log('previewing ', edl, vnode.dom)
             m.request('/otto/preview', {
-              params: { 
+              params: {
                 t: 1,
-                // width: window.innerWidth,
-                // height: Math.floor(window.innerWidth*9/16)
               },
               method: 'post',
               body: edl,
@@ -121,7 +120,6 @@ function buildEdl(car, offer, legal) {
   let duration = 7
   return {
     duration: 30,
-    duration: 5,
     edl: [
       {
         type: 'video',
