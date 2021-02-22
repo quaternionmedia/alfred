@@ -52,7 +52,7 @@ export function Magnussens() {
             console.log('previewing ', edl, vnode.dom)
             m.request('/otto/preview', {
               params: { 
-                t: 20,
+                t: .5,
                 // width: window.innerWidth,
                 // height: Math.floor(window.innerWidth*9/16)
               },
@@ -117,17 +117,20 @@ export function Layout() {
 }
 
 function buildEdl(car, offer, legal) {
-  let start = 17.5
-  let duration = 6.2
+  // let start = 17.2
+  // let duration = 7
+  let start = 0
+  let duration = 5
   return {
-    duration: 30,
+    // duration: 30,
+    duration: 5,
     edl: [
-      {
-        type: 'video',
-        name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
-        duration: 30,
-        start: 0,
-      },
+      // {
+      //   type: 'video',
+      //   name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
+      //   duration: 30,
+      //   start: 0,
+      // },
       {
         type: 'template',
         name: 'makeColor',
@@ -141,7 +144,7 @@ function buildEdl(car, offer, legal) {
       },
       {
         type: 'template',
-        name: 'title',
+        name: 'textBox',
         duration: duration,
         start: start,
         data: {
@@ -151,6 +154,17 @@ function buildEdl(car, offer, legal) {
           fontsize: 100,
           position: 'top',
           opacity: 1,
+          fxs: [{
+            name: 'bezier2',
+            data: {
+              c1x: 1,
+              c1y: 0,
+              ax: 0,
+              ay: 0,
+              c2x: 0,
+              c2y: 1,
+            }
+          }]
         },
       },
       {
