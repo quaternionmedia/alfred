@@ -52,7 +52,7 @@ export function Magnussens() {
             console.log('previewing ', edl, vnode.dom)
             m.request('/otto/preview', {
               params: { 
-                t: .5,
+                t: 1,
                 // width: window.innerWidth,
                 // height: Math.floor(window.innerWidth*9/16)
               },
@@ -117,20 +117,18 @@ export function Layout() {
 }
 
 function buildEdl(car, offer, legal) {
-  // let start = 17.2
-  // let duration = 7
-  let start = 0
-  let duration = 5
+  let start = 17.2
+  let duration = 7
   return {
-    // duration: 30,
+    duration: 30,
     duration: 5,
     edl: [
-      // {
-      //   type: 'video',
-      //   name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
-      //   duration: 30,
-      //   start: 0,
-      // },
+      {
+        type: 'video',
+        name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
+        duration: 30,
+        start: 0,
+      },
       {
         type: 'template',
         name: 'makeColor',
@@ -149,10 +147,11 @@ function buildEdl(car, offer, legal) {
         start: start,
         data: {
           text: car,
-          color: '#FF0000',
+          color: '#EB0A1E',
           textsize: [1280,320],
           fontsize: 100,
-          position: 'top',
+          // position: [.8, .5],
+          position: ['center',150],
           opacity: 1,
           fxs: [{
             name: 'bezier2',
@@ -172,15 +171,15 @@ function buildEdl(car, offer, legal) {
         name: 'textBox',
         duration: duration,
         start: start,
+        position: [.5, .8 ],
         data: {
-          color: '#000000',
+          color: '#EB0A1E',
           text: offer,
-          textsize: [1600,720],
+          textsize: [1700,600],
           fontsize: 50,
           opacity: 1,
           position: 'center',
           align: 'west',
-          // duration: duration,
         },
       },
       {
@@ -189,15 +188,22 @@ function buildEdl(car, offer, legal) {
         duration: duration,
         start: start,
         data: {
-          color: '#555555',
+          color: '#333333',
           text: legal,
           textsize: [1800,400],
           fontsize: 25,
           position: 'bottom',
           align: 'west',
           opacity: 1,
-          // duration: duration,
-        },
+        }
+      },
+      {
+        type: 'image',
+        name: 'https://storage.googleapis.com/tower-bucket/alfred/car/magnussens-screengrab%20logo-fixed-with-toyota.png',
+        position: ['center', 'top'],
+        resize: .4,
+        start: start,
+        duration: duration,
       }
     ]
   }
