@@ -138,8 +138,8 @@ export function Layout() {
 }
 
 function buildEdl(data) {
-  let start = 17.2
-  let duration = 7
+  let start = data.duration == 15 ? 8 : 17.2
+  let duration = data.duration == 15 ? 5 : 7
   return {
     duration: data.duration,
     edl: [
