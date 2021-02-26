@@ -57,18 +57,22 @@ export function Magnussens() {
     view: (vnode) => {
       return [
         m(Form, {id: 'MagnussensForm'}, [
-          m(Selector, { name: 'duration', text: 'Duration' }, ['15', '30']),
+          m(Selector, { name: 'duration', text: 'Duration', value: 30 }, ['15', '30']),
           m(TextBox, { name: 'carname', text: 'Car Name' }),
           m(TextBox, { name: 'offerinfo', text: 'Offer Info' }),
           m(TextBox, { name: 'legaltext', text: 'Legal Text' }),
+          m(Selector, { name: 'resolution', text: 'Resolution'}, ['1920x1080', '1280x720']),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             let form = new FormData(document.getElementById('MagnussensForm'))
-            let edl = buildEdl(form.get('Car name'), form.get('Offer info'), form.get('Legal text'))
+            let data = Object.fromEntries(form.entries())
+            let edl = buildEdl(data)
             edl.edl.shift()
             console.log('previewing ', edl, vnode.dom)
             m.request('/otto/preview', {
               params: {
-                t: 1,
+                t: 20,
+                width: data.resolution.split('x')[0],
+                height: data.resolution.split('x')[1]
               },
               method: 'post',
               body: edl,
@@ -94,7 +98,9 @@ export function Magnussens() {
             m.request('/render', {
               method: 'post',
               params: {
-                project: 'Magnussens'
+                project: 'Magnussens',
+                width: data.resolution.split('x')[0],
+                height: data.resolution.split('x')[1]
               },
               body: edl
             }).then(e => {
@@ -149,7 +155,6 @@ function buildEdl(data) {
         duration: duration,
         start: start,
         data: {
-          size: [1920,1080],
           color: [255,255,255],
           opacity: 1,
         }
