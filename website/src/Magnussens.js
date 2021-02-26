@@ -14,7 +14,7 @@ export function TextBox() {
   return {
     view: vnode => {
       return [
-        m('label.formlabel', {for: vnode.attrs.name}, vnode.attrs.name),
+        m('label.formlabel', {for: vnode.attrs.name}, vnode.attrs.text),
         m('textarea', vnode.attrs),
         m('br')
       ]
@@ -42,10 +42,10 @@ export function Magnussens() {
   return {
     view: (vnode) => {
       return [
-          m(Form, {id: 'MagnussensForm'}, [
-          m(TextBox, { name: 'Car name' }),
-          m(TextBox, { name: 'Offer info' }),
-          m(TextBox, { name: 'Legal text' }),
+        m(Form, {id: 'MagnussensForm'}, [
+          m(TextBox, { name: 'carname', text: 'Car Name' }),
+          m(TextBox, { name: 'offerinfo', text: 'Offer Info' }),
+          m(TextBox, { name: 'legaltext', text: 'Legal Text' }),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             let form = new FormData(document.getElementById('MagnussensForm'))
             let edl = buildEdl(form.get('Car name'), form.get('Offer info'), form.get('Legal text'))
@@ -71,8 +71,9 @@ export function Magnussens() {
             let form = new FormData(document.getElementById('MagnussensForm'))
             // form.forEach(f => {console.log('field', f.name, f)})
             message('assembling render')
-            let edl = buildEdl(form.get('Car name'), form.get('Offer info'), form.get('Legal text'))
-            console.log('saving form', e, edl, form)
+            let data = Object.fromEntries(form.entries())
+            let edl = buildEdl(data)
+            console.log('saving form', e, edl, data, data.carname)
             
             
             m.request('/render', {
@@ -92,8 +93,8 @@ export function Magnussens() {
         m(Img, {src: preview, class: 'preview'})
       ]),
     ]
-    }
   }
+}
 }
 
 export function Section() {
@@ -115,16 +116,16 @@ export function Layout() {
   }
 }
 
-function buildEdl(car, offer, legal) {
+function buildEdl(data) {
   let start = 17.2
   let duration = 7
   return {
-    duration: 30,
+    duration: data.duration,
     edl: [
       {
         type: 'video',
         name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
-        duration: 30,
+        duration: data.duration,
         start: 0,
       },
       {
@@ -144,7 +145,7 @@ function buildEdl(car, offer, legal) {
         duration: duration,
         start: start,
         data: {
-          text: car,
+          text: data.carname,
           color: '#EB0A1E',
           textsize: [1280,320],
           fontsize: 100,
@@ -172,7 +173,7 @@ function buildEdl(car, offer, legal) {
         position: [.5, .8 ],
         data: {
           color: '#EB0A1E',
-          text: offer,
+          text: data.offerinfo,
           textsize: [1700,600],
           fontsize: 50,
           opacity: 1,
@@ -187,7 +188,7 @@ function buildEdl(car, offer, legal) {
         start: start,
         data: {
           color: '#333333',
-          text: legal,
+          text: data.legaltext,
           textsize: [1800,400],
           fontsize: 25,
           position: 'bottom',
