@@ -1,6 +1,7 @@
 import m from 'mithril'
 import { Menu } from './Menu'
 import { success, error, message } from 'alertifyjs'
+import { ImagePreview } from './Preview'
 
 export function Form() {
   return {
@@ -111,7 +112,7 @@ export function Magnussens() {
             })
           },
         },),
-        m(Img, {src: preview, class: 'preview'})
+        m(ImagePreview, {src: preview,})
       ]),
     ]
   }
