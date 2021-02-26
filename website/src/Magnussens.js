@@ -37,12 +37,27 @@ export function Img() {
   }
 }
 
+export function Selector() {
+  return {
+    view: vnode => {
+      return [
+        m('label.formlabel', { for: vnode.attrs.name }, vnode.attrs.text),
+        m('select', vnode.attrs, vnode.children.map(c => {
+          return m('option', {value: c}, c)
+        })),
+        m('br'),
+      ]
+    }
+  }
+}
+
 export function Magnussens() {
   let preview
   return {
     view: (vnode) => {
       return [
         m(Form, {id: 'MagnussensForm'}, [
+          m(Selector, { name: 'duration', text: 'Duration' }, ['15', '30']),
           m(TextBox, { name: 'carname', text: 'Car Name' }),
           m(TextBox, { name: 'offerinfo', text: 'Offer Info' }),
           m(TextBox, { name: 'legaltext', text: 'Legal Text' }),
