@@ -66,17 +66,19 @@ export function Magnussens() {
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             let form = new FormData(document.getElementById('MagnussensForm'))
             let data = Object.fromEntries(form.entries())
-            let edl = buildEdl(data)
-            edl.edl.shift()
+            let width = data.resolution.split('x')[0]
+            let height = data.resolution.split('x')[1]
+            let edl = buildEdl(data, width, height)
+            edl.shift()
             console.log('previewing ', edl, vnode.dom)
             m.request('/otto/preview', {
               params: {
-                t: 20,
+                t: data.duration == 15 ? 10 : 20,
                 width: data.resolution.split('x')[0],
                 height: data.resolution.split('x')[1]
               },
               method: 'post',
-              body: edl,
+              body: { edl: edl },
             }).then(res => {
               console.log('preview available at', res)
               preview = res
@@ -92,7 +94,9 @@ export function Magnussens() {
             // form.forEach(f => {console.log('field', f.name, f)})
             message('assembling render')
             let data = Object.fromEntries(form.entries())
-            let edl = buildEdl(data)
+            let width = data.resolution.split('x')[0]
+            let height = data.resolution.split('x')[1]
+            let edl = buildEdl(data, width, height)
             console.log('saving form', e, edl, data, data.carname)
             
             
@@ -100,10 +104,10 @@ export function Magnussens() {
               method: 'post',
               params: {
                 project: 'Magnussens',
-                width: data.resolution.split('x')[0],
-                height: data.resolution.split('x')[1]
+                width: width,
+                height: height
               },
-              body: edl
+              body: {edl: edl, duration: data.duration}
             }).then(e => {
               success('Rendering!')
               m.route.set('/renders')
@@ -138,93 +142,97 @@ export function Layout() {
   }
 }
 
-function buildEdl(data) {
+function buildEdl(data, width, height) {
   let start = data.duration == 15 ? 8 : 17.2
   let duration = data.duration == 15 ? 5 : 7
-  return {
-    duration: data.duration,
-    edl: [
-      {
-        type: 'video',
-        name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
-        duration: data.duration,
-        start: 0,
-      },
-      {
-        type: 'template',
-        name: 'makeColor',
-        duration: duration,
-        start: start,
-        data: {
-          color: [255,255,255],
-          opacity: 1,
-        }
-      },
-      {
-        type: 'template',
-        name: 'textBox',
-        duration: duration,
-        start: start,
-        data: {
-          text: data.carname,
-          color: '#EB0A1E',
-          textsize: [1280,320],
-          fontsize: 100,
-          // position: [.8, .5],
-          position: ['center',150],
-          opacity: 1,
-          fxs: [{
-            name: 'bezier2',
-            data: {
-              c1x: 1,
-              c1y: 0,
-              ax: 0,
-              ay: 0,
-              c2x: 0,
-              c2y: 1,
-            }
-          }]
-        },
-      },
-      {
-        type: 'template',
-        name: 'textBox',
-        duration: duration,
-        start: start,
-        position: [.5, .8 ],
-        data: {
-          color: '#EB0A1E',
-          text: data.offerinfo,
-          textsize: [1700,600],
-          fontsize: 50,
-          opacity: 1,
-          position: 'center',
-          align: 'west',
-        },
-      },
-      {
-        type: 'template',
-        name: 'textBox',
-        duration: duration,
-        start: start,
-        data: {
-          color: '#333333',
-          text: data.legaltext,
-          textsize: [1800,400],
-          fontsize: 25,
-          position: 'bottom',
-          align: 'west',
-          opacity: 1,
-        }
-      },
-      {
-        type: 'image',
-        name: 'https://storage.googleapis.com/tower-bucket/alfred/car/magnussens-screengrab%20logo-fixed-with-toyota.png',
-        position: ['center', 'top'],
-        resize: .4,
-        start: start,
-        duration: duration,
+  return [
+    {
+      type: 'video',
+      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
+      duration: data.duration,
+      start: 0,
+    },
+    {
+      type: 'template',
+      name: 'makeColor',
+      duration: duration,
+      start: start,
+      data: {
+        color: [255,255,255],
+        opacity: 1,
       }
-    ]
-  }
+    },
+    {
+      type: 'template',
+      name: 'textBox',
+      duration: duration,
+      start: start,
+      data: {
+        text: data.carname,
+        color: '#EB0A1E',
+        textsize: [Math.floor(.7*width), Math.floor(.3*height)],
+        // textsize: [width, height],
+        fontsize: 100,
+        // position: [.8, .5],
+        relative: false,
+        // position: ['center', Math.floor(-height/4)],
+        position: ['center', Math.floor(.1*height)],
+        opacity: 1,
+        fxs: [{
+          name: 'bezier2',
+          data: {
+            c1x: 1,
+            c1y: 0,
+            ax: 0,
+            ay: 0,
+            c2x: 0,
+            c2y: 1,
+          }
+        }]
+      },
+    },
+    {
+      type: 'template',
+      name: 'textBox',
+      duration: duration,
+      start: start,
+      position: [.5, .8 ],
+      data: {
+        color: '#EB0A1E',
+        text: data.offerinfo,
+        relative: false,
+        textsize: [Math.floor(.9*width), Math.floor(.5*height)],
+        // textsize: [width, height],
+        fontsize: 50,
+        opacity: 1,
+        position: 'center',
+        align: 'west',
+      },
+    },
+    {
+      type: 'template',
+      name: 'textBox',
+      duration: duration,
+      start: start,
+      data: {
+        color: '#333333',
+        text: data.legaltext,
+        method: 'caption',
+        textsize: [Math.floor(.9*width), Math.floor(.35*height)],
+        // textsize: [width, height],
+        fontsize: 25,
+        position: ['center', 'bottom'],
+        align: 'west',
+        opacity: 1,
+      }
+    },
+    {
+      type: 'image',
+      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/magnussens-screengrab%20logo-fixed-with-toyota.png',
+      position: ['center', 'top'],
+      resize: .4,
+      start: start,
+      duration: duration,
+    }
+  ]
 }
