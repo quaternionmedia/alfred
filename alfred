@@ -84,8 +84,7 @@ elif [ $1 = "worker" -o $1 = "w" ]; then
   shift
   # . operator used in place of source
   . ./.cred
-  celery -A tasks:renderer --workdir api/ -b pyamqp://192.168.192.52 --result-backend rpc:// worker
-
+  celery -A tasks:renderer --workdir api/ -b pyamqp://$1 --result-backend rpc:// worker
 elif [ $1 = "dump" ]; then
   shift
   DATE=`date "+%Y-%m-%d-%H%M%S"`
