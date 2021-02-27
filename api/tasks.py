@@ -9,7 +9,7 @@ renderer = Celery('renderer', backend=config.CELERY_BACKEND, broker=config.CELER
 
 
 @renderer.task(bind=True)
-def renderRemote(self, edl, audio, filename, moviesize):
+def renderRemote(self, edl, filename, audio=None, moviesize=(1920,1080)):
     log = CeleryLogger(self)
     renderMultitrack(edl, audio, join('videos', filename), moviesize, log)
     upload(filename, directory='videos')
