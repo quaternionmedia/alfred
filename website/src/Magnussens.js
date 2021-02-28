@@ -58,12 +58,15 @@ export function Magnussens() {
     view: (vnode) => {
       return [
         m(Form, {id: 'MagnussensForm'}, [
-          m(Selector, { name: 'duration', text: 'Duration', value: 30 }, ['15', '30']),
+          m(Selector, { name: 'duration', text: 'Duration',}, ['30', '15']),
           m(TextBox, { name: 'carname', text: 'Car Name' }),
           m(TextBox, { name: 'offerinfo', text: 'Offer Info' }),
           m(TextBox, { name: 'legaltext', text: 'Legal Text' }),
-          m(Selector, { name: 'resolution', text: 'Resolution'}, ['1920x1080', '1280x720']),
+          m(Selector, { name: 'resolution', text: 'Resolution'}, [
+            '1920x1080', '1600x900', '1280x720', '854x480',
+          ]),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
+            e.preventDefault()
             let form = new FormData(document.getElementById('MagnussensForm'))
             let data = Object.fromEntries(form.entries())
             let width = data.resolution.split('x')[0]
@@ -82,7 +85,6 @@ export function Magnussens() {
             }).then(res => {
               console.log('preview available at', res)
               preview = res
-              m.redraw()
             }).catch(e => {
               console.log('error previewing', e)
             })
@@ -170,7 +172,7 @@ function buildEdl(data, width, height) {
       data: {
         text: data.carname,
         color: '#EB0A1E',
-        textsize: [Math.floor(.7*width), Math.floor(.3*height)],
+        textsize: [Math.floor(.9*width), Math.floor(.3*height)],
         // textsize: [width, height],
         font: 'Toyota-Type-Bold',
         fontsize: Math.pow(width*height, .5)/15,
