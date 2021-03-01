@@ -26,6 +26,7 @@ from moviepy.editor import ImageClip, VideoFileClip
 from math import floor
 from config import BUCKET_NAME
 from bucket import generate_signed_url
+from emailer import sendMail
 
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
@@ -294,6 +295,13 @@ async def saveFile(file, location='data'):
     data = await file.read()
     with open(join(location, file.filename), 'wb') as f:
         f.write(data)
+
+@app.post('/report')
+async def reportIssue(name: str, issue: str = Body(...)):
+    if not sendMail(issue, name):
+        print('error reporting issue with ', name, issue)
+        raise HTTPException(status_code=500, detail='error sending email')
+    
 
 app.include_router(auth)
 app.include_router(users)

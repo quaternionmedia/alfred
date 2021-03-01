@@ -31,7 +31,8 @@ services:
       - CELERY_BACKEND=rpc://
       - DB_URL=mongodb://db:27017
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
-
+    env_file:
+      - .email
 
   db:
     image: mongo:bionic
