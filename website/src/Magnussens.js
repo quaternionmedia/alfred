@@ -58,6 +58,7 @@ export function Magnussens() {
     view: (vnode) => {
       return [
         m(Form, {id: 'MagnussensForm'}, [
+          m(Selector, { name: 'project', text: 'Video', }, [ 'Magnussens', 'RSG']),
           m(Selector, { name: 'duration', text: 'Duration',}, ['30', '15']),
           m(TextBox, { name: 'carname', text: 'Car Name' }),
           m(TextBox, { name: 'offerinfo', text: 'Offer Info' }),
@@ -105,7 +106,7 @@ export function Magnussens() {
             m.request('/render', {
               method: 'post',
               params: {
-                project: 'Magnussens',
+                project: data.project,
                 width: width,
                 height: height
               },
@@ -147,14 +148,19 @@ export function Layout() {
 function buildEdl(data, width, height) {
   let start = data.duration == 15 ? 8 : 17.2
   let duration = data.duration == 15 ? 5 : 7
+  if (data.project == 'RSG') {
+    start -= 2.7
+    duration += 3.5
+  }
   return [
     {
       type: 'video',
-      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
+      name: data.project == 'Magnussens' ? 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4' : 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
       duration: data.duration,
       start: 0,
+      inpoint: data.project == 'Magnussens' ? 0 : 7
     },
-    {
+    data.project == 'Magnussens' ? {
       type: 'template',
       name: 'makeColor',
       duration: duration,
@@ -163,7 +169,7 @@ function buildEdl(data, width, height) {
         color: [255,255,255],
         opacity: 1,
       }
-    },
+    } : null,
     {
       type: 'template',
       name: 'textBox',
@@ -224,13 +230,13 @@ function buildEdl(data, width, height) {
         opacity: 1,
       }
     },
-    {
+    data.project == 'Magnussens' ? {
       type: 'image',
       name: 'https://storage.googleapis.com/tower-bucket/alfred/car/magnussens-screengrab%20logo-fixed-with-toyota.png',
       position: ['center', 'top'],
       resize: Math.pow(width*height, .5)/3600,
       start: start,
       duration: duration,
-    }
-  ]
+    } : null,
+  ].filter(Boolean)
 }
