@@ -1,0 +1,5 @@
+EMAIL_SERVER=femail.harpo.me
+EMAIL_PORT=587
+EMAIL_USERNAME=alfred@quaternion.media
+EMAIL_PASSWORD=""
+EMAIL_SENDTO=""
