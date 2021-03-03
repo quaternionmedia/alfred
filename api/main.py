@@ -82,7 +82,7 @@ def updateProgress(id, progress):
 # REST Routing :
 # TODO: as it grows length -> breakout file into suporting files as needed, e.g. dbm'database manager', util'utiliy', etc.
 app = FastAPI()
-app.mount('/otto', ottoApi)
+app.include_router(ottoApi, prefix='/otto', dependencies=[Depends(get_current_active_user)])
 
 @app.on_event("startup")
 async def seedDb():
@@ -124,7 +124,7 @@ async def download_file(filename: str):
 
 
 @app.post('/render')
-async def queueRender(prog: BackgroundTasks, project: str, width: int = 1920, height: int = 1080, edl: Edl = Body(...)):
+async def queueRender(prog: BackgroundTasks, project: str, width: int = 1920, height: int = 1080, edl: Edl = Body(...), user: User = Depends(get_current_active_user)):
     ts = timestr()
     filename = f'{project}_{width}x{height}_{edl.duration}s_{ts}.mp4'
     render = {

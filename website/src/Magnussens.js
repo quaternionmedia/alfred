@@ -2,8 +2,12 @@ import m from 'mithril'
 import { success, error, message } from 'alertifyjs'
 import { ImagePreview } from './Preview'
 import { Form, TextBox, Button, Img, Selector} from './Components'
+import { User } from './User'
+import { auth } from './Login'
 
 export function Magnussens() {
+  if (!User.loggedIn) m.route.set('/login?redirect=/magnussens')
+  
   let preview
   return {
     view: (vnode) => {
@@ -27,7 +31,7 @@ export function Magnussens() {
             let edl = buildEdl(data, width, height)
             edl.shift()
             console.log('previewing ', edl, vnode.dom)
-            m.request('/otto/preview', {
+            auth('/otto/preview', {
               params: {
                 t: data.duration == 15 ? 10 : 20,
                 width: data.resolution.split('x')[0],
@@ -55,7 +59,7 @@ export function Magnussens() {
             console.log('saving form', e, edl, data, data.carname)
             
             
-            m.request('/render', {
+            auth('/render', {
               method: 'post',
               params: {
                 project: data.project,
