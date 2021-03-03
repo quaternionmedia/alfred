@@ -23,7 +23,8 @@ import { FormPage } from './Form'
 import { Timecode } from './Timecode'
 import { Head } from './Head'
 import { Resolution, Aspect } from './Resolution'
-import { Magnussens, Layout } from './Magnussens'
+import { Magnussens } from './Magnussens'
+import { Layout } from './Components'
 
 
 var state = require("./Globals").state
