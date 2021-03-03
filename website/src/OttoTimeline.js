@@ -6,7 +6,7 @@ import { ContentEditable } from 'mithril-contenteditable'
 var state = require("./Globals").state
 import { Video, Edl, array_move } from './Video'
 import { Preview } from './Preview'
-
+import { auth } from './Login'
 
 export function Clip() {
   return {
@@ -137,7 +137,7 @@ export function VideoClip() {
 export function OttoTimeline() {
   return {
     oninit: (vnode) => {
-      m.request(`/project/${m.route.param('project')}`, {}).then(e => {
+      auth(`/project/${m.route.param('project')}`, {}).then(e => {
         console.log('got otto', e)
         Edl.edl = e.edl
         Edl.current = 0
