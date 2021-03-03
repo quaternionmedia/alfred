@@ -19,9 +19,10 @@ from seed import seed, formToEdl
 from render import renderAPI
 from otto.main import app as ottoApi
 
-from otto.render import renderEdl, renderForm
+from otto.render import renderForm
 from otto.getdata import timestr, download
 from otto.models import Edl, VideoForm
+from otto import templates
 
 from moviepy.editor import ImageClip, VideoFileClip
 from math import floor
@@ -31,57 +32,7 @@ def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
 
 
-def getEdl(filename='test.csv'):
-    results = db.edls.find_one({'filename': filename})
-    if results:
-        return results['edl']
-    else:
-        if isfile(join('dist', filename)):
-            with open(join('dist', filename), 'r') as f:
-                return f.read()
-                # return f.read().strip().split('\n')[1:]
-        else:
-            return False
-
-# Takes an Edl and saves an ffmpeg text file to filesystem.
-def saveFFConcat(edl, filename):
-    filename = join('/app', filename)
-    with open(filename, 'w') as f:
-        for clip in edl:
-            # clip = clip.split(',')
-            # print(clip)
-            f.write(f'file {clip[0]}\ninpoint {clip[1]:.2f}\noutpoint {clip[2]:.2f}\n\n')
-
-# Depreciated(ing) bash version of rendering.
-def bashRenderEdl(edl, filename):
-    edlName = filename + '.edl'
-    saveFFConcat(edl, edlName)
-    # print('rendering', edl, filename)
-    print(bash(['ffmpeg', '-f', 'concat', '-safe', '0', '-i', join('/app', edlName), '-c:v', 'libx264', '-preset', 'fast', '-c:a', 'aac', '-y', join('videos/', filename)]).stdout)
-    return f'rendered! {edl}!'
-
-
-def bashRenderChapters(edl):
-    with open('chapters.meta', 'w') as f:
-        f.write(';FFMETADATA1\n\n')
-        t = 0
-        for clip in edl:
-            clip = clip.split(',')
-            d = seconds(clip[2]) - seconds(clip[1])
-            end = t + d
-            f.write(f'[CHAPTER]\nTIMEBASE=1/1\nSTART={t}\nEND={end}\ntitle={clip[4]}\n\n')
-            t += d
-    return str(bash(['ffmpeg', '-i', join('videos/', edl), '-i', 'chapters.meta', '-codec', 'copy', '-y', join('videos/', edl)]).returncode)
-
-
-# update db when render progress has changed
-def updateProgress(id, progress):
-    return db.renders.find_one_and_update({'_id': id}, {'$set': {'progress': progress }})
-
-# REST Routing :
-# TODO: as it grows length -> breakout file into suporting files as needed, e.g. dbm'database manager', util'utiliy', etc.
 app = FastAPI()
-app.include_router(ottoApi, prefix='/otto', dependencies=[Depends(get_current_active_user)])
 
 @app.on_event("startup")
 async def seedDb():
@@ -107,28 +58,18 @@ async def checkFonts():
 def getFonts():
     return [i['family'] for i in db.fonts.find({}, ['family'])]
 
-@app.get('/edl')
-def returnEdl(filename: str):
-    return getEdl(filename)
-
-
 @app.post('/edl')
 async def saveEdl(filename: str, edl: Edl):
     return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.edl}}, upsert=True, new=True))
-
 
 @app.get('/download')
 async def download_file(filename: str):
     return FileResponse(filename, filename=filename)
 
-
-@app.get('/edls')
-def getEdls(user: User = Depends(get_current_active_user)):
-    return [i['filename'] for i in db.edls.find({}, ['filename'])]
-
 @app.get('/templates')
 async def getTemplates():
-    return seed[0]['edl']
+    # return seed[0]['edl']
+    return [t for t in dir(templates) if t.islower() and t[0] is not '_']
 
 @app.get('/videos')
 async def getVideos():
@@ -231,10 +172,11 @@ async def reportIssue(name: str, issue: str = Body(...)):
         print('error reporting issue with ', name, issue)
         raise HTTPException(status_code=500, detail='error sending email')
     
-
-app.include_router(renderAPI)
+app.include_router(ottoApi, prefix='/otto')#, dependencies=[Depends(get_current_active_user)])
+app.include_router(renderAPI, dependencies=[Depends(get_current_active_user)])
 app.include_router(auth)
 app.include_router(users)
+
 # if request does not match the above api, try to return a StaticFiles match
 app.mount("/", StaticFiles(directory='dist', html=True), name="static")
 
