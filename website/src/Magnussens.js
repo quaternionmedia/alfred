@@ -13,6 +13,7 @@ export function Magnussens() {
           m(Selector, { name: 'duration', text: 'Duration',}, ['30', '15']),
           m(TextBox, { name: 'carname', text: 'Car Name' }),
           m(TextBox, { name: 'offerinfo', text: 'Offer Info' }),
+          m(Selector, { name: 'offeralign', text: 'Offer alignment' }, ['left', 'center']),
           m(TextBox, { name: 'legaltext', text: 'Legal Text' }),
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
             '1920x1080', '1600x900', '1280x720', '854x480',
@@ -142,7 +143,7 @@ function buildEdl(data, width, height) {
         fontsize: Math.pow(width*height, .5)/30,
         opacity: 1,
         position: 'center',
-        align: 'west',
+        align: data.offeralign == 'left' ? 'west' : data.offeralign,
       },
     },
     {
