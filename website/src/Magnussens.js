@@ -97,6 +97,13 @@ function buildEdl(data, width, height) {
       start: 0,
       inpoint: data.project == 'Magnussens' ? 0 : 7
     },
+    data.project == 'RSG' && data.duration == 15 ? {
+      type: 'video',
+      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
+      duration: duration,
+      inpoint: 22,
+      start: start,
+    } : null,
     data.project == 'Magnussens' ? {
       type: 'template',
       name: 'makeColor',
