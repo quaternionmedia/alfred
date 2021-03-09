@@ -128,6 +128,7 @@ async def queueRender(prog: BackgroundTasks, project: str, width: int = 1920, he
     ts = timestr()
     filename = f'{project}_{width}x{height}_{edl.duration}s_{ts}.mp4'
     render = {
+        'user': user.username,
         'project': project,
         'filename': filename,
         'duration': edl.duration,
@@ -185,10 +186,11 @@ def pauseRender(user: User = Depends(get_current_active_user)):
 @app.put('/renders/{render}/cancel')
 def cancelRender(render: str, user: User = Depends(get_current_active_user)):
     # cancel selected render
-    res = db.renders.delete_one({'filename': render})
-    if res.deleted_count:
-        print('deleted render', render, res, res.deleted_count)
-        return res.deleted_count
+    res = db.renders.find_one_and_delete({'filename': render})
+    if res:
+        print('deleted render', render, res)
+        db.deleted.insert_one(res)
+        return
     else:
         return HTTPException(status_code=406, detail='no such entry in database')
 
