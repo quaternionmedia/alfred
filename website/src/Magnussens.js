@@ -121,7 +121,7 @@ function buildEdl(data, width, height) {
       start: start,
       data: {
         text: data.carname,
-        color: '#EB0A1E',
+        color: '#000000',
         textsize: [Math.floor(.9*width), Math.floor(.3*height)],
         font: 'Toyota-Type-Bold',
         fontsize: Math.pow(width*height, .5)/15,
@@ -151,7 +151,7 @@ function buildEdl(data, width, height) {
         text: data.offerinfo,
         textsize: [Math.floor(.9*width), Math.floor(.5*height)],
         font: 'Toyota-Type',
-        fontsize: Math.pow(width*height, .5)/30,
+        fontsize: Math.pow(width*height, .5)/32,
         opacity: 1,
         position: 'center',
         align: data.offeralign == 'left' ? 'west' : data.offeralign,
