@@ -3,13 +3,16 @@ from io import BytesIO
 from reportlab.pdfgen import canvas
 from db import db
 from math import ceil
-
-left = 60
+from datetime import datetime
+clientAddress = ['46 Mile', '901 Mission Street', 'San Francisco, CA 94103', 'info@46mile.com']
+left = 55
 top = 557
-right = 520
+right = 512
 lineHeight = 16.2
 bottom = 88
 unitPrice = 25
+
+lines = 25
 
 def watermarker(path, watermark):
     base_pdf = PdfReader(path)
@@ -28,25 +31,25 @@ def save(form: BytesIO, filename: str):
     with open(filename, 'wb') as f:
         f.write(form.read())
 
-def generate_invoice():
+def generate_invoice(username):
     total = 0
-    renders = list(db.renders.find())
-    for page in range(ceil(len(renders)/ 26)):
+    renders = list(db.deleted.find({'user': username}))
+    renders += list(db.renders.find({'user': username}))
+    for page in range(ceil(len(renders)/ lines)):
         data = BytesIO()
         pdf = canvas.Canvas(data)
+        pdf.drawString(x=left, y=top, text='Alfred - renders')
         pdf.setFont("Helvetica", 10)
-        for i, render in enumerate(renders[page*26:(page+1)*26]):
-            pdf.drawString(x=left, y=top-lineHeight*i, text=render['filename'])
+        for i, render in enumerate(renders[page*lines:(page+1)*lines]):
+            pdf.drawString(x=left, y=top-lineHeight*(i+1), text=render['filename'])
             if total < 100:
                 total += unitPrice
-                pdf.drawString(x=right, y=top-lineHeight*i, text=f'$ {unitPrice:.2f}')
-            # else:
-            #     pdf.drawString(x=right, y=top-lineHeight*i, text='$ 0.00')
-        if page != len(renders)//26:
-            pdf.drawString(x=right, y=bottom+lineHeight*2.4, text=f'$ {total:.2f}')
-        else:
+                pdf.drawString(x=right, y=top-lineHeight*(i+1), text=f'$ {unitPrice:.2f}')
+        # draw subtotal
+        pdf.drawString(x=right, y=bottom+lineHeight*2.4, text=f'$ {total:.2f}')
+        if page == len(renders)//lines:
+            # draw total
             pdf.drawString(x=right, y=bottom, text=f'$ {total:.2f}')
-        
         
         pdf.save()
         data.seek(0)
