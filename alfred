@@ -102,4 +102,8 @@ elif [ $1 = "reload" ]; then
   # reload otto
   docker-compose -f docker-compose.yml -f dev.yml up -d --build api
 
+elif [ $1 = "git" -o $1 = "g" ]; then
+  shift
+  git pull && git submodule update
+
 fi
