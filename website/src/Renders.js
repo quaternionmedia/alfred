@@ -1,5 +1,4 @@
 import m from 'mithril'
-import { Menu, Link} from './Menu'
 import { User } from './User'
 import { auth } from './Login'
 import { success, error, message, prompt } from 'alertifyjs'
@@ -67,7 +66,6 @@ export function Renders() {
     },
     view: vnode => {
       return [
-        m(Menu),
         m('.head', [
           m(RenderPreview, {
             src: preview()

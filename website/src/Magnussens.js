@@ -6,7 +6,7 @@ import { User } from './User'
 import { auth } from './Login'
 
 export function Magnussens() {
-  if (!User.loggedIn) m.route.set('/login?redirect=/magnussens')
+  if (!User.loggedIn) m.route.set('/login?redirect=' + m.route.get())
   
   let preview
   return {

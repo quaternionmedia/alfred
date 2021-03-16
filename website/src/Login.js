@@ -1,5 +1,4 @@
 import m from 'mithril'
-import { Menu } from './Menu'
 import { User } from './User'
 import { success, error, message, prompt } from 'alertifyjs'
 
@@ -42,7 +41,6 @@ export const Login = () => {
   return {
     view: (vnode) => {
       return [
-        m(Menu),
         m('h2', 'login'),
         m('form#login', {
           action: '/token',

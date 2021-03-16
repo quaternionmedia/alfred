@@ -37,7 +37,6 @@ function Links() {
         return [
           m(Link, {href:'/', id: 'home-link'}, 'home'),
           m(Link, {href: '/form', id: 'form-link'}, 'form'),
-          m(Link, {href:'/projects', id: 'projects-link'}, 'projects'),
           m(Link, {href: '/renders', id: 'renders-link'}, 'renders'),
           m(Link, {
             href:'/login',
@@ -49,6 +48,5 @@ function Links() {
               }
             }
           }, User.username ? 'logout' : 'login'),
-          m(Link, {href:'/magnussens', id: 'magnussens-link'}, 'Magnussens'),
         ]}}}
 export { Menu, Links, Link }
