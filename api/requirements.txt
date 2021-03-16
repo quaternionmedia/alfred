@@ -8,3 +8,5 @@ passlib[bcrypt]
 pymongo
 celery
 google-cloud-storage
+pdfrw
+reportlab
