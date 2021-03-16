@@ -13,7 +13,7 @@ export function Magnussens() {
     view: (vnode) => {
       return [
         m(Form, {id: 'MagnussensForm'}, [
-          m(Selector, { name: 'project', text: 'Video', }, [ 'Magnussens', 'RSG']),
+          // m(Selector, { name: 'project', text: 'Video', }, [ 'Magnussens', 'RSG']),
           m(Selector, { name: 'duration', text: 'Duration',}, ['30', '15']),
           m(TextBox, { name: 'carname', text: 'Car Name' }),
           m(TextBox, { name: 'offerinfo', text: 'Offer Info' }),
@@ -83,6 +83,7 @@ export function Magnussens() {
 }
 
 function buildEdl(data, width, height) {
+  data.project = 'Magnussens'
   let start = data.duration == 15 ? 8 : 17.2
   let duration = data.duration == 15 ? 5 : 7
   if (data.project == 'RSG') {
