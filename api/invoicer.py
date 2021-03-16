@@ -11,6 +11,7 @@ right = 512
 lineHeight = 16.2
 bottom = 88
 unitPrice = 25
+weeklyMax = 150
 
 lines = 25
 
@@ -47,7 +48,7 @@ def generate_invoice(username):
         pdf.setFont("Helvetica", 10)
         for i, render in enumerate(renders[page*lines:(page+1)*lines]):
             pdf.drawString(x=left, y=top-lineHeight*(i+1), text=render['filename'])
-            if total < 100:
+            if total < weeklyMax:
                 total += unitPrice
                 pdf.drawString(x=right, y=top-lineHeight*(i+1), text=f'$ {unitPrice:.2f}')
         # draw subtotal
