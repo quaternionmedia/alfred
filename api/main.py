@@ -38,12 +38,15 @@ async def checkFonts():
                 db.fonts.update_one({'family': fam.replace(' ', '-')}, {'$set': { 'style': [i.replace(' ', '-') for i in font[1].split(',')] }}, upsert=True)
     # db.fonts.update_many(results, upsert=True)
 
-app.include_router(routes)    
-app.include_router(ottoApi, prefix='/otto')#, dependencies=[Depends(get_current_active_user)])
+app.include_router(auth)
+app.include_router(users, dependencies=[Depends(get_current_active_user)])
+app.include_router(routes, dependencies=[Depends(get_current_active_user)])
+app.include_router(ottoApi, prefix='/otto', dependencies=[Depends(get_current_active_user)])
 app.include_router(renderAPI, dependencies=[Depends(get_current_active_user)])
 app.include_router(emailAPI, dependencies=[Depends(get_current_active_user)])
-app.include_router(auth)
-app.include_router(users)
+
+#  note: we can't secure the /data route because the otto preview is rendered into the <img> tag in the browser. Should find a workaround for this, but it is not critical.
+app.mount('/data', StaticFiles(directory='data', html=True), name="data")
 
 # if request does not match the above api, try to return a StaticFiles match
 app.mount("/", StaticFiles(directory='dist', html=True), name="static")

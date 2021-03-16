@@ -51,10 +51,6 @@ async def getVideos():
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
 
-@routes.get('/data/{media}')
-async def getMedia(media: str):
-    return FileResponse(join('data', media))
-
 @routes.get('/projects')
 async def getProjects():
     return [ p['name'] for p in db.projects.find({})]
@@ -149,9 +145,9 @@ async def getVideos():
 async def buffer(video:str, response: Response, bits: int = Header(0)):
     return PartialFileResponse(join('/app/videos', video))
 
-@routes.get('/data/{media}')
-async def getMedia(media: str):
-    return FileResponse(join('data', media))
+# @routes.get('/data/{media}')
+# async def getMedia(media: str):
+#     return FileResponse(join('data', media))
 
 @routes.get('/projects')
 async def getProjects():
