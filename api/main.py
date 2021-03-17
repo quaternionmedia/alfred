@@ -39,7 +39,7 @@ async def checkFonts():
     # db.fonts.update_many(results, upsert=True)
 
 app.include_router(auth)
-app.include_router(users, dependencies=[Depends(get_current_active_user)])
+app.include_router(users)
 app.include_router(routes, dependencies=[Depends(get_current_active_user)])
 app.include_router(ottoApi, prefix='/otto', dependencies=[Depends(get_current_active_user)])
 app.include_router(renderAPI, dependencies=[Depends(get_current_active_user)])
