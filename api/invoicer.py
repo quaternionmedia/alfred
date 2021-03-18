@@ -2,6 +2,7 @@ from pdfrw import PdfReader, PdfWriter, PageMerge
 from io import BytesIO
 from reportlab.pdfgen import canvas
 from db import db
+from bson.objectid import ObjectId
 from math import ceil
 from datetime import datetime
 clientAddress = ['46 Mile', '901 Mission Street', 'San Francisco, CA 94103', 'info@46mile.com']
@@ -32,10 +33,12 @@ def save(form: BytesIO, filename: str):
     with open(filename, 'wb') as f:
         f.write(form.read())
 
-def generate_invoice(username):
+def generate_invoice(username, startDate, endDate):
     total = 0
-    renders = list(db.deleted.find({'user': username}))
-    renders += list(db.renders.find({'user': username}))
+    q = {'user': username, '_id': {'$gt': ObjectId.from_datetime(startDate), '$lt': ObjectId.from_datetime(endDate)}}
+    renders = list(db.deleted.find(q))
+    renders += list(db.renders.find(q))
+    results = []
     for page in range(ceil(len(renders)/ lines)):
         data = BytesIO()
         pdf = canvas.Canvas(data)
@@ -44,7 +47,7 @@ def generate_invoice(username):
         pdf = setBillTo(pdf, username)
         pdf = setInvoiceNumber(pdf, page=page if len(renders) > lines else None)
         pdf.setFont("Helvetica-Bold", 10)
-        pdf.drawString(x=left, y=top, text='Alfred - renders')
+        pdf.drawString(x=left, y=top, text=f'Alfred - Renders from {startDate.isoformat().split("T")[0]} to {endDate.isoformat().split("T")[0]}')
         pdf.setFont("Helvetica", 10)
         for i, render in enumerate(renders[page*lines:(page+1)*lines]):
             pdf.drawString(x=left, y=top-lineHeight*(i+1), text=render['filename'])
@@ -61,6 +64,8 @@ def generate_invoice(username):
         data.seek(0)
         final = watermarker('QM - Invoice template.pdf', data)
         save(final, f'alfred invoice-{page}.pdf')
+        results.append(filename)
+    return results
 
 def setDate(pdf):
     t = datetime.today().isoformat()
