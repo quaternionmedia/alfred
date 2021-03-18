@@ -16,6 +16,7 @@ async def queueRender(prog: BackgroundTasks, project: str, width: int = 1920, he
     ts = timestr()
     filename = f'{project}_{width}x{height}_{edl.duration}s_{ts}.mp4'
     render = {
+        'username': user.username,
         'project': project,
         'filename': filename,
         'duration': edl.duration,
