@@ -1,19 +1,19 @@
 from fastapi import APIRouter, Body
 from smtplib import SMTP
 from email.message import EmailMessage
-import config
+from config import EMAIL_PORT, EMAIL_SERVER, EMAIL_USERNAME, EMAIL_PASSWORD, EMAIL_SENDTO, INVOICE_EMAIL_BODY
 
-def sendMail(message, subject):
+def sendMail(recepients, subject, message, attachments=None):
     try:
         msg = EmailMessage()
         msg.set_content(message)
+        msg['From'] = EMAIL_USERNAME
+        msg['To'] = recepients
         msg['Subject'] = subject
-        msg['From'] = config.EMAIL_USERNAME
-        msg['To'] = config.EMAIL_SENDTO
         s=SMTP(config.EMAIL_SERVER, config.EMAIL_PORT)
         s.set_debuglevel(1)
         s.starttls()
-        s.login(config.EMAIL_USERNAME, config.EMAIL_PASSWORD)
+        s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
         s.send_message(msg)
         s.quit()
         return True
