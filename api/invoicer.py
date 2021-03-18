@@ -39,13 +39,15 @@ def generate_invoice(username, startDate, endDate):
     renders = list(db.deleted.find(q))
     renders += list(db.renders.find(q))
     results = []
+    date = datetime.today()
+    invoiceNumber = f'{date.year}{date.month:02d}{date.day:02d}'
     for page in range(ceil(len(renders)/ lines)):
         data = BytesIO()
         pdf = canvas.Canvas(data)
         pdf.setFont("Helvetica", 9)
         pdf = setDate(pdf)
         pdf = setBillTo(pdf, username)
-        pdf = setInvoiceNumber(pdf, page=page if len(renders) > lines else None)
+        pdf = setInvoiceNumber(pdf, invoiceNumber, page=page if len(renders) > lines else None)
         pdf.setFont("Helvetica-Bold", 10)
         pdf.drawString(x=left, y=top, text=f'Alfred - Renders from {startDate.isoformat().split("T")[0]} to {endDate.isoformat().split("T")[0]}')
         pdf.setFont("Helvetica", 10)
@@ -63,7 +65,8 @@ def generate_invoice(username, startDate, endDate):
         pdf.save()
         data.seek(0)
         final = watermarker('QM - Invoice template.pdf', data)
-        save(final, f'alfred invoice-{page}.pdf')
+        filename = f'{invoiceNumber}_alfred invoice_{page}.pdf'
+        save(final, filename)
         results.append(filename)
     return results
 
@@ -79,8 +82,6 @@ def setBillTo(pdf, username):
         pdf.drawString(x=left, y=top+78-i*12, text = line)
     return pdf
     
-def setInvoiceNumber(pdf, page=None):
-    date = datetime.today()
-    id = f'{date.year}{date.month:02d}{date.day:02d}'
-    pdf.drawString(x=right, y=top+78, text=id + ('-' + str(page) if page is not None else ''))
+def setInvoiceNumber(pdf, invoiceNumber, page=None):
+    pdf.drawString(x=right, y=top+78, text=invoiceNumber + ('-' + str(page) if page is not None else ''))
     return pdf
