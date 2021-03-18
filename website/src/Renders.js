@@ -122,7 +122,7 @@ export function Renders() {
                     onclick: e => {
                       prompt('Report issue', "Please provide a detailed description of the issue", "There's a problem with...", (evt, issue) => {
                         console.log('reporting issue', evt, issue)
-                        m.request('/report', {
+                        auth('/report', {
                           method: 'post',
                           params: { name: r['filename'] },
                           body: issue
