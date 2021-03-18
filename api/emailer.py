@@ -37,6 +37,6 @@ emailAPI = APIRouter()
 
 @emailAPI.post('/report')
 async def reportIssue(name: str, issue: str = Body(...)):
-    if not sendMail(issue, name):
+    if not sendMail(recepients=EMAIL_SENDTO, subject=name, message=issue):
         print('error reporting issue with ', name, issue)
         raise HTTPException(status_code=500, detail='error sending email')
