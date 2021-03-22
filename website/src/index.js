@@ -23,6 +23,9 @@ import { FormPage } from './Form'
 import { Timecode } from './Timecode'
 import { Head } from './Head'
 import { Resolution, Aspect } from './Resolution'
+import { Magnussens } from './Magnussens'
+import { Layout } from './Components'
+
 
 var state = require("./Globals").state
 
@@ -107,4 +110,5 @@ m.route(document.body, "/", {
   '/renders': Renders,
   '/login': Login,
   '/form': FormPage,
+  '/magnussens': { render: () => m(Layout, m(Magnussens))},
 } );

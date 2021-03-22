@@ -2,7 +2,7 @@ import m from 'mithril'
 import { Menu, Link} from './Menu'
 import { User } from './User'
 import { auth } from './Login'
-import { success, error, message } from 'alertifyjs'
+import { success, error, message, prompt } from 'alertifyjs'
 import { downloadFile } from './Tools'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 var Stream = require("mithril/stream")
@@ -91,6 +91,7 @@ export function Renders() {
               m('th', 'progress'),
               m('th', 'preview'),
               m('th', 'link'),
+              m('th', 'issue'),
               m('th', 'delete'),
             ],),
             renders.map(r => {
@@ -119,6 +120,25 @@ export function Renders() {
                   }}, 'missed_video_call')) : ''),
                   m('td', r['progress'] >= 100 ?
                   m(RenderLink, {}, r['filename']) : ''),
+                  m('td', {}, m('.tools', {}, m('i.material-icons', {
+                    onclick: e => {
+                      prompt('Report issue', "Please provide a detailed description of the issue", "There's a problem with...", (evt, issue) => {
+                        console.log('reporting issue', evt, issue)
+                        m.request('/report', {
+                          method: 'post',
+                          params: { name: r['filename'] },
+                          body: issue
+                        }).then(win => {
+                          success("issue submitted! We'll check it out as soon as we can!")
+                        }, lose => {
+                          console.log('error reporting issue', lose)
+                          error('Oops... something went wrong. Sorry!')
+                        })
+                      }, evt => {
+                        console.log('cancelled issue')
+                      })
+                    }
+                  }, 'report_problem'))),
                   m('td',
                   m('.tools',
                   m('i.material-icons', {
@@ -126,17 +146,17 @@ export function Renders() {
                       auth(`/renders/${r['filename']}/cancel`, {
                         method: 'put',
                       }).then(res => {
-                        console.log('deleted', res)
-                        if (res.status_code == 406) {
-                          error('did not find that entry', 4)
-                        } else {
-                          message(`${r['filename']} removed`, 4)
-                          getRenders()
-                        }
+                        console.log('deleted', r['filename'])
+                        message(`${r['filename']} removed`, 4)
+                        getRenders()
                       }, err => {
                         console.log('error deleting', err)
-                        error('error removing from db', 4)
-                      })
+                        if (err.status_code == 406) {
+                          error('did not find that entry', 4)
+                        } else {
+                          error('error removing from db', 4)
+                        }
+                      }).catch()
                     },
                   }, 'delete'))),
                 ])

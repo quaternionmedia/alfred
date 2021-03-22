@@ -26,6 +26,7 @@ from moviepy.editor import ImageClip, VideoFileClip
 from math import floor
 from config import BUCKET_NAME
 from bucket import generate_signed_url
+from emailer import sendMail
 
 def seconds(t):
     return sum(x * round(float(s), 2) for x, s in zip([3600, 60, 1], t.split(":")))
@@ -81,7 +82,7 @@ def updateProgress(id, progress):
 # REST Routing :
 # TODO: as it grows length -> breakout file into suporting files as needed, e.g. dbm'database manager', util'utiliy', etc.
 app = FastAPI()
-app.mount('/otto', ottoApi)
+app.include_router(ottoApi, prefix='/otto', dependencies=[Depends(get_current_active_user)])
 
 @app.on_event("startup")
 async def seedDb():
@@ -123,27 +124,25 @@ async def download_file(filename: str):
 
 
 @app.post('/render')
-async def queueRender(prog: BackgroundTasks, edl: Edl, project: str, width: int = 1920, height: int = 1080):
+async def queueRender(prog: BackgroundTasks, project: str, width: int = 1920, height: int = 1080, edl: Edl = Body(...), user: User = Depends(get_current_active_user)):
     ts = timestr()
-    duration = sum(c['duration'] for c in edl.edl)
-    filename = f'{project}_{width}x{height}_{duration}s_{ts}.mp4'
-    media = db.projects.find_one({'name': project}, ['form'])['form']['media']
-    id = db.renders.insert_one({
+    filename = f'{project}_{width}x{height}_{edl.duration}s_{ts}.mp4'
+    render = {
+        'user': user.username,
         'project': project,
         'filename': filename,
-        'duration': duration,
+        'duration': edl.duration,
         'resolution': (width, height),
-        'media': media,
         'edl': edl.edl,
         'progress': 0,
         'started': ts,
         'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
         }
-    ).inserted_id
-    proj = db.projects.find_one({'name': project}, ['form'])['form']
-    print('rendering!', filename, proj)
-    media = [ download(m) for m in proj['media'] ]
-    task = renderRemote.delay(edl=edl.edl, media=media, audio=download(proj['audio'][0]), filename=filename, moviesize=(width, height))
+    # media = db.projects.find_one({'name': project}, ['form'])['form']['media']
+    id = db.renders.insert_one(render).inserted_id
+    print('rendering!', render)
+    # media = [ download(m) for m in proj['media'] ]
+    task = renderRemote.delay(edl=edl.edl, filename=filename, moviesize=(width, height))
     def updateRenderProgress(progress):
         r = progress.get('result')
         # print('updating progress', r)
@@ -187,10 +186,11 @@ def pauseRender(user: User = Depends(get_current_active_user)):
 @app.put('/renders/{render}/cancel')
 def cancelRender(render: str, user: User = Depends(get_current_active_user)):
     # cancel selected render
-    res = db.renders.delete_one({'filename': render})
-    if res.deleted_count:
-        print('deleted render', render, res, res.deleted_count)
-        return res.deleted_count
+    res = db.renders.find_one_and_delete({'filename': render})
+    if res:
+        print('deleted render', render, res)
+        db.deleted.insert_one(res)
+        return
     else:
         return HTTPException(status_code=406, detail='no such entry in database')
 
@@ -297,6 +297,13 @@ async def saveFile(file, location='data'):
     data = await file.read()
     with open(join(location, file.filename), 'wb') as f:
         f.write(data)
+
+@app.post('/report')
+async def reportIssue(name: str, issue: str = Body(...)):
+    if not sendMail(issue, name):
+        print('error reporting issue with ', name, issue)
+        raise HTTPException(status_code=500, detail='error sending email')
+    
 
 app.include_router(auth)
 app.include_router(users)
