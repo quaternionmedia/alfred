@@ -5,7 +5,7 @@ from db import db
 from bson.objectid import ObjectId
 from math import ceil
 from datetime import datetime
-clientAddress = ['46 Mile', '901 Mission Street', 'San Francisco, CA 94103', 'info@46mile.com']
+
 left = 55
 top = 557
 right = 512
@@ -41,7 +41,7 @@ def generate_invoice(username, startDate, endDate):
     results = []
     date = datetime.today()
     invoiceNumber = f'{date.year}{date.month:02d}{date.day:02d}'
-    for page in range(ceil(len(renders)/ lines)):
+    for page in range(ceil(len(renders)/ lines) or 1):
         data = BytesIO()
         pdf = canvas.Canvas(data)
         pdf.setFont("Helvetica", 9)
