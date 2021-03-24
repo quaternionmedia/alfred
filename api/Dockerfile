@@ -1,40 +1,51 @@
 FROM alpine AS builder
-RUN apk add git
+RUN apk add git wget
 RUN git clone https://github.com/quaternionmedia/kburns-slideshow.git
+# RUN wget https://download.imagemagick.org/ImageMagick/download/binaries/magick
+# RUN chmod +x /magick
 
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.7-alpine3.8
-RUN apk update
-RUN pip install -U pip
 
-RUN apk add  --no-cache ffmpeg
-RUN apk add g++ wget libffi-dev openssl-dev jpeg-dev cairo cairo-dev imagemagick
-
+FROM python
+RUN apt update
+RUN apt install -y ffmpeg
+# RUN apt install -y g++ wget libffi-dev openssl-dev jpeg-dev cairo cairo-dev imagemagick
+RUN apt install -y libjpeg-dev libcairo2 libcairo-dev imagemagick
 COPY requirements.txt /
 RUN pip install -Ur /requirements.txt
 COPY otto/requirements.txt /
 RUN pip install numpy gizeh pillow
 RUN pip install -Ur /requirements.txt
-RUN pip install celery google-cloud-storage
-RUN pip uninstall amqplib
-RUN pip install librabbitmq
+RUN pip install celery[mongodb] google-cloud-storage
 
+# fonts
+# RUN apt install -y ttf-mscorefonts-installer fontconfig
+# RUN update-ms-fonts
+
+COPY otto/fonts/* /usr/share/fonts/truetype/
+RUN fc-cache -fv
+RUN pip install jinja2
+RUN pip install --pre moviepy
+
+
+# COPY --from=builder /magick /usr/local/bin/magick
 COPY --from=builder /kburns-slideshow /kburns
 RUN chmod +x /kburns/main.py
 RUN ln -s /kburns/main.py /usr/bin/kburns
 RUN ln -s /usr/bin/ffmpeg /usr/bin/ffmpeg.exe
 RUN ln -s /usr/bin/ffprobe /usr/bin/ffprobe.exe
 
-# fonts
-RUN apk add --no-cache msttcorefonts-installer fontconfig
-RUN update-ms-fonts
+# RUN apt install -y imagemagick imagemagick-common
+RUN apt install -y build-essential wget
+RUN wget https://www.imagemagick.org/download/ImageMagick.tar.gz
+RUN tar xvzf ImageMagick.tar.gz
+RUN cd /ImageMagick-7.0.11-4 && ./configure && make && make install && ldconfig /usr/local/lib
+# ENV IMAGEMAGICK_BINARY=/usr/local/bin/magick
+# RUN ln -s /usr/local/bin/magick /usr/local/bin/magick.exe
 
-COPY otto/fonts/* /usr/share/fonts/truetype/
-RUN fc-cache -fv
-RUN pip install jinja2
-RUN pip install --pre moviepy
-ENV IMAGEMAGICK_BINARY=/usr/bin/magick
-
+WORKDIR /app
 RUN mkdir -p /app/data/
 COPY /otto /otto
 RUN pip install /otto/
-CMD ["/start-reload.sh"]
+# CMD ["/start-reload.sh"]
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
