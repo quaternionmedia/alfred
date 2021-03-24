@@ -14,7 +14,9 @@ services:
 
   renderer:
     build: ./api/
-    command: celery -A tasks worker --loglevel=info
+    image: alfred_worker
+    # command: celery -b $CELERY_BROKER --result-backend $CELERY_BACKEND -A tasks:renderer worker --loglevel=info
+    command: celery -A tasks:renderer --workdir /app/ -b mongodb://db:27017/celery --result-backend mongodb worker --loglevel=info
     networks:
       - alfred_isolated
     volumes:
@@ -22,9 +24,9 @@ services:
       - ./videos/:/app/videos/
       - ./cred.json:/cred.json
     depends_on:
-      - rabbit
+      - 'db'
     environment:
-      - CELERY_BROKER=pyamqp://guest@rabbit//
-      - CELERY_BACKEND=rpc://
+      - CELERY_BROKER=mongodb://db:27017/celery
+      - CELERY_BACKEND=mongodb
       - DB_URL=mongodb://db:27017
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
