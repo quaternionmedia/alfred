@@ -10,14 +10,11 @@ function Menu() {
     open = !open
   }
   return {
-    onupdate: vnode => {
-      open = false
-    },
     view: (vnode) => {
       return [
         m('#menu.menu', {style: {display: open ? '': 'none', width: open ? '250px' : '0px'}}, [
           m('i.material-icons', {onclick: toggle}, 'close'),
-        m(Links),
+        m(Links, {onclick: toggle}),
         ]),
         m('img.logo', {src: '/al-white.svg', onclick: toggle, style: {display: open ? 'none' : '' }}),
       ]
@@ -38,9 +35,9 @@ function Links() {
     return {
       view: vnode => {
         return [
-          m(Link, {href:'/', id: 'home-link'}, 'home'),
-          m(Link, {href: '/form', id: 'form-link'}, 'form'),
-          m(Link, {href: '/renders', id: 'renders-link'}, 'renders'),
+          m(Link, {href:'/', id: 'home-link', ...vnode.attrs}, 'home'),
+          m(Link, {href: '/form', id: 'form-link', ...vnode.attrs}, 'form'),
+          m(Link, {href: '/renders', id: 'renders-link', ...vnode.attrs}, 'renders'),
           m(Link, {
             href:'/login',
             id: 'login-link',
@@ -49,7 +46,9 @@ function Links() {
                 message(`${User.username} logged out`)
                 User.logout()
               }
-            }
+            },
+            ...vnode.attrs
           }, User.username ? 'logout' : 'login'),
+          
         ]}}}
 export { Menu, Links, Link }
