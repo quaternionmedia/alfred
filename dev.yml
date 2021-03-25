@@ -29,3 +29,6 @@ services:
       - CELERY_BACKEND=mongodb
       - DB_URL=mongodb://db:27017
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+  db:
+    ports:
+      - 27017:27017

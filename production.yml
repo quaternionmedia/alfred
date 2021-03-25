@@ -17,3 +17,6 @@ services:
       - traefik.docker.network=web
     environment:
       - ALFRED_PRODUCTION=true
+  db:
+    ports:
+      - 192.168.192.52:27017:27017
