@@ -10,7 +10,7 @@ export function auth(url, opts) {
         },
         ...opts
       }).then(res => {
-        console.log('auth success')
+        // console.log('auth success')
         resolve(res)
         // return res
       }).catch( e => {

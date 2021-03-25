@@ -64,6 +64,11 @@ export function Renders() {
     oninit: vnode => {
       getRenders()
     },
+    oncreate: vnode => {
+      setInterval(() => {
+        getRenders()
+      }, 1000)
+    },
     view: vnode => {
       return [
         m('.head', [
