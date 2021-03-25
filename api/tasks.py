@@ -13,4 +13,5 @@ def renderRemote(self, edl, filename, audio=None, moviesize=(1920,1080)):
     log = DbLogger(self, filename)
     renderMultitrack(edl, audio, join('videos', filename), moviesize, log)
     upload(filename, directory='videos')
-    self.update_state(state='PROGRESS', meta={'status': 'uploaded'})
+    # self.update_state(state='PROGRESS', meta={'status': 'uploaded'})
+    log.uploaded()
