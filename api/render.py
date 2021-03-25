@@ -12,7 +12,7 @@ from bucket import generate_signed_url
 renderAPI = APIRouter()
 
 @renderAPI.post('/render')
-async def queueRender(prog: BackgroundTasks, project: str, width: int = 1920, height: int = 1080, edl: Edl = Body(...), user: User = Depends(get_current_active_user)):
+async def queueRender(project: str, width: int = 1920, height: int = 1080, edl: Edl = Body(...), user: User = Depends(get_current_active_user)):
     ts = timestr()
     filename = f'{project}_{width}x{height}_{edl.duration}s_{ts}.mp4'
     render = {
@@ -30,22 +30,6 @@ async def queueRender(prog: BackgroundTasks, project: str, width: int = 1920, he
     id = db.renders.insert_one(render).inserted_id
     print('rendering!', render)
     task = renderRemote.delay(edl=edl.edl, filename=filename, moviesize=(width, height))
-    def updateRenderProgress(progress):
-        r = progress.get('result')
-        # print('updating progress', r)
-        if r:
-            if r.get('index'):
-                p = max((100 * r['index'] / r['total']) - 1, 0)
-                db.renders.update_one({'filename': filename}, {'$set': {'progress': p}})
-            elif r.get('status') == 'uploaded':
-                db.renders.update_one({'filename': filename}, {'$set': {'progress': 100}})
-            else:
-                print('got other progress message', r)
-        else:
-            print('got other message', progress)
-    prog.add_task(task.get,
-                    on_message = updateRenderProgress,
-                    propagate=False)
     return str(id)
 
 @renderAPI.get('/render')
