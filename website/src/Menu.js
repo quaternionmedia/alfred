@@ -10,6 +10,9 @@ function Menu() {
     open = !open
   }
   return {
+    onupdate: vnode => {
+      open = false
+    },
     view: (vnode) => {
       return [
         m('#menu.menu', {style: {display: open ? '': 'none', width: open ? '250px' : '0px'}}, [
