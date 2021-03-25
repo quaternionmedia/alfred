@@ -1,17 +1,17 @@
-from proglog import ProgressBarLogger, ProgressLogger
+from proglog import ProgressBarLogger
 from collections import OrderedDict
 from db import db
 
 
 class DbLogger(ProgressBarLogger):
     def __init__(self, task, filename):
-        super(DbLogger, self).__init__()
+        super().__init__()
         self.task = task
         self.filename = filename
     def callback(self, **kwargs):
-        print('task callback', kwargs)
+        # print('task callback', kwargs)
         bar = self.state.get('bars')
-        print('bars', bar)
+        # print('bars', bar)
         if bar and bar.get('t'):
             t = bar.get('t')
             if t.get('status') == 'uploaded':

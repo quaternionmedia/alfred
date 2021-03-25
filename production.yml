@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3.8'
 
 networks:
   web:
@@ -10,6 +10,7 @@ services:
     networks:
       - web
     labels:
+      - traefik.http.services.alfred.loadbalancer.server.port=80
       - traefik.http.routers.alfred.rule=Host(`alfred.quaternion.media`)
       - traefik.http.routers.alfred.tls=true
       - traefik.http.routers.alfred.tls.certresolver=le
