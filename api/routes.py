@@ -15,8 +15,7 @@ from seed import formToEdl
 
 from otto.models import Edl, VideoForm
 from otto import templates
-from otto.render import renderForm
-from otto.getdata import timestr, download
+from otto.getdata import download
 
 from moviepy.editor import ImageClip, VideoFileClip
 from math import floor

@@ -28,7 +28,7 @@ services:
       - alfred_outgoing
     environment:
       - CELERY_BROKER=mongodb://db:27017/celery
-      - CELERY_BACKEND=mongodb
+      - CELERY_BACKEND=mongodb://db:27017/celery
       - DB_URL=mongodb://db:27017
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
     env_file:
