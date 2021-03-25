@@ -65,9 +65,15 @@ export function Renders() {
       getRenders()
     },
     oncreate: vnode => {
-      setInterval(() => {
-        getRenders()
-      }, 1000)
+      function checkRenders() {
+        if (m.route.get() == '/renders') {
+          getRenders()
+          setTimeout(() => {
+            checkRenders()
+          }, 1000)
+        }
+      }
+      checkRenders()
     },
     view: vnode => {
       return [
