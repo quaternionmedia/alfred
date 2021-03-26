@@ -32,23 +32,27 @@ function Link() {
 }
 
 function Links() {
-    return {
-      view: vnode => {
-        return [
-          m(Link, {href:'/', id: 'home-link', ...vnode.attrs}, 'home'),
-          m(Link, {href: '/form', id: 'form-link', ...vnode.attrs}, 'form'),
-          m(Link, {href: '/renders', id: 'renders-link', ...vnode.attrs}, 'renders'),
-          m(Link, {
-            href:'/login',
-            id: 'login-link',
-            onclick: vnode => {
-              if (User.username) {
-                message(`${User.username} logged out`)
-                User.logout()
-              }
-            },
-            ...vnode.attrs
-          }, User.username ? 'logout' : 'login'),
-          
-        ]}}}
+  return {
+    view: vnode => {
+      return [
+        m(Link, {href:'/', id: 'home-link', ...vnode.attrs}, 'home'),
+        m(Link, {href: '/form', id: 'form-link', ...vnode.attrs}, 'form'),
+        m(Link, {href: '/renders', id: 'renders-link', ...vnode.attrs}, 'renders'),
+        m(Link, {
+          href:'/login',
+          id: 'login-link',
+          onclick: vnode => {
+            if (User.username) {
+              message(`${User.username} logged out`)
+              User.logout()
+            }
+          },
+          ...vnode.attrs
+        }, User.username ? 'logout' : 'login'),
+      ]
+    }
+  }
+}
+
+
 export { Menu, Links, Link }

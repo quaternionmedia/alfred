@@ -223,7 +223,9 @@ body {
   width: 25px;
 }
 .renders {
-  display: inline-block;
+  display: inline-table;
+  table-layout: auto;
+  width: 100%;
 }
 .renders td {
   text-align: -webkit-center;

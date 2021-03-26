@@ -20,7 +20,7 @@ export function Magnussens() {
           m(Selector, { name: 'offeralign', text: 'Offer alignment' }, ['left', 'center']),
           m(TextBox, { name: 'legaltext', text: 'Legal Text' }),
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
-            '1920x1080', '1600x900', '1280x720', '854x480',
+            '1920x1080', '1600x900', '1280x720',
           ]),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             e.preventDefault()
