@@ -24,10 +24,16 @@ class DbLogger(ProgressBarLogger):
             
         else:
             print('got other progress message', self.state)
+    
+    def set_status(self, status):
+        db.renders.update_one({'filename': self.filename}, {'$set': {'status': status}})
+    
     def uploaded(self):
-        # hack for progress not firing after upload
-        db.renders.update_one({'filename': self.filename}, {'$set': {'progress': 100}})
-                
+        db.renders.update_one({'filename': self.filename}, {'$set': {'progress': 100, 'status': 'UPLOADED'}})
+    
+    def failed(self, *args, **kwargs):
+        print('logging failed render', args, kwargs)
+        self.set_status('failed')
 
 class CeleryLogger(ProgressBarLogger):
     def __init__(self, task):
