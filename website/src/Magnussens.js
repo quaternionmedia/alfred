@@ -4,6 +4,7 @@ import { ImagePreview } from './Preview'
 import { Form, TextBox, Button, Img, Selector} from './Components'
 import { User } from './User'
 import { auth } from './Login'
+import { Fields, MagnussensFields } from './Form'
 
 export function Magnussens() {
   if (!User.loggedIn) m.route.set('/login?redirect=' + m.route.get())
@@ -13,14 +14,9 @@ export function Magnussens() {
     view: (vnode) => {
       return [
         m(Form, {id: 'MagnussensForm'}, [
-          // m(Selector, { name: 'project', text: 'Video', }, [ 'Magnussens', 'RSG']),
-          m(Selector, { name: 'duration', text: 'Duration',}, ['30', '15']),
-          m(TextBox, { name: 'carname', text: 'Car Name' }),
-          m(TextBox, { name: 'offerinfo', text: 'Offer Info' }),
-          m(Selector, { name: 'offeralign', text: 'Offer alignment' }, ['left', 'center']),
-          m(TextBox, { name: 'legaltext', text: 'Legal Text' }),
+          m(Fields, {}, MagnussensFields),
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
-            '1920x1080', '1600x900', '1280x720',
+            '1920x1080', '1600x900', '1280x720', '160x90', '16x9'
           ]),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             e.preventDefault()
