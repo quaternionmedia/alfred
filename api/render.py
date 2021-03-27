@@ -23,7 +23,6 @@ async def queueRender(project: str, width: int = 1920, height: int = 1080, edl: 
         'resolution': (width, height),
         'edl': edl.edl,
         'progress': 0,
-        'started': ts,
         'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
         }
     # media = db.projects.find_one({'name': project}, ['form'])['form']['media']
@@ -39,7 +38,7 @@ def getSignedRenderLink(name: str, user: User = Depends(get_current_active_user)
 
 @renderAPI.get('/renders')
 def renders(user: User = Depends(get_current_active_user)):
-    return dumps(db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'duration', 'started']).sort([('_id', -1)]))
+    return dumps(db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'duration']).sort([('_id', -1)]))
 
 
 @renderAPI.get('/renders/{render}')

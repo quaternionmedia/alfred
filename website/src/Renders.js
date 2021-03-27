@@ -17,6 +17,10 @@ function timeDelta(date) {
   return Math.floor(delta / 3600) + ':' + String(Math.floor((delta  % 3600) / 60)).padStart(2, '0') + ':' + String(Math.floor(delta % 60)).padStart(2, '0')
 }
 
+export const dateFromObjectId = function (objectId) {
+	return new Date(parseInt(objectId['$oid'].substring(0, 8), 16) * 1000)
+}
+
 export function RenderLink() {
   var link = null
   return {
@@ -123,7 +127,7 @@ export function Renders() {
                 m('td', {}, r['duration']),
                 m('td', {}, r['resolution'] ? `${r['resolution'][0]}x${r['resolution'][1]}` : ''),
                 // m('td', {}, r['started']),
-                m('td', {}, timeDelta(tsToDate(r['started']))),
+                m('td', {}, timeDelta(dateFromObjectId(r['_id']))),
                 m('td', {}, [
                   m('progress', {
                     max: 100,
