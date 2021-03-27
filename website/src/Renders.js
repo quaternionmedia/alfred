@@ -14,7 +14,10 @@ function tsToDate(ts) {
 function timeDelta(date) {
   let now = new Date()
   let delta = (now - date)/1000
-  return Math.floor(delta / 3600) + ':' + String(Math.floor((delta  % 3600) / 60)).padStart(2, '0') + ':' + String(Math.floor(delta % 60)).padStart(2, '0')
+  let hours = Math.floor(delta / 3600)
+  let minutes = String(Math.floor((delta  % 3600) / 60)).padStart(2, '0')
+  let seconds = String(Math.floor(delta % 60)).padStart(2, '0')
+  return hours + ':' + minutes + ':' + seconds
 }
 
 export const dateFromObjectId = function (objectId) {
