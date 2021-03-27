@@ -21,6 +21,13 @@ function timeDelta(date) {
   return days ? days + 'd' : hours + ':' + minutes + ':' + seconds
 }
 
+function shortTime(date) {
+  let now = new Date()
+  let delta = (now - date)/1000
+  let days = Math.floor(delta / 3600 / 24)
+  return days ? days + 'd' : date.toLocaleTimeString()
+}
+
 export const dateFromObjectId = function (objectId) {
 	return new Date(parseInt(objectId['$oid'].substring(0, 8), 16) * 1000)
 }
@@ -131,7 +138,10 @@ export function Renders() {
                 m('td', {}, r['duration']),
                 m('td', {}, r['resolution'] ? `${r['resolution'][0]}x${r['resolution'][1]}` : ''),
                 // m('td', {}, r['started']),
-                m('td', {}, timeDelta(dateFromObjectId(r['_id']))),
+                m('td.tooltip', {}, [
+                  shortTime(dateFromObjectId(r['_id'])),
+                  m('.tooltiptext', {}, dateFromObjectId(r['_id']).toLocaleString())
+                ]),
                 m('td', {}, [
                   m('progress', {
                     max: 100,
