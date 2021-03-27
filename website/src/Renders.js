@@ -6,6 +6,17 @@ import { downloadFile } from './Tools'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 var Stream = require("mithril/stream")
 
+function tsToDate(ts) {
+  let date = new Date(ts.substr(0,4), ts.substr(4,2) - 1, ts.substr(6, 2), ts.substr(9, 2), ts.substr(11, 2) , ts.substr(13, 2))
+  return date
+}
+
+function timeDelta(date) {
+  let now = new Date()
+  let delta = (now - date)/1000
+  return Math.floor(delta / 3600) + ':' + String(Math.floor((delta  % 3600) / 60)).padStart(2, '0') + ':' + String(Math.floor(delta % 60)).padStart(2, '0')
+}
+
 export function RenderLink() {
   var link = null
   return {
@@ -54,12 +65,14 @@ export function RenderPreview() {
 export function Renders() {
   var preview = Stream(null)
   var renders = []
+  
   function getRenders() {
     auth('/renders').then(e => {
-      console.log('renders init')
+      // console.log('renders init')
       renders = JSON.parse(e)
     })
   }
+  
   return {
     oninit: vnode => {
       getRenders()
@@ -76,6 +89,7 @@ export function Renders() {
       checkRenders()
     },
     view: vnode => {
+      let now = new Date()
       return [
         m('.head', [
           m(RenderPreview, {
@@ -108,7 +122,8 @@ export function Renders() {
                 m('td', {}, r['project']),
                 m('td', {}, r['duration']),
                 m('td', {}, r['resolution'] ? `${r['resolution'][0]}x${r['resolution'][1]}` : ''),
-                m('td', {}, r['started']),
+                // m('td', {}, r['started']),
+                m('td', {}, timeDelta(tsToDate(r['started']))),
                 m('td', {}, [
                   m('progress', {
                     max: 100,
