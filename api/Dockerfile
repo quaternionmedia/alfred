@@ -37,8 +37,8 @@ RUN ln -s /usr/bin/ffprobe /usr/bin/ffprobe.exe
 # RUN apt install -y imagemagick imagemagick-common
 RUN apt install -y build-essential wget
 RUN wget https://www.imagemagick.org/download/ImageMagick.tar.gz
-RUN tar xvzf ImageMagick.tar.gz
-RUN cd /ImageMagick-7.0.11-4 && ./configure && make && make install && ldconfig /usr/local/lib
+RUN tar xvzf ImageMagick.tar.gz -C ImageMagick
+RUN cd $(tar tzf ImageMagick.tar.gz | head -1) && ./configure && make && make install && ldconfig /usr/local/lib
 # ENV IMAGEMAGICK_BINARY=/usr/local/bin/magick
 # RUN ln -s /usr/local/bin/magick /usr/local/bin/magick.exe
 
