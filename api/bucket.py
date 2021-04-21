@@ -1,6 +1,6 @@
 from datetime import timedelta
 from google.cloud import storage
-from config import BUCKET_NAME
+from config import BUCKET_NAME, DEFAULT_CHUNK_SIZE
 from os.path import join
 
 def get_bucket(bucket=BUCKET_NAME):
@@ -8,7 +8,7 @@ def get_bucket(bucket=BUCKET_NAME):
     return client.bucket(bucket)
 
 def upload(filename, directory=None):
-    blob = get_bucket().blob(filename)
+    blob = get_bucket().blob(filename, chunk_size=DEFAULT_CHUNK_SIZE)
     blob.upload_from_filename(join(directory, filename) if directory else filename)
 
 def generate_signed_url(filename):
