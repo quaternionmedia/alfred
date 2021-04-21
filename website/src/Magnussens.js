@@ -38,7 +38,7 @@ export function Magnussens() {
                 height: data.resolution.split('x')[1]
               },
               method: 'post',
-              body: { edl: edl },
+              body: { clips: edl },
             }).then(res => {
               console.log('preview available at', res)
               preview = res
@@ -70,7 +70,7 @@ export function Magnussens() {
                 quality: data.quality,
                 ffmpeg_params: ffmpeg_params,
               },
-              body: {edl: edl, duration: data.duration}
+              body: {clips: edl, duration: data.duration}
             }).then(e => {
               success('Rendering!')
               m.route.set('/renders')

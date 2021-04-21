@@ -20,27 +20,33 @@ async def queueRender(
         fps: float = 30.0,
         quality: str = '',
         ffmpeg_params: Optional[List[str]] = Query(None),
-        edl: Edl = Body(...),
+        clips: Edl = Body(...),
         user: User = Depends(get_current_active_user)):
     ts = timestr()
-    filename = f'{project}_{width}x{height}{"_" + quality if quality else ""}_{edl.duration}s_{ts}.mp4'
+    filename = f'{project}_{width}x{height}{"_" + quality if quality else ""}_{clips.duration}s_{ts}.mp4'
     render = {
         'username': user.username,
         'project': project,
         'filename': filename,
-        'duration': edl.duration,
+        'duration': clips.duration,
         'resolution': (width, height),
         'fps': fps,
         'quality': quality,
         'ffmpeg_params': ffmpeg_params,
-        'edl': edl.edl,
+        'edl': clips.clips,
         'progress': 0,
         'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
         }
     # media = db.projects.find_one({'name': project}, ['form'])['form']['media']
     id = db.renders.insert_one(render).inserted_id
     print('rendering!', render)
-    task = renderRemote.delay(edl=edl.edl, filename=filename, moviesize=(width, height), fps=fps, ffmpeg_params=ffmpeg_params)
+    task = renderRemote.delay(
+        edl=clips.clips, 
+        filename=filename, 
+        moviesize=(width, height), 
+        fps=fps, 
+        bitrate=bitrate,
+        ffmpeg_params=ffmpeg_params)
     return str(id)
 
 @renderAPI.get('/render')

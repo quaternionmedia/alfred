@@ -24,7 +24,7 @@ routes = APIRouter()
 
 @routes.post('/edl')
 async def saveEdl(filename: str, edl: Edl):
-    return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.edl}}, upsert=True, new=True))
+    return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.clips}}, upsert=True, new=True))
 
 @routes.get('/download')
 async def download_file(filename: str):
@@ -118,7 +118,7 @@ async def saveFile(file, location='data'):
 
 @routes.post('/edl')
 async def saveEdl(filename: str, edl: Edl):
-    return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.edl}}, upsert=True, new=True))
+    return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.clips}}, upsert=True, new=True))
 
 @routes.get('/download')
 async def download_file(filename: str):
