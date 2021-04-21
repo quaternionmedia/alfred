@@ -6,6 +6,22 @@ import { User } from './User'
 import { auth } from './Login'
 import { Fields, MagnussensFields } from './Form'
 
+export const generateParams = params => {
+  let res = ''
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      value.forEach((v, i) => {
+        res += key + '=' + v + '&'
+      })
+    } else {
+      res += key + '=' + String(value) + '&'
+    }
+  }
+  res = res.substring(0, res.length - 1)
+  return res
+  
+}
+
 export function Magnussens() {
   if (!User.loggedIn) m.route.set('/login?redirect=' + m.route.get())
   
@@ -57,19 +73,19 @@ export function Magnussens() {
             let height = data.resolution.split('x')[1]
             let edl = buildEdl(data, width, height)
             let ffmpeg_params = data.quality == 'TV' ? ['-minrate', '15M', '-maxrate', '30M', '-bufsize', '20M'] : ['-minrate', '2M', '-maxrate', '10M', '-bufsize', '5M']
-            console.log('saving form', e, edl, data, data.carname)
+            console.log('saving form', e, edl, data, data, ffmpeg_params)
             
-            
-            auth('/render', {
+            let params = {
+              project: data.project,
+              width: width,
+              height: height,
+              fps: 29.97,
+              quality: data.quality,
+              bitrate: data.quality == 'TV' ? '20M' : '5M',
+              ffmpeg_params: ffmpeg_params,
+            }
+            auth(`/render?${generateParams(params)}`, {
               method: 'post',
-              params: {
-                project: data.project,
-                width: width,
-                height: height,
-                fps: 29.97,
-                quality: data.quality,
-                ffmpeg_params: ffmpeg_params,
-              },
               body: {clips: edl, duration: data.duration}
             }).then(e => {
               success('Rendering!')
@@ -79,6 +95,7 @@ export function Magnussens() {
             })
           },
         },),
+        // m(Progress),
         m(ImagePreview, {src: preview,})
       ]),
     ]

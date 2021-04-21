@@ -20,6 +20,7 @@ def renderRemote(self,
         audio=None, 
         moviesize=(1920,1080), 
         fps=30.0,
+        bitrate=None,
         ffmpeg_params=None, 
         **kwargs):
     try:
@@ -27,9 +28,10 @@ def renderRemote(self,
         renderMultitrack(edl=edl, 
             audio=audio, 
             filename=join('videos', filename), 
-            moviesize=moviesize,
             logger=self.log, 
+            moviesize=moviesize,
             fps=fps,
+            bitrate=bitrate,
             ffmpeg_params=ffmpeg_params)
         upload(filename, directory='videos')
         # self.update_state(state='PROGRESS', meta={'status': 'uploaded'})
