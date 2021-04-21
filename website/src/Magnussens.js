@@ -23,7 +23,7 @@ export function Magnussens() {
           ]),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             e.preventDefault()
-
+            
             let form = new FormData(document.getElementById('MagnussensForm'))
             let data = Object.fromEntries(form.entries())
             let width = data.resolution.split('x')[0]
@@ -56,6 +56,7 @@ export function Magnussens() {
             let width = data.resolution.split('x')[0]
             let height = data.resolution.split('x')[1]
             let edl = buildEdl(data, width, height)
+            let ffmpeg_params = data.quality == 'TV' ? ['-minrate', '15M', '-maxrate', '30M', '-bufsize', '20M'] : ['-minrate', '2M', '-maxrate', '10M', '-bufsize', '5M']
             console.log('saving form', e, edl, data, data.carname)
             
             
@@ -67,6 +68,7 @@ export function Magnussens() {
                 height: height,
                 fps: 29.97,
                 quality: data.quality,
+                ffmpeg_params: ffmpeg_params,
               },
               body: {edl: edl, duration: data.duration}
             }).then(e => {
@@ -86,8 +88,8 @@ export function Magnussens() {
 
 function buildEdl(data, width, height) {
   data.project = 'Magnussens'
-  let start = data.duration == 15 ? 8 : 17.2
-  let duration = data.duration == 15 ? 5 : 7
+  let start = data.duration == 15 ? 8 : 17.1
+  let duration = data.duration == 15 ? 5 : 7.2
   if (data.project == 'RSG') {
     start -= 2.7
     duration += 3.5

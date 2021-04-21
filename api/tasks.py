@@ -14,10 +14,23 @@ class Renderer(Task):
         
 
 @renderer.task(bind=True, base=Renderer)
-def renderRemote(self, edl, filename, audio=None, moviesize=(1920,1080)):
+def renderRemote(self, 
+        edl, 
+        filename, 
+        audio=None, 
+        moviesize=(1920,1080), 
+        fps=30.0,
+        ffmpeg_params=None, 
+        **kwargs):
     try:
         self.log = DbLogger(self, filename)
-        renderMultitrack(edl, audio, join('videos', filename), moviesize, self.log)
+        renderMultitrack(edl=edl, 
+            audio=audio, 
+            filename=join('videos', filename), 
+            moviesize=moviesize,
+            log=self.log, 
+            fps=fps,
+            ffmpeg_params=ffmpeg_params)
         upload(filename, directory='videos')
         # self.update_state(state='PROGRESS', meta={'status': 'uploaded'})
         self.log.uploaded()

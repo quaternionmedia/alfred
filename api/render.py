@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Body, BackgroundTasks
+from fastapi import APIRouter, Depends, Body, Query, BackgroundTasks
+from typing import List, Optional
 from auth import get_current_active_user, User
 from otto.models import Edl
 from otto.getdata import timestr
@@ -12,15 +13,26 @@ from bucket import generate_signed_url
 renderAPI = APIRouter()
 
 @renderAPI.post('/render')
-async def queueRender(project: str, width: int = 1920, height: int = 1080, edl: Edl = Body(...), user: User = Depends(get_current_active_user)):
+async def queueRender(
+        project: str, 
+        width: int = 1920, 
+        height: int = 1080, 
+        fps: float = 30.0,
+        quality: str = '',
+        ffmpeg_params: Optional[List[str]] = Query(None),
+        edl: Edl = Body(...),
+        user: User = Depends(get_current_active_user)):
     ts = timestr()
-    filename = f'{project}_{width}x{height}_{edl.duration}s_{ts}.mp4'
+    filename = f'{project}_{width}x{height}{"_" + quality if quality else ""}_{edl.duration}s_{ts}.mp4'
     render = {
         'username': user.username,
         'project': project,
         'filename': filename,
         'duration': edl.duration,
         'resolution': (width, height),
+        'fps': fps,
+        'quality': quality,
+        'ffmpeg_params': ffmpeg_params,
         'edl': edl.edl,
         'progress': 0,
         'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
@@ -28,7 +40,7 @@ async def queueRender(project: str, width: int = 1920, height: int = 1080, edl: 
     # media = db.projects.find_one({'name': project}, ['form'])['form']['media']
     id = db.renders.insert_one(render).inserted_id
     print('rendering!', render)
-    task = renderRemote.delay(edl=edl.edl, filename=filename, moviesize=(width, height))
+    task = renderRemote.delay(edl=edl.edl, filename=filename, moviesize=(width, height), fps=fps, ffmpeg_params=ffmpeg_params)
     return str(id)
 
 @renderAPI.get('/render')
@@ -38,7 +50,7 @@ def getSignedRenderLink(name: str, user: User = Depends(get_current_active_user)
 
 @renderAPI.get('/renders')
 def renders(user: User = Depends(get_current_active_user)):
-    return dumps(db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'duration']).sort([('_id', -1)]))
+    return dumps(db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'quality', 'duration']).sort([('_id', -1)]))
 
 
 @renderAPI.get('/renders/{render}')
