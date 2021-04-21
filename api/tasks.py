@@ -28,7 +28,7 @@ def renderRemote(self,
             audio=audio, 
             filename=join('videos', filename), 
             moviesize=moviesize,
-            log=self.log, 
+            logger=self.log, 
             fps=fps,
             ffmpeg_params=ffmpeg_params)
         upload(filename, directory='videos')
