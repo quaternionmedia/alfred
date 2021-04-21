@@ -16,10 +16,14 @@ export function Magnussens() {
         m(Form, {id: 'MagnussensForm'}, [
           m(Fields, {}, MagnussensFields),
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
-            '1920x1080', '1600x900', '1280x720', '160x90', '16x9'
+            '1920x1080', '1600x900', '1280x720',
+          ]),
+          m(Selector, { name: 'quality', text: 'Quality'}, [
+            'web', 'TV'
           ]),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             e.preventDefault()
+
             let form = new FormData(document.getElementById('MagnussensForm'))
             let data = Object.fromEntries(form.entries())
             let width = data.resolution.split('x')[0]
@@ -60,7 +64,9 @@ export function Magnussens() {
               params: {
                 project: data.project,
                 width: width,
-                height: height
+                height: height,
+                fps: 29.97,
+                quality: data.quality,
               },
               body: {edl: edl, duration: data.duration}
             }).then(e => {
