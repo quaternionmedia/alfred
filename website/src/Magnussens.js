@@ -119,6 +119,13 @@ function buildEdl(data, width, height) {
       start: 0,
       inpoint: data.project == 'Magnussens' ? 0 : 7
     },
+    data.project == 'RSG' && data.duration == 15 ? {
+      type: 'video',
+      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
+      duration: duration,
+      inpoint: 22,
+      start: start,
+    } : null,
     data.project == 'Magnussens' ? {
       type: 'template',
       name: 'makeColor',
@@ -136,7 +143,7 @@ function buildEdl(data, width, height) {
       start: start,
       data: {
         text: data.carname,
-        color: '#EB0A1E',
+        color: '#000000',
         textsize: [Math.floor(.9*width), Math.floor(.3*height)],
         font: 'Toyota-Type-Bold',
         fontsize: Math.pow(width*height, .5)/15,
@@ -166,7 +173,7 @@ function buildEdl(data, width, height) {
         text: data.offerinfo,
         textsize: [Math.floor(.9*width), Math.floor(.5*height)],
         font: 'Toyota-Type',
-        fontsize: Math.pow(width*height, .5)/30,
+        fontsize: Math.pow(width*height, .5)/32,
         opacity: 1,
         position: 'center',
         align: data.offeralign == 'left' ? 'west' : data.offeralign,

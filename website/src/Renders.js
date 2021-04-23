@@ -190,17 +190,17 @@ export function Renders() {
                       auth(`/renders/${r['filename']}/cancel`, {
                         method: 'put',
                       }).then(res => {
-                        console.log('deleted', res)
-                        if (res.status_code == 406) {
-                          error('did not find that entry', 4)
-                        } else {
-                          message(`${r['filename']} removed`, 4)
-                          getRenders()
-                        }
+                        console.log('deleted', r['filename'])
+                        message(`${r['filename']} removed`, 4)
+                        getRenders()
                       }, err => {
                         console.log('error deleting', err)
-                        error('error removing from db', 4)
-                      })
+                        if (err.status_code == 406) {
+                          error('did not find that entry', 4)
+                        } else {
+                          error('error removing from db', 4)
+                        }
+                      }).catch()
                     },
                   }, 'delete'))),
                 ])
