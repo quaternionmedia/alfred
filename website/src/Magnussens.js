@@ -72,7 +72,7 @@ export function Magnussens() {
             let width = data.resolution.split('x')[0]
             let height = data.resolution.split('x')[1]
             let edl = buildEdl(data, width, height)
-            let ffmpeg_params = data.quality == 'TV' ? ['-minrate', '15M', '-maxrate', '30M', '-bufsize', '20M'] : ['-minrate', '2M', '-maxrate', '10M', '-bufsize', '5M']
+            let ffmpeg_params = data.quality == 'TV' ? ['-b:v', '25M', '-maxrate', '30M', '-bufsize', '20M'] : ['-b:v', '5M', '-minrate', '1M', '-maxrate', '10M', '-bufsize', '5M']
             console.log('saving form', e, edl, data, data, ffmpeg_params)
             
             let params = {
@@ -81,7 +81,7 @@ export function Magnussens() {
               height: height,
               fps: 29.97,
               quality: data.quality,
-              bitrate: data.quality == 'TV' ? '20M' : '5M',
+              // bitrate: data.quality == 'TV' ? '20M' : '5M',
               ffmpeg_params: ffmpeg_params,
             }
             auth(`/render?${generateParams(params)}`, {
