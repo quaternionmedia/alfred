@@ -1,7 +1,5 @@
-FROM alpine
-RUN apk update
-RUN apk add python3
-RUN apk add py-pip
+FROM python
 RUN pip install flower
+RUN pip install pymongo
 
 ENTRYPOINT ["flower", "--port=5555"]

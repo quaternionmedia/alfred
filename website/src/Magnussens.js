@@ -4,26 +4,42 @@ import { ImagePreview } from './Preview'
 import { Form, TextBox, Button, Img, Selector} from './Components'
 import { User } from './User'
 import { auth } from './Login'
+import { Fields, MagnussensFields } from './Form'
+
+export const generateParams = params => {
+  let res = ''
+  for (const [key, value] of Object.entries(params)) {
+    if (Array.isArray(value)) {
+      value.forEach((v, i) => {
+        res += key + '=' + v + '&'
+      })
+    } else {
+      res += key + '=' + String(value) + '&'
+    }
+  }
+  res = res.substring(0, res.length - 1)
+  return res
+  
+}
 
 export function Magnussens() {
-  if (!User.loggedIn) m.route.set('/login?redirect=/magnussens')
+  if (!User.loggedIn) m.route.set('/login?redirect=' + m.route.get())
   
   let preview
   return {
     view: (vnode) => {
       return [
         m(Form, {id: 'MagnussensForm'}, [
-          m(Selector, { name: 'project', text: 'Video', }, [ 'Magnussens', 'RSG']),
-          m(Selector, { name: 'duration', text: 'Duration',}, ['30', '15']),
-          m(TextBox, { name: 'carname', text: 'Car Name' }),
-          m(TextBox, { name: 'offerinfo', text: 'Offer Info' }),
-          m(Selector, { name: 'offeralign', text: 'Offer alignment' }, ['left', 'center']),
-          m(TextBox, { name: 'legaltext', text: 'Legal Text' }),
+          m(Fields, {}, MagnussensFields),
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
-            '1920x1080', '1600x900', '1280x720', '854x480',
+            '1920x1080', '1600x900', '1280x720',
+          ]),
+          m(Selector, { name: 'quality', text: 'Quality'}, [
+            'web', 'TV'
           ]),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             e.preventDefault()
+            
             let form = new FormData(document.getElementById('MagnussensForm'))
             let data = Object.fromEntries(form.entries())
             let width = data.resolution.split('x')[0]
@@ -38,7 +54,7 @@ export function Magnussens() {
                 height: data.resolution.split('x')[1]
               },
               method: 'post',
-              body: { edl: edl },
+              body: { clips: edl },
             }).then(res => {
               console.log('preview available at', res)
               preview = res
@@ -56,17 +72,21 @@ export function Magnussens() {
             let width = data.resolution.split('x')[0]
             let height = data.resolution.split('x')[1]
             let edl = buildEdl(data, width, height)
-            console.log('saving form', e, edl, data, data.carname)
+            let ffmpeg_params = data.quality == 'TV' ? ['-b:v', '25M', '-maxrate', '30M', '-bufsize', '20M'] : ['-b:v', '5M', '-minrate', '1M', '-maxrate', '10M', '-bufsize', '5M']
+            console.log('saving form', e, edl, data, data, ffmpeg_params)
             
-            
-            auth('/render', {
+            let params = {
+              project: data.project,
+              width: width,
+              height: height,
+              fps: 29.97,
+              quality: data.quality,
+              // bitrate: data.quality == 'TV' ? '20M' : '5M',
+              ffmpeg_params: ffmpeg_params,
+            }
+            auth(`/render?${generateParams(params)}`, {
               method: 'post',
-              params: {
-                project: data.project,
-                width: width,
-                height: height
-              },
-              body: {edl: edl, duration: data.duration}
+              body: {clips: edl, duration: data.duration}
             }).then(e => {
               success('Rendering!')
               m.route.set('/renders')
@@ -75,6 +95,7 @@ export function Magnussens() {
             })
           },
         },),
+        // m(Progress),
         m(ImagePreview, {src: preview,})
       ]),
     ]
@@ -83,8 +104,9 @@ export function Magnussens() {
 }
 
 function buildEdl(data, width, height) {
-  let start = data.duration == 15 ? 8 : 17.2
-  let duration = data.duration == 15 ? 5 : 7
+  data.project = 'Magnussens'
+  let start = data.duration == 15 ? 8 : 17.1
+  let duration = data.duration == 15 ? 5 : 7.2
   if (data.project == 'RSG') {
     start -= 2.7
     duration += 3.5

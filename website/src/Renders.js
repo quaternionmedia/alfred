@@ -1,11 +1,36 @@
 import m from 'mithril'
-import { Menu, Link} from './Menu'
 import { User } from './User'
 import { auth } from './Login'
 import { success, error, message, prompt } from 'alertifyjs'
 import { downloadFile } from './Tools'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 var Stream = require("mithril/stream")
+
+function tsToDate(ts) {
+  let date = new Date(ts.substr(0,4), ts.substr(4,2) - 1, ts.substr(6, 2), ts.substr(9, 2), ts.substr(11, 2) , ts.substr(13, 2))
+  return date
+}
+
+function timeDelta(date) {
+  let now = new Date()
+  let delta = (now - date)/1000
+  let days = Math.floor(delta / 3600 / 24)
+  let hours = Math.floor(delta / 3600)
+  let minutes = String(Math.floor((delta  % 3600) / 60)).padStart(2, '0')
+  let seconds = String(Math.floor(delta % 60)).padStart(2, '0')
+  return days ? days + 'd' : hours + ':' + minutes + ':' + seconds
+}
+
+function shortTime(date) {
+  let now = new Date()
+  let delta = (now - date)/1000
+  let days = Math.floor(delta / 3600 / 24)
+  return days ? days + 'd' : date.toLocaleTimeString()
+}
+
+export const dateFromObjectId = function (objectId) {
+	return new Date(parseInt(objectId['$oid'].substring(0, 8), 16) * 1000)
+}
 
 export function RenderLink() {
   var link = null
@@ -55,19 +80,32 @@ export function RenderPreview() {
 export function Renders() {
   var preview = Stream(null)
   var renders = []
+  
   function getRenders() {
     auth('/renders').then(e => {
-      console.log('renders init')
+      // console.log('renders init')
       renders = JSON.parse(e)
     })
   }
+  
   return {
     oninit: vnode => {
       getRenders()
     },
+    oncreate: vnode => {
+      function checkRenders() {
+        if (m.route.get() == '/renders') {
+          getRenders()
+          setTimeout(() => {
+            checkRenders()
+          }, 1000)
+        }
+      }
+      checkRenders()
+    },
     view: vnode => {
+      let now = new Date()
       return [
-        m(Menu),
         m('.head', [
           m(RenderPreview, {
             src: preview()
@@ -87,6 +125,7 @@ export function Renders() {
               m('th', 'project'),
               m('th', 'duration'),
               m('th', 'resolution'),
+              m('th', 'quality'),
               m('th', 'start time'),
               m('th', 'progress'),
               m('th', 'preview'),
@@ -99,7 +138,12 @@ export function Renders() {
                 m('td', {}, r['project']),
                 m('td', {}, r['duration']),
                 m('td', {}, r['resolution'] ? `${r['resolution'][0]}x${r['resolution'][1]}` : ''),
-                m('td', {}, r['started']),
+                m('td', {}, r['quality']),
+                // m('td', {}, r['started']),
+                m('td.tooltip', {}, [
+                  shortTime(dateFromObjectId(r['_id'])),
+                  m('.tooltiptext', {}, dateFromObjectId(r['_id']).toLocaleString())
+                ]),
                 m('td', {}, [
                   m('progress', {
                     max: 100,
@@ -124,7 +168,7 @@ export function Renders() {
                     onclick: e => {
                       prompt('Report issue', "Please provide a detailed description of the issue", "There's a problem with...", (evt, issue) => {
                         console.log('reporting issue', evt, issue)
-                        m.request('/report', {
+                        auth('/report', {
                           method: 'post',
                           params: { name: r['filename'] },
                           body: issue

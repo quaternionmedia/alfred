@@ -3,7 +3,7 @@ import { Sortable } from 'sortablejs'
 import { VideoClip, Template } from './OttoTimeline'
 import { Timeline } from './Timeline'
 import { Edl } from './Video'
-
+import { auth } from './Login'
 
 
 var Bin = {
@@ -15,7 +15,7 @@ var Bin = {
       Bin.videos = e
     })
 
-    m.request('/templates').then( e => {
+    auth('/templates').then( e => {
       // console.log('got videos!', e)
       Bin.templates = e
     })

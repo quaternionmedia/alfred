@@ -32,12 +32,19 @@ elif [ $1 = "prod" -o $1 = "production" -o $1 = "p" ]; then
   docker-compose down && \
   docker-compose -f docker-compose.yml -f production.yml up --build -d $1
 
-# Installs the dependencies.
-elif [ $1 = "i" -o $1 = "install" ]; then
+# Installs website dependencies.
+elif [ $1 = "init" ]; then
   shift
   echo "installing dependencies"
   # make install
   docker-compose -f docker-compose.yml run website yarn install
+
+  # Installs the dependencies.
+elif [ $1 = "i" -o $1 = "install" ]; then
+    shift
+    echo "installing dependencies"
+    # make install
+    docker-compose -f docker-compose.yml run website yarn add "$@"
 
 elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
   shift
@@ -74,7 +81,7 @@ db.projects.insert_many(sample_forms)
 
 elif [ $1 = "sh" ]; then
   shift
-  docker-compose exec api sh
+  docker-compose -f docker-compose.yml -f dev.yml exec api sh
 
 elif [ $1 = "log" -o $1 = "logs" -o $1 = "l" ]; then
   shift
@@ -84,7 +91,8 @@ elif [ $1 = "worker" -o $1 = "w" ]; then
   shift
   # . operator used in place of source
   . ./.cred
-  celery -A tasks:renderer --workdir api/ -b pyamqp://$1 --result-backend rpc:// worker
+  # DB_URL=mongodb://$1:27017 CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A tasks:renderer --workdir api/ -b $CELERY_BROKER --result-backend $CELERY_BACKEND worker --concurrency=4
+  DB_URL=mongodb://$1:27017 CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A tasks:renderer --workdir api/ worker --concurrency=4
 elif [ $1 = "dump" ]; then
   shift
   DATE=`date "+%Y-%m-%d-%H%M%S"`
@@ -101,5 +109,9 @@ elif [ $1 = "reload" ]; then
   shift
   # reload otto
   docker-compose -f docker-compose.yml -f dev.yml up -d --build api
+
+elif [ $1 = "git" -o $1 = "g" ]; then
+  shift
+  git pull && git submodule update
 
 fi
