@@ -5,7 +5,13 @@ import { Form, TextBox, Button, Img, Selector} from './Components'
 import { User } from './User'
 import { auth } from './Login'
 import { Fields, MagnussensFields } from './Form'
-import { apply } from 'json-logic-js'
+
+import 'regenerator-runtime/runtime'
+
+import { LogicEngine } from 'json-logic-engine'
+
+const engine = new LogicEngine()
+engine.addMethod('Math', Math)
 
 export const generateParams = params => {
   let res = ''
@@ -45,7 +51,7 @@ export function Magnussens() {
             let data = Object.fromEntries(form.entries())
             data.width = data.resolution.split('x')[0]
             data.height = data.resolution.split('x')[1]
-            let edl = buildEdl(data, width, height)
+            let edl = buildEdl(data)
             edl.shift()
             console.log('previewing ', edl, vnode.dom)
             auth('/otto/preview', {
@@ -73,14 +79,22 @@ export function Magnussens() {
             data.project = 'Magnussens'
             data.width = data.resolution.split('x')[0]
             data.height = data.resolution.split('x')[1]
-            let edl = buildEdl(data, width, height)
+            data.textStart = data.duration == 15 ? 8 : 17.1
+            data.textDuration = data.duration == 15 ? 5 : 7.2
+            if (data.project == 'RSG') {
+              data.textStart -= 2.7
+              data.textDuration += 3.5
+            }
+            // let edl = buildEdl(data)
+            // let edl = jsonLogic.apply(rules, data)
+            let edl = rules(data)
             let ffmpeg_params = data.quality == 'TV' ? ['-b:v', '25M', '-maxrate', '30M', '-bufsize', '20M'] : ['-b:v', '5M', '-minrate', '1M', '-maxrate', '10M', '-bufsize', '5M']
             console.log('saving form', e, edl, data, data, ffmpeg_params)
             
             let params = {
               project: data.project,
-              width: width,
-              height: height,
+              width: data.width,
+              height: data.height,
               fps: 29.97,
               quality: data.quality,
               // bitrate: data.quality == 'TV' ? '20M' : '5M',
@@ -104,43 +118,36 @@ export function Magnussens() {
   }
 }
 }
-// var rules = [
-//   {"asdf": 1, 'qwer': 2}, 
-//   "asdf",
-//   { "if": [
-//     { "==" : [{"var": "project"}, "Magnussens"]},
+// const rules = engine.build({merge:[
+//   { if: [
+//     { "==" : [{var: "project"}, "Magnussens"]},
 //     "yes", "no"
-//     ]}]
+//   ]},
+//   {eachKey: {asdf: "asdf", project: {var: 'project'}}},
+// ]})
 var data = {"project": "Magnussens"}
-var rules = [
-  {if: [
-    {'==': [{var: 'project'}, 'Magnussens']},
-    {
+const rules = engine.build({merge: [
+  {if: [ {'==': [{var: 'project'}, 'Magnussens']},
+    {eachKey: {
       type: 'video',
       name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
       duration: {var: 'duration'},
       start: 0,
       inpoint: 0
-    },
-    {
+    }},
+    {eachKey: {
       type: 'video',
       name: 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
       duration: {var: 'duration'},
       start: 0,
       inpoint: 7
-    }
-  ]}
-]
-console.log('apply rules', apply(rules, data))
+    }}
+  ]},
+console.log('apply rules', rules(data))
 
 function buildEdl(data) {
-  let start = data.duration == 15 ? 8 : 17.1
-  let duration = data.duration == 15 ? 5 : 7.2
-  if (data.project == 'RSG') {
-    start -= 2.7
-    duration += 3.5
-  }
-  return apply([
+
+  return [
     {
       type: 'video',
       name: data.project == 'Magnussens' ? 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4' : 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
