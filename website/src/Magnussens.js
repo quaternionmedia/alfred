@@ -11,7 +11,9 @@ import 'regenerator-runtime/runtime'
 import { LogicEngine } from 'json-logic-engine'
 
 const engine = new LogicEngine()
-engine.addMethod('Math', Math)
+// engine.addMethod('Math', Math)
+engine.addMethod('floor', Math.floor)
+engine.addMethod('sqrt', Math.sqrt)
 
 export const generateParams = params => {
   let res = ''
@@ -49,9 +51,12 @@ export function Magnussens() {
             
             let form = new FormData(document.getElementById('MagnussensForm'))
             let data = Object.fromEntries(form.entries())
+            data.project = 'Magnussens'
             data.width = data.resolution.split('x')[0]
             data.height = data.resolution.split('x')[1]
-            let edl = buildEdl(data)
+            data.textStart = data.duration == 15 ? 8 : 17.1
+            data.textDuration = data.duration == 15 ? 5 : 7.2
+            let edl = rules(data)
             edl.shift()
             console.log('previewing ', edl, vnode.dom)
             auth('/otto/preview', {
@@ -118,127 +123,98 @@ export function Magnussens() {
   }
 }
 }
-// const rules = engine.build({merge:[
-//   { if: [
-//     { "==" : [{var: "project"}, "Magnussens"]},
-//     "yes", "no"
-//   ]},
-//   {eachKey: {asdf: "asdf", project: {var: 'project'}}},
-// ]})
-var data = {"project": "Magnussens"}
+
 const rules = engine.build({merge: [
+  {eachKey: {
+    type: 'video',
+    name: {if: [ {'==': [{var: 'project'}, 'Magnussens']},
+    'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
+    'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
+  ]},
+    duration: {var: 'duration'},
+    start: 0,
+    inpoint: {if: [ {'==': [{var: 'project'}, 'Magnussens']}, 0, 7]}
+  }},
   {if: [ {'==': [{var: 'project'}, 'Magnussens']},
     {eachKey: {
-      type: 'video',
-      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
-      duration: {var: 'duration'},
-      start: 0,
-      inpoint: 0
-    }},
-    {eachKey: {
-      type: 'video',
-      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
-      duration: {var: 'duration'},
-      start: 0,
-      inpoint: 7
-    }}
-  ]},
-console.log('apply rules', rules(data))
-
-function buildEdl(data) {
-
-  return [
-    {
-      type: 'video',
-      name: data.project == 'Magnussens' ? 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4' : 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
-      duration: data.duration,
-      start: 0,
-      inpoint: data.project == 'Magnussens' ? 0 : 7
-    },
-    data.project == 'RSG' && data.duration == 15 ? {
-      type: 'video',
-      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
-      duration: duration,
-      inpoint: 22,
-      start: start,
-    } : null,
-    data.project == 'Magnussens' ? {
       type: 'template',
       name: 'makeColor',
-      duration: duration,
-      start: start,
-      data: {
+      duration: {var: 'textDuration'},
+      start: {var: 'textStart'},
+      data: {preserve: {
         color: [255,255,255],
         opacity: 1,
-      }
-    } : null,
-    {
-      type: 'template',
-      name: 'textBox',
-      duration: duration,
-      start: start,
-      data: {
-        text: data.carname,
-        color: '#000000',
-        textsize: [Math.floor(.9*data.width), Math.floor(.3*data.height)],
-        font: 'Toyota-Type-Bold',
-        fontsize: Math.pow(data.width*data.height, .5)/15,
-        position: ['center', Math.floor(.1*data.height)],
-        opacity: 1,
-        fxs: [{
-          name: 'bezier2',
-          data: {
-            c1x: 1,
-            c1y: 0,
-            ax: 0,
-            ay: 0,
-            c2x: 0,
-            c2y: 1,
-          }
-        }]
-      },
-    },
-    {
-      type: 'template',
-      name: 'textBox',
-      duration: duration,
-      start: start,
-      position: [.5, .8 ],
-      data: {
-        color: '#EB0A1E',
-        text: data.offerinfo,
-        textsize: [Math.floor(.9*data.width), Math.floor(.5*data.height)],
-        font: 'Toyota-Type',
-        fontsize: Math.pow(data.width*data.height, .5)/32,
-        opacity: 1,
-        position: 'center',
-        align: data.offeralign == 'left' ? 'west' : data.offeralign,
-      },
-    },
-    {
-      type: 'template',
-      name: 'textBox',
-      duration: duration,
-      start: start,
-      data: {
-        color: '#333333',
-        text: data.legaltext,
-        method: 'caption',
-        textsize: [Math.floor(.9*data.width), Math.floor(.35*data.height)],
-        font: 'Toyota-Type-Book',
-        fontsize: Math.pow(data.width*data.height, .5)/60,
-        position: ['center', 'bottom'],
-        align: 'west',
-        opacity: 1,
-      }
-    },
-    data.project == 'Magnussens' ? {
+      }}
+    }}
+  ]},
+  {eachKey: {
+    type: 'template',
+    name: 'textBox',
+    duration: {var: 'textDuration'},
+    start: {var: 'textStart'},
+    data: {eachKey: {
+      text: {var: 'carname'},
+      color: '#000000',
+      textsize: [{'floor':{'*':[.9, {var: 'width'}]}}, {'floor':{'*':[.3, {var: 'height'}]}}],
+      font: 'Toyota-Type-Bold',
+      fontsize: {'/': [{'sqrt': [{'*': [{var: 'width'}, {var: 'height'}]}]}, 15]},
+      position: ['center', {'floor': {'*': [.1, {var: 'height'}]}}],
+      opacity: 1,
+      fxs: [{preserve: {
+        name: 'bezier2',
+        data: {
+          c1x: 1,
+          c1y: 0,
+          ax: 0,
+          ay: 0,
+          c2x: 0,
+          c2y: 1,
+        }
+      }}]
+    }},
+  },},
+  {eachKey: {
+    type: 'template',
+    name: 'textBox',
+    duration: {var: 'textDuration'},
+    start: {var: 'textStart'},
+    position: [.5, .8 ],
+    data: {eachKey: {
+      color: '#EB0A1E',
+      text: {var: 'offerinfo'},
+      textsize: [{'floor':{'*':[.9, {var: 'width'}]}}, {'floor':{'*':[.5, {var: 'height'}]}}],
+      font: 'Toyota-Type',
+      fontsize: {'/': [{sqrt: {'*': [{var: 'width'}, {var: 'height'}]}}, 32]},
+      opacity: 1,
+      position: 'center',
+      align: {if: [{'==': [{var: 'offeralign'}, 'left']}, 'west', {var: 'offeralign'}]},
+    }},
+  }},
+  {eachKey: {
+    type: 'template',
+    name: 'textBox',
+    duration: {var: 'textDuration'},
+    start: {var: 'textStart'},
+    data: {eachKey: {
+      color: '#333333',
+      text: {var: 'legaltext'},
+      method: 'caption',
+      textsize: [{'floor':{'*':[.9, {var: 'width'}]}}, {'floor':{'*':[.35, {var: 'height'}]}}],
+      font: 'Toyota-Type-Book',
+      fontsize: {'/': [{sqrt: {'*': [{var: 'width'}, {var: 'height'}]}}, 60]},
+      position: ['center', 'bottom'],
+      align: 'west',
+      opacity: 1,
+    }}
+  }},
+  {if: [ {'==': [{var: 'project'}, 'Magnussens']},
+    {eachKey: {
       type: 'image',
       name: 'https://storage.googleapis.com/tower-bucket/alfred/car/magnussens-screengrab%20logo-fixed-with-toyota.png',
       position: ['center', 'top'],
-      resize: Math.pow(data.width*data.height, .5)/3600,
-      start: start,
-      duration: duration,
-    } : null,
-  ].filter(Boolean))
-}
+      resize: {'/': [{sqrt: [{'*': [{var: 'width'}, {var: 'height'}]}]}, 3600]},
+      start: {var: 'textStart'},
+      duration: {var: 'textDuration'},
+    }}]}
+  
+]})
