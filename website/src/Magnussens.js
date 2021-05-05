@@ -5,6 +5,7 @@ import { Form, TextBox, Button, Img, Selector} from './Components'
 import { User } from './User'
 import { auth } from './Login'
 import { Fields, MagnussensFields } from './Form'
+import { apply } from 'json-logic-js'
 
 export const generateParams = params => {
   let res = ''
@@ -42,8 +43,8 @@ export function Magnussens() {
             
             let form = new FormData(document.getElementById('MagnussensForm'))
             let data = Object.fromEntries(form.entries())
-            let width = data.resolution.split('x')[0]
-            let height = data.resolution.split('x')[1]
+            data.width = data.resolution.split('x')[0]
+            data.height = data.resolution.split('x')[1]
             let edl = buildEdl(data, width, height)
             edl.shift()
             console.log('previewing ', edl, vnode.dom)
@@ -69,8 +70,9 @@ export function Magnussens() {
             // form.forEach(f => {console.log('field', f.name, f)})
             message('assembling render')
             let data = Object.fromEntries(form.entries())
-            let width = data.resolution.split('x')[0]
-            let height = data.resolution.split('x')[1]
+            data.project = 'Magnussens'
+            data.width = data.resolution.split('x')[0]
+            data.height = data.resolution.split('x')[1]
             let edl = buildEdl(data, width, height)
             let ffmpeg_params = data.quality == 'TV' ? ['-b:v', '25M', '-maxrate', '30M', '-bufsize', '20M'] : ['-b:v', '5M', '-minrate', '1M', '-maxrate', '10M', '-bufsize', '5M']
             console.log('saving form', e, edl, data, data, ffmpeg_params)
@@ -102,16 +104,43 @@ export function Magnussens() {
   }
 }
 }
+// var rules = [
+//   {"asdf": 1, 'qwer': 2}, 
+//   "asdf",
+//   { "if": [
+//     { "==" : [{"var": "project"}, "Magnussens"]},
+//     "yes", "no"
+//     ]}]
+var data = {"project": "Magnussens"}
+var rules = [
+  {if: [
+    {'==': [{var: 'project'}, 'Magnussens']},
+    {
+      type: 'video',
+      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
+      duration: {var: 'duration'},
+      start: 0,
+      inpoint: 0
+    },
+    {
+      type: 'video',
+      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
+      duration: {var: 'duration'},
+      start: 0,
+      inpoint: 7
+    }
+  ]}
+]
+console.log('apply rules', apply(rules, data))
 
-function buildEdl(data, width, height) {
-  data.project = 'Magnussens'
+function buildEdl(data) {
   let start = data.duration == 15 ? 8 : 17.1
   let duration = data.duration == 15 ? 5 : 7.2
   if (data.project == 'RSG') {
     start -= 2.7
     duration += 3.5
   }
-  return [
+  return apply([
     {
       type: 'video',
       name: data.project == 'Magnussens' ? 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4' : 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
@@ -144,10 +173,10 @@ function buildEdl(data, width, height) {
       data: {
         text: data.carname,
         color: '#000000',
-        textsize: [Math.floor(.9*width), Math.floor(.3*height)],
+        textsize: [Math.floor(.9*data.width), Math.floor(.3*data.height)],
         font: 'Toyota-Type-Bold',
-        fontsize: Math.pow(width*height, .5)/15,
-        position: ['center', Math.floor(.1*height)],
+        fontsize: Math.pow(data.width*data.height, .5)/15,
+        position: ['center', Math.floor(.1*data.height)],
         opacity: 1,
         fxs: [{
           name: 'bezier2',
@@ -171,9 +200,9 @@ function buildEdl(data, width, height) {
       data: {
         color: '#EB0A1E',
         text: data.offerinfo,
-        textsize: [Math.floor(.9*width), Math.floor(.5*height)],
+        textsize: [Math.floor(.9*data.width), Math.floor(.5*data.height)],
         font: 'Toyota-Type',
-        fontsize: Math.pow(width*height, .5)/32,
+        fontsize: Math.pow(data.width*data.height, .5)/32,
         opacity: 1,
         position: 'center',
         align: data.offeralign == 'left' ? 'west' : data.offeralign,
@@ -188,9 +217,9 @@ function buildEdl(data, width, height) {
         color: '#333333',
         text: data.legaltext,
         method: 'caption',
-        textsize: [Math.floor(.9*width), Math.floor(.35*height)],
+        textsize: [Math.floor(.9*data.width), Math.floor(.35*data.height)],
         font: 'Toyota-Type-Book',
-        fontsize: Math.pow(width*height, .5)/60,
+        fontsize: Math.pow(data.width*data.height, .5)/60,
         position: ['center', 'bottom'],
         align: 'west',
         opacity: 1,
@@ -200,9 +229,9 @@ function buildEdl(data, width, height) {
       type: 'image',
       name: 'https://storage.googleapis.com/tower-bucket/alfred/car/magnussens-screengrab%20logo-fixed-with-toyota.png',
       position: ['center', 'top'],
-      resize: Math.pow(width*height, .5)/3600,
+      resize: Math.pow(data.width*data.height, .5)/3600,
       start: start,
       duration: duration,
     } : null,
-  ].filter(Boolean)
+  ].filter(Boolean))
 }
