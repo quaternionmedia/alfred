@@ -76,9 +76,9 @@ def pauseRender(user: User = Depends(get_current_active_user)):
 @renderAPI.put('/renders/{render}/cancel')
 def cancelRender(render: str, user: User = Depends(get_current_active_user)):
     # cancel selected render
-    res = db.renders.delete_one({'filename': render})
-    if res.deleted_count:
-        print('deleted render', render, res, res.deleted_count)
-        return res.deleted_count
+    res = db.renders.find_one_and_delete({'filename': render})
+    if res:
+        print('deleted render', render, res)
+        db.deleted.insert_one(res)
     else:
         return HTTPException(status_code=406, detail='no such entry in database')
