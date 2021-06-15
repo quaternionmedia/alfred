@@ -1,15 +1,14 @@
 import m from 'mithril'
+import { MagnussensFields } from './Form'
 
 import 'regenerator-runtime/runtime'
-
 import { LogicEngine } from 'json-logic-engine'
 
 const engine = new LogicEngine()
 engine.addMethod('floor', Math.floor)
 engine.addMethod('sqrt', Math.sqrt)
 
-
-const magnussens = engine.build({merge: [
+const rules = ({ merge: [
   { eachKey: 
     {
       type: 'video',
@@ -22,7 +21,7 @@ const magnussens = engine.build({merge: [
       type: 'template',
       name: 'textBox',
       duration: {var: 'duration'},
-      start: {var: 'start'},
+      start: 17.1,
       data: { eachKey: {
         text: {var: 'carname'},
         color: '#000000',
@@ -50,10 +49,12 @@ const magnussens = engine.build({merge: [
       name: 'https://storage.googleapis.com/tower-bucket/alfred/car/magnussens-screengrab%20logo-fixed-with-toyota.png',
       position: ['center', 'top'],
       // resize: Math.pow(width*height, .5)/3600,
-      start: {var: 'start'},
+      start: 17.1,
       duration: {var: 'duration'},
     }},
   ]})
+
+const magnussens = engine.build(rules)
 
 let data = {
   carname: 'asdf',
@@ -71,8 +72,8 @@ let magForm = {
   width: 1920,
   height: 1080,
 }
-
-console.log('magnussens', magnussens, data)
+console.log('rules', rules)
+console.log('magnussens', magnussens, data, MagnussensFields)
 console.log('magnussens apply', magnussens(data))
 
 export const Logic = (state, actions) => ({

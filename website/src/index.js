@@ -108,7 +108,7 @@ m.route(document.body, "/", {
   "/": Home,
   '/projects': Projects,
   '/otto': Otto,
-  '/form': { render: () => m(Layout, m(Logic()))},
+  '/form': { render: () => m(Layout, m(Magnussens))},
   '/renders': { render: () => m(Layout, m(Renders))},
   '/login': { render: () => m(Layout, m(Login))},
 } );
