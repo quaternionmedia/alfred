@@ -49,6 +49,7 @@ export function Magnussens() {
     },
     view: vnode => {
       return [
+        m('h2', {}, m.route.param('project')),
         m(Form, {id: 'MagnussensForm'}, [
           m(Fields, {}, fields),
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
@@ -62,17 +63,14 @@ export function Magnussens() {
             
             let form = new FormData(document.getElementById('MagnussensForm'))
             let data = Object.fromEntries(form.entries())
-            data.project = 'Magnussens'
             data.width = data.resolution.split('x')[0]
             data.height = data.resolution.split('x')[1]
-            data.textStart = data.duration == 15 ? 8 : 17.1
-            data.textDuration = data.duration == 15 ? 5 : 7.2
             let edl = logic(data)
-            edl.shift()
+            // edl.shift()
             console.log('previewing ', edl, vnode.dom)
             auth('/otto/preview', {
               params: {
-                t: data.duration == 15 ? 10 : 20,
+                t: edl[1]['start'] + 1,
                 width: data.resolution.split('x')[0],
                 height: data.resolution.split('x')[1]
               },
@@ -92,23 +90,15 @@ export function Magnussens() {
             // form.forEach(f => {console.log('field', f.name, f)})
             message('assembling render')
             let data = Object.fromEntries(form.entries())
-            data.project = 'Magnussens'
             data.width = data.resolution.split('x')[0]
             data.height = data.resolution.split('x')[1]
-            data.textStart = data.duration == 15 ? 8 : 17.1
-            data.textDuration = data.duration == 15 ? 5 : 7.2
-            if (data.project == 'RSG') {
-              data.textStart -= 2.7
-              data.textDuration += 3.5
-            }
-            // let edl = buildEdl(data)
-            // let edl = jsonLogic.apply(rules, data)
+
             let edl = logic(data)
             let ffmpeg_params = data.quality == 'TV' ? ['-b:v', '25M', '-maxrate', '30M', '-bufsize', '20M'] : ['-b:v', '5M', '-minrate', '1M', '-maxrate', '10M', '-bufsize', '5M']
             console.log('saving form', e, edl, data, data, ffmpeg_params)
             
             let params = {
-              project: data.project,
+              project: m.route.param('project'),
               width: data.width,
               height: data.height,
               fps: 29.97,
@@ -134,98 +124,3 @@ export function Magnussens() {
   }
 }
 }
-// 
-// const rules = engine.build({merge: [
-//   {eachKey: {
-//     type: 'video',
-//     name: {if: [ {'==': [{var: 'project'}, 'Magnussens']},
-//     'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4',
-//     'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
-//   ]},
-//     duration: {var: 'duration'},
-//     start: 0,
-//     inpoint: {if: [ {'==': [{var: 'project'}, 'Magnussens']}, 0, 7]}
-//   }},
-//   {if: [ {'==': [{var: 'project'}, 'Magnussens']},
-//     {eachKey: {
-//       type: 'template',
-//       name: 'makeColor',
-//       duration: {var: 'textDuration'},
-//       start: {var: 'textStart'},
-//       data: {preserve: {
-//         color: [255,255,255],
-//         opacity: 1,
-//       }}
-//     }}
-//   ]},
-//   {eachKey: {
-//     type: 'template',
-//     name: 'textBox',
-//     duration: {var: 'textDuration'},
-//     start: {var: 'textStart'},
-//     data: {eachKey: {
-//       text: {var: 'carname'},
-//       color: '#000000',
-//       textsize: [{'floor':{'*':[.9, {var: 'width'}]}}, {'floor':{'*':[.3, {var: 'height'}]}}],
-//       font: 'Toyota-Type-Bold',
-//       fontsize: {'/': [{'sqrt': [{'*': [{var: 'width'}, {var: 'height'}]}]}, 15]},
-//       position: ['center', {'floor': {'*': [.1, {var: 'height'}]}}],
-//       opacity: 1,
-//       fxs: [{preserve: {
-//         name: 'bezier2',
-//         data: {
-//           c1x: 1,
-//           c1y: 0,
-//           ax: 0,
-//           ay: 0,
-//           c2x: 0,
-//           c2y: 1,
-//         }
-//       }}]
-//     }},
-//   },},
-//   {eachKey: {
-//     type: 'template',
-//     name: 'textBox',
-//     duration: {var: 'textDuration'},
-//     start: {var: 'textStart'},
-//     position: [.5, .8 ],
-//     data: {eachKey: {
-//       color: '#EB0A1E',
-//       text: {var: 'offerinfo'},
-//       textsize: [{'floor':{'*':[.9, {var: 'width'}]}}, {'floor':{'*':[.5, {var: 'height'}]}}],
-//       font: 'Toyota-Type',
-//       fontsize: {'/': [{sqrt: {'*': [{var: 'width'}, {var: 'height'}]}}, 32]},
-//       opacity: 1,
-//       position: 'center',
-//       align: {if: [{'==': [{var: 'offeralign'}, 'left']}, 'west', {var: 'offeralign'}]},
-//     }},
-//   }},
-//   {eachKey: {
-//     type: 'template',
-//     name: 'textBox',
-//     duration: {var: 'textDuration'},
-//     start: {var: 'textStart'},
-//     data: {eachKey: {
-//       color: '#333333',
-//       text: {var: 'legaltext'},
-//       method: 'caption',
-//       textsize: [{'floor':{'*':[.9, {var: 'width'}]}}, {'floor':{'*':[.35, {var: 'height'}]}}],
-//       font: 'Toyota-Type-Book',
-//       fontsize: {'/': [{sqrt: {'*': [{var: 'width'}, {var: 'height'}]}}, 60]},
-//       position: ['center', 'bottom'],
-//       align: 'west',
-//       opacity: 1,
-//     }}
-//   }},
-//   {if: [ {'==': [{var: 'project'}, 'Magnussens']},
-//     {eachKey: {
-//       type: 'image',
-//       name: 'https://storage.googleapis.com/tower-bucket/alfred/car/magnussens-screengrab%20logo-fixed-with-toyota.png',
-//       position: ['center', 'top'],
-//       resize: {'/': [{sqrt: [{'*': [{var: 'width'}, {var: 'height'}]}]}, 3600]},
-//       start: {var: 'textStart'},
-//       duration: {var: 'textDuration'},
-//     }}]}
-// 
-// ]})
