@@ -36,7 +36,7 @@ function Links() {
     view: vnode => {
       return [
         m(Link, {href:'/', id: 'home-link', ...vnode.attrs}, 'home'),
-        m(Link, {href: '/form', id: 'form-link', ...vnode.attrs}, 'form'),
+        m(Link, {href:'/projects', id: 'projects-link', ...vnode.attrs}, 'projects'),
         m(Link, {href: '/renders', id: 'renders-link', ...vnode.attrs}, 'renders'),
         m(Link, {
           href:'/login',
