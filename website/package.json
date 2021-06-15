@@ -12,7 +12,7 @@
   "license": "MIT",
   "scripts": {
     "build": "parcel build src/index.html",
-    "dev": "parcel watch src/* --hmr-port=1234",
+    "dev": "parcel watch src/* --hmr-port=8001",
     "test": "$(npm bin)/cypress run",
     "cy": "$(npm bin)/cypress open"
   },
