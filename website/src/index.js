@@ -25,6 +25,7 @@ import { Head } from './Head'
 import { Resolution, Aspect } from './Resolution'
 import { Magnussens } from './Magnussens'
 import { Layout } from './Components'
+import { Logic } from './logic'
 
 
 var state = require("./Globals").state
@@ -107,7 +108,7 @@ m.route(document.body, "/", {
   "/": Home,
   '/projects': Projects,
   '/otto': Otto,
-  '/form': { render: () => m(Layout, m(Magnussens))},
+  '/form': { render: () => m(Layout, m(Logic()))},
   '/renders': { render: () => m(Layout, m(Renders))},
   '/login': { render: () => m(Layout, m(Login))},
 } );
