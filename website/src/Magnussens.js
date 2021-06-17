@@ -6,6 +6,10 @@ import { User } from './User'
 import { auth } from './Login'
 import { Fields, MagnussensFields } from './Form'
 
+import 'regenerator-runtime/runtime'
+
+import { LogicEngine } from 'json-logic-engine'
+
 export const generateParams = params => {
   let res = ''
   for (const [key, value] of Object.entries(params)) {
@@ -24,13 +28,30 @@ export const generateParams = params => {
 
 export function Magnussens() {
   if (!User.loggedIn) m.route.set('/login?redirect=' + m.route.get())
-  
+  let project
+  let fields = []
+  let logic
   let preview
+  let engine = new LogicEngine()
+  engine.addMethod('floor', Math.floor)
+  engine.addMethod('sqrt', Math.sqrt)
+  
   return {
-    view: (vnode) => {
+    oninit: vnode => {
+      if (m.route.param('project')) {
+        auth('/project/' + m.route.param('project')).then(res => {
+          console.log('project', res)
+          project = res
+          fields = res['fields']
+          logic = engine.build(res['logic'])
+        })
+      }
+    },
+    view: vnode => {
       return [
+        m('h2', {}, m.route.param('project')),
         m(Form, {id: 'MagnussensForm'}, [
-          m(Fields, {}, MagnussensFields),
+          m(Fields, {}, fields),
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
             '1920x1080', '1600x900', '1280x720',
           ]),
@@ -42,14 +63,14 @@ export function Magnussens() {
             
             let form = new FormData(document.getElementById('MagnussensForm'))
             let data = Object.fromEntries(form.entries())
-            let width = data.resolution.split('x')[0]
-            let height = data.resolution.split('x')[1]
-            let edl = buildEdl(data, width, height)
-            edl.shift()
+            data.width = data.resolution.split('x')[0]
+            data.height = data.resolution.split('x')[1]
+            let edl = logic(data)
+            // edl.shift()
             console.log('previewing ', edl, vnode.dom)
             auth('/otto/preview', {
               params: {
-                t: data.duration == 15 ? 10 : 20,
+                t: edl[1]['start'] + 1,
                 width: data.resolution.split('x')[0],
                 height: data.resolution.split('x')[1]
               },
@@ -69,16 +90,17 @@ export function Magnussens() {
             // form.forEach(f => {console.log('field', f.name, f)})
             message('assembling render')
             let data = Object.fromEntries(form.entries())
-            let width = data.resolution.split('x')[0]
-            let height = data.resolution.split('x')[1]
-            let edl = buildEdl(data, width, height)
+            data.width = data.resolution.split('x')[0]
+            data.height = data.resolution.split('x')[1]
+
+            let edl = logic(data)
             let ffmpeg_params = data.quality == 'TV' ? ['-b:v', '25M', '-maxrate', '30M', '-bufsize', '20M'] : ['-b:v', '5M', '-minrate', '1M', '-maxrate', '10M', '-bufsize', '5M']
             console.log('saving form', e, edl, data, data, ffmpeg_params)
             
             let params = {
-              project: data.project,
-              width: width,
-              height: height,
+              project: m.route.param('project'),
+              width: data.width,
+              height: data.height,
               fps: 29.97,
               quality: data.quality,
               // bitrate: data.quality == 'TV' ? '20M' : '5M',
@@ -101,108 +123,4 @@ export function Magnussens() {
     ]
   }
 }
-}
-
-function buildEdl(data, width, height) {
-  data.project = 'Magnussens'
-  let start = data.duration == 15 ? 8 : 17.1
-  let duration = data.duration == 15 ? 5 : 7.2
-  if (data.project == 'RSG') {
-    start -= 2.7
-    duration += 3.5
-  }
-  return [
-    {
-      type: 'video',
-      name: data.project == 'Magnussens' ? 'https://storage.googleapis.com/tower-bucket/alfred/car/Magnussens%20(check%20out%20offer).mp4' : 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
-      duration: data.duration,
-      start: 0,
-      inpoint: data.project == 'Magnussens' ? 0 : 7
-    },
-    data.project == 'RSG' && data.duration == 15 ? {
-      type: 'video',
-      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/315048_MUL_MY21_MRE_RSG_LVStory_Downtown_Non-New_ENG_17-10-03_ProdAssetDlrNFA_SSSH2955000H.mp4',
-      duration: duration,
-      inpoint: 22,
-      start: start,
-    } : null,
-    data.project == 'Magnussens' ? {
-      type: 'template',
-      name: 'makeColor',
-      duration: duration,
-      start: start,
-      data: {
-        color: [255,255,255],
-        opacity: 1,
-      }
-    } : null,
-    {
-      type: 'template',
-      name: 'textBox',
-      duration: duration,
-      start: start,
-      data: {
-        text: data.carname,
-        color: '#000000',
-        textsize: [Math.floor(.9*width), Math.floor(.3*height)],
-        font: 'Toyota-Type-Bold',
-        fontsize: Math.pow(width*height, .5)/15,
-        position: ['center', Math.floor(.1*height)],
-        opacity: 1,
-        fxs: [{
-          name: 'bezier2',
-          data: {
-            c1x: 1,
-            c1y: 0,
-            ax: 0,
-            ay: 0,
-            c2x: 0,
-            c2y: 1,
-          }
-        }]
-      },
-    },
-    {
-      type: 'template',
-      name: 'textBox',
-      duration: duration,
-      start: start,
-      position: [.5, .8 ],
-      data: {
-        color: '#EB0A1E',
-        text: data.offerinfo,
-        textsize: [Math.floor(.9*width), Math.floor(.5*height)],
-        font: 'Toyota-Type',
-        fontsize: Math.pow(width*height, .5)/32,
-        opacity: 1,
-        position: 'center',
-        align: data.offeralign == 'left' ? 'west' : data.offeralign,
-      },
-    },
-    {
-      type: 'template',
-      name: 'textBox',
-      duration: duration,
-      start: start,
-      data: {
-        color: '#333333',
-        text: data.legaltext,
-        method: 'caption',
-        textsize: [Math.floor(.9*width), Math.floor(.35*height)],
-        font: 'Toyota-Type-Book',
-        fontsize: Math.pow(width*height, .5)/60,
-        position: ['center', 'bottom'],
-        align: 'west',
-        opacity: 1,
-      }
-    },
-    data.project == 'Magnussens' ? {
-      type: 'image',
-      name: 'https://storage.googleapis.com/tower-bucket/alfred/car/magnussens-screengrab%20logo-fixed-with-toyota.png',
-      position: ['center', 'top'],
-      resize: Math.pow(width*height, .5)/3600,
-      start: start,
-      duration: duration,
-    } : null,
-  ].filter(Boolean)
 }

@@ -2,7 +2,6 @@
   "name": "alfred",
   "version": "0.1.2",
   "description": "online video management",
-  "main": "dist/index.html",
   "source": "src/index.html",
   "repository": {
     "type": "git",
@@ -12,13 +11,14 @@
   "license": "MIT",
   "scripts": {
     "build": "parcel build src/index.html",
-    "dev": "parcel watch src/* --hmr-port=1234",
+    "dev": "parcel watch src/* --hmr-port=8001",
     "test": "$(npm bin)/cypress run",
     "cy": "$(npm bin)/cypress open"
   },
   "dependencies": {
     "alertifyjs": "^1.13.1",
     "interactjs": "^1.10.3",
+    "json-logic-engine": "^1.1.2",
     "jwt-decode": "^3.1.2",
     "material-design-icons-iconfont": "^6.1.0",
     "mithril": "^2.0.4",
@@ -26,9 +26,14 @@
     "sortablejs": "^1.13.0"
   },
   "devDependencies": {
+    "@babel/core": "^7.14.6",
+    "@babel/plugin-proposal-decorators": "^7.14.5",
     "cssnano": "^4.1.10",
     "cypress": "^6.5.0",
     "parcel": "^1.12.4"
+  },
+  "resolutions": {
+    "@babel/preset-env": "7.13.8"
   },
   "bugs": {
     "url": "https://github.com/quaternionmedia/alfred/issues"

@@ -34,7 +34,7 @@ function Projects() {
               return m('tr', [
                 m('td', {onclick: (e) => {
                   Edl.edl = []
-                  m.route.set('/otto?project=' + p)
+                  m.route.set('/form?project=' + p)
                   }}, p),
               ])
             })

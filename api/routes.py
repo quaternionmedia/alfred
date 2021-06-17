@@ -56,11 +56,8 @@ async def getProjects():
 
 @routes.get('/project/{project}')
 async def getProject(project: str):
-    c = db.projects.find_one({'name': project}, ['name', 'form', 'edl'])
-    res = {}
-    for a in ['name', 'edl', 'form']:
-        if c.get(a):
-            res[a] = c.get(a)
+    res = db.projects.find_one({'name': project})
+    del res['_id']
     return res
 
 @routes.post('/save')
