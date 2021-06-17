@@ -1,11 +1,5 @@
-import m from "mithril";
-import Slider from './Slider'
-// import { Timeline } from './Timeline'
-import Monitor from './Monitor'
+import m from "mithril"
 import Project from './Project'
-import { PlaybackTools, SpeedTools, ProjectTools } from './Tools'
-import TimelineTools from './TimelineTools'
-import { Scale } from './Scale'
 import { Menu } from './Menu'
 import Home from './Home'
 import Projects from './Projects'
@@ -14,18 +8,11 @@ import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'
 import { Login } from './Login'
 import { User } from './User'
-import Bin from './Bin'
-import { Import } from './Import'
 import { Renders } from './Renders'
-import { OttoTimeline } from './OttoTimeline'
-import { Preview } from './Preview'
-import { FormPage } from './Form'
-import { Timecode } from './Timecode'
-import { Head } from './Head'
-import { Resolution, Aspect } from './Resolution'
 import { Magnussens } from './Magnussens'
 import { Layout } from './Components'
-import { Logic } from './logic'
+
+import { Otto } from './Otto'
 
 
 var state = require("./Globals").state
@@ -52,55 +39,6 @@ window.addEventListener('storage', (event) => {
 
 window.localStorage.setItem('REQUESTING_SHARED_CREDENTIALS', Date.now().toString())
 window.localStorage.removeItem('REQUESTING_SHARED_CREDENTIALS')
-
-var Otto = {
-  view: (vnode) => {
-    return [
-      m(Menu),
-      m(Head, [
-        m(Preview)
-      ]),
-      m('.fit.center', {}, [
-        m(Aspect, [
-          '16:9',
-          '4:3',
-          '4:5',
-          '1:1',
-          '5:4',
-          '3:4',
-          '9:16'
-        ]),
-        m(Resolution, [
-          '1080p',
-          '720p',
-          '480p',
-          '240p',
-        ]),
-      ]),
-      m(PlaybackTools),
-      m('.bar.fullwidth.timelinegrid', {}, [
-        m(TimelineTools),
-        m('.vcenter', {}, [
-          m('.bar', {}, [
-            m(Timecode),
-            m(Slider),
-          ]),
-          m('.bar.right', {}, [
-            m(SpeedTools),
-            m('.right', {}, [
-              m(ProjectTools),
-            ]),
-          ]),
-          m(OttoTimeline),
-        ]),
-      ]),
-      m(Scale),
-      m('.spacer', {style:{height:'3em'}}, []),
-      m(Bin),
-    ]
-  }
-}
-
 
 console.log('sup!')
 
