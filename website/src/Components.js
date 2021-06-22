@@ -8,7 +8,17 @@ export function Form() {
     }
   }
 }
-
+export function Text() {
+  return {
+    view: vnode => {
+      return [
+        m('label.formlabel', {for: vnode.attrs.name}, vnode.attrs.text),
+        m('input[type=text]', vnode.attrs),
+        m('br')
+      ]
+    }
+  }
+}
 export function TextBox() {
   return {
     view: vnode => {
