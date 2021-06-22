@@ -21,10 +21,11 @@ async def queueRender(
         quality: Optional[str] = Query(None),
         bitrate: Optional[str] = Query(None),
         ffmpeg_params: Optional[List[str]] = Query(None),
+        description: Optional[str] = Query(None),
         clips: Edl = Body(...),
         user: User = Depends(get_current_active_user)):
     ts = timestr()
-    filename = f'{project}_{width}x{height}{"_" + quality if quality else ""}_{clips.duration}s_{ts}.mp4'
+    filename = f'{project}{"_" + description if description else ""}_{width}x{height}{"_" + quality if quality else ""}_{clips.duration}s_{ts}.mp4'
     render = {
         'username': user.username,
         'project': project,
@@ -35,6 +36,7 @@ async def queueRender(
         'quality': quality,
         'bitrate': bitrate,
         'ffmpeg_params': ffmpeg_params,
+        'description': description,
         'edl': clips.clips,
         'progress': 0,
         'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
@@ -58,7 +60,7 @@ def getSignedRenderLink(name: str, user: User = Depends(get_current_active_user)
 
 @renderAPI.get('/renders')
 def renders(user: User = Depends(get_current_active_user)):
-    return dumps(db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'quality', 'duration']).sort([('_id', -1)]))
+    return dumps(db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'quality', 'duration', 'description']).sort([('_id', -1)]))
 
 
 @renderAPI.get('/renders/{render}')
