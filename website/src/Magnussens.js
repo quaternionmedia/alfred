@@ -1,7 +1,7 @@
 import m from 'mithril'
 import { success, error, message } from 'alertifyjs'
 import { ImagePreview } from './Preview'
-import { Form, TextBox, Button, Img, Selector} from './Components'
+import { Form, Text, TextBox, Button, Img, Selector} from './Components'
 import { User } from './User'
 import { auth } from './Login'
 import { Fields, MagnussensFields } from './Form'
@@ -58,6 +58,7 @@ export function Magnussens() {
           m(Selector, { name: 'quality', text: 'Quality'}, [
             'web', 'TV'
           ]),
+          m(Text, { name: 'description', text: 'Desciption (optional)'}, ''),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             e.preventDefault()
             
@@ -103,7 +104,7 @@ export function Magnussens() {
               height: data.height,
               fps: 29.97,
               quality: data.quality,
-              // bitrate: data.quality == 'TV' ? '20M' : '5M',
+              description: data.description,
               ffmpeg_params: ffmpeg_params,
             }
             auth(`/render?${generateParams(params)}`, {

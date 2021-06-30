@@ -123,6 +123,7 @@ export function Renders() {
           m('table#renders.renders.bin.project', {}, [
             m('tr', [
               m('th', 'project'),
+              m('th', 'description'),
               m('th', 'duration'),
               m('th', 'resolution'),
               m('th', 'quality'),
@@ -136,10 +137,10 @@ export function Renders() {
             renders.map(r => {
               return m('tr', {}, [
                 m('td', {}, r['project']),
+                m('td', {}, r['description']),
                 m('td', {}, r['duration']),
                 m('td', {}, r['resolution'] ? `${r['resolution'][0]}x${r['resolution'][1]}` : ''),
                 m('td', {}, r['quality']),
-                // m('td', {}, r['started']),
                 m('td.tooltip', {}, [
                   shortTime(dateFromObjectId(r['_id'])),
                   m('.tooltiptext', {}, dateFromObjectId(r['_id']).toLocaleString())
