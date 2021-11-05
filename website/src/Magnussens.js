@@ -50,7 +50,7 @@ export function Magnussens() {
     view: vnode => {
       return [
         m('h2', {}, m.route.param('project')),
-        m(Form, {id: 'MagnussensForm'}, [
+        m(Form, {id: 'template_form'}, [
           m(Fields, {}, fields),
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
             '1920x1080', '1600x900', '1280x720',
@@ -61,8 +61,8 @@ export function Magnussens() {
           m(Text, { name: 'description', text: 'Desciption (optional)'}, ''),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             e.preventDefault()
-            
-            let form = new FormData(document.getElementById('MagnussensForm'))
+
+            let form = new FormData(document.getElementById('template_form'))
             let data = Object.fromEntries(form.entries())
             data.width = data.resolution.split('x')[0]
             data.height = data.resolution.split('x')[1]
@@ -87,7 +87,7 @@ export function Magnussens() {
           m(Button, { name: 'save', type: 'submit', value: 'render',
           onclick: e => {
             e.preventDefault()
-            let form = new FormData(document.getElementById('MagnussensForm'))
+            let form = new FormData(document.getElementById('template_form'))
             // form.forEach(f => {console.log('field', f.name, f)})
             message('assembling render')
             let data = Object.fromEntries(form.entries())
