@@ -33,6 +33,7 @@ services:
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
     env_file:
       - .email
+      - .secret_key
 
   db:
     image: mongo:bionic

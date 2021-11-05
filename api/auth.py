@@ -8,9 +8,7 @@ from secrets import token_urlsafe
 from pydantic import BaseModel
 from typing import List
 from db import db
-from config import PRODUCTION
-# openssl rand -hex 32
-SECRET_KEY = '645e87ee8bd522e5f93bca30be7bf580a64270cf1d50fb77c68f4b58124dd0f7'
+from config import PRODUCTION, SECRET_KEY
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 90
