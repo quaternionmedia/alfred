@@ -32,6 +32,7 @@ export function Magnussens() {
   let fields = []
   let logic
   let preview
+  let loading = false
   let engine = new LogicEngine()
   engine.addMethod('floor', Math.floor)
   engine.addMethod('sqrt', Math.sqrt)
@@ -61,6 +62,7 @@ export function Magnussens() {
           m(Text, { name: 'description', text: 'Desciption (optional)'}, ''),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             e.preventDefault()
+            loading = true
 
             let form = new FormData(document.getElementById('template_form'))
             let data = Object.fromEntries(form.entries())
@@ -79,6 +81,7 @@ export function Magnussens() {
               body: { clips: edl },
             }).then(res => {
               console.log('preview available at', res)
+              loading = false
               preview = res
             }).catch(e => {
               console.log('error previewing', e)
@@ -119,7 +122,7 @@ export function Magnussens() {
           },
         },),
         // m(Progress),
-        m(ImagePreview, {src: preview,})
+        loading ? m('.loader') : m(ImagePreview, {src: preview,})
       ]),
     ]
   }
