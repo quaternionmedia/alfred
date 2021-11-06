@@ -22,6 +22,12 @@ defaults.theme.ok = "ui positive button"
 defaults.theme.cancel = "ui black button"
 defaults.notifier.delay = 10
 
+
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  // swap favicon if in dark mode
+  let favicon = document.getElementById('favicon').href = '/al-white.png'
+}
+
 window.addEventListener('storage', (event) => {
   let credentials = User.jwt
   // console.log('storage event', event, credentials)
