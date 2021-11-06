@@ -89,9 +89,6 @@ export function Renders() {
   }
   
   return {
-    oninit: vnode => {
-      getRenders()
-    },
     oncreate: vnode => {
       function checkRenders() {
         if (m.route.get() == '/renders') {
