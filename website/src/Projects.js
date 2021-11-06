@@ -15,8 +15,6 @@ function Projects() {
         projects = e
       }, (err) => {
         console.log('error loading projects from server', err)
-        error('Not authorized!', 3)
-        m.route.set('/login?redirect=/projects')
       })
     },
     view: (vnode) => {
