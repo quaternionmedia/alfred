@@ -32,5 +32,6 @@ export var User = {
     User.loggedIn = false
     window.localStorage.setItem('CREDENTIALS_FLUSH', Date.now().toString())
     window.localStorage.removeItem('CREDENTIALS_FLUSH')
+    m.route.set('/')
   }
 }
