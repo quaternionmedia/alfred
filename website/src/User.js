@@ -21,7 +21,7 @@ export var User = {
     } else {
       m.route.set(m.route.get())
     }
-    m.redraw()
+    // m.redraw()
   },
   logout: () => {
     console.log('logging out', User)
@@ -32,6 +32,5 @@ export var User = {
     User.loggedIn = false
     window.localStorage.setItem('CREDENTIALS_FLUSH', Date.now().toString())
     window.localStorage.removeItem('CREDENTIALS_FLUSH')
-    m.redraw()
   }
 }
