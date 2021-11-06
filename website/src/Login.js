@@ -25,10 +25,12 @@ export function auth(url, opts) {
             })
           }).catch(err => {
             console.log('error making auth request', url, opts, err)
-            error('Not authorized')
-            m.route.set('/login', {
+            if (err.code == 401) {
+              error('not authorized', 2)
+              m.route.set('/login', {
                 redirect: m.route.get()
               })
+            }
             reject(err)
           })
         }
