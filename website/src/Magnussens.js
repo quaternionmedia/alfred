@@ -27,7 +27,6 @@ export const generateParams = params => {
 }
 
 export function Magnussens() {
-  if (!User.loggedIn) m.route.set('/login?redirect=' + m.route.get())
   let project
   let fields = []
   let logic
