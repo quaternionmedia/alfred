@@ -128,3 +128,12 @@ export const Login = () => {
   }
 }
 }
+
+export const Logout = () => {
+  return {
+    view: vnode => {
+      User.logout()
+      message('logged out', 3)
+    }
+  }
+}

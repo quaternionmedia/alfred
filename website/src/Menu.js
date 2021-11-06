@@ -6,7 +6,7 @@ import { message } from 'alertifyjs'
 function Menu() {
   var open = false
   function toggle() {
-    console.log('toggling', open)
+    console.log('toggling menu', open)
     open = !open
   }
   return {
@@ -39,14 +39,8 @@ function Links() {
         m(Link, {href:'/projects', id: 'projects-link', ...vnode.attrs}, 'projects'),
         m(Link, {href: '/renders', id: 'renders-link', ...vnode.attrs}, 'renders'),
         m(Link, {
-          href:'/login',
+          href: User.username ? '/logout' : '/login',
           id: 'login-link',
-          onclick: vnode => {
-            if (User.username) {
-              message(`${User.username} logged out`)
-              User.logout()
-            }
-          },
           ...vnode.attrs
         }, User.username ? 'logout' : 'login'),
       ]
