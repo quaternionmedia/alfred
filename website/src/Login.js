@@ -86,7 +86,7 @@ export const Login = () => {
             onclick: (e) => {
               e.preventDefault()
               if (User.username) {
-                logout()
+                User.logout()
               } else {
                 message("not logged in. Can't log out.", 3)
               }
