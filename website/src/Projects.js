@@ -3,16 +3,14 @@ import { Menu } from './Menu'
 import { Edl } from './Video'
 import { User } from './User'
 import { error } from 'alertifyjs'
+import { auth } from './Login'
 
 function Projects() {
   var projects = []
   return {
     oninit: (vnode) => {
-      m.request('/projects', {
-        headers: {
-          Authorization: User.token
-        }
-      }).then(e => {
+      auth('/projects')
+      .then(e => {
         console.log('got projects', e)
         projects = e
       }, (err) => {
