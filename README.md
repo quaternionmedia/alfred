@@ -7,20 +7,29 @@ Alfred is a video editor that works even without a server, designed for quick ed
 
 Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 
-## install
+## clone
 `git clone --recurse-submodules git@github.com:quaternionmedia/alfred.git`
 
-Install website dependencies
-`./alfred install`
 
-## dev
+### Common commands:
+#### init
+Install website dependencies
+
+`./alfred init`
+
+#### dev
 `./alfred dev`
 
 then open http://localhost:8000
 
-If the docker images need to be rebuilt: `./alfred dev --build`
+#### rebuild docker images:
+`./alfred dev --build`
 
-If package.json has changed, you might need to: `./alfred install` or `npm i`
+#### install package
+`./alfred install` [package name]
+`npm i` [package name]
+
+When run with no arguments, it will reinstall npm dependencies, which might be needed if package.json has been edited or changed.
 
 #### demo
 To download the demo media (into `videos/`):
@@ -29,6 +38,6 @@ To download the demo media (into `videos/`):
 
 Then you can render the `demo.csv` project locally.
 
-## production
-With a [traefik](https://containo.us/traefik/) instance running:
+#### production
 `./alfred prod`
+Assumes a [traefik](https://containo.us/traefik/) instance is already running.
