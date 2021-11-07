@@ -25,13 +25,17 @@ function Projects() {
           m('table.project.projects', {}, [
             m('tr', [
               m('th', 'name'),
+              m('th', 'edit template'),
             ]),
             projects.map(p => {
               return m('tr', [
-                m('td', {onclick: (e) => {
+                m('td', {onclick: e => {
                   Edl.edl = []
                   m.route.set('/form?project=' + p)
                   }}, p),
+                m('td', {onclick: e => {
+                  m.route.set('/editor?project=' + p)
+                }}, m('i.material-icons', {}, 'edit')),
               ])
             })
           ])
