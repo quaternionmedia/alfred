@@ -11,7 +11,7 @@ import { User } from './User'
 import { Renders } from './Renders'
 import { Magnussens } from './Magnussens'
 import { Layout } from './Components'
-
+import { TemplateEditor } from './TemplateEditor'
 import { Otto } from './Otto'
 
 
@@ -54,6 +54,7 @@ m.route(document.body, "/", {
   '/otto': Otto,
   '/form': { render: () => m(Layout, m(Magnussens))},
   '/renders': { render: () => m(Layout, m(Renders))},
+  '/editor': { render: () => m(Layout, m(TemplateEditor))},
   '/login': { render: () => m(Layout, m(Login))},
   '/logout': { render: () => m(Layout, m(Logout))},
-} );
+} )
