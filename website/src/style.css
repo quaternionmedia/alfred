@@ -88,28 +88,33 @@ body {
 }
 
 .project {
-  display: inline-table;
-  overflow-y: auto;
   border: 3px solid #210D4D;
   padding: .5em;
   border-radius: 1em;
   background-color: #292929;
-
+  max-height: 45vh;
 }
 .project tr:nth-child(even){background-color: #2b2b2b;}
 .project tr:hover {background-color: #67539177;}
 .project th {
-  padding: 10px;
-  padding-right: 10px;
-  text-align: left;
+  padding: .5em;
   background-color: #46346E;
   color: #ddd;
-
 }
-.projects {
-  display: table;
+.renders {
+  display: flow-root;
+  position: relative;
+  overflow-y: scroll;
 }
-
+td {
+  text-align: -webkit-center;
+}
+tr td:FIRST-CHILD {
+  text-align: left;
+}
+th {
+  text-align: center;
+}
 .bin {
   display: inherit;
   max-height: 40vh;
@@ -223,20 +228,6 @@ body {
   /* border-left: 2px #393939;
   height: 100%; */
   width: 25px;
-}
-.renders {
-  display: inline-table;
-  table-layout: auto;
-  width: 100%;
-}
-td {
-  text-align: -webkit-center;
-}
-tr td:FIRST-CHILD {
-  text-align: left;
-}
-th {
-  text-align: center;
 }
 select {
   color: #aaa;
