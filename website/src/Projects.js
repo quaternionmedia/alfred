@@ -26,6 +26,7 @@ function Projects() {
             m('tr', [
               m('th', 'name'),
               m('th', 'edit template'),
+              m('th', 'create new video'),
             ]),
             projects.map(p => {
               return m('tr', [
@@ -36,6 +37,9 @@ function Projects() {
                 m('td', {onclick: e => {
                   m.route.set('/editor?project=' + p)
                 }}, m('i.material-icons', {}, 'edit')),
+                m('td', {onclick: e => {
+                  m.route.set('/form?project=' + p)
+                }}, m('i.material-icons', {}, 'video_call')),
               ])
             })
           ])
