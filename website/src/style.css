@@ -116,6 +116,7 @@ tr td:FIRST-CHILD {
 }
 th {
   text-align: center;
+  z-index: 1;
 }
 .bin {
   display: inherit;
