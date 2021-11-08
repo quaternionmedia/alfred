@@ -13,10 +13,15 @@ from routes import routes
 from render import renderAPI
 from emailer import emailAPI
 from otto.main import app as ottoApi
+import docs
 
 
-
-app = FastAPI()
+app = FastAPI(
+    title = docs.title,
+    description = docs.description,
+    version = docs.version,
+    contact = docs.contact,
+)
 
 @app.on_event("startup")
 async def seedDb():
