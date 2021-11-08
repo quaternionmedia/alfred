@@ -117,7 +117,7 @@ export function Renders() {
             }, 'refresh'),
           ]),
           m('.break'),
-          m('table#renders.renders.bin.project', {}, [
+          m('table#renders.renders.project', {}, [
             m('tr', [
               m('th', 'project'),
               m('th', 'description'),
