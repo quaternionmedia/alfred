@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.param_functions import Form
-from auth import User, get_current_active_user, pwd_context
+from auth import User, UserInDB, get_current_active_user, pwd_context
 from db import db
 
 
@@ -28,11 +28,12 @@ async def registerUser(form_data: RegisterForm = Depends()):
             headers={"WWW-Authenticate": "Bearer"},
         )
     else:
-        db.users.insert_one({
-        'username': form_data.username,
-        'hashed_password': pwd_context.hash(form_data.password),
-        'email': form_data.email,
-        })
+        db.users.insert_one(UserInDB(
+            username=form_data.username,
+            hashed_password=pwd_context.hash(form_data.password),
+            email=form_data.email,
+            verified=False,
+        ).dict())
 
 @users.get("/users/me/", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_active_user)):

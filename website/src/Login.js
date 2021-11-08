@@ -25,10 +25,12 @@ export function auth(url, opts) {
             })
           }).catch(err => {
             console.log('error making auth request', url, opts, err)
-            error('Not authorized')
-            m.route.set('/login', {
+            if (err.code == 401) {
+              error('not authorized', 2)
+              m.route.set('/login', {
                 redirect: m.route.get()
               })
+            }
             reject(err)
           })
         }
@@ -86,7 +88,7 @@ export const Login = () => {
             onclick: (e) => {
               e.preventDefault()
               if (User.username) {
-                logout()
+                User.logout()
               } else {
                 message("not logged in. Can't log out.", 3)
               }
@@ -127,4 +129,13 @@ export const Login = () => {
     ]
   }
 }
+}
+
+export const Logout = () => {
+  return {
+    view: vnode => {
+      User.logout()
+      message('logged out', 3)
+    }
+  }
 }

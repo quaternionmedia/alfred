@@ -6,7 +6,7 @@ import Projects from './Projects'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
 import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'
-import { Login } from './Login'
+import { Login, Logout } from './Login'
 import { User } from './User'
 import { Renders } from './Renders'
 import { Magnussens } from './Magnussens'
@@ -21,6 +21,12 @@ defaults.transition = "zoom"
 defaults.theme.ok = "ui positive button"
 defaults.theme.cancel = "ui black button"
 defaults.notifier.delay = 10
+
+
+if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  // swap favicon if in dark mode
+  let favicon = document.getElementById('favicon').href = '/al-white.png'
+}
 
 window.addEventListener('storage', (event) => {
   let credentials = User.jwt
@@ -49,4 +55,5 @@ m.route(document.body, "/", {
   '/form': { render: () => m(Layout, m(Magnussens))},
   '/renders': { render: () => m(Layout, m(Renders))},
   '/login': { render: () => m(Layout, m(Login))},
+  '/logout': { render: () => m(Layout, m(Logout))},
 } );

@@ -2,6 +2,8 @@ from os import environ
 
 PRODUCTION = environ.get('ALFRED_PRODUCTION')
 
+SECRET_KEY = environ.get('ALFRED_SECRET_KEY') 
+
 DB_URL = environ.get('DB_URL')
 
 CELERY_BROKER = environ.get('CELERY_BROKER')
