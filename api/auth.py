@@ -106,6 +106,8 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 @auth.post("/token", response_model=Token)
 async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
+    """# Login for access token
+Accepts a username and password combination from a login form, and returns a JSON object with the auth credentials."""
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise credentials_exception
@@ -121,6 +123,11 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
 
 @auth.post('/refresh', response_model=Token)
 async def refresh_access_token(response: Response, mcguffin: str = Cookie(None)):
+    """# Refresh Access Token
+If the user has not logged out, attempt to refresh login token automatically.
+
+This checks for a stored browser cookie called "mcguffin", and verifies it against the database to see if the user has logged out. If not, it returns a valid Access Token object, which can be used to access protected routes in the API.
+    """
     try:
         token = db.mcguffins.find_one({'name': mcguffin})
         # print('refresh. checking mcguffin', mcguffin, token)

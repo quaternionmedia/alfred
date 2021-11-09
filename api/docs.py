@@ -3,10 +3,14 @@ from _version import __version__
 title = """Alfred API"""
 
 description = """
-Automatic video creation
+# Automatic video creation
+Alfred is an automatic video api, designed to automate video tasks.
 
-Created by Quaternion Media, LLC
-github.com/quaternionmedia
+We believe in making video smarter, not harder.
+
+### Created by Quaternion Media, LLC
+[github.com/quaternionmedia](https://github.com/quaternionmedia)
+
 """
 
 version = __version__
