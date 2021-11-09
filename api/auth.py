@@ -153,6 +153,8 @@ This checks for a stored browser cookie called "mcguffin", and verifies it again
 
 @auth.post('/logout')
 async def logout(response: Response, mcguffin: str = Cookie(None)):
+    """# Logout
+Logs the user out, and clears the mcguffin cookie from the database, which disables the automatic credential refresh."""
     try:
         response.delete_cookie(key='mcguffin')
         token = db.mcguffins.find_one({'name': mcguffin})
