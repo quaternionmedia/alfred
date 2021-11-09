@@ -61,13 +61,10 @@ elif [ $1 = "seed" -o $1 = "db" ]; then
   shift
   docker compose exec api python3 -c """
 from seed import seed
-from main import db
-from otto.defaults import sample_forms
+from db import db
 
-if db.edls.count_documents({}) == 0:
-  db.edls.insert_many(seed)
 if db.projects.count_documents({}) == 0:
-  db.projects.insert_many(sample_forms)
+  db.projects.insert_many(seed)
 """
 
 elif [ $1 = "reinit" -o $1 = "reseed" ]; then
