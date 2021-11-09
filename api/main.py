@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 from uvicorn import run
+
 
 from subprocess import run as bash
 from auth import auth, get_current_active_user, User
@@ -22,6 +24,8 @@ app = FastAPI(
     version = docs.version,
     contact = docs.contact,
 )
+app.add_middleware(GZipMiddleware)
+
 
 @app.on_event("startup")
 async def seedDb():
