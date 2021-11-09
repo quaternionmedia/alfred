@@ -40,12 +40,16 @@ emailAPI = APIRouter()
 
 @emailAPI.post('/report')
 async def reportIssue(name: str, issue: str = Body(...)):
+    """# Report issue
+    Reports an issue with a specific render. Sends an email to the support team for follow up."""
     if not sendMail(recepients=EMAIL_SENDTO, subject=name, message=issue):
         print('error reporting issue with ', name, issue)
         raise HTTPException(status_code=500, detail='error sending email')
 
 @emailAPI.post('/invoice')
 async def sendInvoice(client: str, startDate: date, endDate: date):
+    """# Send Invoice
+    Generates a PDF invoice and sends an email to the client for all renders executed in the specified period"""
     midnight = time(0)
     startDate = datetime.combine(startDate, midnight, UTC)
     endDate = datetime.combine(endDate, midnight, UTC)
