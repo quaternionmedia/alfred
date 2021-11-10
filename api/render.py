@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Body, Query, BackgroundTasks
 from typing import List, Optional
-from auth import get_current_active_user, User
+from users import current_active_user
+from models import User
 from otto.models import Edl
 from otto.getdata import timestr
 from tasks import renderRemote
@@ -30,11 +31,11 @@ async def queueRender(
         ffmpeg_params: Optional[List[str]] = Query(None),
         description: Optional[str] = Query(None),
         clips: Edl = Body(...),
-        user: User = Depends(get_current_active_user)):
+        user: User = Depends(current_active_user)):
     ts = timestr()
     filename = f'{project}{"_" + description if description else ""}_{width}x{height}{"_" + quality if quality else ""}_{clips.duration}s_{ts}.mp4'
     render = {
-        'username': user.username,
+        'username': user.email,
         'project': project,
         'filename': filename,
         'duration': clips.duration,
@@ -68,7 +69,7 @@ async def getSignedRenderLink(name: str, user: User = Depends(current_active_use
 @renderAPI.get('/renders')
 async def renders(user: User = Depends(current_active_user)):
     return deOid(await db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'quality', 'duration', 'description']).sort([('_id', -1)]).to_list(100))
-
+    
 
 
 @renderAPI.get('/renders/{render}')
