@@ -45,7 +45,7 @@ export const Login = () => {
       return [
         m('h2', 'login'),
         m('form#login', {
-          action: '/token',
+          action: '/auth/jwt/login',
           method: 'post',
         }, [
           m('label[for=username]', 'username:'),
@@ -69,7 +69,7 @@ export const Login = () => {
               e.preventDefault()
               let form = new FormData(document.getElementById('login'))
               console.log('sending form', e, form)
-              m.request('/token', {
+              m.request('/auth/jwt/login', {
                 method: 'post',
                 body: form,
               }).then( (token) => {

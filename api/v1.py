@@ -112,3 +112,52 @@ async def get_bkg(project: str, width: int, height: int, t: float):
 @routes.post('/edl')
 async def saveEdl(filename: str, edl: Edl):
     return dumps(db.edls.find_one_and_update({'filename': filename}, {'$set': {'edl': edl.clips}}, upsert=True, new=True))
+
+
+@auth.post("/token", response_model=Token)
+async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
+    """# Login for access token
+Accepts a username and password combination from a login form, and returns a JSON object with the auth credentials.
+
+A special *mcguffic* cookie is created and stored in the database, to facilitate secure automatic login after a browser refresh."""
+    user = authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise credentials_exception
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    mcguffin = token_urlsafe(32)
+    db.mcguffins.insert_one({'name': mcguffin, 'username': user.username})
+    response.set_cookie(key='mcguffin', value=mcguffin, httponly=True, secure=PRODUCTION)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return Token(access_token=access_token)
+
+
+@auth.post('/refresh', response_model=Token)
+async def refresh_access_token(response: Response, mcguffin: str = Cookie(None)):
+    """# Refresh Access Token
+If the user has not logged out, attempt to refresh login token automatically.
+
+This checks for a stored browser cookie called "mcguffin", and verifies it against the database to confirm the session is valid, and the user has not yet logged out. If successful, it returns a new `Access Token` object, which can be used to access protected routes in the API.
+    """
+    try:
+        token = db.mcguffins.find_one({'name': mcguffin})
+        # print('refresh. checking mcguffin', mcguffin, token)
+        if token:
+            username: str = token['username']
+            access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            # TODO update token status to 'used' instead of deleting
+            db.mcguffins.delete_one({'name': mcguffin})
+            mcguffin = token_urlsafe(32)
+            db.mcguffins.insert_one({'name': mcguffin, 'username': username})
+            response.set_cookie(key='mcguffin', value=mcguffin, httponly=True, secure=PRODUCTION)
+            # print('making new token', username, access_token_expires, mcguffin)
+            access_token = create_access_token(
+                data={"sub": username}, expires_delta=access_token_expires
+            )
+            return Token(access_token=access_token)
+        else:
+            raise credentials_exception
+    except Exception as e:
+        print('error refreshing', e)
+        raise credentials_exception

@@ -1,14 +1,14 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Response
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 from uvicorn import run
 
 
 from subprocess import run as bash
-from auth import auth, get_current_active_user, User
 
 from db import db
-from users import users
+from auth import auth
+from users import fastapi_users, current_active_user
 from seed import seed, formToEdl
 
 from routes import routes
@@ -48,11 +48,10 @@ async def checkFonts():
     # db.fonts.update_many(results, upsert=True)
 
 app.include_router(auth)
-app.include_router(users)
-app.include_router(routes, dependencies=[Depends(get_current_active_user)])
-app.include_router(ottoApi, prefix='/otto', dependencies=[Depends(get_current_active_user)])
-app.include_router(renderAPI, dependencies=[Depends(get_current_active_user)])
-app.include_router(emailAPI, dependencies=[Depends(get_current_active_user)])
+app.include_router(routes, dependencies=[Depends(current_active_user)])
+app.include_router(ottoApi, prefix='/otto', dependencies=[Depends(current_active_user)])
+app.include_router(renderAPI, dependencies=[Depends(current_active_user)])
+app.include_router(emailAPI, dependencies=[Depends(current_active_user)])
 
 #  note: we can't secure the /data route because the otto preview is rendered into the <img> tag in the browser. Should find a workaround for this, but it is not critical.
 app.mount('/data', StaticFiles(directory='data', html=True), name="data")
