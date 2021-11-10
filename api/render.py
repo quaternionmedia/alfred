@@ -12,6 +12,13 @@ from bucket import generate_signed_url
 
 renderAPI = APIRouter()
 
+def deOid(results: List):
+    """De-ObjectID
+    Takes a list of objects, and converts the objectID (_id) to a string for serialization"""
+    for r in results:
+        r['_id'] = str(r['_id'])
+    return results
+
 @renderAPI.post('/render')
 async def queueRender(
         project: str, 
@@ -42,7 +49,7 @@ async def queueRender(
         'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
         }
     # media = db.projects.find_one({'name': project}, ['form'])['form']['media']
-    id = db.renders.insert_one(render).inserted_id
+    result = await db.renders.insert_one(render)
     print('rendering!', render)
     task = renderRemote.delay(
         edl=clips.clips, 
@@ -51,36 +58,37 @@ async def queueRender(
         fps=fps, 
         bitrate=bitrate,
         ffmpeg_params=ffmpeg_params)
-    return str(id)
+    return str(result.inserted_id)
 
 @renderAPI.get('/render')
-def getSignedRenderLink(name: str, user: User = Depends(get_current_active_user)):
+async def getSignedRenderLink(name: str, user: User = Depends(current_active_user)):
     return generate_signed_url(name)
 
 
 @renderAPI.get('/renders')
-def renders(user: User = Depends(get_current_active_user)):
-    return dumps(db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'quality', 'duration', 'description']).sort([('_id', -1)]))
+async def renders(user: User = Depends(current_active_user)):
+    return deOid(await db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'quality', 'duration', 'description']).sort([('_id', -1)]).to_list(100))
+
 
 
 @renderAPI.get('/renders/{render}')
-def rendersInfo(user: User = Depends(get_current_active_user)):
+async def rendersInfo(user: User = Depends(current_active_user)):
     info = { 'edl': render, 'progress': 0, 'link': '', 'paused': False }
     return info
 
 
 @renderAPI.put('/renders/{render}/pause')
-def pauseRender(user: User = Depends(get_current_active_user)):
+async def pauseRender(user: User = Depends(current_active_user)):
     # pause selected render
     return
 
 
 @renderAPI.put('/renders/{render}/cancel')
-def cancelRender(render: str, user: User = Depends(get_current_active_user)):
+async def cancelRender(render: str, user: User = Depends(current_active_user)):
     # cancel selected render
-    res = db.renders.find_one_and_delete({'filename': render})
+    res = await db.renders.find_one_and_delete({'filename': render})
     if res:
         print('deleted render', render, res)
-        db.deleted.insert_one(res)
+        await db.deleted.insert_one(res)
     else:
         return HTTPException(status_code=406, detail='no such entry in database')

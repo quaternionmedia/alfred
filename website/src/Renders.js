@@ -29,7 +29,7 @@ function shortTime(date) {
 }
 
 export const dateFromObjectId = function (objectId) {
-	return new Date(parseInt(objectId['$oid'].substring(0, 8), 16) * 1000)
+	return new Date(parseInt(objectId.substring(0, 8), 16) * 1000)
 }
 
 export function RenderLink() {
@@ -84,7 +84,7 @@ export function Renders() {
   function getRenders() {
     auth('/renders').then(e => {
       // console.log('renders init')
-      renders = JSON.parse(e)
+      renders = e
     })
   }
   
