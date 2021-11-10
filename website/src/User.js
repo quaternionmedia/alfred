@@ -1,5 +1,6 @@
 import m from 'mithril'
 import jwt_decode from 'jwt-decode'
+import { auth } from './Login'
 
 export var User = {
   jwt: null,
@@ -9,18 +10,24 @@ export var User = {
   login: (token) => {
     User.jwt = token
     let decoded = jwt_decode(token['access_token'])
-    User.username = decoded['sub']
+    
     console.log('authenticated!', decoded)
     User.token = token['token_type'] + ' ' + token['access_token']
-    User.loggedIn = true
-    console.log('logged in as: ', User)
-    if (m.route.param('redirect')) {
-      m.route.set(m.route.param('redirect'))
-    } else if (m.route.get() == '/login') {
-      m.route.set('/')
-    } else {
-      m.route.set(m.route.get())
-    }
+    auth('/users/me').then(me => {
+      User.username = me.first_name
+      User.loggedIn = true
+      console.log('logged in as: ', User)
+      if (m.route.param('redirect')) {
+        m.route.set(m.route.param('redirect'))
+      } else if (m.route.get() == '/login') {
+        m.route.set('/')
+      } else {
+        m.route.set(m.route.get())
+      }
+    }, err => {
+      console.log('error getting username', err)
+    })
+    
     // m.redraw()
   },
   logout: () => {

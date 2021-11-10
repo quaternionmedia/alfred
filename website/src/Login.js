@@ -48,7 +48,7 @@ export const Login = () => {
           action: '/auth/jwt/login',
           method: 'post',
         }, [
-          m('label[for=username]', 'username:'),
+          m('label[for=username]', 'email:'),
           m('input#username', {
             name: 'username',
           }),
@@ -74,7 +74,7 @@ export const Login = () => {
                 body: form,
               }).then( (token) => {
                 User.login(token)
-                success(`${User.username} logged in!`, 4)
+                success(`Logged in!`, 4)
               }, (res) => {
                 console.log('error logging in!', res)
                 error('error logging in', 3)
@@ -105,18 +105,19 @@ export const Login = () => {
               } else if (document.getElementById('password').value.length < 8) {
                 error('password must be at least 8 characters')
               } else {
-                prompt('register', 'what is your email address?', 'e@mail.com', (e, v) => {
+                prompt('register', 'what is your first name?', 'user', (e, first_name) => {
                   let form = new FormData(document.getElementById('login'))
-                  form.append('email', v)
-                  console.log('registering user', e, v, form)
+                  let register = {first_name: first_name, email: form.get('username'), password: form.get('password')}
+                  console.log('registering user', register, e, form)
                   m.request({
-                    url: '/register',
+                    url: '/auth/register',
                     method: 'post',
-                    body: form
+                    body: register
                   }).then( res => {
                     console.log('successfully registered', res)
-                    success(`${v} is now registered!`)
+                    success(`${res.first_name} is now registered!`)
                   }).catch( err => {
+                    console.log('error registering', err)
                     error('error regestering')
                   })
                 }, () => {
