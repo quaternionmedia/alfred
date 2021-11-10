@@ -3,7 +3,7 @@ aiofiles
 python-multipart
 ffmpeg-python
 tinydb
-pyjwt
+python-jose[cryptography]
 passlib[bcrypt]
 pymongo
 celery

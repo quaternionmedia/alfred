@@ -20,6 +20,8 @@ users = APIRouter()
 
 @users.post('/register')
 async def registerUser(form_data: RegisterForm = Depends()):
+    """# Regsister User
+    Create a new user in the database"""
     c = db.users.find({'username': form_data.username})
     if c.count():
         raise HTTPException(
@@ -34,12 +36,18 @@ async def registerUser(form_data: RegisterForm = Depends()):
             email=form_data.email,
             verified=False,
         ).dict())
+        # TODO: send email verification here
 
 @users.get("/users/me/", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
+    """# Who Am I
+    Returns a `User` object with the current logged in user."""
     return current_user
 
 
-@users.get("/users/me/items/")
-async def read_own_items(current_user: User = Depends(get_current_active_user)):
-    return [{"item_id": "Foo", "owner": current_user.username}]
+@users.get("/users/{username}/", response_model=User)
+async def read_user(username: str, current_user: User = Depends(get_current_active_user)):
+    """# Read user
+    Returns a `User` object for the requested username"""
+    # TODO: Manage scopes and permissions
+    return db.users.find_one({'username': username})

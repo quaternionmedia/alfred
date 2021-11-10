@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
-import jwt
 from fastapi import Depends, FastAPI, APIRouter, Response, Cookie, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jwt import PyJWTError
+from jose import JWTError, jwt
 from passlib.context import CryptContext
 from secrets import token_urlsafe
 from pydantic import BaseModel
@@ -21,7 +20,7 @@ credentials_exception = HTTPException(
 
 class Token(BaseModel):
     access_token: str
-    token_type: str
+    token_type: str = 'bearer'
 
 
 class TokenData(BaseModel):
@@ -90,7 +89,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
-    except PyJWTError:
+    except JWTError:
         raise credentials_exception
     user = get_user(username=token_data.username)
     if user is None:
@@ -106,6 +105,10 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 @auth.post("/token", response_model=Token)
 async def login_for_access_token(response: Response, form_data: OAuth2PasswordRequestForm = Depends()):
+    """# Login for access token
+Accepts a username and password combination from a login form, and returns a JSON object with the auth credentials.
+
+A special *mcguffic* cookie is created and stored in the database, to facilitate secure automatic login after a browser refresh."""
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise credentials_exception
@@ -116,11 +119,16 @@ async def login_for_access_token(response: Response, form_data: OAuth2PasswordRe
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return Token(access_token=access_token)
 
 
 @auth.post('/refresh', response_model=Token)
 async def refresh_access_token(response: Response, mcguffin: str = Cookie(None)):
+    """# Refresh Access Token
+If the user has not logged out, attempt to refresh login token automatically.
+
+This checks for a stored browser cookie called "mcguffin", and verifies it against the database to confirm the session is valid, and the user has not yet logged out. If successful, it returns a new `Access Token` object, which can be used to access protected routes in the API.
+    """
     try:
         token = db.mcguffins.find_one({'name': mcguffin})
         # print('refresh. checking mcguffin', mcguffin, token)
@@ -136,7 +144,7 @@ async def refresh_access_token(response: Response, mcguffin: str = Cookie(None))
             access_token = create_access_token(
                 data={"sub": username}, expires_delta=access_token_expires
             )
-            return {"access_token": access_token, "token_type": "bearer"}
+            return Token(access_token=access_token)
         else:
             raise credentials_exception
     except Exception as e:
@@ -146,6 +154,8 @@ async def refresh_access_token(response: Response, mcguffin: str = Cookie(None))
 
 @auth.post('/logout')
 async def logout(response: Response, mcguffin: str = Cookie(None)):
+    """# Logout
+Logs the user out, and clears the mcguffin cookie from the database, which disables the automatic credential refresh."""
     try:
         response.delete_cookie(key='mcguffin')
         token = db.mcguffins.find_one({'name': mcguffin})

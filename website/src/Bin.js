@@ -15,7 +15,7 @@ var Bin = {
       Bin.videos = e
     })
 
-    auth('/templates').then( e => {
+    auth('/otto/templates').then( e => {
       // console.log('got videos!', e)
       Bin.templates = e
     })

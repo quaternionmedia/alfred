@@ -1,6 +1,8 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 from uvicorn import run
+
 
 from subprocess import run as bash
 from auth import auth, get_current_active_user, User
@@ -13,10 +15,17 @@ from routes import routes
 from render import renderAPI
 from emailer import emailAPI
 from otto.main import app as ottoApi
+import docs
 
 
+app = FastAPI(
+    title = docs.title,
+    description = docs.description,
+    version = docs.version,
+    contact = docs.contact,
+)
+app.add_middleware(GZipMiddleware)
 
-app = FastAPI()
 
 @app.on_event("startup")
 async def seedDb():
