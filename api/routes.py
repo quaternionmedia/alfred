@@ -34,11 +34,6 @@ async def download_file(filename: str):
 def getFonts():
     return [i['family'] for i in db.fonts.find({}, ['family'])]
 
-@routes.get('/templates')
-async def getTemplates():
-    # return seed[0]['edl']
-    return [t for t in dir(templates) if t.islower() and t[0] is not '_']
-
 @routes.get('/videos')
 async def getVideos():
     return [join('videos', f) for f in listdir('videos')]
