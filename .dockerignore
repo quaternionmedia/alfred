@@ -1,5 +1,5 @@
-database/
-videos/
-api/videos/
-website/
-api/data
+database
+videos
+website/node_modules
+api/videos
+api/data/*

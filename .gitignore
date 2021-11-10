@@ -8,6 +8,7 @@ yarn.lock
 media/
 /website/cypress/screenshots/
 /website/cypress/videos/
+/website/.parcel-cache
 __*__
 /videos
 /api/main.json
@@ -25,6 +26,7 @@ __*__
 .c9/
 *.launch
 .settings/
+*.gz
 
 # misc
 npm-debug.log
@@ -49,7 +51,12 @@ api/data
 *.mp3
 *.mp4
 *.png
+*.pdf
+*.txt
+*.json
 *.jpg
 *.edl
 
 .email
+.secret_key
+.s3
