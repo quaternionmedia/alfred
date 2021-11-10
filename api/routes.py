@@ -31,8 +31,10 @@ async def download_file(filename: str):
     return FileResponse(filename, filename=filename)
 
 @routes.get('/fonts')
-def getFonts():
-    return [i['family'] for i in db.fonts.find({}, ['family'])]
+async def getFonts():
+    """# Get fonts
+    Returns a list of all available fonts available to be rendered on this instance"""
+    return [i['family'] for i in await db.fonts.find({}, ['family'])]
 
 @routes.get('/videos')
 async def getVideos():
@@ -47,7 +49,10 @@ async def buffer(video:str, response: Response, bits: int = Header(0)):
 
 @routes.get('/projects')
 async def getProjects():
-    return [ p['name'] for p in db.projects.find({})]
+    """# Get projects
+    Returns a list of all project names available"""
+    return [p['name'] for p in await db.projects.find({}, { 'name': 1, '_id': 0 }).to_list(length=100)]
+
 
 @routes.get('/project/{project}')
 async def getProject(project: str):
