@@ -15,7 +15,8 @@ export function auth(url, opts) {
         // return res
       }).catch( e => {
         if (e.code == 401) {
-          m.request('/refresh', {
+          m.request('/auth/jwt/refresh', {
+            headers: {Authorization: User.token},
             method: 'post'
         }).then(token => {
             User.login(token)
