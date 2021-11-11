@@ -47,7 +47,9 @@ async def checkFonts():
                 db.fonts.update_one({'family': fam.replace(' ', '-')}, {'$set': { 'style': [i.replace(' ', '-') for i in font[1].split(',')] }}, upsert=True)
     # db.fonts.update_many(results, upsert=True)
 
-app.include_router(auth)
+app.include_router(auth, prefix='/auth', tags=['auth'])
+app.include_router(fastapi_users.get_users_router(), prefix="/users", tags=["users"])
+
 app.include_router(routes, dependencies=[Depends(current_active_user)])
 app.include_router(ottoApi, prefix='/otto', dependencies=[Depends(current_active_user)])
 app.include_router(renderAPI, dependencies=[Depends(current_active_user)])
