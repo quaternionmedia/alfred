@@ -20,13 +20,16 @@ RUN cd $(tar tzf ImageMagick.tar.gz | head -1) && ./configure && make && make in
 # ENV IMAGEMAGICK_BINARY=/usr/local/bin/magick
 # RUN ln -s /usr/local/bin/magick /usr/local/bin/magick.exe
 
+RUN apt install -y python3-setuptools
 
+RUN pip3 install -U pip
+RUN pip3 install setuptools
 COPY requirements.txt /
-RUN pip install -Ur /requirements.txt
-COPY otto/requirements.txt /
-RUN pip install numpy gizeh pillow
-RUN pip install -Ur /requirements.txt
-RUN pip install celery[mongodb] google-cloud-storage
+RUN pip3 install -Ur /requirements.txt
+COPY otto/requirements.txt /otto_requirements.txt
+RUN pip3 install numpy gizeh pillow
+RUN pip3 install -Ur /otto_requirements.txt
+RUN pip3 install celery[mongodb] google-cloud-storage
 
 # fonts
 # RUN apt install -y ttf-mscorefonts-installer fontconfig
