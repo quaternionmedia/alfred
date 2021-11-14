@@ -10,7 +10,7 @@ from models import User, UserCreate, UserDB, UserUpdate
 from config import SECRET_KEY
 
 jwt_authentication = JWTAuthentication(
-    secret=SECRET_KEY, lifetime_seconds=3600, tokenUrl="token"
+    secret=SECRET_KEY, lifetime_seconds=3600, tokenUrl="/auth/jwt/login"
 )
 class UserManager(BaseUserManager[UserCreate, UserDB]):
   user_db_model = UserDB
