@@ -29,7 +29,6 @@ RUN pip3 install -Ur /requirements.txt
 COPY otto/requirements.txt /otto_requirements.txt
 RUN pip3 install numpy gizeh pillow
 RUN pip3 install -Ur /otto_requirements.txt
-RUN pip3 install celery[mongodb] google-cloud-storage
 
 # fonts
 # RUN apt install -y ttf-mscorefonts-installer fontconfig
