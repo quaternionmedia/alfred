@@ -7,7 +7,7 @@ from uvicorn import run
 from subprocess import run as bash
 
 from db import db
-from config import DB_URL
+from config import DB_URL, DB_NAME
 from auth import auth
 from users import fastapi_users, current_active_user
 from fastapi_crudrouter import MotorCRUDRouter
@@ -56,7 +56,7 @@ app.include_router(fastapi_users.get_users_router(), prefix="/users", tags=["use
 app.include_router(MotorCRUDRouter(
         schema = Template,
         db_url = DB_URL,
-        database = 'alfred',
+        database = DB_NAME,
         create_schema = Template,
         update_schema = TemplateUpdate),
     dependencies=[Depends(current_active_user)])
