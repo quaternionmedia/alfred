@@ -4,6 +4,7 @@ python-multipart
 ffmpeg-python
 tinydb
 python-jose[cryptography]
+fastapi-users[mongodb]
 passlib[bcrypt]
 pymongo
 celery
