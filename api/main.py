@@ -9,15 +9,15 @@ from subprocess import run as bash
 from db import db
 from config import DB_URL, DB_NAME
 from auth import auth
-from users import fastapi_users, current_active_user
-from fastapi_crudrouter import MotorCRUDRouter
-from models import Template, TemplateUpdate
+from users import fastapi_users, current_active_user, current_active_superuser
+from models import Template, TemplateUpdate, User, UserCreate, UserUpdate, UserDB
 
 from seed import seed, formToEdl
 
 from routes import routes
 from render import renderAPI
 from emailer import emailAPI
+from template import templateAPI
 from otto.main import app as ottoApi
 import docs
 
@@ -53,12 +53,7 @@ async def checkFonts():
 
 app.include_router(auth, prefix='/auth', tags=['auth'])
 app.include_router(fastapi_users.get_users_router(), prefix="/users", tags=["users"])
-app.include_router(MotorCRUDRouter(
-        schema = Template,
-        db_url = DB_URL,
-        database = DB_NAME,
-        create_schema = Template,
-        update_schema = TemplateUpdate),
+app.include_router(templateAPI,
     dependencies=[Depends(current_active_user)])
 app.include_router(routes, dependencies=[Depends(current_active_user)])
 app.include_router(ottoApi, 
