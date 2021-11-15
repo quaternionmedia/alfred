@@ -12,7 +12,7 @@ from auth import auth
 from users import fastapi_users, current_active_user, current_active_superuser
 from models import Template, TemplateUpdate, User, UserCreate, UserUpdate, UserDB
 
-from seed import seed, formToEdl
+from seed import seed
 
 from routes import routes
 from render import renderAPI

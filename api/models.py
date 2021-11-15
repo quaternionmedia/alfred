@@ -23,7 +23,7 @@ class UserUpdate(models.BaseUserUpdate):
 class UserDB(User, models.BaseUserDB):
     pass
 
-class Template(Model):
+class Template(Document):
     logic: dict
     fields: Optional[List]
     class Config:

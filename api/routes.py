@@ -10,10 +10,6 @@ from typing import List
 from logger import DbLogger
 
 
-from seed import formToEdl
-
-
-from otto.models import Edl, VideoForm
 from otto import templates
 from otto.getdata import download
 
@@ -27,7 +23,7 @@ routes = APIRouter()
 async def getFonts():
     """# Get fonts
     Returns a list of all available fonts available to be rendered on this instance"""
-    return [i['family'] for i in await db.fonts.find({}, ['family'])]
+    return [i['family'] for i in await db.fonts.find({}, ['family']).to_list]
 
 @routes.get('/videos')
 async def getVideos():
