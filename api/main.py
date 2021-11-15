@@ -6,8 +6,7 @@ from uvicorn import run
 
 from subprocess import run as bash
 
-from db import db
-from config import DB_URL, DB_NAME
+from db import db, client
 from auth import auth
 from users import fastapi_users, current_active_user, current_active_superuser
 from models import Template, TemplateUpdate, User, UserCreate, UserUpdate, UserDB
@@ -18,6 +17,7 @@ from routes import routes
 from render import renderAPI
 from emailer import emailAPI
 from template import templateAPI
+from admin import adminAPI
 from otto.main import app as ottoApi
 import docs
 
@@ -66,7 +66,9 @@ app.include_router(renderAPI,
 app.include_router(emailAPI, 
     dependencies=[Depends(current_active_user)],
     tags=['email'])
-
+app.include_router(adminAPI, 
+    dependencies=[Depends(current_active_superuser)],
+    tags=['admin'])
 #  note: we can't secure the /data route because the otto preview is rendered into the <img> tag in the browser. Should find a workaround for this, but it is not critical.
 app.mount('/data', StaticFiles(directory='data', html=True), name="data")
 

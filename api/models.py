@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from odmantic import Model
 from typing import Optional, List
 from datetime import datetime
+from beanie import Document
 
 class User(models.BaseUser):
     first_name: str

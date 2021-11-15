@@ -4,7 +4,6 @@ from email.message import EmailMessage
 from config import EMAIL_PORT, EMAIL_SERVER, EMAIL_USERNAME, EMAIL_PASSWORD, EMAIL_SENDTO, INVOICE_EMAIL_BODY
 from invoicer import generate_invoice
 from mimetypes import guess_type
-from datetime import datetime, date, time
 from pytz import UTC
 
 def sendMail(recepients, subject, message, attachments=[]):
@@ -44,17 +43,4 @@ async def reportIssue(name: str, issue: str = Body(...)):
     Reports an issue with a specific render. Sends an email to the support team for follow up."""
     if not sendMail(recepients=EMAIL_SENDTO, subject=name, message=issue):
         print('error reporting issue with ', name, issue)
-        raise HTTPException(status_code=500, detail='error sending email')
-
-@emailAPI.post('/invoice')
-async def sendInvoice(client: str, startDate: date, endDate: date):
-    """# Send Invoice
-    Generates a PDF invoice and sends an email to the client for all renders executed in the specified period"""
-    midnight = time(0)
-    startDate = datetime.combine(startDate, midnight, UTC)
-    endDate = datetime.combine(endDate, midnight, UTC)
-    invoices = generate_invoice(client, startDate, endDate)
-    body=INVOICE_EMAIL_BODY
-    if not sendMail(recepients=EMAIL_SENDTO, subject=f'alfred invoice', message=body, attachments=invoices):
-        print('error sending  ', name, issue)
         raise HTTPException(status_code=500, detail='error sending email')
