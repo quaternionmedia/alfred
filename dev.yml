@@ -31,6 +31,7 @@ services:
       - CELERY_BROKER=mongodb://db:27017/celery
       - CELERY_BACKEND=mongodb
       - DB_URL=mongodb://db:27017
+      - DB_NAME=alfred
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
   db:
     ports:
