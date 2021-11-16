@@ -23,7 +23,7 @@ routes = APIRouter()
 async def getFonts():
     """# Get fonts
     Returns a list of all available fonts available to be rendered on this instance"""
-    return [i['family'] for i in await db.fonts.find({}, ['family']).to_list]
+    return [i['family'] for i in await db.fonts.find({}, ['family']).to_list(1000)]
 
 @routes.get('/videos')
 async def getVideos():
