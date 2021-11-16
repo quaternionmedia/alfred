@@ -1,5 +1,6 @@
 from celery import Celery, Task
 from otto.render import renderMultitrack
+from otto.models import Edl
 import config
 from logger import DbLogger
 from os.path import join
@@ -15,7 +16,7 @@ class Renderer(Task):
 
 @renderer.task(bind=True, base=Renderer)
 def renderRemote(self, 
-        edl, 
+        edl: Edl,
         filename, 
         audio=None, 
         moviesize=(1920,1080), 
