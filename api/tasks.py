@@ -8,6 +8,8 @@ from bucket import upload
 
 renderer = Celery('renderer', backend=config.CELERY_BACKEND, broker=config.CELERY_BROKER)
 
+renderer.config_from_object(config.CeleryConfig)
+
 class Renderer(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
         print('failed task', self, exc, task_id, args, kwargs, einfo)
