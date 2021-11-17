@@ -11,7 +11,7 @@ media/
 /website/.parcel-cache
 __*__
 /videos
-/api/main.json
+/alfred/main.json
 
 # compiled output
 /tmp
@@ -45,8 +45,8 @@ cred.json
 cred_api.json
 github_key*
 output/*
-api/output/*
-api/data
+alfred/output/*
+alfred/data
 
 *.mp3
 *.mp4
