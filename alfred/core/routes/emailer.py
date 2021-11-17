@@ -2,7 +2,6 @@ from fastapi import APIRouter, Body
 from smtplib import SMTP
 from email.message import EmailMessage
 from config import EMAIL_PORT, EMAIL_SERVER, EMAIL_USERNAME, EMAIL_PASSWORD, EMAIL_SENDTO, INVOICE_EMAIL_BODY
-from invoicer import generate_invoice
 from mimetypes import guess_type
 from pytz import UTC
 

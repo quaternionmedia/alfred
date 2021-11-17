@@ -3,7 +3,7 @@ from db import db
 from bson.json_util import dumps
 from os import listdir
 from os.path import join
-from partial import PartialFileResponse
+from ..responses import PartialFileResponse
 from starlette.responses import Response, FileResponse
 from typing import List
 

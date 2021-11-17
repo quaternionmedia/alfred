@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Body, Query, BackgroundTasks
 from typing import List, Optional
-from users import current_active_user
-from models import User
+from .users import current_active_user
+from ..models import User
 from otto.models import Edl
 from otto.getdata import timestr
 from tasks import renderRemote

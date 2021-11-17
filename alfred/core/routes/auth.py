@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Response, HTTPException, status
-from users import fastapi_users, jwt_authentication
+from .users import fastapi_users, jwt_authentication
 
 from config import SECRET_KEY
 

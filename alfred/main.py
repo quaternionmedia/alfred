@@ -1,23 +1,20 @@
 from fastapi import FastAPI, Depends, Response
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
-from uvicorn import run
 
 
 from subprocess import run as bash
 
 from db import db, client
-from auth import auth
-from users import fastapi_users, current_active_user, current_active_superuser
-from models import Template, TemplateUpdate, User, UserCreate, UserUpdate, UserDB
-
 from seed import seed
-
-from routes import routes
-from render import renderAPI
-from emailer import emailAPI
-from template import templateAPI
-from admin import adminAPI
+from core.routes import authAPI
+from core.routes.users import fastapi_users, current_active_user, current_active_superuser
+from core.models import Template, TemplateUpdate, User, UserCreate, UserUpdate, UserDB
+from core.routes import routesAPI
+from core.routes import renderAPI
+from core.routes import emailAPI
+from core.routes import templateAPI
+from core.routes import adminAPI
 from otto.main import app as ottoApi
 import docs
 
@@ -51,11 +48,11 @@ async def checkFonts():
                 db.fonts.update_one({'family': fam.replace(' ', '-')}, {'$set': { 'style': [i.replace(' ', '-') for i in font[1].split(',')] }}, upsert=True)
     # db.fonts.update_many(results, upsert=True)
 
-app.include_router(auth, prefix='/auth', tags=['auth'])
+app.include_router(authAPI, prefix='/auth', tags=['auth'])
 app.include_router(fastapi_users.get_users_router(), prefix="/users", tags=["users"])
 app.include_router(templateAPI,
     dependencies=[Depends(current_active_user)])
-app.include_router(routes, dependencies=[Depends(current_active_user)])
+app.include_router(routesAPI, dependencies=[Depends(current_active_user)])
 app.include_router(ottoApi, 
     prefix='/otto', 
     dependencies=[Depends(current_active_user)],
@@ -76,4 +73,5 @@ app.mount('/data', StaticFiles(directory='data', html=True), name="data")
 app.mount("/", StaticFiles(directory='dist', html=True), name="static")
 
 if __name__ == '__main__':
+    from uvicorn import run
     run(app, host='0.0.0.0', port=8000)

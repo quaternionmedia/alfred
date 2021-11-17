@@ -5,7 +5,7 @@ from fastapi_users.authentication import JWTAuthentication
 from fastapi_users.db import MongoDBUserDatabase
 
 from db import get_user_db
-from models import User, UserCreate, UserDB, UserUpdate
+from ..models import User, UserCreate, UserDB, UserUpdate
 
 from config import SECRET_KEY
 
