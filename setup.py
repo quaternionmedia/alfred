@@ -1,8 +1,8 @@
 import setuptools
 from alfred._version import __version__
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+# with open("README.md", "r") as fh:
+#     long_description = fh.read()
 
 INSTALL_REQUIRES = [
     'fastapi'
@@ -13,8 +13,8 @@ setuptools.setup(
     author="Quaternion Media",
     author_email="info@quaternion.media",
     description="automatic video API",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
+    # long_description=long_description,
+    # long_description_content_type="text/markdown",
     url="https://github.com/quaternionmedia/alfred",
     packages=setuptools.find_packages(include=['alfred']),
     install_requires=INSTALL_REQUIRES,

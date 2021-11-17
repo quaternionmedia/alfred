@@ -1,6 +1,6 @@
 from datetime import timedelta
 from google.cloud import storage
-from config import BUCKET_NAME, DEFAULT_CHUNK_SIZE
+from alfred.config import BUCKET_NAME, DEFAULT_CHUNK_SIZE
 from os.path import join
 
 def get_bucket(bucket=BUCKET_NAME):

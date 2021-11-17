@@ -13,7 +13,9 @@ services:
 
   # TODO API description
   api:
-    build: ./alfred/
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     image: alfred_api
     depends_on:
       - website

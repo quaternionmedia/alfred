@@ -1,21 +1,24 @@
-from fastapi import FastAPI, Depends, Response
+from fastapi import FastAPI, Depends
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 
-
 from subprocess import run as bash
 
-from db import db, client
-from seed import seed
+from alfred import db, client
+
 from core.routes import authAPI
-from core.routes.users import fastapi_users, current_active_user, current_active_superuser
-from core.models import Template, TemplateUpdate, User, UserCreate, UserUpdate, UserDB
 from core.routes import routesAPI
 from core.routes import renderAPI
 from core.routes import emailAPI
-from core.routes import templateAPI
 from core.routes import adminAPI
 from otto.main import app as ottoApi
+
+from fastapi_crudrouter import MotorCRUDRouter
+
+from core.models import Template, TemplateUpdate, User, UserCreate, UserUpdate, UserDB
+from core.routes.users import fastapi_users, current_active_user, current_active_superuser
+
+from seed import seed
 import docs
 
 
@@ -48,6 +51,13 @@ async def checkFonts():
                 db.fonts.update_one({'family': fam.replace(' ', '-')}, {'$set': { 'style': [i.replace(' ', '-') for i in font[1].split(',')] }}, upsert=True)
     # db.fonts.update_many(results, upsert=True)
 
+templateAPI = MotorCRUDRouter(
+    schema = Template,
+    client = client,
+    create_schema = Template,
+    update_schema = TemplateUpdate
+)
+app.include_router(templateAPI)
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
 app.include_router(fastapi_users.get_users_router(), prefix="/users", tags=["users"])
 app.include_router(templateAPI,

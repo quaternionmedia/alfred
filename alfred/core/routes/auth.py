@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Response, HTTPException, status
 from .users import fastapi_users, jwt_authentication
 
-from config import SECRET_KEY
+from alfred.config import SECRET_KEY
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 90

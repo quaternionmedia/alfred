@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Path, Body, Header, Depends, File, UploadFile, BackgroundTasks, HTTPException
-from db import db
+from ..utils.db import db
 from bson.json_util import dumps
 from os import listdir
 from os.path import join
@@ -7,7 +7,7 @@ from ..responses import PartialFileResponse
 from starlette.responses import Response, FileResponse
 from typing import List
 
-from logger import DbLogger
+from ..utils.logger import DbLogger
 
 
 from otto import templates

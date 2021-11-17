@@ -36,20 +36,23 @@ WORKDIR /app
 RUN mkdir -p /app/data/
 
 
-COPY otto/fonts/* /usr/share/fonts/truetype/
+COPY alfred/otto/fonts/* /usr/share/fonts/truetype/
 RUN fc-cache -fv
 
 RUN pip3 install -U pip setuptools
 RUN pip3 install --pre moviepy
 
 
-COPY requirements.txt /
+COPY alfred/requirements.txt /
 RUN pip3 install -Ur /requirements.txt
-COPY otto/requirements.txt /otto_requirements.txt
+COPY alfred/otto/requirements.txt /otto_requirements.txt
 RUN pip3 install numpy gizeh pillow
 RUN pip3 install -Ur /otto_requirements.txt
-COPY /otto /otto
+COPY alfred//otto /otto
 RUN pip install -e /otto/
+COPY alfred/ /alfred/alfred
+COPY /setup.py /alfred/
+RUN pip install -e /alfred/
 # CMD ["/start-reload.sh"]
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
