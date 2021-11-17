@@ -71,12 +71,10 @@ elif [ $1 = "reinit" -o $1 = "reseed" ]; then
   shift
   docker compose exec api python3 -c """
 from seed import seed
-from main import db
-from otto.defaults import sample_forms
-db.edls.drop()
-db.edls.insert_many(seed)
+from db import get_sync_db
+db = get_sync_db()
 db.projects.drop()
-db.projects.insert_many(sample_forms)
+db.projects.insert_many(seed)
 """
 
 elif [ $1 = "sh" ]; then
