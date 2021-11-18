@@ -30,6 +30,7 @@ services:
       - CELERY_BROKER=mongodb://db:27017/celery
       - CELERY_BACKEND=mongodb://db:27017/celery
       - DB_URL=mongodb://db:27017
+      - DB_NAME=alfred
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
     env_file:
       - .email

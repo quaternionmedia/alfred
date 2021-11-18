@@ -1,11 +1,14 @@
 from celery import Celery, Task
 from otto.render import renderMultitrack
+from otto.models import Edl
 import config
 from logger import DbLogger
 from os.path import join
 from bucket import upload
 
 renderer = Celery('renderer', backend=config.CELERY_BACKEND, broker=config.CELERY_BROKER)
+
+renderer.config_from_object(config.CeleryConfig)
 
 class Renderer(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
@@ -15,7 +18,7 @@ class Renderer(Task):
 
 @renderer.task(bind=True, base=Renderer)
 def renderRemote(self, 
-        edl, 
+        edl: Edl,
         filename, 
         audio=None, 
         moviesize=(1920,1080), 

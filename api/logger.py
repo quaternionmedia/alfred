@@ -1,7 +1,10 @@
 from proglog import ProgressBarLogger
 from collections import OrderedDict
-from db import db
+from db import get_sync_db
+from asyncio import get_running_loop
 
+# using sync db until we can write an async logger
+db = get_sync_db()
 
 class DbLogger(ProgressBarLogger):
     def __init__(self, task, filename):

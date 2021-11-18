@@ -45,7 +45,7 @@ async def queueRender(
         'bitrate': bitrate,
         'ffmpeg_params': ffmpeg_params,
         'description': description,
-        'edl': clips.clips,
+        'edl': [clip.dict() for clip in clips.clips],
         'progress': 0,
         'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
         }
@@ -53,7 +53,7 @@ async def queueRender(
     result = await db.renders.insert_one(render)
     print('rendering!', render)
     task = renderRemote.delay(
-        edl=clips.clips, 
+        edl=clips, 
         filename=filename, 
         moviesize=(width, height), 
         fps=fps, 

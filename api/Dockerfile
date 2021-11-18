@@ -20,22 +20,9 @@ RUN cd $(tar tzf ImageMagick.tar.gz | head -1) && ./configure && make && make in
 # ENV IMAGEMAGICK_BINARY=/usr/local/bin/magick
 # RUN ln -s /usr/local/bin/magick /usr/local/bin/magick.exe
 
-
-COPY requirements.txt /
-RUN pip install -Ur /requirements.txt
-COPY otto/requirements.txt /
-RUN pip install numpy gizeh pillow
-RUN pip install -Ur /requirements.txt
-RUN pip install celery[mongodb] google-cloud-storage
-
 # fonts
 # RUN apt install -y ttf-mscorefonts-installer fontconfig
 # RUN update-ms-fonts
-
-COPY otto/fonts/* /usr/share/fonts/truetype/
-RUN fc-cache -fv
-RUN pip install jinja2
-RUN pip install --pre moviepy
 
 
 # COPY --from=builder /magick /usr/local/bin/magick
@@ -45,9 +32,22 @@ RUN ln -s /kburns/main.py /usr/bin/kburns
 RUN ln -s /usr/bin/ffmpeg /usr/bin/ffmpeg.exe
 RUN ln -s /usr/bin/ffprobe /usr/bin/ffprobe.exe
 
-
 WORKDIR /app
 RUN mkdir -p /app/data/
+
+
+COPY otto/fonts/* /usr/share/fonts/truetype/
+RUN fc-cache -fv
+
+RUN pip3 install -U pip setuptools
+RUN pip3 install --pre moviepy
+
+
+COPY requirements.txt /
+RUN pip3 install -Ur /requirements.txt
+COPY otto/requirements.txt /otto_requirements.txt
+RUN pip3 install numpy gizeh pillow
+RUN pip3 install -Ur /otto_requirements.txt
 COPY /otto /otto
 RUN pip install -e /otto/
 # CMD ["/start-reload.sh"]

@@ -1,9 +1,9 @@
 import motor.motor_asyncio
 from fastapi_users.db import MongoDBUserDatabase
-from config import DB_URL
+from config import DB_URL, DB_NAME
 from models import UserDB
 
-def get_sync_db(database='alfred'):
+def get_sync_db(database=DB_NAME):
     from pymongo import MongoClient
     sync_client = MongoClient(DB_URL, connect=False)
     return sync_client[database]
@@ -11,7 +11,7 @@ def get_sync_db(database='alfred'):
 client = motor.motor_asyncio.AsyncIOMotorClient(
     DB_URL, uuidRepresentation="standard"
 )
-db = client.alfred
+db = client[DB_NAME]
 usersCollection = db["users"]
 
 

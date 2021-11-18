@@ -10,7 +10,7 @@ from models import User, UserCreate, UserDB, UserUpdate
 from config import SECRET_KEY
 
 jwt_authentication = JWTAuthentication(
-    secret=SECRET_KEY, lifetime_seconds=3600, tokenUrl="token"
+    secret=SECRET_KEY, lifetime_seconds=3600, tokenUrl="/auth/jwt/login"
 )
 class UserManager(BaseUserManager[UserCreate, UserDB]):
   user_db_model = UserDB
@@ -42,3 +42,4 @@ fastapi_users = FastAPIUsers(
 )
 
 current_active_user = fastapi_users.current_user(active=True)
+current_active_superuser = fastapi_users.current_user(active=True, verified=True, superuser=True)

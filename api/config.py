@@ -5,6 +5,7 @@ PRODUCTION = environ.get('ALFRED_PRODUCTION')
 SECRET_KEY = environ.get('ALFRED_SECRET_KEY') 
 
 DB_URL = environ.get('DB_URL')
+DB_NAME = environ.get('DB_NAME', 'db')
 
 CELERY_BROKER = environ.get('CELERY_BROKER')
 CELERY_BACKEND = environ.get('CELERY_BACKEND')
@@ -27,3 +28,10 @@ Thanks!
 ~Alfred
 alfred.quaternion.media
 '''
+
+class CeleryConfig:
+    task_serializer = "pickle"
+    result_serializer = "pickle"
+    event_serializer = "json"
+    accept_content = ["application/json", "application/x-python-serialize"]
+    result_accept_content = ["application/json", "application/x-python-serialize"]

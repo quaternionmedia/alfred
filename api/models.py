@@ -1,21 +1,34 @@
 from fastapi_users import models
-from typing import Optional
-from datetime import date
+from pydantic import BaseModel
+from typing import Optional, List
+from datetime import datetime
+from beanie import Document
 
 class User(models.BaseUser):
     first_name: str
-    birthdate: Optional[date]
+    birthdate: Optional[datetime]
 
 
 class UserCreate(models.BaseUserCreate):
     first_name: str
-    birthdate: Optional[date]
-
+    birthdate: Optional[datetime]
+    pass
 
 class UserUpdate(models.BaseUserUpdate):
-    first_name: str
-    birthdate: Optional[date]
+    first_name: Optional[str]
+    birthdate: Optional[datetime]
+    pass
 
 
 class UserDB(User, models.BaseUserDB):
     pass
+
+class Template(Document):
+    logic: dict
+    fields: Optional[List]
+    class Config:
+        title = 'Template Project'
+
+class TemplateUpdate(Template):
+    logic: Optional[dict]
+    fields: Optional[List]
