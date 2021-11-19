@@ -1,7 +1,7 @@
 from pdfrw import PdfReader, PdfWriter, PageMerge
 from io import BytesIO
 from reportlab.pdfgen import canvas
-from ..utils.db import db
+from ..utils.db import get_sync_db
 from bson.objectid import ObjectId
 from math import ceil
 from datetime import datetime
@@ -36,6 +36,7 @@ def save(form: BytesIO, filename: str):
 def generate_invoice(username, startDate, endDate):
     total = 0
     q = {'username': username, '_id': {'$gt': ObjectId.from_datetime(startDate), '$lt': ObjectId.from_datetime(endDate)}}
+    db = get_db()
     renders = list(db.deleted.find(q))
     renders += list(db.renders.find(q))
     results = []
@@ -77,6 +78,7 @@ def setDate(pdf):
     return pdf
 
 def setBillTo(pdf, username):
+    db = get_sync_db()
     user = db.users.find_one({'username': username})
     for i, line in enumerate(user['address']):
         pdf.drawString(x=left, y=top+78-i*12, text = line)

@@ -6,7 +6,7 @@ from otto.models import Edl
 from otto.getdata import timestr
 from ..utils.tasks import renderRemote
 from os.path import join
-from ..utils.db import db
+from ..utils.db import get_db
 from ..utils.bucket import generate_signed_url
 from alfred.config import BUCKET_NAME
 from bson.json_util import dumps
@@ -50,6 +50,7 @@ async def queueRender(
         'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
         }
     # media = db.projects.find_one({'name': project}, ['form'])['form']['media']
+    db = get_db()
     result = await db.renders.insert_one(render)
     print('rendering!', render)
     task = renderRemote.delay(
@@ -68,6 +69,7 @@ async def getSignedRenderLink(name: str, user: User = Depends(current_active_use
 
 @renderAPI.get('/renders')
 async def renders(user: User = Depends(current_active_user)):
+    db = get_db()
     return deOid(await db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'quality', 'duration', 'description']).sort([('_id', -1)]).to_list(100))
     
 
@@ -87,6 +89,7 @@ async def pauseRender(user: User = Depends(current_active_user)):
 @renderAPI.put('/renders/{render}/cancel')
 async def cancelRender(render: str, user: User = Depends(current_active_user)):
     # cancel selected render
+    db = get_db()
     res = await db.renders.find_one_and_delete({'filename': render})
     if res:
         print('deleted render', render, res)

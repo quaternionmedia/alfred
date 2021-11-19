@@ -4,7 +4,7 @@ from starlette.staticfiles import StaticFiles
 
 from subprocess import run as bash
 
-from alfred import db
+from core.utils import get_sync_db
 
 from core.routes import authAPI
 from core.routes import videoAPI
@@ -33,6 +33,7 @@ app.add_middleware(GZipMiddleware)
 
 @app.on_event('startup')
 async def seedDb():
+    db = get_sync_db()
     if not db.edls.count_documents({}):
         from seed import seed
         db.edls.insert_many(seed)
@@ -42,6 +43,7 @@ async def seedDb():
 
 @app.on_event('startup')
 async def checkFonts():
+    db = get_sync_db()
     fonts = bash(['fc-list', '-f', '"%{family}-%{style}\n"'], capture_output=True).stdout.decode().replace('"', '').split('\n')
     results = []
     for f in fonts:

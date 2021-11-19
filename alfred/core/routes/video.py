@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Header
-from ..utils.db import db
 from os import listdir
 from os.path import join
 from ..responses import PartialFileResponse

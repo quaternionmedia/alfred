@@ -7,7 +7,10 @@ def get_sync_db(database=DB_NAME):
     sync_client = MongoClient(DB_URL, connect=False)
     return sync_client[database]
 
-client = motor.motor_asyncio.AsyncIOMotorClient(
-    DB_URL, uuidRepresentation="standard"
-)
-db = client[DB_NAME]
+def get_client(db_url=DB_URL):
+    return motor.motor_asyncio.AsyncIOMotorClient(
+        DB_URL, uuidRepresentation="standard"
+    )
+
+def get_db(db_url=DB_URL, database=DB_NAME):
+    return get_client(db_url=db_url)[DB_NAME]

@@ -10,10 +10,11 @@ from alfred.config import SECRET_KEY
 
 
 from fastapi_users.db import MongoDBUserDatabase
-from ..utils.db import db
-usersCollection = db["users"]
+from ..utils.db import get_db
 
 async def get_user_db():
+    db = get_db()
+    usersCollection = db["users"]
     yield MongoDBUserDatabase(UserDB, usersCollection)
 
 jwt_authentication = JWTAuthentication(
