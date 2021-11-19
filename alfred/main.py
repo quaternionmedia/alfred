@@ -12,7 +12,7 @@ from core.routes import renderAPI
 from core.routes import issueAPI
 from core.routes import adminAPI
 from core.routes import fontAPI
-from core.routes import projectAPI
+from core.routes import ProjectAPI
 from otto.main import app as ottoApi
 
 from core.routes.users import fastapi_users, current_active_user, current_active_superuser
@@ -55,7 +55,7 @@ async def checkFonts():
 
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
 app.include_router(fastapi_users.get_users_router(), prefix='/users', tags=['users'])
-app.include_router(projectAPI,
+app.include_router(ProjectAPI(),
     dependencies=[Depends(current_active_user)])
 app.include_router(fontAPI,
     dependencies=[Depends(current_active_user)], tags=['font'])
