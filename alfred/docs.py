@@ -22,3 +22,36 @@ contact = {
     'email': 'alfred@quaternion.media'
 }
 # license_info = {}
+
+tags_metadata = [
+    {
+        'name': 'users',
+        'description': """# Users
+        Get information about a user, including self.""",
+    },
+    {
+        'name': 'project',
+        'description': """# Project
+        A **Project** is an alfred document with a `logic` object which contains the necessary logic to create an `Edl` and an optional `fields` object, which describes the variables needed to execute the `logic` object.""",
+        # 'externalDocs': {
+        #     'description': 'Project reference',
+        #     'url': 'https://docs.quaternion.media/alfred',
+        # },
+    },
+    {
+        'name': 'auth',
+        'description': """# Auth
+        Authentication operations, including **Login** and **Registration**"""
+    },
+    {
+        'name': 'videos',
+        'description': """# Videos
+        Serve videos directly from this instance.
+        """
+    },
+    {
+        'name': 'render',
+        'description': """# Render
+        Render an `Edl` and check status on existing renders"""
+    }
+]

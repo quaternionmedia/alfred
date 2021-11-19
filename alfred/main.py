@@ -27,6 +27,7 @@ app = FastAPI(
     description = docs.description,
     version = docs.version,
     contact = docs.contact,
+    openapi_tags=docs.tags_metadata,
 )
 app.add_middleware(GZipMiddleware)
 
