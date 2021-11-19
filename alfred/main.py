@@ -4,7 +4,7 @@ from starlette.staticfiles import StaticFiles
 
 from subprocess import run as bash
 
-from alfred import db, client
+from alfred import db
 
 from core.routes import authAPI
 from core.routes import videoAPI
@@ -12,11 +12,9 @@ from core.routes import renderAPI
 from core.routes import issueAPI
 from core.routes import adminAPI
 from core.routes import fontAPI
+from core.routes import projectAPI
 from otto.main import app as ottoApi
 
-from fastapi_crudrouter import MotorCRUDRouter
-
-from core.models import Template, TemplateUpdate, User, UserCreate, UserUpdate, UserDB
 from core.routes.users import fastapi_users, current_active_user, current_active_superuser
 
 from seed import seed
@@ -53,16 +51,10 @@ async def checkFonts():
                 db.fonts.update_one({'family': fam.replace(' ', '-')}, {'$set': { 'style': [i.replace(' ', '-') for i in font[1].split(',')] }}, upsert=True)
     # db.fonts.update_many(results, upsert=True)
 
-templateAPI = MotorCRUDRouter(
-    schema = Template,
-    client = client,
-    create_schema = Template,
-    update_schema = TemplateUpdate
-)
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
 app.include_router(fastapi_users.get_users_router(), prefix='/users', tags=['users'])
-app.include_router(templateAPI,
-    dependencies=[Depends(current_active_user)], tags=['project'])
+app.include_router(projectAPI,
+    dependencies=[Depends(current_active_user)])
 app.include_router(fontAPI,
     dependencies=[Depends(current_active_user)], tags=['font'])
 app.include_router(videoAPI, 

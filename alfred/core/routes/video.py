@@ -27,15 +27,3 @@ Get a specific video by filename.
 
 Returns an `HTTP 206 Partial Content` response, allowing the client to jump to a specific potion of a large video file."""
     return PartialFileResponse(join('/app/videos', video))
-
-@videoAPI.get('/projects')
-async def getProjects():
-    """# Get projects
-Returns a list of all project names available."""
-    return [p['name'] for p in await db.projects.find({}, { 'name': 1, '_id': 0 }).to_list(length=100)]
-    
-
-@videoAPI.get('/project/{project}')
-async def getProject(project: str):
-    return await db.projects.find_one({'name': project}, {'_id': 0})
-    

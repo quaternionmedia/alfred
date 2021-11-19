@@ -2,12 +2,12 @@ from typing import Optional, List
 from datetime import datetime
 from beanie import Document
 
-class Template(Document):
+class Project(Document):
     logic: dict
     fields: Optional[List]
     class Config:
-        title = 'Template Project'
+        title = 'Project Project'
 
-class TemplateUpdate(Template):
+class ProjectUpdate(Project):
     logic: Optional[dict]
     fields: Optional[List]
