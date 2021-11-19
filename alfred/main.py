@@ -11,6 +11,7 @@ from core.routes import routesAPI
 from core.routes import renderAPI
 from core.routes import emailAPI
 from core.routes import adminAPI
+from core.routes import fontAPI
 from otto.main import app as ottoApi
 
 from fastapi_crudrouter import MotorCRUDRouter
@@ -32,7 +33,7 @@ app = FastAPI(
 app.add_middleware(GZipMiddleware)
 
 
-@app.on_event("startup")
+@app.on_event('startup')
 async def seedDb():
     if not db.edls.count_documents({}):
         from seed import seed
@@ -58,12 +59,13 @@ templateAPI = MotorCRUDRouter(
     create_schema = Template,
     update_schema = TemplateUpdate
 )
-app.include_router(templateAPI)
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
 app.include_router(fastapi_users.get_users_router(), prefix="/users", tags=["users"])
 app.include_router(templateAPI,
     dependencies=[Depends(current_active_user)])
 app.include_router(routesAPI, dependencies=[Depends(current_active_user)])
+app.include_router(fontAPI,
+    dependencies=[Depends(current_active_user)], tags=['font'])
 app.include_router(ottoApi, 
     prefix='/otto', 
     dependencies=[Depends(current_active_user)],

@@ -19,12 +19,6 @@ from math import floor
 routes = APIRouter()
 
 
-@routes.get('/fonts')
-async def getFonts():
-    """# Get fonts
-    Returns a list of all available fonts available to be rendered on this instance"""
-    return [i['family'] for i in await db.fonts.find({}, ['family']).to_list(1000)]
-
 @routes.get('/videos')
 async def getVideos():
     return [join('videos', f) for f in listdir('videos')]
