@@ -18,7 +18,7 @@ version = __version__
 
 contact = {
     'name': 'Quaternion Media',
-    # 'url': '',
+    'url': 'https://quaternion.media',
     'email': 'alfred@quaternion.media'
 }
 # license_info = {}
@@ -27,12 +27,12 @@ tags_metadata = [
     {
         'name': 'users',
         'description': """# Users
-        Get information about a user, including self.""",
+Get information about a user, including self.""",
     },
     {
         'name': 'project',
         'description': """# Project
-        A **Project** is an alfred document with a `logic` object which contains the necessary logic to create an `Edl` and an optional `fields` object, which describes the variables needed to execute the `logic` object.""",
+A **Project** is an alfred document with a `logic` object which contains the necessary logic to create an `Edl` and an optional `fields` object, which describes the variables needed to execute the `logic` object.""",
         # 'externalDocs': {
         #     'description': 'Project reference',
         #     'url': 'https://docs.quaternion.media/alfred',
@@ -41,17 +41,38 @@ tags_metadata = [
     {
         'name': 'auth',
         'description': """# Auth
-        Authentication operations, including **Login** and **Registration**"""
+Authentication operations, including **Login** and **Registration**"""
     },
     {
-        'name': 'videos',
-        'description': """# Videos
-        Serve videos directly from this instance.
+        'name': 'video',
+        'description': """# Video
+Serve videos directly from this instance.
         """
     },
     {
         'name': 'render',
         'description': """# Render
-        Render an `Edl` and check status on existing renders"""
-    }
+Render an `Edl` and check status on existing renders."""
+    },
+    {
+        'name': 'issue',
+        'description': """# issue
+Report an issue with a render.""",
+    },
+    {
+        'name': 'otto',
+        'description': """# Otto
+`otto` is the underlying template rendering engine. Use these routes to generate preview frames of an `Edl` before rendering a full project.
+""",
+    },
+    {
+        'name': 'admin',
+        'description': """# admin
+Admin tasks. Only accessable for superusers.""",
+    },
+    {
+        'name': 'font',
+        'description': """# Fonts
+Get a list of fonts available to be rendered on this instance.""",
+    },
 ]
