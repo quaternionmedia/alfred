@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from datetime import datetime, date, time
-from .emailer import sendMail
+from ..utils import sendMail
 from .invoicer import generate_invoice
 
 adminAPI = APIRouter()

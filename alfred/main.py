@@ -9,7 +9,7 @@ from alfred import db, client
 from core.routes import authAPI
 from core.routes import routesAPI
 from core.routes import renderAPI
-from core.routes import emailAPI
+from core.routes import issueAPI
 from core.routes import adminAPI
 from core.routes import fontAPI
 from otto.main import app as ottoApi
@@ -73,9 +73,9 @@ app.include_router(ottoApi,
 app.include_router(renderAPI, 
     dependencies=[Depends(current_active_user)],
     tags=['render'])
-app.include_router(emailAPI, 
+app.include_router(issueAPI,
     dependencies=[Depends(current_active_user)],
-    tags=['email'])
+    tags=['issue'])
 app.include_router(adminAPI, 
     dependencies=[Depends(current_active_superuser)],
     tags=['admin'])

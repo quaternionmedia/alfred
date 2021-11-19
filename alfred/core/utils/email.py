@@ -1,4 +1,3 @@
-from fastapi import APIRouter, Body
 from smtplib import SMTP
 from email.message import EmailMessage
 from alfred.config import EMAIL_PORT, EMAIL_SERVER, EMAIL_USERNAME, EMAIL_PASSWORD, EMAIL_SENDTO, INVOICE_EMAIL_BODY
@@ -33,13 +32,3 @@ def sendMail(recepients, subject, message, attachments=[]):
     except Exception as e:
         print('error sending email', e)
         return False
-
-emailAPI = APIRouter()
-
-@emailAPI.post('/report')
-async def reportIssue(name: str, issue: str = Body(...)):
-    """# Report issue
-    Reports an issue with a specific render. Sends an email to the support team for follow up."""
-    if not sendMail(recepients=EMAIL_SENDTO, subject=name, message=issue):
-        print('error reporting issue with ', name, issue)
-        raise HTTPException(status_code=500, detail='error sending email')
