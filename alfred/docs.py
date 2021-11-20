@@ -24,7 +24,7 @@ tags_metadata = [
     {
         'name': 'auth',
         'description': """# Auth
-    Authentication operations, including **Login** and **Registration**"""
+Authentication operations, including **Login** and **Registration**"""
     },
     {
         'name': 'users',
@@ -70,6 +70,6 @@ Get a list of fonts available to be rendered on this instance.""",
     {
     'name': 'admin',
     'description': """# admin
-    Admin tasks. Only accessable for superusers.""",
+Admin tasks. Only accessable for superusers.""",
     },
 ]
