@@ -1,6 +1,7 @@
 from fastapi_crudrouter import MotorCRUDRouter
 from ..models import Project, ProjectUpdate
 from ..utils.db import get_client
+from alfred.config import DB_URL, DB_NAME
 
 class ProjectAPI(MotorCRUDRouter):
     def __init__(self, *args, **kwargs):
@@ -9,4 +10,5 @@ class ProjectAPI(MotorCRUDRouter):
             client = get_client(),
             create_schema = Project,
             update_schema = ProjectUpdate,
+            database = DB_NAME,
         )
