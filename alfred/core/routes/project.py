@@ -6,9 +6,10 @@ from typing import Optional
 
 class ProjectAPI(MotorCRUDRouter):
     def __init__(self, *args, **kwargs):
+        self.client = get_client()
         super().__init__(*args, **kwargs, 
             schema = Project,
-            client = get_client(),
+            client = self.client,
             create_schema = Project,
             update_schema = ProjectUpdate,
             database = DB_NAME,
@@ -16,6 +17,4 @@ class ProjectAPI(MotorCRUDRouter):
 
         @self.get('')
         async def get_all_projects(skip: Optional[int] = 0, limit: Optional[int] = 100):
-            db = get_db()
-            print('getting all projects', skip, limit)
-            return deOid(await db.Project.find({}, projection=['_id', 'name']).skip(skip).to_list(limit))
+            return deOid(await self.client[DB_NAME].Project.find({}, projection=['_id', 'name']).skip(skip).to_list(limit))
