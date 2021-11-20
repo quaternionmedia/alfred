@@ -1,6 +1,7 @@
 import motor.motor_asyncio
 from alfred.config import DB_URL, DB_NAME
 from ..models import UserDB
+from typing import List
 
 def get_sync_db(database=DB_NAME):
     from pymongo import MongoClient
@@ -14,3 +15,10 @@ def get_client(db_url=DB_URL, database=DB_NAME):
 
 def get_db(db_url=DB_URL, database=DB_NAME):
     return get_client(db_url=db_url)[DB_NAME]
+
+def deOid(results: List):
+    """De-ObjectID
+    Takes a list of objects, and converts the objectID (_id) to a string for serialization"""
+    for r in results:
+        r['_id'] = str(r['_id'])
+    return results

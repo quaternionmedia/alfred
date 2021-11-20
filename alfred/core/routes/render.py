@@ -6,19 +6,12 @@ from otto.models import Edl
 from otto.getdata import timestr
 from ..utils.tasks import renderRemote
 from os.path import join
-from ..utils.db import get_db
+from ..utils.db import get_db, deOid
 from ..utils.bucket import generate_signed_url
 from alfred.config import BUCKET_NAME
 from bson.json_util import dumps
 
 renderAPI = APIRouter()
-
-def deOid(results: List):
-    """De-ObjectID
-    Takes a list of objects, and converts the objectID (_id) to a string for serialization"""
-    for r in results:
-        r['_id'] = str(r['_id'])
-    return results
 
 @renderAPI.post('/render')
 async def queueRender(

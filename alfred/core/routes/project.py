@@ -1,6 +1,6 @@
 from fastapi_crudrouter import MotorCRUDRouter
 from ..models import Project, ProjectUpdate
-from ..utils.db import get_client
+from ..utils.db import get_client, deOid
 from alfred.config import DB_URL, DB_NAME
 from typing import Optional
 
