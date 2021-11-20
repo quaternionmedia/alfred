@@ -2,16 +2,13 @@ from _version import __version__
 
 title = """Alfred API"""
 
-description = """
-# Automatic video creation
+description = """# Automatic video creation
 Alfred is an automatic video api, designed to automate video tasks.
 
 We believe in making video smarter, not harder.
 
 ### Created by Quaternion Media, LLC
-[github.com/quaternionmedia](https://github.com/quaternionmedia)
-
-"""
+[github.com/quaternionmedia](https://github.com/quaternionmedia)"""
 
 version = __version__
 # terms_of_service = ""
@@ -24,6 +21,11 @@ contact = {
 # license_info = {}
 
 tags_metadata = [
+    {
+        'name': 'auth',
+        'description': """# Auth
+    Authentication operations, including **Login** and **Registration**"""
+    },
     {
         'name': 'users',
         'description': """# Users
@@ -39,15 +41,10 @@ A **Project** is an alfred document with a `logic` object which contains the nec
         # },
     },
     {
-        'name': 'auth',
-        'description': """# Auth
-Authentication operations, including **Login** and **Registration**"""
-    },
-    {
-        'name': 'video',
-        'description': """# Video
-Serve videos directly from this instance.
-        """
+        'name': 'otto',
+        'description': """# Otto
+`otto` is the underlying template rendering engine. Use these routes to generate preview frames of an `Edl` before rendering a full project.
+""",
     },
     {
         'name': 'render',
@@ -60,19 +57,19 @@ Render an `Edl` and check status on existing renders."""
 Report an issue with a render.""",
     },
     {
-        'name': 'otto',
-        'description': """# Otto
-`otto` is the underlying template rendering engine. Use these routes to generate preview frames of an `Edl` before rendering a full project.
-""",
-    },
-    {
-        'name': 'admin',
-        'description': """# admin
-Admin tasks. Only accessable for superusers.""",
+        'name': 'video',
+        'description': """# Video
+Serve videos directly from this instance.
+        """
     },
     {
         'name': 'font',
         'description': """# Fonts
 Get a list of fonts available to be rendered on this instance.""",
+    },
+    {
+    'name': 'admin',
+    'description': """# admin
+    Admin tasks. Only accessable for superusers.""",
     },
 ]
