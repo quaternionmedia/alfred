@@ -12,8 +12,10 @@
   "scripts": {
     "build": "parcel build src/index.html",
     "dev": "parcel watch src/* --hmr-port=8001",
-    "test": "$(npm bin)/cypress run",
-    "cy": "$(npm bin)/cypress open"
+    "test": "npx cypress run",
+    "cy": "npx cypress open",
+    "cy record": "npx cypress run --record --key 3f29aeb8-47f4-4bf6-8734-fb79c66c52d8",
+    "cy browser update": "npx browserslist@latest --update-db"
   },
   "dependencies": {
     "alertifyjs": "^1.13.1",

@@ -39,6 +39,9 @@ testem.log
 .DS_Store
 Thumbs.db
 
+# Testing
+instrumented/
+
 database/
 
 cred.json

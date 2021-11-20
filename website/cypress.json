@@ -1,1 +1,10 @@
-{}
+{
+  "projectId": "nbnroi",
+  "baseUrl": "http://localhost:8000/",
+  "viewportHeight":800,
+  "viewportWidth":1200,
+  "env": {
+    "email": "e@mail.me",
+    "pwd": "sosecur3"
+  }
+}
