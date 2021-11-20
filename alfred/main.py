@@ -1,10 +1,9 @@
 from fastapi import FastAPI, Depends
+from typing import Optional
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 
 from subprocess import run as bash
-
-from core.utils import get_sync_db
 
 from core.routes import authAPI
 from core.routes import videoAPI
@@ -14,6 +13,8 @@ from core.routes import adminAPI
 from core.routes import fontAPI
 from core.routes import ProjectAPI
 from otto.main import app as ottoApi
+from core.utils import get_db
+from core.routes.render import deOid
 
 from core.routes.users import fastapi_users, current_active_user, current_active_superuser
 
@@ -33,21 +34,21 @@ app.add_middleware(GZipMiddleware)
 
 @app.on_event('startup')
 async def seedDb():
-    db = get_sync_db()
+    db = get_db()
     if not db.Project.count_documents({}):
         from seed import seed
-        db.Project.insert_many(seed)
+        await db.Project.insert_many(seed)
 
 @app.on_event('startup')
 async def checkFonts():
-    db = get_sync_db()
+    db = get_db()
     fonts = bash(['fc-list', '-f', '"%{family}-%{style}\n"'], capture_output=True).stdout.decode().replace('"', '').split('\n')
     results = []
     for f in fonts:
         if f:
             font = f.split('-')
             for fam in font[0].split(','):
-                db.fonts.update_one({'family': fam.replace(' ', '-')}, {'$set': { 'style': [i.replace(' ', '-') for i in font[1].split(',')] }}, upsert=True)
+                await db.fonts.update_one({'family': fam.replace(' ', '-')}, {'$set': { 'style': [i.replace(' ', '-') for i in font[1].split(',')] }}, upsert=True)
     # db.fonts.update_many(results, upsert=True)
 
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
