@@ -34,12 +34,9 @@ app.add_middleware(GZipMiddleware)
 @app.on_event('startup')
 async def seedDb():
     db = get_sync_db()
-    if not db.edls.count_documents({}):
+    if not db.Project.count_documents({}):
         from seed import seed
-        db.edls.insert_many(seed)
-    if not db.projects.count_documents({}):
-        from otto.defaults import sample_forms
-        db.projects.insert_many(sample_forms)
+        db.Project.insert_many(seed)
 
 @app.on_event('startup')
 async def checkFonts():
