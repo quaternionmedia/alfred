@@ -3,10 +3,15 @@ side_description: automatic video editing
 site_url: https://docs.alfred.quaternion.media
 # repo_url: https://github.com/quaternionmedia/alfred
 
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+
 theme:
   name: material
   logo: assets/al-white.png
   favicon: assets/al-white.png
+  icon: assets/al-white.svg
   palette:
     - media: "(prefers-color-scheme: dark)" # 
       scheme: slate
