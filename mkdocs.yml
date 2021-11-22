@@ -3,6 +3,13 @@ side_description: automatic video editing
 site_url: https://docs.alfred.quaternion.media
 # repo_url: https://github.com/quaternionmedia/alfred
 
+nav:
+  - Home: index.md
+  - About: about.md
+  - Models: models.md
+  - Example: example.md
+  - API: api.md
+
 markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
