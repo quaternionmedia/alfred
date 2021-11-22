@@ -23,4 +23,18 @@ theme:
       toggle:
         icon: material/toggle-switch-off-outline
         name: Switch to dark mode
-
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - toc.integrate
+    - navigation.top
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/quaternionmedia/alfred
+    # - icon: fontawesome/brands/website
+    #   link: https://alfred.quaternion.media
