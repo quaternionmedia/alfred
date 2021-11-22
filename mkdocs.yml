@@ -5,6 +5,8 @@ site_url: https://docs.alfred.quaternion.media
 
 theme:
   name: material
+  logo: assets/al-white.png
+  favicon: assets/al-white.png
   palette:
     - media: "(prefers-color-scheme: dark)" # 
       scheme: slate
