@@ -1,4 +1,19 @@
-site_name: alfred
+site_name: Alfred
 side_description: automatic video editing
 site_url: https://docs.alfred.quaternion.media
 # repo_url: https://github.com/quaternionmedia/alfred
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)" # 
+      scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)" # 
+      scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+

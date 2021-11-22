@@ -1,4 +1,4 @@
-# alfred
+# Alfred
 
 Automatic video editing API
 
