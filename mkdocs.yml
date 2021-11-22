@@ -18,7 +18,6 @@ theme:
   name: material
   logo: assets/al-white.png
   favicon: assets/al-white.png
-  icon: assets/al-white.svg
   palette:
     - media: "(prefers-color-scheme: dark)" # 
       scheme: slate
