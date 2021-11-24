@@ -13,6 +13,8 @@ nav:
 markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
 
 theme:
   name: material
@@ -38,6 +40,8 @@ theme:
     - navigation.expand
     - toc.integrate
     - navigation.top
+    - content.code.annotate
+
 extra:
   social:
     - icon: fontawesome/brands/github
