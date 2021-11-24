@@ -1,7 +1,7 @@
 site_name: Alfred
 side_description: automatic video editing
-site_url: https://docs.alfred.quaternion.media
-# repo_url: https://github.com/quaternionmedia/alfred
+site_url: https://alfred.quaternion.media/docs/
+repo_url: https://github.com/quaternionmedia/alfred
 
 nav:
   - Home: index.md
