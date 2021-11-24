@@ -34,6 +34,6 @@ App: [alfred.quaternion.media](https://alfred.quaternion.media)
 
 Documentation: [alfred.quaternion.media/docs/](https://alfred.quaternion.media/docs/)
 
-API Reference: [alfred.quaternion.media/docs](https://alfred.quaternion.media/api)
+API Reference: [alfred.quaternion.media/api](https://alfred.quaternion.media/api)
 
 Source code: [github.com/quaternionmedia/alfred](https://github.com/quaternionmedia/alfred)
