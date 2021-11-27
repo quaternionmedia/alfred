@@ -45,15 +45,15 @@ Clips can be of several types, including `video`, `audio`, `template`, or `edl`.
 Timing of the clip is determined with the following variables:
 
 ### `inpoint`
-: The start time for playing this video, in seconds. Default: 0
+: The start time for playing this video, in seconds. Default: `0`
 
 ### `outpoint`
 : The end time for playing this video, in seconds. Default: `video.duration`
 
 ### `duration`
-: The length in seconds to play this video.
+: The length in seconds to play this video. Default: `video.duration`
 
-!!! Note
+??? note "Timing math"
     The `duration` should always equal to the `outpoint - inpoint`.
     
     Any of these may be omitted, for example: 
