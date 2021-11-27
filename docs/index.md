@@ -1,6 +1,9 @@
 # Alfred
 
-Automatic video editing API
+Automatic video tools
+
+![Alfred logo](./assets/al-white.svg){ loading=lazy width=200em style="background-color:#2E303E; border-radius: 1em;" }
+
 
 ## Overview
 

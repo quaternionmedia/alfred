@@ -23,6 +23,8 @@ markdown_extensions:
   - def_list
   - admonition
   - pymdownx.details
+  - attr_list
+  - md_in_html
 
 theme:
   name: material
