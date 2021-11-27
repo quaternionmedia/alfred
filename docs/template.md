@@ -7,7 +7,6 @@ Each template can have unique properties, `fxs`, and values, according to each t
 !!! info
     Full list of values available from the API, at `/otto/templates`
 
-Available properties:
 ``` python
 class Template:
     name: str
@@ -26,6 +25,8 @@ class Template:
     fps: float = 30
     bg: str = None
 ```
+Available properties:
+
 ## `name`
 : `#!python str`
     
