@@ -6,7 +6,9 @@ repo_url: https://github.com/quaternionmedia/alfred
 nav:
   - Home: index.md
   - About: about.md
-  - Models: models.md
+  - Clip: clip.md
+  - Template: template.md
+  - EDL: edl.md
   - Example: example.md
   - API: api.md
 
