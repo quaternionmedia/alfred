@@ -53,6 +53,12 @@ Timing of the clip is determined with the following variables:
 ### `duration`
 : The length in seconds to play this video.
 
+!!! Note
+    The `duration` should always equal to the `outpoint - inpoint`.
+    
+    Any of these may be omitted, for example: 
+    
+    A `Clip` with `outpoint: 10` and `duration: 5` implies `inpoint: 5`
 
 ## Template
 A `Template` is a predefined `Clip` generator, built to automate and simplify the process of rendering custom text and graphics in video. 
