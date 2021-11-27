@@ -22,12 +22,12 @@ class Clip:
 All fields are optional.
 
 ### `duration`
-: *float*
+: `#!python float`
 
     The total length of this clip, in seconds.
 
 ### `type`
-: *str*
+: `#!python str`
 
     Type of clip. Possible values include:
 
@@ -36,22 +36,22 @@ All fields are optional.
 
 
 ### `name`
-: *str*
+: `#!python str`
 
     The name of this clip. For `type: video`, this is the url, or relative server path to the desired video.
 
 ### `inpoint`
-: *float*
+: `#!python float`
 
     The number of seconds from the beginning of clip to the desired start time of the video.
 
 ### `outpoint`
-: *float*
+: `#!python float`
 
     The number of seconds from the beginning of clip to the desired end time of the video.
 
 ### `offset`
-: *float*
+: `#!python float`
 
     Offset the start time of the video by `n` seconds.
 
@@ -60,49 +60,49 @@ All fields are optional.
     A negative value behaves like a negative `inpoint`, and will trim from the beginning of clip by `n` seconds.
 
 ### `start`
-: *float*
+: `#!python float`
 
     The number of seconds to delay the start of the clip.
 
     Positive values only.
 
 ### `position`
-: *tuple(float, float)*
+: `#!python tuple(float, float)`
 
     `relative: True` *default* - Reposition the clip by `(x, y)` percent of the frame.
 
     `relative: False` - Reposition the clip by `(x, y)` pixels
 
 ### `relative`
-: *bool = True*
+: `#!python bool = True`
 
     Sets whether `position` acts as absolute position (pixel), or relative (percent).
 
 ### `data`
-: *dict*
+: `#!python dict`
 
     Defines values to be rendered into the template. 
 
-    Specific to each template. For example:
-
-    ``` json
-    {
-      "type": "title", 
-      "data": {
-        "text": "Text to be rendered",
-        "font": "font_name",
-        "color": "#FF0000",
-        "textsize": "50",
-        "method": "caption",
-        "duration": "5",
-        "position": "center",
-        "opacity": ".5",
-      }
-    }
-    ```
+    Data fields are specific to each template. See [template](../template)
+    ??? example "Sample JSON Template"
+          ``` json
+          {
+            "type": "title", 
+            "data": {
+              "text": "Text to be rendered",
+              "font": "font_name",
+              "color": "#FF0000",
+              "textsize": "50",
+              "method": "caption",
+              "duration": "5",
+              "position": "center",
+              "opacity": ".5",
+            }
+          }
+          ```
 
 ### `resize`
-: *[float, tuple]*
+: `#!python [float, tuple]`
 
     Scale the size of the clip.
 
@@ -110,7 +110,7 @@ All fields are optional.
     - *tuple*: Resize the clip by `x, y`
 
 ### `fxs`
-: *List*
+: `#!python List`
 
     Apply a list of `fx` to a clip.
 

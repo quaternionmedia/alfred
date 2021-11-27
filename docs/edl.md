@@ -7,7 +7,7 @@ class Edl:
 ```
 Available properties:
 ### `clips`
-: *List[Clip]*
+: `#!python List[Clip]`
 
     A list of clips to render into a finalized video.
 
@@ -15,6 +15,6 @@ Available properties:
         `Clip`s are rendered in the order listed, as a multi-track timeline. If multiple clips overlap, the first clip will be rendered on the "**bottom**" of the video stack, and the last clip will be rendered above all others, with any transparencies applied. 
 
 ### `duration`
-: *float*
+: `#!python float`
 
     An optional duration (in seconds) to trim an `Edl` to a desired length.
