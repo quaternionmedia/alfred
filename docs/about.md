@@ -1,6 +1,7 @@
-> Drama is life with all the dull bits cut out.
->
-> ~ Alfred Hitchcock
+!!! quote
+    Drama is life with all the dull bits cut out.
+    
+    ~ Alfred Hitchcock
 
 ## Origin
 Alfred began as a simple, serverless video client, designed to simplify the video production process using modern web browsers with a powerful, scalable rendering engine.
@@ -53,7 +54,7 @@ Timing of the clip is determined with the following variables:
 ### `duration`
 : The length in seconds to play this video. Default: `video.duration`
 
-??? note "Timing math"
+??? example "Timing math"
     The `duration` should always equal to the `outpoint - inpoint`.
     
     Any of these may be omitted, for example: 
@@ -75,6 +76,8 @@ The `EDL` is a data representation of the final video to be rendered. It describ
 Each `EDL` can be viewed in a `Timeline`, or imported as a `Clip` into a different `Timeline`.
 
 ## Project
-A `Project` is a data object with `logic` designed to create an `EDL` when data is applied from the `fields`.
+A `Project` is a special data format, designed to automatically create templates from user data.
 
-To create an `EDL`, a `Form` is created from the `fields`, where user data can be input. This data is applied to the `logic`, which to generates the `EDL` to be rendered into a finished video.
+A Project contains `logic` to build the end product and `fields` that describe the data needed.
+
+To create an `EDL`, the `fields` are rendered as a `Form`, where user data can be input. This data is applied to the `logic`, which generates the `EDL` to be rendered into a finished video.
