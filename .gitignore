@@ -60,3 +60,9 @@ alfred/data
 .email
 .secret_key
 .s3
+
+# testing
+
+instrumented/
+website/coverage/
+website/cypress-coverage/
