@@ -137,9 +137,9 @@ export function VideoClip() {
 export function OttoTimeline() {
   return {
     oninit: (vnode) => {
-      auth(`/project/${m.route.param('project')}`, {}).then(e => {
-        console.log('got otto', e)
-        Edl.edl = e.edl
+      auth(`/edl/${m.route.param('project')}`, {}).then(e => {
+        console.log('got edl', e)
+        Edl.edl = e.clips
         Edl.current = 0
         Edl.time = 0
         Edl.update()

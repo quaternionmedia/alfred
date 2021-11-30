@@ -1,10 +1,8 @@
 import m from "mithril"
-import { Menu } from './Menu'
 import { Head } from './Head'
 
 import Slider from './Slider'
 import { Timeline } from './Timeline'
-import Monitor from './Monitor'
 import { PlaybackTools, SpeedTools, ProjectTools } from './Tools'
 import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'
@@ -18,7 +16,6 @@ import { Scale } from './Scale'
 export var Otto = {
   view: (vnode) => {
     return [
-      m(Menu),
       m(Head, [
         m(Preview)
       ]),
@@ -58,7 +55,7 @@ export var Otto = {
       ]),
       m(Scale),
       m('.spacer', {style:{height:'3em'}}, []),
-      m(Bin),
+      // m(Bin),
     ]
   }
 }

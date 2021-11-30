@@ -30,9 +30,27 @@ export function VideoPreview() {
               vnode.dom.play()
               Video.paused = false
               vnode.dom.addEventListener('timeupdate', (e) => {
-                Video.time(e.target.currentTime)
-                Edl.time(Video.time + Edl.durations(Edl.edl.slice(0,Edl.current)))
-                m.redraw()
+                // if the current video time is beyond the current clip outpoint: 
+                if (e.target.currentTime >= Edl.edl[Edl.current].outpoint) {
+                  // and if there's another clip to edit to:
+                  if (Edl.current < Edl.edl.length - 1) {
+                    // we need to change the video somehow.
+                    console.log('editing', Edl.edl, Edl.current, e.target.currentTime)
+                    // if the next video is different than the current video:
+                    if (Video.filename != Edl.edl[++Edl.current].filename) {
+                      // we need to switch videos
+                      console.log('loading', Video, Edl.edl[Edl.current])
+                      Edl.current = Math.min(Edl.current + 1, Edl.edl.length - 1)
+                      m.redraw()
+                  
+                  Video.time(Edl.durations(Edl.edl.slice(0,Edl.current)))
+                }
+                }
+                } else {
+                  Video.time(e.target.currentTime)
+                  Edl.time = Video.time() - Edl.edl[Edl.current].inpoint + Edl.durations(Edl.edl.slice(0,Edl.current))
+                  m.redraw()
+                }
               })
             } else {
               vnode.dom.pause()
@@ -48,8 +66,8 @@ export function VideoPreview() {
           vnode.dom.play()
         }
         if (Video.time() < Edl.edl[Edl.current]['inpoint']) {
-          console.log('jumping to inpoint')
-          vnode.dom.currentTime = Video.time()
+          console.log('jumping to inpoint', Edl.edl[Edl.current]['inpoint'])
+          vnode.dom.currentTime = Edl.edl[Edl.current]['inpoint']
         }
       })
     },
@@ -77,11 +95,11 @@ export var Preview = ( () => {
           case 'ArrowLeft':
             console.log('left!', e)
             e.preventDefault()
-            Edl.jump(Math.max(Edl.time() - 5, 0))
+            Edl.jump(Math.max(Edl.time - 5, 0))
             break
           case 'ArrowRight':
             e.preventDefault()
-            Edl.jump(Math.min(Edl.time() + 5, Edl.duration()))
+            Edl.jump(Math.min(Edl.time + 5, Edl.duration()))
             break
         }
     })},
@@ -93,9 +111,9 @@ export var Preview = ( () => {
       if (clip) {
         if (clip.type == 'template') {
           return m('.bkg#preview', {
-            style: {
-              'background-image': `url(bkg/${encodeURIComponent(m.route.param('project'))}?width=${state.width()}&height=${state.height()}&t=${Edl.time})`
-            }
+            // style: {
+            //   'background-image': `url(bkg/${encodeURIComponent(m.route.param('project'))}?width=${state.width()}&height=${state.height()}&t=${Edl.time})`
+            // }
           }, [m(ImagePreview, {
             id: 'preview',
             src: `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time()}`

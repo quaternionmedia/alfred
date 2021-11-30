@@ -2,7 +2,7 @@ import m from "mithril"
 import Project from './Project'
 import { Menu } from './Menu'
 import Home from './Home'
-import Projects from './Projects'
+import { Projects, Edls } from './Projects'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
 import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'
@@ -50,8 +50,9 @@ console.log('sup!')
 
 m.route(document.body, "/", {
   "/": Home,
-  '/projects': Projects,
-  '/otto': Otto,
+  '/projects': { render: () => m(Layout, m(Projects))},
+  '/single': { render: () => m(Layout, m(Edls))},
+  '/otto': { render: () => m(Layout, m(Otto))},
   '/form': { render: () => m(Layout, m(Magnussens))},
   '/renders': { render: () => m(Layout, m(Renders))},
   '/editor': { render: () => m(Layout, m(TemplateEditor))},

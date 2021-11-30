@@ -72,11 +72,15 @@ if db.projects.count_documents({}) == 0:
 elif [ $1 = "reinit" -o $1 = "reseed" ]; then
   shift
   docker compose -f docker-compose.yml -f dev.yml exec api python3 -c """
-from seed import seed
+from seed import seed, seed_v1
 from alfred.core.utils import get_sync_db
 db = get_sync_db()
+
 db.Project.drop()
 db.Project.insert_many(seed)
+
+db.Edl.drop()
+db.Edl.insert_many(seed_v1)
 """
 
 elif [ $1 = "sh" ]; then

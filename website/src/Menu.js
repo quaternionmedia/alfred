@@ -37,6 +37,7 @@ function Links() {
       return [
         m(Link, {href:'/', id: 'home-link', ...vnode.attrs}, 'home'),
         m(Link, {href:'/projects', id: 'projects-link', ...vnode.attrs}, 'projects'),
+        m(Link, {href:'/single', id: 'projects-link', ...vnode.attrs}, 'single-track'),
         m(Link, {href: '/renders', id: 'renders-link', ...vnode.attrs}, 'renders'),
         m(Link, {
           href: User.username ? '/logout' : '/login',
