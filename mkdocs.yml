@@ -7,10 +7,14 @@ nav:
   - Home: index.md
   - About: about.md
   - Models:
+    - models/index.md
     - Clip: models/clip.md
     - Template: models/template.md
     - Edl: models/edl.md
-  - Example: example.md
+  - Examples:
+    - examples/index.md
+    - Basic: examples/basic.md
+    - Advanced: examples/advanced.md
   - API: api.md
 
 markdown_extensions:
