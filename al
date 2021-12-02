@@ -37,7 +37,7 @@ elif [ $1 = "init" ]; then
   shift
   mkdir -p $(dirname $0)/videos
   mkdir -p $(dirname $0)/website/dist
-  mkdir -p $(dirname $0)/api/data
+  mkdir -p $(dirname $0)/alfred/data
   echo "installing dependencies"
   # make install
   docker compose run website yarn install
@@ -71,12 +71,10 @@ elif [ $1 = "reinit" -o $1 = "reseed" ]; then
   shift
   docker compose exec api python3 -c """
 from seed import seed
-from main import db
-from otto.defaults import sample_forms
-db.edls.drop()
-db.edls.insert_many(seed)
+from db import get_sync_db
+db = get_sync_db()
 db.projects.drop()
-db.projects.insert_many(sample_forms)
+db.projects.insert_many(seed)
 """
 
 elif [ $1 = "sh" ]; then
@@ -91,8 +89,8 @@ elif [ $1 = "worker" -o $1 = "w" ]; then
   shift
   # . operator used in place of source
   . ./.cred
-  # DB_URL=mongodb://$1:27017 CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A tasks:renderer --workdir api/ -b $CELERY_BROKER --result-backend $CELERY_BACKEND worker --concurrency=4
-  DB_URL=mongodb://$1:27017 DB_NAME=alfred CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A tasks:renderer --workdir api/ worker --concurrency=4
+  # DB_URL=mongodb://$1:27017 CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A tasks:renderer --workdir alfred/ -b $CELERY_BROKER --result-backend $CELERY_BACKEND worker --concurrency=4
+  DB_URL=mongodb://$1:27017 DB_NAME=alfred CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A alfred.core.utils:renderer --workdir alfred/ worker --concurrency=4
 elif [ $1 = "dump" ]; then
   shift
   DATE=`date "+%Y-%m-%d-%H%M%S"`

@@ -4,10 +4,17 @@ from fastapi_users import BaseUserManager, FastAPIUsers
 from fastapi_users.authentication import JWTAuthentication
 from fastapi_users.db import MongoDBUserDatabase
 
-from db import get_user_db
-from models import User, UserCreate, UserDB, UserUpdate
+from ..models import User, UserCreate, UserDB, UserUpdate
 
-from config import SECRET_KEY
+from alfred.config import SECRET_KEY
+
+
+from fastapi_users.db import MongoDBUserDatabase
+from ..utils.db import db
+usersCollection = db["users"]
+
+async def get_user_db():
+    yield MongoDBUserDatabase(UserDB, usersCollection)
 
 jwt_authentication = JWTAuthentication(
     secret=SECRET_KEY, lifetime_seconds=3600, tokenUrl="/auth/jwt/login"

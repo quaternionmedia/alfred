@@ -1,12 +1,19 @@
 from celery import Celery, Task
 from otto.render import renderMultitrack
 from otto.models import Edl
-import config
-from logger import DbLogger
 from os.path import join
-from bucket import upload
+from alfred import config
+from .logger import DbLogger
+from .bucket import upload
 
-renderer = Celery('renderer', backend=config.CELERY_BACKEND, broker=config.CELERY_BROKER)
+renderer = Celery('renderer', 
+    backend=config.CELERY_BACKEND, 
+    broker=config.CELERY_BROKER,
+    include=[
+    'alfred.core.utils',
+    'core.utils.tasks',
+    ],
+)
 
 renderer.config_from_object(config.CeleryConfig)
 

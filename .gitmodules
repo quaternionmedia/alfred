@@ -1,4 +1,4 @@
-[submodule "api/otto"]
-	path = api/otto
+[submodule "alfred/otto"]
+	path = alfred/otto
 	url = git@github.com:quaternionmedia/otto.git
 	branch = master

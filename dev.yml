@@ -12,17 +12,19 @@ services:
     ports:
       - 8000:80
     volumes:
-      - ./api/otto:/otto/
+      - ./alfred/otto:/otto/
 
   renderer:
-    build: ./api/
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     image: alfred_worker
-    command: celery -A tasks:renderer --workdir /app/ -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
+    command: celery -A alfred.core.utils.tasks:renderer --workdir /app/ -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
     networks:
       - alfred_isolated
     volumes:
-      - ./api/:/app/
-      - ./api/otto:/otto/
+      - ./alfred/:/app/
+      - ./alfred/otto:/otto/
       - ./videos/:/app/videos/
       - ./cred.json:/cred.json
     depends_on:

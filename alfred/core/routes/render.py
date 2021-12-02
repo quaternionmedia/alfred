@@ -1,15 +1,15 @@
 from fastapi import APIRouter, Depends, Body, Query, BackgroundTasks
 from typing import List, Optional
-from users import current_active_user
-from models import User
+from .users import current_active_user
+from ..models import User
 from otto.models import Edl
 from otto.getdata import timestr
-from tasks import renderRemote
+from ..utils.tasks import renderRemote
 from os.path import join
-from db import db
-from config import BUCKET_NAME
+from ..utils.db import db
+from ..utils.bucket import generate_signed_url
+from alfred.config import BUCKET_NAME
 from bson.json_util import dumps
-from bucket import generate_signed_url
 
 renderAPI = APIRouter()
 

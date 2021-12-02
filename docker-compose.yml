@@ -13,13 +13,15 @@ services:
 
   # TODO API description
   api:
-    build: ./api/
+    build:
+      context: .
+      dockerfile: ./Dockerfile
     image: alfred_api
     depends_on:
       - website
       - db
     volumes:
-      - ./api/:/app/
+      - ./alfred/:/app/
       - ./website/dist/:/app/dist/
       - ./videos/:/app/videos/
       - ./cred_api.json:/cred.json

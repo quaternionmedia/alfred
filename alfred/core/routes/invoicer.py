@@ -1,7 +1,7 @@
 from pdfrw import PdfReader, PdfWriter, PageMerge
 from io import BytesIO
 from reportlab.pdfgen import canvas
-from db import db
+from ..utils.db import db
 from bson.objectid import ObjectId
 from math import ceil
 from datetime import datetime
