@@ -5,7 +5,3 @@ This is an advanced topic, and requires some tool to make requests to the server
 
 !!! note
     For the full API reference (including interactive request generator), visit [alfred.quaternion.media/api](https://alfred.quaternion.media/api)
-
-
-## issues
-Report any issues with renders with the `/report/{render}` endpoint.

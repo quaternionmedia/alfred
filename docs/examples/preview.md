@@ -1,4 +1,4 @@
-# Preview
+# Preview Template
 Preview an `otto` `Edl` without rendering a full video
 
 This example posts a single `Template` clip that generates a `text` in large title format.

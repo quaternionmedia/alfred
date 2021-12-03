@@ -6,7 +6,3 @@
 ## Trim video
 
 ## Combine videos
-
-## Template
-
-## Add animation

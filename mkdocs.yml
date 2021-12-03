@@ -16,6 +16,7 @@ nav:
     - models/edl.md
   - Examples:
     - examples/index.md
+    - examples/login.md
     - examples/basic.md
     - examples/preview.md
     - examples/advanced.md

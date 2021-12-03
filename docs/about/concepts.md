@@ -12,7 +12,7 @@ Alfred is split into several components:
     - template rendering forms
     - preview frame of video
     - check renders status and download
-### [API](../api)
+### [API](../../api)
 : The video rendering components, available as a backend service.
 
 

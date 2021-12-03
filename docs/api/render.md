@@ -4,3 +4,6 @@ The `render` route accepts an `Edl`, along with render parameters and initiates 
 ## `GET /render`
 
 ## `POST /render`
+
+## issues
+Report any issues with renders with the `/report/{render}` endpoint.
