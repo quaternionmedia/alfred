@@ -57,6 +57,7 @@ theme:
     - navigation.tabs.sticky
     - navigation.sections
     - navigation.expand
+    - navigation.indexes
     - toc.integrate
     - navigation.top
     - content.code.annotate
