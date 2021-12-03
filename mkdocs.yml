@@ -17,6 +17,7 @@ nav:
   - Examples:
     - examples/index.md
     - examples/basic.md
+    - examples/preview.md
     - examples/advanced.md
   - API:
     - api/index.md
