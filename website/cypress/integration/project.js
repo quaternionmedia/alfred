@@ -8,16 +8,12 @@ describe('project tests', () => {
         cy.get('+').should('be.visible')
     })
 
-    it('finds demo project', () => {
-        cy.get('.project').contains('qm').should('be.visible')
-    })
+    // it('finds demo project', () => {
+    //     cy.get('.project').contains('qm').should('be.visible')
+    // })
 
     it('finds local projects', () => {
-        cy.contains('salon').should('be.visible')
-        cy.contains('car').should('be.visible')
-        cy.contains('Magnussens').should('be.visible')
-        cy.contains('Magnussens 2021_2').should('be.visible')
-        cy.contains('RSG').should('be.visible')
+        cy.contains('qm').should('be.visible')
     })
 
     // it('finds demo project', () => {
@@ -25,21 +21,21 @@ describe('project tests', () => {
     //     cy.url().should('eq', Cypress.config().baseUrl + "#!/form?project=Magnussens%202021_2")
     // })
 
-    it('previews qm project', () => {
-        cy.contains('Magnussens 2021_2').click()
-            // cy.url().should('eq', dev.api + "form?project=qm" )
-        cy.get('[name="preview"]').click()
-            //add verify for preview
-        cy.get('.loader')
-            .should('be.visible')
-            // .and(($img) => {
-            //     // "naturalWidth" and "naturalHeight" are set when the image loads
-            //     expect(
-            //         $img[0].naturalWidth,
-            //         'image has natural width'
-            //     ).to.be.greaterThan(0)
-            // })
-    })
+    // it('previews qm project', () => {
+    //     cy.contains('Magnussens 2021_2').click()
+    //         // cy.url().should('eq', dev.api + "form?project=qm" )
+    //     cy.get('[name="preview"]').click()
+    //         //add verify for preview
+    //     cy.get('.loader')
+    //         .should('be.visible')
+    //         // .and(($img) => {
+    //         //     // "naturalWidth" and "naturalHeight" are set when the image loads
+    //         //     expect(
+    //         //         $img[0].naturalWidth,
+    //         //         'image has natural width'
+    //         //     ).to.be.greaterThan(0)
+    //         // })
+    // })
 
     // it('preview and renders qm project', () => {
     //     cy.renders()
