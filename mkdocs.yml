@@ -15,7 +15,11 @@ nav:
     - examples/index.md
     - Basic: examples/basic.md
     - Advanced: examples/advanced.md
-  - API: api.md
+  - API:
+    - api/index.md
+    - api/auth.md
+    - api/otto.md
+    - api/render.md
 
 markdown_extensions:
   - pymdownx.highlight
