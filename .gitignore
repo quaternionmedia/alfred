@@ -66,3 +66,4 @@ alfred/data
 instrumented/
 website/coverage/
 website/cypress-coverage/
+test/

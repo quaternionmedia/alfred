@@ -24,11 +24,47 @@
 // -- This will overwrite an existing command --
 // Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
 
-const home = 'http://localhost:8000/'
+Cypress.Commands.add('home', () => {
+  cy.visit('/')
+  cy.url().should('eq', Cypress.config().baseUrl)
+})
 
-Cypress.Commands.add("loginByApi", (username, password = Cypress.env("defaultPassword")) => {
-    return cy.request("POST", `${Cypress.env(home)}/login`, {
-      username,
-      password,
-    });
-  });
+Cypress.Commands.add('renders', () => {
+  cy.visit('/#!/renders')
+  cy.url().should('eq', Cypress.config().baseUrl + '#!/renders' )
+})
+
+Cypress.Commands.add('projects', () => {
+  cy.visit('/#!/projects')
+  cy.url().should('eq', Cypress.config().baseUrl + '#!/projects' )
+})
+
+Cypress.Commands.add("loginApi", (username = Cypress.env("email"), password = Cypress.env("pwd")) => {
+     return cy.request({method:'POST',
+    url: '/auth/jwt/login',
+    body: {
+        username: Cypress.env('email'),
+        password: Cypress.env('pwd'),
+    },
+    form: true
+  })
+});
+
+Cypress.Commands.add("loginUI", () => {
+    cy.home()
+    cy.location('pathname').should('equal', '/')
+    cy.get(':nth-child(7) > #login-link').click()
+    
+
+    // enter valid username and password
+    cy.get('[name=username]').type(Cypress.env('email'))
+    cy.get('[name=password]').type(Cypress.env('pwd'))
+    cy.get('#submit').click()
+
+    // confirm we have logged in successfully
+    cy.location('pathname').should('equal', '/')
+})
+
+Cypress.Commands.add("logout", () => {
+  cy.visit('/#!/logout')
+})
