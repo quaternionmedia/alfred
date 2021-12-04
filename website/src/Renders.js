@@ -38,13 +38,13 @@ export function RenderLink() {
     view: vnode => {
       return link ? m('.bar', {}, [
         m('textarea', {
-          id: vnode.children[0]
+          id: vnode.attrs.id
         }, link),
         m('i.material-icons', {
           onclick: e => {
             // console.log('copied ', e)
             success('copied link to clipboard!', 3)
-            let txt = document.getElementById(vnode.children[0])
+            let txt = document.getElementById(vnode.attrs.id)
             txt.select()
             document.execCommand('copy')
           }
@@ -53,9 +53,7 @@ export function RenderLink() {
           m('i.material-icons', {
             onclick: e => {
               // console.log('getting render link', vnode.children)
-              auth('/render', {
-                params: { name: vnode.children[0] }
-              }).then(res => {
+              auth('/render/' + vnode.attrs.id, {}).then(res => {
                 link = res
               })
             }}, 'link'))
@@ -159,14 +157,13 @@ export function Renders() {
                     })
                   }}, 'missed_video_call')) : ''),
                   m('td', r['progress'] >= 100 ?
-                  m(RenderLink, {}, r['filename']) : ''),
+                  m(RenderLink, {id: r['_id']}) : ''),
                   m('td', {}, m('.tools', {}, m('i.material-icons', {
                     onclick: e => {
                       prompt('Report issue', "Please provide a detailed description of the issue", "There's a problem with...", (evt, issue) => {
                         console.log('reporting issue', evt, issue)
-                        auth('/report', {
+                        auth(`/render/${r['_id']}/report`, {
                           method: 'post',
-                          params: { name: r['filename'] },
                           body: issue
                         }).then(win => {
                           success("issue submitted! We'll check it out as soon as we can!")
