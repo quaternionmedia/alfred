@@ -180,8 +180,8 @@ export function Renders() {
                   m('.tools',
                   m('i.material-icons', {
                     onclick: e => {
-                      auth(`/render/${r['filename']}/cancel`, {
-                        method: 'put',
+                      auth(`/render/${r['_id']}`, {
+                        method: 'delete',
                       }).then(res => {
                         console.log('deleted', r['filename'])
                         message(`${r['filename']} removed`, 4)
