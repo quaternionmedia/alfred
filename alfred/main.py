@@ -14,7 +14,7 @@ from core.routes import ProjectAPI
 from core.routes import RenderAPI
 from otto.main import app as ottoApi
 from core.utils import get_db
-from core.routes.render import deOid
+from core.utils.db import deOid
 from core.routes.users import fastapi_users, current_active_user, current_active_superuser
 
 from seed import seed
