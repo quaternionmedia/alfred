@@ -57,7 +57,9 @@ app.include_router(fastapi_users.get_users_router(), prefix='/users', tags=['use
 
 projects = ProjectAPI()
 app.include_router(projects,
-    dependencies=[Depends(current_active_user)])
+    dependencies=[Depends(current_active_user)],
+    tags=['project']
+    )
 
 app.include_router(fontAPI,
     dependencies=[Depends(current_active_user)], tags=['font'])
