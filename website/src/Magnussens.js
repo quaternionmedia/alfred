@@ -110,6 +110,7 @@ export function Magnussens() {
               description: data.description,
               ffmpeg_params: ffmpeg_params,
               edl: edl,
+              duration: data.duration ? data.duration : edl.duration,
             }
             auth(`/render?${generateParams(params)}`, {
               method: 'post',

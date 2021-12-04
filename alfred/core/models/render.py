@@ -11,6 +11,7 @@ class Render(Document):
     project: Optional[str]
     project_id: Optional[PydanticObjectId]
     description: Optional[str]
+    duration: Optional[float]
     width: Optional[int] = 1920
     height: Optional[int] = 1080
     fps: Optional[float] = 30.0
@@ -32,7 +33,8 @@ class RenderUpdate(Render):
     project: Optional[str]
     project_id: Optional[PydanticObjectId]
     description: Optional[str]
+    duration: Optional[float]
     resolution: Optional[str]
-    quality: Optional[List]
     progress: Optional[float]
     link: Optional[str]
+    filename: Optional[str]
