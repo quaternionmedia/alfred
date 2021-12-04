@@ -19,6 +19,7 @@ nav:
     - examples/login.md
     - examples/basic.md
     - examples/preview.md
+    - examples/render.md
     - examples/advanced.md
   - API:
     - api/index.md
