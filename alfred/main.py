@@ -71,8 +71,9 @@ app.include_router(renderAPI,
     dependencies=[Depends(current_active_user)],
     tags=['render'])
 app.include_router(issueAPI, 
+    prefix='/render',
     dependencies=[Depends(current_active_user)],
-    tags=['issue'])
+    tags=['render'])
 app.include_router(adminAPI, 
     dependencies=[Depends(current_active_superuser)],
     tags=['admin'])
