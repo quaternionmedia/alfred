@@ -3,11 +3,13 @@ from datetime import datetime
 from beanie import Document
 from otto.models import Edl
 from fastapi import Query
+from beanie import PydanticObjectId
 
 class Render(Document):
     edl: Edl
     name: Optional[str]
     project: Optional[str]
+    project_id: Optional[PydanticObjectId]
     description: Optional[str]
     width: Optional[int] = 1920
     height: Optional[int] = 1080
@@ -28,6 +30,7 @@ class RenderUpdate(Render):
     edl: Optional[Edl]
     name: Optional[str]
     project: Optional[str]
+    project_id: Optional[PydanticObjectId]
     description: Optional[str]
     resolution: Optional[str]
     quality: Optional[List]

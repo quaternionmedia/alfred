@@ -49,7 +49,7 @@ export function Magnussens() {
     },
     view: vnode => {
       return [
-        m('h2', {}, m.route.param('project')),
+        m('h2', {}, project ? project.name : ''),
         m(Form, {id: 'template_form'}, [
           m(Fields, {}, fields),
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
@@ -101,7 +101,8 @@ export function Magnussens() {
             console.log('saving form', e, edl, data, data, ffmpeg_params)
             
             let params = {
-              project: m.route.param('project'),
+              project: project.name,
+              project_id: m.route.param('project'),
               width: data.width,
               height: data.height,
               fps: 29.97,

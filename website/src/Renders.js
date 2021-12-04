@@ -134,7 +134,7 @@ export function Renders() {
                 m('td', {}, r['project']),
                 m('td', {}, r['description']),
                 m('td', {}, r['duration']),
-                m('td', {}, r['resolution'] ? `${r['resolution'][0]}x${r['resolution'][1]}` : ''),
+                m('td', {}, `${r['width']}x${r['height']}`),
                 m('td', {}, r['quality']),
                 m('td.tooltip', {}, [
                   shortTime(dateFromObjectId(r['_id'])),
