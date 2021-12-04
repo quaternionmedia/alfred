@@ -82,7 +82,7 @@ export function Renders() {
   var renders = []
   
   function getRenders() {
-    auth('/renders').then(e => {
+    auth('/render').then(e => {
       // console.log('renders init')
       renders = e
     })
@@ -153,9 +153,7 @@ export function Renders() {
                 m('.tools',
                 m('i.material-icons', {
                   onclick: e => {
-                    auth('/render', {
-                      params: { name: r['filename'] }
-                    }).then(res => {
+                    auth('/render/' + r['_id']).then(res => {
                       // console.log('got signed link', res)
                       preview(res)
                     })
@@ -185,7 +183,7 @@ export function Renders() {
                   m('.tools',
                   m('i.material-icons', {
                     onclick: e => {
-                      auth(`/renders/${r['filename']}/cancel`, {
+                      auth(`/render/${r['filename']}/cancel`, {
                         method: 'put',
                       }).then(res => {
                         console.log('deleted', r['filename'])
