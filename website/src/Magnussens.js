@@ -96,7 +96,7 @@ export function Magnussens() {
             data.width = data.resolution.split('x')[0]
             data.height = data.resolution.split('x')[1]
 
-            let edl = logic(data)
+            let edl = {clips: logic(data), duration: data.duration}
             let ffmpeg_params = data.quality == 'TV' ? ['-b:v', '25M', '-maxrate', '30M', '-bufsize', '20M'] : ['-b:v', '5M', '-minrate', '1M', '-maxrate', '10M', '-bufsize', '5M']
             console.log('saving form', e, edl, data, data, ffmpeg_params)
             
@@ -108,10 +108,11 @@ export function Magnussens() {
               quality: data.quality,
               description: data.description,
               ffmpeg_params: ffmpeg_params,
+              edl: edl,
             }
             auth(`/render?${generateParams(params)}`, {
               method: 'post',
-              body: {clips: edl, duration: data.duration}
+              body: params
             }).then(e => {
               success('Rendering!')
               m.route.set('/renders')
