@@ -15,15 +15,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - name: disable the keychain credential helper
-        run: git config --global credential.helper ""
-      - name: enable the local store credential helper
-        run: git config --global --add credential.helper store
-      - name: add credential
-        run: echo "https://x-access-token:${{ secrets.QM_TOKEN }}@github.com" >> ~/.git-credentials
-      - name: tell git to use https instead of ssh whenever it encounters it
-        run: 'git config --global url."https://github.com/".insteadof git@github.com:'
+    - uses: actions/checkout@v2
+    - name: disable the keychain credential helper
+      run: git config --global credential.helper ""
+    - name: enable the local store credential helper
+      run: git config --global --add credential.helper store
+    - name: add credential
+      run: echo "https://x-access-token:${{ secrets.QM_TOKEN }}@github.com" >> ~/.git-credentials
+    - name: tell git to use https instead of ssh whenever it encounters it
+      run: 'git config --global url."https://github.com/".insteadof git@github.com:'
     - name: Checkout
       with:
         submodules: recursive
