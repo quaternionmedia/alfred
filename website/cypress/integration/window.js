@@ -11,7 +11,7 @@ describe('Window Test Suite Commands', () => {
         cy.window().should(win => {
             const loc = win.location
             expect(loc.hash).to.eql('#!/');
-            expect(loc.host).to.eql('localhost:8000');
+            expect(loc.host).to.eql(cy.location().host);
             expect(loc.pathname).to.eql('/');
             expect(loc.protocol).to.eql('http:');
         })

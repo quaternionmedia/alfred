@@ -3,7 +3,7 @@ describe('logs in', () => {
 
   it('fails to access protected resource', () => {
     cy.request({
-      url: 'http://localhost:8000/users/me',
+      url: Cypress.env('HOST') + '/users/me',
       failOnStatusCode: false,
     })
     .its('status')
