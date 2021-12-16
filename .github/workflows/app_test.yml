@@ -17,7 +17,10 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-
+      with:
+        submodules: recursive
+    - name: init project
+      run: ./al init
     - name: Start containers
       env:
         CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
