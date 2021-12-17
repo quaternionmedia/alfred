@@ -25,4 +25,5 @@ jobs:
       - name: Start containers
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: docker-compose -f "docker-compose.yml" -f test.yml up --build
