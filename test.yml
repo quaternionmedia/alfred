@@ -14,8 +14,6 @@ services:
       - alfred_isolated
     environment:
       - CYPRESS_baseUrl=http://api/
-    env_file:
-      - .cypress
     command: cypress run --record
 
   website:
