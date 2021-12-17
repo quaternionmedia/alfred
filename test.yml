@@ -13,8 +13,8 @@ services:
     networks:
       - alfred_isolated
     environment:
-      - CYPRESS_baseUrl=http://api/
-    command: cypress run --record
+      CYPRESS_baseUrl: http://api/
+      CYPRESS_RECORD_KEY: ${CYPRESS_RECORD_KEY}
 
   website:
     command: yarn parcel watch /app/src/index.html /app/src/*.svg /app/src/*.png
