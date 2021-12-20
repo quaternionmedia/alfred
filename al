@@ -112,4 +112,7 @@ elif [ $1 = "git" -o $1 = "g" ]; then
   shift
   git pull && git submodule update
 
+elif [ $1 = "test" -o $1 = "t" ]; then
+  shift
+  docker compose -f docker-compose.yml -f test.yml up --build --exit-code-from cy
 fi

@@ -1,24 +1,39 @@
-const username = 'johndoe'
-const password = 'secret'
+/// <reference types="cypress" />
+describe('logs in', () => {
 
-describe('the login page', () => {
-  it('sets auth header when logging in for server authentication', () => {
-    cy.visit('http://localhost:8000/')
-    cy.contains('menu').click()
-    cy.contains('login').click()
-    cy.url().should('include', '/#!/login')
-    cy.contains('menu').click()
-    cy.contains('projects').click()
-    cy.url().should('include', '/#!/login')
-    autoLogin()
-    cy.get(':nth-child(6) > #projects-link').click()
-    cy.contains('demo.csv')
+  it('fails to access protected resource', () => {
+    cy.request({
+      url: Cypress.env('HOST') + '/users/me',
+      failOnStatusCode: false,
+    })
+    .its('status')
+    .should('equal', 401)
   })
+
+  it('Does not log in with invalid password', () => {
+    cy.home()
+    cy.location('pathname').should('equal', '/')
+    cy.get(':nth-child(7) > #login-link').click()
+    // try logging in with invalid password
+    cy.get('[name=username]').type('username')
+    cy.get('[name=password]').type('wrong-password')
+    cy.get('#submit').click()
+
+    // still on /login page plus an error is displayed
+    cy.location('pathname').should('equal', '/')
+    cy.get('.ajs-message').should('be.visible')
+  })
+
+  // it('gets to project page', () => {
+  //   cy.visit('/projects')
+  //   cy.url().should('eq', '/projects')
+  // })
 })
 
-export function autoLogin() {
-  cy.visit('http://localhost:8000/#!/login')
-  cy.get('input[name=username]').type(username)
-  cy.get('input[name=password]').type(`${password}{enter}`)
-  cy.url().should('eq', 'http://localhost:8000/#!/')
-}
+
+
+//add verify for completed render
+
+//add verify for preview
+
+//add verify for download
