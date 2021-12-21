@@ -69,12 +69,12 @@ if db.projects.count_documents({}) == 0:
 
 elif [ $1 = "reinit" -o $1 = "reseed" ]; then
   shift
-  docker compose exec api python3 -c """
+  docker compose -f docker-compose.yml -f dev.yml exec api python3 -c """
 from seed import seed
-from db import get_sync_db
+from alfred.core.utils import get_sync_db
 db = get_sync_db()
-db.projects.drop()
-db.projects.insert_many(seed)
+db.Project.drop()
+db.Project.insert_many(seed)
 """
 
 elif [ $1 = "sh" ]; then
@@ -112,4 +112,7 @@ elif [ $1 = "git" -o $1 = "g" ]; then
   shift
   git pull && git submodule update
 
+elif [ $1 = "test" -o $1 = "t" ]; then
+  shift
+  docker compose -f docker-compose.yml -f test.yml up --build --exit-code-from cy
 fi

@@ -1,17 +1,20 @@
 from typing import List, Optional
 
 from fastapi import FastAPI, Query
-from models import Template, TemplateUpdate
+from alfred.core.models import Project, ProjectUpdate
 from fastapi_crudrouter import MotorCRUDRouter
-from db import client
-
+from alfred.core.utils import get_client
+from alfred.config import DB_NAME
 app = FastAPI()
 
-templates = MotorCRUDRouter(
-    schema=Template,
-    client=client,
-    create_schema=Template,
-    update_schema=TemplateUpdate
+projects = MotorCRUDRouter(
+    schema=Project,
+    client=get_client(),
+    database=DB_NAME,
+    create_schema=Project,
+    update_schema=ProjectUpdate
     )
 
-app.include_router(templates)#, tags=['template'])
+app.include_router(projects)#, tags=['template'])
+
+print('testing api', DB_NAME)

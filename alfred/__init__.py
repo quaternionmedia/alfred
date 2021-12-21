@@ -1,6 +1,6 @@
 from ._version import __version__
 from . import config
-from .core.utils.db import db, client
+from .core.utils.db import get_db
 
 from .core import models
 from .core import responses

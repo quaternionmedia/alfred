@@ -12,8 +12,8 @@
   "scripts": {
     "build": "parcel build src/index.html",
     "dev": "parcel watch src/* --hmr-port=8001",
-    "test": "$(npm bin)/cypress run",
-    "cy": "$(npm bin)/cypress open"
+    "cy:run": "npx cypress run",
+    "cy:open": "npx cypress open"
   },
   "dependencies": {
     "alertifyjs": "^1.13.1",
