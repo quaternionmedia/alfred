@@ -12,3 +12,9 @@ celery>=5.1.2,<5.2.0
 google-cloud-storage>=1.42.3
 pdfrw>=0.4
 reportlab>=3.6.2
+
+# dev
+pytest==6.2.1
+pytest-asyncio==0.14.0
+httpx==0.16.1
+asgi-lifespan==1.0.1

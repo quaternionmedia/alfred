@@ -119,4 +119,8 @@ elif [ $1 = "docs" -o $1 = "d" ]; then
   shift
   mkdocs serve -a 0.0.0.0:4000
 
+elif [ $1 = "test" -o $1 = "t" ]; then
+  shift
+  docker compose -f docker-compose.yml -f test.yml up --build --exit-code-from cy
+
 fi
