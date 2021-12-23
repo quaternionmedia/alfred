@@ -28,6 +28,7 @@ app = FastAPI(
     version = docs.version,
     contact = docs.contact,
     openapi_tags=docs.tags_metadata,
+    docs_url = '/api',
 )
 app.add_middleware(GZipMiddleware)
 
@@ -77,6 +78,7 @@ app.include_router(adminAPI,
     tags=['admin'])
 #  note: we can't secure the /data route because the otto preview is rendered into the <img> tag in the browser. Should find a workaround for this, but it is not critical.
 app.mount('/data', StaticFiles(directory='data', html=True), name='data')
+app.mount('/docs', StaticFiles(directory='site', html=True), name='docs')
 
 # if request does not match the above api, try to return a StaticFiles match
 app.mount('/', StaticFiles(directory='dist', html=True), name='static')

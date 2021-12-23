@@ -47,6 +47,7 @@ github_key*
 output/*
 alfred/output/*
 alfred/data
+alfred/site
 
 *.mp3
 *.mp4
