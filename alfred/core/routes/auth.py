@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Response, HTTPException, status
-from .users import fastapi_users, jwt_authentication
+from .users import fastapi_users, auth_backend
 
 from alfred.config import SECRET_KEY
 
@@ -16,7 +16,7 @@ auth = APIRouter()
 
 
 auth.include_router(
-    fastapi_users.get_auth_router(jwt_authentication), prefix='/jwt'
+    fastapi_users.get_auth_router(auth_backend), prefix='/jwt'
 )
 auth.include_router(
     fastapi_users.get_register_router()
@@ -30,4 +30,4 @@ auth.include_router(
 
 @auth.post("/jwt/refresh")
 async def refresh_jwt(response: Response, user=Depends(fastapi_users.current_user(active=True))):
-    return await jwt_authentication.get_login_response(user, response, fastapi_users)
+    return await auth_backend.get_login_response(user, response, fastapi_users)
