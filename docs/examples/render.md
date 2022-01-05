@@ -1,5 +1,5 @@
-# Render a video
-Render an `Edl` on the server and download the final video when finished.
+# Render video
+Render an `Edl` with a single video and download the result when finished.
 
 ## Edl
 A single video clip.

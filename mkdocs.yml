@@ -20,6 +20,10 @@ nav:
     - examples/basic.md
     - examples/preview.md
     - examples/render.md
+    - examples/trim.md
+    - examples/combine.md
+    - examples/text.md
+    - examples/animation.md
     - examples/advanced.md
   - API:
     - api/index.md

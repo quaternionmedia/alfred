@@ -1,7 +1,8 @@
-# Preview frame
-Preview one frame of an `Edl` without rendering the full video
+# Generate text
 
-## Edl
+This example posts a single `Template` clip that generates a `text` in large title format.
+
+## Create Edl
 ``` json title="data.json"
 {
   "clips": [

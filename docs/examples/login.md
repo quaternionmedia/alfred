@@ -23,3 +23,13 @@ curl \
   -H "Authorization: bearer $TOKEN" \
   https://alfred.quaternion.media/protected
 ```
+
+
+!!! abstract "`curl | jq`"
+    The following is a bash one-liner to create a local `$TOKEN` variable using `curl` and `jq`.
+    ``` bash
+    export TOKEN=$(curl -X POST \
+      -F "username=your@email"
+      -F "password=yourpassword" \
+      https://alfred.quaternion.media/auth/jwt/login | jq -r '.access_token')
+    ```
