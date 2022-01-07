@@ -36,8 +36,8 @@ elif [ $1 = "prod" -o $1 = "production" -o $1 = "p" ]; then
 # Installs website dependencies.
 elif [ $1 = "init" ]; then
   shift
-  mkdir -p $(dirname $0)/videos
   mkdir -p $(dirname $0)/website/dist
+  mkdir -p $(dirname $0)/alfred/videos
   mkdir -p $(dirname $0)/alfred/data
   mkdir -p $(dirname $0)/alfred/site
   echo "installing dependencies"

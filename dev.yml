@@ -25,7 +25,6 @@ services:
     volumes:
       - ./alfred/:/app/
       - ./alfred/otto:/otto/
-      - ./videos/:/app/videos/
       - ./cred.json:/cred.json
     depends_on:
       - 'db'
