@@ -1,8 +1,13 @@
-name: ci # 
+name: docs
 on:
   push:
     branches:
-      - mkdocs
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
 jobs:
   deploy:
     runs-on: ubuntu-latest

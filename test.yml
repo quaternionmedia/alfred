@@ -1,18 +1,25 @@
 version: '3.8'
 
 services:
-  # TODO Development Reloader description
-  website:
-    ports:
-      - 8001:8001
-    command: yarn run dev
-
-# TODO API description
-  api:
-    ports:
-      - 8000:80
+  cy:
+    image: cypress/included:9.1.1
+    depends_on:
+      - website
+      - api
+      - db
     volumes:
-      - ./alfred/otto:/otto/
+      - ./website/:/e2e/
+    working_dir: /e2e/
+    networks:
+      - alfred_isolated
+    environment:
+      CYPRESS_baseUrl: http://api/
+      CYPRESS_RECORD_KEY: ${CYPRESS_RECORD_KEY}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+    command: cypress run --record
+
+  website:
+    command: yarn parcel watch /app/src/index.html /app/src/*.svg /app/src/*.png
 
   renderer:
     build:
@@ -25,6 +32,7 @@ services:
     volumes:
       - ./alfred/:/app/
       - ./alfred/otto:/otto/
+      - ./videos/:/app/videos/
       - ./cred.json:/cred.json
     depends_on:
       - 'db'
@@ -34,6 +42,3 @@ services:
       - DB_URL=mongodb://db:27017
       - DB_NAME=alfred
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
-  db:
-    ports:
-      - 27017:27017

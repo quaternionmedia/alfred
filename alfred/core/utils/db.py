@@ -2,6 +2,7 @@ import motor.motor_asyncio
 from alfred.config import DB_URL, DB_NAME
 from ..models import UserDB
 from typing import List
+from fastapi_users.db import MongoDBUserDatabase
 
 def get_sync_db(database=DB_NAME):
     from pymongo import MongoClient
@@ -15,6 +16,9 @@ def get_client(db_url=DB_URL, database=DB_NAME):
 
 def get_db(db_url=DB_URL, database=DB_NAME):
     return get_client(db_url=db_url)[DB_NAME]
+
+async def get_user_db():
+    yield MongoDBUserDatabase(UserDB, get_db()['users'])
 
 def deOid(results: List):
     """De-ObjectID

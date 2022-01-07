@@ -1,0 +1,30 @@
+name: Application Test
+
+on:
+  push:
+    branches:
+    - main
+    - dev
+  pull_request:
+    branches:
+    - main
+    - dev
+
+jobs:
+  run_tests:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          token: ${{ secrets.QM_TOKEN }}
+      - name: init project
+        run: ./al init
+      - name: Start containers
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: docker-compose -f docker-compose.yml -f test.yml up --build --exit-code-from cy
