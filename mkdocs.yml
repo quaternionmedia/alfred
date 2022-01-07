@@ -2,6 +2,7 @@ site_name: Alfred
 side_description: automatic video editing
 site_url: https://alfred.quaternion.media/docs/
 repo_url: https://github.com/quaternionmedia/alfred
+edit_uri: ""
 
 nav:
   - Home: index.md
@@ -17,7 +18,6 @@ nav:
   - Examples:
     - examples/index.md
     - examples/login.md
-    - examples/basic.md
     - examples/preview.md
     - examples/render.md
     - examples/trim.md

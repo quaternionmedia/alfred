@@ -32,6 +32,16 @@ Alfred is a web based video editing suite, designed to simplify the production p
     - Optional: Use an existing physical or virtual server as an additional rendering node
 - Cloud monitoring tools to check status
 - Secure file storage and downloading
+
+## Origin
+Alfred began as a simple, serverless video client, designed to simplify the video production process using modern web browsers with a powerful, scalable rendering engine.
+
+Since then, the project has grown to include a suite of video and editing tools, including rendering, template generation, and automations.
+
+
+!!! quote "Alfred Hitchcock"
+    Drama is life with all the dull bits cut out.
+
     
 ## Links
 App: [alfred.quaternion.media](https://alfred.quaternion.media)
