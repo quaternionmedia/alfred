@@ -48,13 +48,13 @@ class RenderAPI(MotorCRUDRouter):
             print('rendering!', render, result)
             task = renderRemote.delay(
                 edl=render.edl, 
-                renderId=result.inserted_id,
+                renderId=result.id,
                 filename=filename,
                 moviesize=(render.width, render.height), 
                 fps=render.fps, 
                 bitrate=render.bitrate,
                 ffmpeg_params=render.ffmpeg_params)
-            return str(result.inserted_id)
+            return str(result.id)
 
         @self.get('/{item_id}', *args, **kwargs)
         async def getSignedRenderLink(item_id: str, user: User = Depends(current_active_user)):
