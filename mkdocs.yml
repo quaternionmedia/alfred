@@ -6,15 +6,12 @@ edit_uri: ""
 
 nav:
   - Home: index.md
-  - About: 
+  - About:
     - about/index.md
-    - about/origin.md
     - about/concepts.md
-  - Models:
-    - models/index.md
-    - models/clip.md
-    - models/template.md
-    - models/edl.md
+    - about/clip.md
+    - about/template.md
+    - about/edl.md
   - Examples:
     - examples/index.md
     - examples/login.md
