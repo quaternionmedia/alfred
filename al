@@ -23,7 +23,7 @@ if [ $1 = "version" -o $1 = "v" -o $1 = "-v" ]; then
 elif [ $1 = "dev" ] || [ -z $1 ]; then
   if [ !-z ]; then shift; fi
   echo "Alfred! running dev $1"
-  docker compose -f docker-compose.yml -f dev.yml up $1
+  docker compose -f docker-compose.yml -f dev.yml up "$@"
 
 # Starts in production.
 elif [ $1 = "prod" -o $1 = "production" -o $1 = "p" ]; then
@@ -85,7 +85,7 @@ elif [ $1 = "sh" ]; then
 
 elif [ $1 = "log" -o $1 = "logs" -o $1 = "l" ]; then
   shift
-  docker compose logs -f
+  docker compose logs -f "$@"
 
 elif [ $1 = "worker" -o $1 = "w" ]; then
   shift
@@ -119,4 +119,7 @@ elif [ $1 = "docs" -o $1 = "d" ]; then
   shift
   mkdocs serve -a 0.0.0.0:4000
 
+elif [ $1 = "docker" -o $1 = "dock" ]; then
+  shift
+  docker compose -f docker-compose.yml -f dev.yml "$@"
 fi
