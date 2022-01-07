@@ -1,7 +1,7 @@
 # Login
 Tokens can be acquired with a `POST` request, with a username (email address) and password as form data.
 
-??? abstract "Register for new account"
+!!! abstract "Register for new account"
     If you have not already done so, register for a new account by visiting [https://alfred.quaternion.media/login](https://alfred.quaternion.media/login)
     
     Registering can also be performed as an API request:

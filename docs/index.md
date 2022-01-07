@@ -10,16 +10,20 @@ Automatic video tools
 Alfred is a web based video editing suite, designed to simplify the production process using modern, cloud based solutions.
 
 ## Features
+### Rendering
+- Server based rendering
+    - Optional: Use an existing physical or virtual server as an additional rendering node
+- Cloud monitoring tools to check status
+- Secure file storage and downloading
 ### Editing
 - Create and modify edits with any HTML5 browser
-- Drag and drop clips to rearrange
-- Supports mobile devices
 - No need for powerful editing hardware
+- Supports mobile devices
+<!-- - Drag and drop clips to rearrange -->
 - Preview finished product in browser
 - Render final videos in the cloud
 - Output to different resolutions and formats
   <!-- - Advanced (multi-track) -->
-  
 ### [Templates](../template)
 - Define dynamic `Templates` for clips
 - Create forms for end users to customize a video from a Template
@@ -27,11 +31,7 @@ Alfred is a web based video editing suite, designed to simplify the production p
 ### Forms
 - Design simple forms for end users to apply data into templates
 - Define dynamic properties that can pull from multiple sources
-### Rendering
-- Server based rendering
-    - Optional: Use an existing physical or virtual server as an additional rendering node
-- Cloud monitoring tools to check status
-- Secure file storage and downloading
+
 
 ## Origin
 Alfred began as a simple, serverless video client, designed to simplify the video production process using modern web browsers with a powerful, scalable rendering engine.
