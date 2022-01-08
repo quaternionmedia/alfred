@@ -52,11 +52,6 @@ A **Project** is an alfred document with a `logic` object which contains the nec
 Render an `Edl` and check status on existing renders."""
     },
     {
-        'name': 'issue',
-        'description': """# issue
-Report an issue with a render.""",
-    },
-    {
         'name': 'video',
         'description': """# Video
 Serve videos directly from this instance.

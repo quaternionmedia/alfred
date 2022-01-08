@@ -7,10 +7,10 @@ from asyncio import get_running_loop
 db = get_sync_db()
 
 class DbLogger(ProgressBarLogger):
-    def __init__(self, task, filename):
+    def __init__(self, task, renderId):
         super().__init__()
         self.task = task
-        self.filename = filename
+        self.id = renderId
     def callback(self, **kwargs):
         # print('task callback', kwargs)
         bar = self.state.get('bars')
@@ -18,21 +18,21 @@ class DbLogger(ProgressBarLogger):
         if bar and bar.get('t'):
             t = bar.get('t')
             if t.get('status') == 'uploaded':
-                db.renders.update_one({'filename': self.filename}, {'$set': {'progress': 100}})
+                db.Render.update_one({'_id': self.id}, {'$set': {'progress': 100}})
             elif t.get('index'):
                 # print('t', t)
                 p = max((100 * t['index'] / t['total']) - 1, 0)
-                # print('progress', self.filename, p)
-                db.renders.update_one({'filename': self.filename}, {'$set': {'progress': p}})
+                # print('progress', self.id, p)
+                db.Render.update_one({'_id': self.id}, {'$set': {'progress': p}})
             
         else:
             print('got other progress message', self.state)
     
     def set_status(self, status):
-        db.renders.update_one({'filename': self.filename}, {'$set': {'status': status}})
+        db.Render.update_one({'_id': self.id}, {'$set': {'status': status}})
     
     def uploaded(self):
-        db.renders.update_one({'filename': self.filename}, {'$set': {'progress': 100, 'status': 'UPLOADED'}})
+        db.Render.update_one({'_id': self.id}, {'$set': {'progress': 100, 'status': 'UPLOADED'}})
     
     def failed(self, *args, **kwargs):
         print('logging failed render', args, kwargs)

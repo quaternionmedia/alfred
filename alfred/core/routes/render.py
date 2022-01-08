@@ -1,91 +1,67 @@
-from fastapi import APIRouter, Depends, Body, Query, BackgroundTasks
+from fastapi import Depends
 from typing import List, Optional
 from .users import current_active_user
 from ..models import User
+from ..models.render import Render, RenderUpdate
 from otto.models import Edl
 from otto.getdata import timestr
 from ..utils.tasks import renderRemote
-from os.path import join
-from ..utils.db import get_db, deOid
+from ..utils.db import get_db
 from ..utils.bucket import generate_signed_url
-from alfred.config import BUCKET_NAME
-from bson.json_util import dumps
+from fastapi_crudrouter import MotorCRUDRouter
+from alfred.config import DB_URL, DB_NAME
+from ..utils.db import get_client
 
-renderAPI = APIRouter()
-
-@renderAPI.post('/render')
-async def queueRender(
-        project: str, 
-        width: int = 1920, 
-        height: int = 1080, 
-        fps: Optional[float] = Query(30.0),
-        quality: Optional[str] = Query(None),
-        bitrate: Optional[str] = Query(None),
-        ffmpeg_params: Optional[List[str]] = Query(None),
-        description: Optional[str] = Query(None),
-        clips: Edl = Body(...),
-        user: User = Depends(current_active_user)):
-    ts = timestr()
-    filename = f'{project}{"_" + description if description else ""}_{width}x{height}{"_" + quality if quality else ""}_{clips.duration}s_{ts}.mp4'
-    render = {
-        'username': user.email,
-        'project': project,
-        'filename': filename,
-        'duration': clips.duration,
-        'resolution': (width, height),
-        'fps': fps,
-        'quality': quality,
-        'bitrate': bitrate,
-        'ffmpeg_params': ffmpeg_params,
-        'description': description,
-        'edl': [clip.dict() for clip in clips.clips],
-        'progress': 0,
-        'link': join('https://storage.googleapis.com/', BUCKET_NAME, filename),
-        }
-    # media = db.projects.find_one({'name': project}, ['form'])['form']['media']
-    db = get_db()
-    result = await db.renders.insert_one(render)
-    print('rendering!', render)
-    task = renderRemote.delay(
-        edl=clips, 
-        filename=filename, 
-        moviesize=(width, height), 
-        fps=fps, 
-        bitrate=bitrate,
-        ffmpeg_params=ffmpeg_params)
-    return str(result.inserted_id)
-
-@renderAPI.get('/render')
-async def getSignedRenderLink(name: str, user: User = Depends(current_active_user)):
-    return generate_signed_url(name)
-
-
-@renderAPI.get('/renders')
-async def renders(user: User = Depends(current_active_user)):
-    db = get_db()
-    return deOid(await db.renders.find({}, ['filename', 'progress', 'link', 'project', 'resolution', 'quality', 'duration', 'description']).sort([('_id', -1)]).to_list(100))
+class RenderAPI(MotorCRUDRouter):
+    def __init__(self, 
+            schema = Render,
+            create_schema = Render,
+            update_schema = RenderUpdate,
+            db_name = DB_NAME,
+            *args, **kwargs):
+        self.schema = schema
+        self.create_schema = create_schema,
+        self.update_schema = update_schema,
+        self.db_name = db_name
+        self.client = get_client()
+        # self.db = self.client[DB_NAME]
+        super().__init__(*args, **kwargs, 
+            schema = schema,
+            client = self.client,
+            create_schema = create_schema,
+            update_schema = update_schema,
+            db_url = DB_URL,
+            database = DB_NAME,
+    )
     
+        @self.post('', *args, **kwargs)
+        async def queueRender(
+                render: Render,
+                user: User = Depends(current_active_user)):
+            ts = timestr()
+            filename = f'{render.project}{"_" + render.description if render.description else ""}_{render.width}x{render.height}{"_" + render.quality if render.quality else ""}_{render.edl.duration}s_{ts}.mp4'
+            render.username = user.email
+            render.filename = filename
+            # TODO: rework to async logic
+            db = get_db()
+            result = await self.schema.insert_one(render)
+            print('rendering!', render, result)
+            task = renderRemote.delay(
+                edl=render.edl, 
+                renderId=result.id,
+                filename=filename,
+                moviesize=(render.width, render.height), 
+                fps=render.fps, 
+                bitrate=render.bitrate,
+                ffmpeg_params=render.ffmpeg_params)
+            return str(result.id)
 
-
-@renderAPI.get('/renders/{render}')
-async def rendersInfo(user: User = Depends(current_active_user)):
-    info = { 'edl': render, 'progress': 0, 'link': '', 'paused': False }
-    return info
-
-
-@renderAPI.put('/renders/{render}/pause')
-async def pauseRender(user: User = Depends(current_active_user)):
-    # pause selected render
-    return
-
-
-@renderAPI.put('/renders/{render}/cancel')
-async def cancelRender(render: str, user: User = Depends(current_active_user)):
-    # cancel selected render
-    db = get_db()
-    res = await db.renders.find_one_and_delete({'filename': render})
-    if res:
-        print('deleted render', render, res)
-        await db.deleted.insert_one(res)
-    else:
-        return HTTPException(status_code=406, detail='no such entry in database')
+        @self.get('/{item_id}', *args, **kwargs)
+        async def getSignedRenderLink(item_id: str, user: User = Depends(current_active_user)):
+            return generate_signed_url(item_id)
+        
+        @self.get('', *args, **kwargs)
+        async def get_all_renders(
+                skip: Optional[int] = 0, 
+                limit: Optional[int] = 100):
+            return await self.schema.find_all().skip(skip).sort('-_id').to_list(limit)

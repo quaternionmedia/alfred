@@ -9,7 +9,7 @@ function Projects() {
   var projects = []
   return {
     oninit: (vnode) => {
-      auth('/projects')
+      auth('/project')
       .then(e => {
         console.log('got projects', e)
         projects = e
@@ -32,13 +32,13 @@ function Projects() {
               return m('tr', [
                 m('td', {onclick: e => {
                   Edl.edl = []
-                  m.route.set('/form?project=' + p)
-                  }}, p),
+                  m.route.set('/form?project=' + p['_id'])
+                  }}, p['name']),
                 m('td', {onclick: e => {
-                  m.route.set('/editor?project=' + p)
+                  m.route.set('/editor?project=' + p['_id'])
                 }}, m('i.material-icons', {}, 'edit')),
                 m('td', {onclick: e => {
-                  m.route.set('/form?project=' + p)
+                  m.route.set('/form?project=' + p['_id'])
                 }}, m('i.material-icons', {}, 'video_call')),
               ])
             })

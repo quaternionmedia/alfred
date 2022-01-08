@@ -49,7 +49,7 @@ export function Magnussens() {
     },
     view: vnode => {
       return [
-        m('h2', {}, m.route.param('project')),
+        m('h2', {}, project ? project.name : ''),
         m(Form, {id: 'template_form'}, [
           m(Fields, {}, fields),
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
@@ -96,22 +96,25 @@ export function Magnussens() {
             data.width = data.resolution.split('x')[0]
             data.height = data.resolution.split('x')[1]
 
-            let edl = logic(data)
+            let edl = {clips: logic(data), duration: data.duration}
             let ffmpeg_params = data.quality == 'TV' ? ['-b:v', '25M', '-maxrate', '30M', '-bufsize', '20M'] : ['-b:v', '5M', '-minrate', '1M', '-maxrate', '10M', '-bufsize', '5M']
             console.log('saving form', e, edl, data, data, ffmpeg_params)
             
             let params = {
-              project: m.route.param('project'),
+              project: project.name,
+              project_id: m.route.param('project'),
               width: data.width,
               height: data.height,
               fps: 29.97,
               quality: data.quality,
               description: data.description,
               ffmpeg_params: ffmpeg_params,
+              edl: edl,
+              duration: data.duration ? data.duration : edl.duration,
             }
             auth(`/render?${generateParams(params)}`, {
               method: 'post',
-              body: {clips: edl, duration: data.duration}
+              body: params
             }).then(e => {
               success('Rendering!')
               m.route.set('/renders')

@@ -5,16 +5,24 @@ from alfred.config import DB_URL, DB_NAME
 from typing import Optional
 
 class ProjectAPI(MotorCRUDRouter):
-    def __init__(self, *args, **kwargs):
-        self.client = get_client()
-        super().__init__(*args, **kwargs, 
+    def __init__(self,
             schema = Project,
-            client = self.client,
             create_schema = Project,
             update_schema = ProjectUpdate,
+            db_name = DB_NAME,
+            *args, **kwargs):
+        self.schema = schema
+        self.create_schema = create_schema,
+        self.update_schema = update_schema,
+        self.db_name = db_name
+        self.client = get_client()
+        # self.db = self.client[DB_NAME]
+        super().__init__(*args, **kwargs,
+            schema = schema,
+            client = self.client,
+            create_schema = create_schema,
+            update_schema = update_schema,
+            db_url = DB_URL,
             database = DB_NAME,
         )
 
-        @self.get('')
-        async def get_all_projects(skip: Optional[int] = 0, limit: Optional[int] = 100):
-            return deOid(await self.client[DB_NAME].Project.find({}, projection=['_id', 'name']).skip(skip).to_list(limit))

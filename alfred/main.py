@@ -7,15 +7,14 @@ from subprocess import run as bash
 
 from core.routes import authAPI
 from core.routes import videoAPI
-from core.routes import renderAPI
 from core.routes import issueAPI
 from core.routes import adminAPI
 from core.routes import fontAPI
 from core.routes import ProjectAPI
+from core.routes import RenderAPI
 from otto.main import app as ottoApi
 from core.utils import get_db
-from core.routes.render import deOid
-
+from core.utils.db import deOid
 from core.routes.users import fastapi_users, current_active_user, current_active_superuser
 
 from seed import seed
@@ -55,9 +54,17 @@ async def checkFonts():
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
 app.include_router(fastapi_users.get_users_router(), prefix='/users', tags=['users'])
 
+renders = RenderAPI()
+app.include_router(renders,
+    dependencies=[Depends(current_active_user)],
+    tags=['render']
+)
+
 projects = ProjectAPI()
 app.include_router(projects,
-    dependencies=[Depends(current_active_user)])
+    dependencies=[Depends(current_active_user)],
+    tags=['project']
+    )
 
 app.include_router(fontAPI,
     dependencies=[Depends(current_active_user)], tags=['font'])
@@ -67,12 +74,10 @@ app.include_router(ottoApi,
     prefix='/otto', 
     dependencies=[Depends(current_active_user)],
     tags=['otto'])
-app.include_router(renderAPI, 
+app.include_router(issueAPI, 
+    prefix='/render',
     dependencies=[Depends(current_active_user)],
     tags=['render'])
-app.include_router(issueAPI, 
-    dependencies=[Depends(current_active_user)],
-    tags=['issue'])
 app.include_router(adminAPI, 
     dependencies=[Depends(current_active_superuser)],
     tags=['admin'])
