@@ -12,15 +12,19 @@ nav:
     - about/clip.md
     - about/template.md
     - about/edl.md
+    - about/project.md
   - Examples:
     - examples/index.md
     - examples/login.md
+    - examples/media.md
     - examples/preview.md
     - examples/render.md
     - examples/trim.md
     - examples/combine.md
+    - examples/fade.md
     - examples/text.md
     - examples/animation.md
+    - examples/project.md
     - examples/advanced.md
   - API:
     - api/index.md
