@@ -19,7 +19,7 @@ You have a commercial template which contains a spot for a feature product. This
 
 The desired `Edl` will include the base video, with an image and text overlayed on top. 
 
-``` json title="Custom Product Project"
+``` json title="Custom Product Project" hl_lines="7-9 17-19"
 {
   "logic": {
     {...}, // base video
@@ -34,7 +34,7 @@ The desired `Edl` will include the base video, with an image and text overlayed 
       {
         "start": 5,
         "type": "template",
-        "name": "TextBox",
+        "name": "textBox",
         "data": {
           "text": {
             "var": "ProductName"
@@ -44,16 +44,16 @@ The desired `Edl` will include the base video, with an image and text overlayed 
     }
   },
   "fields": [
-    { type:"TextBox",
+    { "type": "Text",
         "attrs": {
-          name:"ProductImage",
-          text:"Link to product image",
+          "name": "ProductImage",
+          "text": "Link to product image",
         }
     },
-    { type:"TextBox",
+    { "type": "Textarea",
         "attrs": {
-          name:"ProductName",
-          text:"Product Name",
+          "name": "ProductName",
+          "text": "Product Name",
         }
     },
   ]

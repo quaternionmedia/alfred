@@ -35,6 +35,8 @@ nav:
 markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.emoji:
