@@ -19,7 +19,7 @@ export function Text() {
     }
   }
 }
-export function TextBox() {
+export function Textarea() {
   return {
     view: vnode => {
       return [
