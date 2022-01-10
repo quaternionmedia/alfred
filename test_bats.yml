@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  bats:
+    # image: bats/bats:latest
+    build: ./test
+    depends_on:
+      - website
+      - api
+      - db
+    volumes:
+      - ./test/:/test/
+    working_dir: /
+    networks:
+      - alfred_isolated
+    environment:
+      BATS_baseURL: http://api/
+    entrypoint: /tini -- bash bats test/alfred.bats
+
+  website:
+    command: yarn parcel watch /app/src/index.html /app/src/*.svg /app/src/*.png
