@@ -1,5 +1,13 @@
 name: "Bats"
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - main
+    - dev
+  pull_request:
+    branches:
+    - main
+    - dev
 jobs:
   build:
     name: build
