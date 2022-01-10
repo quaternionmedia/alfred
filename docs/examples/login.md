@@ -8,6 +8,7 @@ Tokens can be acquired with a `POST` request, with a username (email address) an
     
     ``` bash title="Register"
     curl -X POST \
+      -H "Content-Type: application/json" \
       -d '{"email":"your@email","password":"yourpassword","first_name":"yourname"}' \
       https://alfred.quaternion.media/auth/register
     ```
