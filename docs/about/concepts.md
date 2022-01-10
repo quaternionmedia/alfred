@@ -1,23 +1,9 @@
 # Concepts
 
-## Design
-
-Alfred is split into several components:
-
-### website
-: The browser based tools to create and edit videos, including:
-    
-    - "simple" single-track video editor
-    - "advanced" multi-track video editor
-    - template rendering forms
-    - preview frame of video
-    - check renders status and download
-### [API](../../api)
-: The video rendering components, available as a backend service.
-
-
 ## Timeline
-In video editing, a `Timeline` is a graphical representation of how to create a video. Clips are arranged as blocks from left to right in time, sized proportionate to their duration.
+In video editing, a `Timeline` is a representation of how to create a video.
+
+In most video editors, `Clips` are viewed as blocks, arranged from left to right in time, sized proportionate to their duration.
 
 ### Single Track Video Editing
 A `Timeline` where only one clip can be played at a time. 
@@ -54,6 +40,8 @@ Timing of the clip is determined with the following variables:
     
     A `Clip` with `outpoint: 10` and `duration: 5` implies `inpoint: 5`
 
+For more details, refer to the [Clip](../clip) documentation.
+
 ## [Template](../template)
 A `Template` is a predefined `Clip` generator, built to automate and simplify the process of rendering custom text and graphics in video. 
 
@@ -68,7 +56,7 @@ The `EDL` is a data representation of the final video to be rendered. It describ
 
 Each `EDL` can be viewed in a `Timeline`, or imported as a `Clip` into a different `Timeline`.
 
-## Project
+## [Project](../project)
 A `Project` is a special data format, designed to automatically create templates from user data.
 
 A Project contains `logic` to build the end product and `fields` that describe the data needed.

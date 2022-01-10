@@ -2,24 +2,29 @@ site_name: Alfred
 side_description: automatic video editing
 site_url: https://alfred.quaternion.media/docs/
 repo_url: https://github.com/quaternionmedia/alfred
+edit_uri: ""
 
 nav:
   - Home: index.md
-  - About: 
+  - About:
     - about/index.md
-    - about/origin.md
     - about/concepts.md
-  - Models:
-    - models/index.md
-    - models/clip.md
-    - models/template.md
-    - models/edl.md
+    - about/clip.md
+    - about/template.md
+    - about/edl.md
+    - about/project.md
   - Examples:
     - examples/index.md
     - examples/login.md
-    - examples/basic.md
+    - examples/media.md
     - examples/preview.md
     - examples/render.md
+    - examples/trim.md
+    - examples/combine.md
+    - examples/fade.md
+    - examples/text.md
+    - examples/animation.md
+    - examples/project.md
     - examples/advanced.md
   - API:
     - api/index.md
@@ -30,6 +35,8 @@ nav:
 markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.emoji:
