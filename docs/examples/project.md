@@ -1,4 +1,4 @@
-# Save Project
+# Working with Projects
 
 To store a project for future use, use the `/project` API.
 
@@ -9,50 +9,53 @@ To store a project for future use, use the `/project` API.
       -H "Authorization: Bearer $TOKEN" \
       -H "Content-Type: application/json" \
       -d @data.json \
-      https://stage.alfred.quaternion.media/project
+      https://alfred.quaternion.media/project
     ```
 
 === "data.json"
     ``` json
     {
-      "logic": {
-        {
-          "type": "video",
-          "name": "https://storage.googleapis.com/tower-bucket/moon.mp4"
-        },
-        {
-          "start": 5,
-          "type": "image",
-          "name": {
-            "var": "ProductImage"
-          }
-        },
-        {
+      "name":  "product commercial",
+      "logic":  {
+        "merge":  [
+          {"eachKey":  {
+            "type": "video",
+            "name": "https://storage.googleapis.com/tower-bucket/moon.mp4"
+          }},
+          {"eachKey": 
           {
+            "start": 5,
+            "type": "image",
+            "name": {
+              "var": "ProductImage"
+            }
+          }},
+          {"eachKey":  {
             "start": 5,
             "type": "template",
             "name": "textBox",
-            "data": {
+            "data": {"eachKey": {
               "text": {
                 "var": "ProductName"
-              }
+                }
+              }}
             }
           }
-        }
+        ]
       },
       "fields": [
         { "type": "Text",
-            "attrs": {
+          "attrs": {
               "name": "ProductImage",
-              "text": "Link to product image",
+              "text": "Link to product image"
             }
         },
         { "type": "Textarea",
             "attrs": {
               "name": "ProductName",
-              "text": "Product Name",
+              "text": "Product Name"
             }
-        },
+        }
       ]
     }
     ```
@@ -66,13 +69,13 @@ A successful request returns the object, with it's `id` number.
 ## Read
 
 ## Update
-To update a Project, issue a **POST** request with the id of the project to update.
+To update a Project, issue a **PUT** request with the id of the project to update.
 ``` bash title="Update project"
-curl -X POST \
+curl -X PUT \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d @data.json \
-  https://stage.alfred.quaternion.media/project/$PROJECT_ID
+  https://alfred.quaternion.media/project/$PROJECT_ID
 ```
 
 ## Delete
