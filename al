@@ -125,6 +125,6 @@ elif [ $1 = "docker" -o $1 = "dock" ]; then
 
 elif [ $1 = "test" -o $1 = "t" ]; then
   shift
-  docker compose -f docker-compose.yml -f test.yml up --build --exit-code-from cy
+  docker compose -f docker-compose.yml -f test_cy.yml up --build --exit-code-from cy
 
 fi
