@@ -1,6 +1,8 @@
 # About
 
-## [Concepts](./concepts)
+## [Concepts](concepts)
+While no video experience is needed to use Alfred effectively, familiarity with the [concepts of video editing](concepts) will be helpful.
+
 
 ## [Design](../design)
 
@@ -17,4 +19,11 @@ Alfred is split into several components:
 ### [API](../api)
 : The video rendering components, available as a backend service.
 
+### Models
+This section provides information on the properties available in all the models.
 
+#### [Clip](clip)
+#### [Template](template)
+#### [Edl](edl)
+#### [Project](project)
+#### [Render](render)
