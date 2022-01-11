@@ -26,7 +26,7 @@ nav:
     - examples/text.md
     - examples/animation.md
     - examples/project.md
-    - examples/advanced.md
+    # - examples/advanced.md
   - API:
     - api/index.md
     - api/auth.md
