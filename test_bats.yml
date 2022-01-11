@@ -11,11 +11,6 @@ services:
     volumes:
       - ./test/:/test/
     working_dir: /
-    networks:
-      - alfred_isolated
     environment:
       BATS_baseURL: http://api/
     entrypoint: bats test/alfred.bats
-
-  website:
-    command: yarn parcel watch /app/src/index.html /app/src/*.svg /app/src/*.png
