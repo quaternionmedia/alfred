@@ -2,32 +2,32 @@
 
 This example posts a single `Template` clip that generates a `text` in large title format.
 
-## Create Edl
-``` json title="data.json"
-{
-  "clips": [
-    { 
-      "type" : "template",
-      "name" : "title",
-      "data": {
-        "text": "asdf"
-      }
-    }
-  ]
-}
-```
-
-## Send request
 !!! note "Preview time"
     Preview time at `t` seconds is a required query parameter.
 
+=== "Edl"
+    ``` json title="data.json"
+    {
+      "clips": [
+        { 
+          "type" : "template",
+          "name" : "title",
+          "data": {
+            "text": "asdf"
+          }
+        }
+      ]
+    }
+    ```
 
-``` bash title="Preview template at t=1"
-curl -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d @data.json \
-  https://alfred.quaternion.media/otto/preview?t=1
-```
+=== "Request"
+    ``` bash title="Preview template at t=1"
+    curl -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $TOKEN" \
+      -d @data.json \
+      https://alfred.quaternion.media/otto/preview?t=1
+    ```
+
 ## Results
 
 Returns a local url to the rendered file
