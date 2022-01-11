@@ -36,3 +36,28 @@ Returns a local url to the rendered file
 data/20211203-221343.png
 ```
 ![Otto Template Preview](../../assets/20211203-221343.png){ align = right, loading = lazy }
+
+## Properties
+Change the Properties of the text by passing `data` parameters.
+
+``` json title="animation" hl_lines="8-9"
+{
+  "clips": [
+    { 
+      "type" : "template",
+      "name" : "textBox",
+      "data": {
+        "text": "asdf",
+        "font": "Open-Sans",
+        "color": "#FF00FF",
+      }
+    }
+  ]
+}
+```
+
+## Result
+
+![Animation preview](../../assets/20220111-071708.png){ align = right, loading = lazy }
+
+For a full list of available properties, see [about/template](../../about/template).
