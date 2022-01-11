@@ -6,7 +6,7 @@ This example posts a single `Template` clip that generates a `text` in large tit
     Preview time at `t` seconds is a required query parameter.
 
 === "Edl"
-    ``` json title="data.json"
+    ``` json title="data.json" hl_lines="7"
     {
       "clips": [
         { 

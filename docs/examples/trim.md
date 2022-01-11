@@ -1,7 +1,7 @@
 # Trim video
 Selecting a portion of a video is as simple as defining an `inpoint`.
 
-``` json title="data.json"
+``` json title="data.json" hl_lines="7"
 {
   "edl": {
     "clips": [
