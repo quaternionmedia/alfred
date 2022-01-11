@@ -39,7 +39,7 @@ setup() {
 # }
 
 register() {
-    curl -H "Content-Type: application/json" \
+    curl -sH "Content-Type: application/json" \
         -X POST \
         -d '{"email":"your@email.com","password":"yourpassword","first_name":"yourname"}' \
         https://stage.alfred.quaternion.media/auth/register
@@ -48,9 +48,8 @@ register() {
 
 @test "# -register" {
     run register
-    assert_output --partial "200"
-    assert_output --partial '"is_active":true'
-    
+    # assert_output --regexp '*(REGISTER_USER_ALREADY_EXISTS)?*'
+    assert_output --partial "{"
 }
 
 registeredLogin() {
