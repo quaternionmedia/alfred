@@ -20,7 +20,7 @@ jobs:
           bats-version: 1.2.1
 
       - name: Check out code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
 
       - name: Test
-        run: bats -r .
+        run: docker compose -f docker-compose.yml -f test_bats.yml up --build --exit-code-from bats
