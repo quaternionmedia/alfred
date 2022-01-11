@@ -42,7 +42,7 @@ register() {
     curl -sH "Content-Type: application/json" \
         -X POST \
         -d '{"email":"your@email.com","password":"yourpassword","first_name":"yourname"}' \
-        https://stage.alfred.quaternion.media/auth/register
+        $BATS_baseURL/auth/register
 
 }
 
@@ -56,7 +56,7 @@ registeredLogin() {
     curl -s -X POST \
         -F "username=your@email.com" \
         -F "password=yourpassword" \
-        https://stage.alfred.quaternion.media/auth/jwt/login | jq -r '.access_token' | tee test/token.sesh
+        $BATS_baseURL/auth/jwt/login | jq -r '.access_token' | tee test/token.sesh
 }
 
 @test "# -regestered login" {
@@ -70,7 +70,7 @@ previewFrame() {
     curl -s -H "Content-Type: application/json" \
         -H "Authorization: Bearer $token" \
         -d $(<test/data.json) \
-        https://stage.alfred.quaternion.media/otto/preview?t=1 | tee test/rUrl
+        $BATS_baseURL/otto/preview?t=1 | tee test/rUrl
 }
 
 @test "# -preview frame" {

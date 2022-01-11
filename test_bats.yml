@@ -12,5 +12,5 @@ services:
       - ./test/:/test/
     working_dir: /
     environment:
-      BATS_baseURL: http://api/
+      BATS_baseURL: https://stage.alfred.quaternion.media
     entrypoint: bats test/alfred.bats
