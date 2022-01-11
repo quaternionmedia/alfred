@@ -13,6 +13,7 @@ nav:
     - about/template.md
     - about/edl.md
     - about/project.md
+    - about/render.md
   - Examples:
     - examples/index.md
     - examples/login.md
