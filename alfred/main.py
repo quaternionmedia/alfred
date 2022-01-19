@@ -12,6 +12,7 @@ from core.routes import adminAPI
 from core.routes import fontAPI
 from core.routes import ProjectAPI
 from core.routes import RenderAPI
+from core.routes import previewAPI
 from otto.main import app as ottoApi
 from core.utils import get_db
 from core.utils.db import deOid
@@ -68,17 +69,17 @@ app.include_router(projects,
 
 app.include_router(fontAPI,
     dependencies=[Depends(current_active_user)], tags=['font'])
-app.include_router(videoAPI, 
+app.include_router(videoAPI,
     dependencies=[Depends(current_active_user)], tags=['video'])
-app.include_router(ottoApi, 
-    prefix='/otto', 
+app.include_router(previewAPI,
+    prefix='/preview',
     dependencies=[Depends(current_active_user)],
-    tags=['otto'])
-app.include_router(issueAPI, 
+    tags=['preview'])
+app.include_router(issueAPI,
     prefix='/render',
     dependencies=[Depends(current_active_user)],
     tags=['render'])
-app.include_router(adminAPI, 
+app.include_router(adminAPI,
     dependencies=[Depends(current_active_superuser)],
     tags=['admin'])
 #  note: we can't secure the /data route because the otto preview is rendered into the <img> tag in the browser. Should find a workaround for this, but it is not critical.
