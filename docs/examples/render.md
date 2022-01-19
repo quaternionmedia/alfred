@@ -1,36 +1,47 @@
 # Render video
 Render an `Edl` with a single video and download the result when finished.
 
-## Edl
-A single video clip.
-``` json title="data.json"
-{
-  "edl": {
-    "clips": [
-      {
-        "type": "video",
-        "name": "https://storage.googleapis.com/tower-bucket/moon.mp4"
-      }
-    ]
-  }
-}
-```
+See [about/edl](../../about/edl) for a full list of render parameters available.
 
 ## Request
-``` bash title="Render Video"
-curl -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d @data.json \
-  https://alfred.quaternion.media/render
-```
+=== "Edl"
+    ``` json title="data.json"
+    {
+      "edl": {
+        "clips": [
+          {
+            "type": "video",
+            "name": "https://storage.googleapis.com/tower-bucket/moon.mp4"
+          }
+        ]
+      },
+      "width": 1920,
+      "height": 1080,
+      "fps": 30
+    }
+    ```
+
+=== "Request"
+    ``` bash title="Render Video"
+    curl -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $TOKEN" \
+      -d @data.json \
+      https://alfred.quaternion.media/render
+    ```
+
+!!! note "Parameter passing"
+    Render parameters such as `width` and `height` can also be specified as query parameters, instead of being passed in the data object.
+    
+    ```
+    https://alfred.quaternion.media/render?width=1920&height=1080&fps=30
+    ```
+
 ## Result
 If the render process started successfully, this returns the `id` of the render process.
 ``` bash title="RenderId"
 "61a43a5d6f511ec4ba99ac63"
 ```
 ## Check status
-
-
 ``` bash title="Render Video"
 curl -H "Authorization: Bearer $TOKEN" \
   https://alfred.quaternion.media/render/
@@ -44,7 +55,7 @@ curl -H "Authorization: Bearer $TOKEN" \
   https://alfred.quaternion.media/render/$RENDER_ID
 ```
 
-!!! note "link expiration"
+!!! note "Link expiration"
     All links are generated on demand and are valid for 15 minutes
 
 ## Multiple formats

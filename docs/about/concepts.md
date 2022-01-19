@@ -62,3 +62,8 @@ A `Project` is a special data format, designed to automatically create templates
 A Project contains `logic` to build the end product and `fields` that describe the data needed.
 
 To create an `EDL`, the `fields` are rendered as a `Form`, where user data can be input. This data is applied to the `logic`, which generates the `EDL` to be rendered into a finished video.
+
+## [Render](../render)
+A `Render` is the process of finalizing a video, so it can be easily played back as a single file by any machine capable of playing such videos.
+
+Rendering is usually a computationally expensive operation, and generally requires powerful hardware to run. With Alfred, rendering is performed in the cloud, using a distributed system, which means any device can be a video editing platform!

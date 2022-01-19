@@ -1,32 +1,31 @@
 # Preview frame
 Preview one frame of an `Edl` without rendering the full video
 
-## Edl
-``` json title="data.json"
-{
-  "clips": [
-    { 
-      "type" : "template",
-      "name" : "title",
-      "data": {
-        "text": "asdf"
-      }
-    }
-  ]
-}
-```
-
-## Send request
 !!! note "Preview time"
     Preview time at `t` seconds is a required query parameter.
 
-
-``` bash title="Preview template at t=1"
-curl -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d @data.json \
-  https://alfred.quaternion.media/otto/preview?t=1
-```
+## Request
+=== "Edl"
+    ``` json title="data.json"
+    {
+      "clips": [
+        { 
+          "type" : "template",
+          "name" : "title",
+          "data": {
+            "text": "asdf"
+          }
+        }
+      ]
+    }
+    ```
+=== "Request"
+    ``` bash title="Preview template at t=1"
+    curl -H "Content-Type: application/json" \
+      -H "Authorization: Bearer $TOKEN" \
+      -d @data.json \
+      https://alfred.quaternion.media/otto/preview?t=1
+    ```
 ## Results
 
 Returns a local url to the rendered file

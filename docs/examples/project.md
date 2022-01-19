@@ -3,7 +3,7 @@
 To store a project for future use, use the `/project` API.
 
 ## Create
-=== "curl"
+=== "Request"
     ``` bash title="Create new project"
     curl -X POST \
       -H "Authorization: Bearer $TOKEN" \
@@ -12,8 +12,8 @@ To store a project for future use, use the `/project` API.
       https://alfred.quaternion.media/project
     ```
 
-=== "data.json"
-    ``` json
+=== "Project"
+    ``` json title="data.json"
     {
       "name":  "product commercial",
       "logic":  {
