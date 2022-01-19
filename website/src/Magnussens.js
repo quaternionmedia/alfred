@@ -12,22 +12,6 @@ import range from 'mithril-range'
 
 import { LogicEngine } from 'json-logic-engine'
 
-export const generateParams = params => {
-  let res = ''
-  for (const [key, value] of Object.entries(params)) {
-    if (Array.isArray(value)) {
-      value.forEach((v, i) => {
-        res += key + '=' + v + '&'
-      })
-    } else {
-      res += key + '=' + String(value) + '&'
-    }
-  }
-  res = res.substring(0, res.length - 1)
-  return res
-  
-}
-
 export function Magnussens() {
   let project
   let fields = []
@@ -115,7 +99,7 @@ export function Magnussens() {
               edl: edl,
               duration: data.duration ? data.duration : edl.duration,
             }
-            auth(`/render?${generateParams(params)}`, {
+            auth(`/render`, {
               method: 'post',
               body: params
             }).then(e => {
