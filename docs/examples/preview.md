@@ -24,7 +24,7 @@ Preview one frame of an `Edl` without rendering the full video
     curl -H "Content-Type: application/json" \
       -H "Authorization: Bearer $TOKEN" \
       -d @data.json \
-      https://alfred.quaternion.media/otto/preview?t=1
+      https://alfred.quaternion.media/preview?t=1
     ```
 ## Results
 

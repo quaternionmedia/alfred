@@ -25,7 +25,7 @@ This example posts a single `Template` clip that generates a `text` in large tit
     curl -H "Content-Type: application/json" \
       -H "Authorization: Bearer $TOKEN" \
       -d @data.json \
-      https://alfred.quaternion.media/otto/preview?t=1
+      https://alfred.quaternion.media/preview?t=1
     ```
 
 ## Results
