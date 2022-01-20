@@ -67,19 +67,19 @@ registeredLogin() {
 
 previewFrame() {
     token=$(<test/token.sesh)
-    curl -s -H "Content-Type: application/json" \
+    curl -X POST -s -H "Content-Type: application/json" \
         -H "Authorization: Bearer $token" \
         -d $(<test/data.json) \
-        $BATS_baseURL/otto/preview?t=1 | tee test/rUrl
+        $BATS_baseURL/preview/?t=1 | tee test/rUrl
 }
 
 @test "# -preview frame" {
 
-    echo '{"clips":[{"type":"template","name":"title","data":{"text":"asdf"}}]}' > test/data.json
+    echo '{"edl":{"clips":[{"type":"template","name":"title","data":{"text":"asdf"}}]}}' > test/data.json
     # validate edl w api?
 
     run previewFrame
-    assert_output --partial ".png"
+    assert_output --partial ".jpg"
 }
 
 teardown() {
