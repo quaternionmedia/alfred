@@ -1,6 +1,26 @@
 # Working with Projects
 
-To store a project for future use, use the `/project` API.
+The following is a complete example of a `Project` which makes a 10 second commercial. The desired `Edl` will include:
+
+- a **BaseVideo**
+    - duration: 10 seconds
+- a **ProductImage**
+    - starts at 5 seconds
+    - resized to appear in the center right
+- a **ProductName**
+    - starts at 5 seconds
+    - the text color can be changed
+- a **Logo**
+    - positioned at the bottom right corner
+
+??? abstract "Layer order"
+    All media items are rendered from first to last, meaning the final media listed will appear above all others.
+## Project Data
+``` json title="data.json"
+--8<-- "docs/examples/project.json"
+```
+
+## ProjectAPI
 
 ## Create
 === "Request"
@@ -12,53 +32,6 @@ To store a project for future use, use the `/project` API.
       https://alfred.quaternion.media/project
     ```
 
-=== "Project"
-    ``` json title="data.json"
-    {
-      "name":  "product commercial",
-      "logic":  {
-        "merge":  [
-          {"eachKey":  {
-            "type": "video",
-            "name": "https://storage.googleapis.com/tower-bucket/moon.mp4"
-          }},
-          {"eachKey": 
-          {
-            "start": 5,
-            "type": "image",
-            "name": {
-              "var": "ProductImage"
-            }
-          }},
-          {"eachKey":  {
-            "start": 5,
-            "type": "template",
-            "name": "textBox",
-            "data": {"eachKey": {
-              "text": {
-                "var": "ProductName"
-                }
-              }}
-            }
-          }
-        ]
-      },
-      "fields": [
-        { "type": "Text",
-          "attrs": {
-              "name": "ProductImage",
-              "text": "Link to product image"
-            }
-        },
-        { "type": "Textarea",
-            "attrs": {
-              "name": "ProductName",
-              "text": "Product Name"
-            }
-        }
-      ]
-    }
-    ```
 
 A successful request returns the object, with it's `id` number.
 
