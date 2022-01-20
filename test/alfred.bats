@@ -79,7 +79,7 @@ previewFrame() {
     # validate edl w api?
 
     run previewFrame
-    assert_output --partial ".png"
+    assert_output --partial ".jpg"
 }
 
 teardown() {
