@@ -5,26 +5,12 @@ import { Form, Text, TextBox, Button, Img, Selector} from './Components'
 import { User } from './User'
 import { auth } from './Login'
 import { Fields, MagnussensFields } from './Form'
-
+import './timerange.css'
 import 'regenerator-runtime/runtime'
+import "../node_modules/mithril-range/index.css"
+import range from 'mithril-range'
 
 import { LogicEngine } from 'json-logic-engine'
-
-export const generateParams = params => {
-  let res = ''
-  for (const [key, value] of Object.entries(params)) {
-    if (Array.isArray(value)) {
-      value.forEach((v, i) => {
-        res += key + '=' + v + '&'
-      })
-    } else {
-      res += key + '=' + String(value) + '&'
-    }
-  }
-  res = res.substring(0, res.length - 1)
-  return res
-  
-}
 
 export function Magnussens() {
   let project
@@ -33,6 +19,7 @@ export function Magnussens() {
   let preview
   let loading = false
   let engine = new LogicEngine()
+  let t = 1
   engine.addMethod('floor', Math.floor)
   engine.addMethod('sqrt', Math.sqrt)
   
@@ -72,7 +59,7 @@ export function Magnussens() {
             console.log('previewing ', edl, vnode.dom)
             auth('/otto/preview', {
               params: {
-                t: edl[1]['start'] + 1,
+                t: t,
                 width: data.resolution.split('x')[0],
                 height: data.resolution.split('x')[1]
               },
@@ -112,7 +99,7 @@ export function Magnussens() {
               edl: edl,
               duration: data.duration ? data.duration : edl.duration,
             }
-            auth(`/render?${generateParams(params)}`, {
+            auth(`/render`, {
               method: 'post',
               body: params
             }).then(e => {
@@ -124,6 +111,16 @@ export function Magnussens() {
           },
         },),
         // m(Progress),
+        m(range, {
+          min: 0,
+          max: 30,
+          step: .1,
+          value: t,
+          class: 'timerange',
+          ondrag: v => {
+            t = v.toFixed(1)
+          }
+        }, m('.timerange-value', {}, t)),
         loading ? m('.loader') : m(ImagePreview, {src: preview,})
       ]),
     ]
