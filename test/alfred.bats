@@ -75,7 +75,7 @@ previewFrame() {
 
 @test "# -preview frame" {
 
-    echo '{"clips":[{"type":"template","name":"title","data":{"text":"asdf"}}]}' > test/data.json
+    echo '{"edl":{"clips":[{"type":"template","name":"title","data":{"text":"asdf"}}]}}' > test/data.json
     # validate edl w api?
 
     run previewFrame
