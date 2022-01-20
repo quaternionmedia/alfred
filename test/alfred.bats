@@ -67,7 +67,7 @@ registeredLogin() {
 
 previewFrame() {
     token=$(<test/token.sesh)
-    curl -s -H "Content-Type: application/json" \
+    curl -X POST -s -H "Content-Type: application/json" \
         -H "Authorization: Bearer $token" \
         -d $(<test/data.json) \
         $BATS_baseURL/preview/?t=1 | tee test/rUrl
