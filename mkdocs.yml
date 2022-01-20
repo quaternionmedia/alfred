@@ -22,6 +22,7 @@ nav:
     - examples/render.md
     - examples/trim.md
     - examples/combine.md
+    - examples/adjust.md
     - examples/fade.md
     - examples/text.md
     - examples/animation.md
@@ -48,6 +49,7 @@ markdown_extensions:
   - pymdownx.details
   - attr_list
   - md_in_html
+  - tables
 
 theme:
   name: material
