@@ -70,7 +70,7 @@ previewFrame() {
     curl -s -H "Content-Type: application/json" \
         -H "Authorization: Bearer $token" \
         -d $(<test/data.json) \
-        $BATS_baseURL/otto/preview?t=1 | tee test/rUrl
+        $BATS_baseURL/preview/?t=1 | tee test/rUrl
 }
 
 @test "# -preview frame" {
