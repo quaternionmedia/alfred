@@ -1,16 +1,16 @@
 # Working with Projects
 
-The following is a complete example of a `Project` which makes a 10 second commercial. The desired `Edl` will include:
+The following is a complete example of a `Project` which makes a 10 second commercial. The desired `Edl` will include a:
 
-- a **BaseVideo**
+- **BaseVideo**
     - duration: 10 seconds
-- a **ProductImage**
+- **ProductImage**
     - starts at 5 seconds
     - resized to appear in the center right
-- a **ProductName**
+- **ProductName**
     - starts at 5 seconds
     - the text color can be changed
-- a **Logo**
+- **Logo**
     - positioned at the bottom right corner
 
 ??? abstract "Layer order"
