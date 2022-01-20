@@ -57,14 +57,14 @@ export function Magnussens() {
             let edl = logic(data)
             // edl.shift()
             console.log('previewing ', edl, vnode.dom)
-            auth('/otto/preview', {
-              params: {
-                t: t,
-                width: data.resolution.split('x')[0],
-                height: data.resolution.split('x')[1]
-              },
+            auth('/preview/', {
               method: 'post',
-              body: { clips: edl },
+              params: {
+                  t: t
+              },
+              body: {
+                edl: {clips: edl},
+              },
             }).then(res => {
               console.log('preview available at', res)
               loading = false
