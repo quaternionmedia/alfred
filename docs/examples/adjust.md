@@ -1,6 +1,10 @@
 # Adjust clip
 ## Resize
-Resizing an image is as simple as passing an array with the resize scale factors for `[x, y]`.
+Resizing an image is as simple as passing the resize scale factor.
+
+- Values larger than 1 will enlarge the clip
+- Values less than 1 will shrink the clip
+
 ``` json title="data.json"
 {
   "edl": {
@@ -8,8 +12,7 @@ Resizing an image is as simple as passing an array with the resize scale factors
       {
         "type": "video",
         "name": "https://storage.googleapis.com/tower-bucket/moon.mp4",
-        "duration": 5,
-        "resize": 2
+        "resize": 2.5
       }
     ]
   }
