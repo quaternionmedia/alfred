@@ -6,17 +6,19 @@ This example posts a single `Template` clip that generates a `text` in large tit
     Preview time at `t` seconds is a required query parameter.
 
 === "Edl"
-    ``` json title="data.json" hl_lines="7"
+    ``` json title="data.json" hl_lines="8"
     {
-      "clips": [
-        { 
-          "type" : "template",
-          "name" : "title",
-          "data": {
-            "text": "asdf"
+      "edl": {
+        "clips": [
+          {
+            "type": "template",
+            "name": "title",
+            "data": {
+              "text": "asdf"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
     ```
 
@@ -40,19 +42,21 @@ data/20211203-221343.png
 ## Properties
 Change the Properties of the text by passing `data` parameters.
 
-``` json title="animation" hl_lines="8-9"
+``` json title="animation" hl_lines="9-10"
 {
-  "clips": [
-    { 
-      "type" : "template",
-      "name" : "textBox",
-      "data": {
-        "text": "asdf",
-        "font": "Open-Sans",
-        "color": "#FF00FF",
+  "edl": {
+    "clips": [
+      {
+        "type": "template",
+        "name": "textBox",
+        "data": {
+          "text": "asdf",
+          "font": "Open-Sans",
+          "color": "#FF00FF"
+        }
       }
-    }
-  ]
+    ]
+  }
 }
 ```
 

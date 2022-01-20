@@ -8,15 +8,17 @@ Preview one frame of an `Edl` without rendering the full video
 === "Edl"
     ``` json title="data.json"
     {
-      "clips": [
-        { 
-          "type" : "template",
-          "name" : "title",
-          "data": {
-            "text": "asdf"
+      "edl": {
+        "clips": [
+          { 
+            "type" : "template",
+            "name" : "title",
+            "data": {
+              "text": "asdf"
+            }
           }
-        }
-      ]
+        ]
+      }
     }
     ```
 === "Request"
