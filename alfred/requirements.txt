@@ -16,5 +16,5 @@ reportlab>=3.6.2
 # dev
 pytest==6.2.1
 pytest-asyncio==0.14.0
-httpx==0.16.1
+httpx==0.23.0
 asgi-lifespan==1.0.1
