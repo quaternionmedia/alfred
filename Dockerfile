@@ -14,9 +14,9 @@ RUN apt install -y libjpeg-dev libcairo2 libcairo-dev imagemagick
 
 # RUN apt install -y imagemagick imagemagick-common
 RUN apt install -y build-essential wget
-RUN wget https://www.imagemagick.org/download/ImageMagick.tar.gz
-RUN tar xvzf ImageMagick.tar.gz
-RUN cd $(tar tzf ImageMagick.tar.gz | head -1) && ./configure && make && make install && ldconfig /usr/local/lib
+RUN wget https://imagemagick.org/archive/binaries/magick
+RUN chmod +x magick
+RUN mv magick /usr/local/bin/magick
 # ENV IMAGEMAGICK_BINARY=/usr/local/bin/magick
 # RUN ln -s /usr/local/bin/magick /usr/local/bin/magick.exe
 
