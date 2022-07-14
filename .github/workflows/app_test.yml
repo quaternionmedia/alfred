@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
-          token: ${{ secrets.QM_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
       - name: init project
         run: ./al init
       - name: Start containers
