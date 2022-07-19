@@ -45,7 +45,7 @@ def generate_invoice(user, startDate, endDate):
             '$lt': ObjectId.from_datetime(endDate),
         },
     }
-    db = get_db()
+    db = get_sync_db()
     renders = list(db.deleted.find(q))
     renders += list(db.renders.find(q))
     results = []
