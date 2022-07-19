@@ -35,7 +35,13 @@ def save(form: BytesIO, filename: str):
 
 def generate_invoice(username, startDate, endDate):
     total = 0
-    q = {'username': username, '_id': {'$gt': ObjectId.from_datetime(startDate), '$lt': ObjectId.from_datetime(endDate)}}
+    q = {
+        'email': user,
+        '_id': {
+            '$gt': ObjectId.from_datetime(startDate),
+            '$lt': ObjectId.from_datetime(endDate),
+        },
+    }
     db = get_db()
     renders = list(db.deleted.find(q))
     renders += list(db.renders.find(q))
