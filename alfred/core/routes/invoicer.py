@@ -98,9 +98,9 @@ def setDate(pdf):
     return pdf
 
 
-def setBillTo(pdf, username):
+def setBillTo(pdf, email):
     db = get_sync_db()
-    user = db.users.find_one({'username': username})
+    user = db.users.find_one({'email': email})
     for i, line in enumerate(user['address']):
         pdf.drawString(x=left, y=top + 78 - i * 12, text=line)
     return pdf
