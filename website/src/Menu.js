@@ -1,7 +1,8 @@
 import m, { render } from 'mithril'  
 import { message } from 'alertifyjs'
-import { User } from './User'
-import './styles/menu.scss'   
+import { User } from './User' 
+import LOGO from './assets/alWhite.png' 
+import './styles/menu.scss'  
   
 function setActive() {   
     //loops through all links and sets the active class to the current page
@@ -34,7 +35,7 @@ function Menu() {
                         m(navLinks, {onclick: toggle}),
                     ]), 
                     //TODO: change logo to new image in the future when location of images is known
-                    m('div.logo', m(Link, {href:'/', id: 'home-link', ...vnode.attrs}, m('img.logoImg', {src: '/al-white.svg'}))),  
+                    m('div.logo', m(Link, {href:'/', id: 'home-link', ...vnode.attrs}, m('img.logoImg', {src: LOGO}))),  
                     m('.menuLinks', m(Links, {onclick: setActive()})),
                     m(Link, {
                             class: 'loginLink',

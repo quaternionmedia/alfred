@@ -13,6 +13,7 @@ import { Magnussens } from './Magnussens'
 import { Layout } from './Components'
 import { TemplateEditor } from './TemplateEditor'
 import { Otto } from './Otto'
+import ICON from './assets/al-white.svg'
 
 
 var state = require("./Globals").state
@@ -25,7 +26,7 @@ defaults.notifier.delay = 10
 
 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
   // swap favicon if in dark mode
-  let favicon = document.getElementById('favicon').href = '/al-white.png'
+  let favicon = document.getElementById('favicon').href = ICON
 }
 
 window.addEventListener('storage', (event) => {
