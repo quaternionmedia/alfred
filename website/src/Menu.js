@@ -66,6 +66,7 @@ function Links() {
             return [ 
                 m(Link, {class: 'menuLink', href: '/projects', id: 'projects-link', ...vnode.attrs},'PROJECTS'),
                 m(Link, {class: 'menuLink', href: '/renders', id: 'renders-link', ...vnode.attrs}, 'RENDERS'),  
+                m(Link, {class: 'menuLink', href: '/documents', id: 'documents-link', ...vnode.attrs}, 'DOCUMENTS'),  
             ]
         }
     }
@@ -79,6 +80,7 @@ function navLinks() {
             m(Link, {class: 'navLink', href: '/', id: 'home-link', ...vnode.attrs}, 'HOME'),
             m(Link, {class: 'navLink', href: '/projects', id: 'projects-link', ...vnode.attrs}, 'PROJECTS'),
             m(Link, {class: 'navLink', href: '/renders', id: 'renders-link', ...vnode.attrs}, 'RENDERS'),  
+            m(Link, {class: 'navLink', href: '/documents', id: 'documents-link', ...vnode.attrs}, 'DOCUMENTS'),  
             m(Link, {
                     class: 'navLink',
                     href: User.username ? '/logout' : '/login',
