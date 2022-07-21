@@ -1,0 +1,14 @@
+footer {
+    flex-shrink: 0;
+    margin: 15px;
+    background: var(--grey); 
+}
+ 
+.footer-link, .footer-text {  
+    display: inline;
+    font-size: 14px;
+    color : var(--grey5); 
+}
+.footer-link { 
+    text-decoration: underline;
+}
