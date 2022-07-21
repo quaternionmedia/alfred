@@ -1,0 +1,49 @@
+
+.renderVideo {
+  display: flex;
+  height: 40vh; 
+  border: 0.5em var(--purp1) solid; 
+  margin-left: auto;
+  margin-right: auto; 
+  border-radius: 0.5em;
+}
+
+.flexwrap {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  padding: 1em;
+}
+
+//------------------ RENDER TABLE HEADER ----------------------------------//
+.rendTableHead {    
+  background-color: var(--purp1);
+} 
+
+.rendTableHead > th { 
+  color: var(--grey7);   
+}
+
+.rendTableHead:first-of-type { 
+  border-bottom-left-radius: 0; 
+  border-bottom-right-radius: 0; 
+}  
+
+
+//------------------ TABLE ----------------------------------// 
+
+.rendTable > tr:first-child > td:first-of-type {
+  border-top-left-radius: 0; 
+} 
+
+.rendTable > tr:first-child > td:last-of-type {
+  border-top-right-radius: 0; 
+} 
+
+.rendTable > tr:last-child > td:first-of-type {
+  border-bottom-left-radius: 0; 
+}
+
+.rendTable > tr:last-child > td:last-of-type {
+  border-bottom-right-radius: 0; 
+}

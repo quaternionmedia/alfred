@@ -4,7 +4,10 @@ import { auth } from './Login'
 import { success, error, message, prompt } from 'alertifyjs'
 import { downloadFile } from './Tools'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
-var Stream = require("mithril/stream")
+import './styles/renders.scss'   
+import './styles/tables.scss' 
+
+var Stream = require("mithril/stream") 
 
 function tsToDate(ts) {
   let date = new Date(ts.substr(0,4), ts.substr(4,2) - 1, ts.substr(6, 2), ts.substr(9, 2), ts.substr(11, 2) , ts.substr(13, 2))
@@ -100,35 +103,28 @@ export function Renders() {
     },
     view: vnode => {
       let now = new Date()
-      return [
-        m('.head', [
+      return [ 
+        m('h1', 'Renders'),
+        m('.renderVideo', [
           m(RenderPreview, {
             src: preview()
           })
         ]),
-        m('.flexwrap', {}, [
-          m('h3', 'Renders'),
-          m('.tools', [
-            m('i.material-icons', {
-              style: { 'margin-left': '2vw', },
-              onclick: vnode => { getRenders() }
-            }, 'refresh'),
-          ]),
-          m('.break'),
-          m('table#renders.renders.project', {}, [
-            m('tr', [
-              m('th', 'project'),
-              m('th', 'description'),
-              m('th', 'duration'),
-              m('th', 'resolution'),
-              m('th', 'quality'),
-              m('th', 'start time'),
-              m('th', 'progress'),
-              m('th', 'preview'),
-              m('th', 'link'),
-              m('th', 'issue'),
-              m('th', 'delete'),
-            ],),
+        m('.flexwrap', {}, [ 
+          m('table.rendTableHead',
+            m('th', 'Project'),
+            m('th', 'Description'),
+            m('th', 'Duration'),
+            m('th', 'Resolution'),
+            m('th', 'Quality'),
+            m('th', 'Start Time'),
+            m('th', 'Progress'),
+            m('th', 'Preview'),
+            m('th', 'Link'),
+            m('th', 'Issue'),
+            m('th', 'Delete'),
+          ),
+          m('table.rendTable', {}, [ 
             renders.map(r => {
               return m('tr', {}, [
                 m('td', {}, r['project']),
