@@ -1,9 +1,10 @@
-import m from 'mithril'
-import { Menu } from './Menu'
+import m from 'mithril' 
 import { Edl } from './Video'
 import { User } from './User'
 import { error } from 'alertifyjs'
-import { auth } from './Login'
+import { auth } from './Login' 
+import './styles/projects.scss' 
+import './styles/tables.scss' 
 
 function Projects() {
   var projects = []
@@ -18,32 +19,31 @@ function Projects() {
       })
     },
     view: (vnode) => {
-      return [
-        m(Menu),
+      return [ 
+        m('h1', 'Projects', ),
         m('.projects', [
-          m('h3', 'projects:'),
-          m('table.project.projects', {}, [
-            m('tr', [
-              m('th', 'name'),
-              m('th', 'edit template'),
-              m('th', 'create new video'),
-            ]),
-            projects.map(p => {
-              return m('tr', [
-                m('td', {onclick: e => {
-                  Edl.edl = []
-                  m.route.set('/form?project=' + p['_id'])
-                  }}, p['name']),
-                m('td', {onclick: e => {
-                  m.route.set('/editor?project=' + p['_id'])
-                }}, m('i.material-icons', {}, 'edit')),
-                m('td', {onclick: e => {
-                  m.route.set('/form?project=' + p['_id'])
-                }}, m('i.material-icons', {}, 'video_call')),
+            m('table.projTableHead', [
+              m('th', 'Name'),
+              m('th', 'Edit Template'),
+              m('th', 'Create New Video'), 
+            ]), 
+            m('.projTableContainer',
+              m('table.projTable', {}, [ 
+                projects.map(p => {
+                  return m('tr', [
+                    m('td', p['name']),
+                    m('td', m('i.material-icons', {onclick: e => {
+                      m.route.set('/editor?project=' + p['_id'])
+                    }}, 'edit')),
+                    m('td', m('i.material-icons', {onclick: e => {
+                      m.route.set('/form?project=' + p['_id'])
+                    }}, 'video_call')),
+                  ])
+                })
               ])
-            })
-          ])
-      ])]
+            ),
+        ]), 
+      ]
     }
   }
 }

@@ -1,0 +1,90 @@
+//------------------ ADD BUTTON ----------------------------------//
+.addButton {   
+    margin-left: auto;
+    margin-right: auto; 
+    padding: 0.7em;  
+    padding-top: 1em;
+} 
+
+.addButton > a { 
+    cursor: pointer;
+    background-color: var(--purp1);  
+    padding: 0.7em;  
+    border-radius: 1em;   
+    text-align: center;  
+    width: 18em;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1.2em;
+    color: var(--grey6);   
+}
+.addButton > a:hover {
+    background-color: var(--grey6);
+    color: var(--grey0);
+}
+
+//------------------ PROJECT CONTAINER ----------------------------------//
+.projects {  
+    display: flex;  
+    flex-direction: column;
+    margin-left: auto;
+    margin-right: auto;
+    overflow-y: hidden; 
+    width: 830px; 
+    padding: 1em;
+    padding-bottom: 2em;
+}   
+
+//------------------ PROJECT TABLE HEADER ----------------------------------//
+.projTableHead {    
+    background-color: var(--purp1);
+} 
+
+.projTableHead > th { 
+    color: var(--grey7);   
+}
+
+.projTableHead:first-of-type { 
+    border-bottom-left-radius: 0; 
+    border-bottom-right-radius: 0; 
+} 
+
+.projTableHead > th:first-child { 
+    width: 60%;
+}
+
+
+//------------------ TABLE CONTAINER ----------------------------------//
+.projTableContainer {   
+    max-height: 800px;  
+    border: 0.7em var(--grey1) solid;;  
+    border-bottom-left-radius: 1em; 
+    border-bottom-right-radius: 1em; 
+    background-color: var(--grey1);
+    overflow: auto;  
+}
+
+//------------------ TABLE ----------------------------------//
+.projTable {   
+    padding: 0; 
+} 
+
+.projTable > tr > td:first-of-type {  
+    width: 60%;
+}
+
+.projTable > tr:first-child > td:first-of-type {
+    border-top-left-radius: 0; 
+} 
+
+.projTable > tr:first-child > td:last-of-type {
+    border-top-right-radius: 0; 
+} 
+
+.projTable > tr:last-child > td:first-of-type {
+    border-bottom-left-radius: 0; 
+}
+
+.projTable > tr:last-child > td:last-of-type {
+    border-bottom-right-radius: 0; 
+}

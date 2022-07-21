@@ -116,63 +116,20 @@ section {
   border: 4px solid #210D4D;
 }
 
-.project {
-  border: 3px solid #210D4D;
-  padding: .5em;
-  border-radius: 1em;
-  background-color: #292929;
-  max-height: 45vh;
-}
-.project tr:nth-child(even){background-color: #2b2b2b;}
-.project tr:hover {background-color: #67539177;}
-.project th {
-  padding: .5em;
-  background-color: #46346E;
-  color: #ddd;
-  position: sticky;
-  top: -.6em;
-}
-.renders {
-  display: flow-root;
-  position: relative;
-  overflow-y: scroll;
-}
-td {
-  text-align: -webkit-center;
-}
-tr td:FIRST-CHILD {
-  text-align: left;
-}
-th {
-  text-align: center;
-  z-index: 1;
-}
+
 .bin {
   display: inherit;
   max-height: 40vh;
   margin-top: .5em;
   padding: .5em;
 }
-.head {
-  display: flex;
-  height: 40vh;
-  background-color: black;
-  border: 3px #46346E;
-  border-style: solid;
-  margin-bottom: 0px;
-  margin-left: auto;
-  margin-right: auto;
-  border-radius: 6px;
-}
+
 @keyframes blinker {
   50% {
     opacity: 0;
   }
 }
-.flexwrap {
-  display: flex;
-  flex-wrap: wrap;
-}
+
 .timelinegrid {
   display: inline-grid;
   grid-template-columns: 10% 90%;
@@ -244,10 +201,7 @@ th {
 .tools .custom {
   padding: 10px;
 }
-@media screen and (max-width: 700px) {
-  body {
-    font-size: large;
-  }
+@media screen and (max-width: 700px) { 
   .tools .custom {
     padding: 9px;
   }
@@ -411,9 +365,6 @@ form {
   border: 3px solid #46346E;
   border-radius: 1em;
   background-color: #393939;
-}
-@media screen and (min-width: 769px) {
-  form {margin: 1em;}
 }
 form label {
   text-align: end;
