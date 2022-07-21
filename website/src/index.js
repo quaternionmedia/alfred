@@ -1,6 +1,6 @@
 import m from "mithril"
 import Project from './Project'
-import { Menu } from './Menu'
+import { setActive } from './Menu'
 import Home from './Home'
 import Projects from './Projects'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
@@ -49,12 +49,15 @@ window.localStorage.removeItem('REQUESTING_SHARED_CREDENTIALS')
 console.log('sup!')
 
 m.route(document.body, "/", {
-  "/": Home,
-  '/projects': Projects,
+  "/": { render: () => m(Layout, m(Home))}, 
+  '/projects': { render: () => m(Layout, m(Projects))}, 
+  '/renders': { render: () => m(Layout, m(Renders))}, 
   '/otto': Otto,
   '/form': { render: () => m(Layout, m(Magnussens))},
-  '/renders': { render: () => m(Layout, m(Renders))},
   '/editor': { render: () => m(Layout, m(TemplateEditor))},
   '/login': { render: () => m(Layout, m(Login))},
   '/logout': { render: () => m(Layout, m(Logout))},
-} )
+} ) 
+
+setActive();
+
