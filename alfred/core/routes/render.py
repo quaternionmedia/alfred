@@ -1,6 +1,6 @@
 from fastapi import Depends
 from typing import List, Optional
-from .users import current_active_user
+from .users import current_active_user, current_active_superuser
 from ..models import User
 from ..models.render import Render, RenderUpdate
 from otto.models import Edl
@@ -66,7 +66,7 @@ class RenderAPI(MotorCRUDRouter):
 
         @self.post('/rerender/{id}', *args, **kwargs)
         async def reQueueRender(
-            id: str,
+            id: str, user: User = Depends(current_active_superuser)
         ):
             ts = timestr()
             db = get_db()
