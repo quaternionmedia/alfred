@@ -11,6 +11,8 @@ from ..utils.bucket import generate_signed_url
 from fastapi_crudrouter import MotorCRUDRouter
 from alfred.config import DB_URL, DB_NAME
 from ..utils.db import get_client
+from bson import ObjectId
+
 
 class RenderAPI(MotorCRUDRouter):
     def __init__(
@@ -61,6 +63,24 @@ class RenderAPI(MotorCRUDRouter):
                 ffmpeg_params=render.ffmpeg_params,
             )
             return str(result.id)
+
+        @self.post('/rerender/{id}', *args, **kwargs)
+        async def reQueueRender(
+            id: str,
+        ):
+            ts = timestr()
+            db = get_db()
+            render = await self.schema.find_one({'_id': ObjectId(id)})
+            print('rerendering!', id, render)
+            task = renderRemote.delay(
+                edl=render.edl,
+                renderId=ObjectId(id),
+                filename=render.filename,
+                moviesize=(render.width, render.height),
+                fps=render.fps,
+                bitrate=render.bitrate,
+                ffmpeg_params=render.ffmpeg_params,
+            )
 
         @self.get('/{item_id}', *args, **kwargs)
         async def getSignedRenderLink(
