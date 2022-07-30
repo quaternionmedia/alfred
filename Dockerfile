@@ -47,6 +47,7 @@ COPY alfred/requirements.txt /
 RUN pip3 install -Ur /requirements.txt
 COPY alfred/otto/requirements.txt /otto_requirements.txt
 RUN pip3 install numpy gizeh pillow
+RUN BEZIER_NO_EXTENSION=true pip3 install bezier
 RUN pip3 install -Ur /otto_requirements.txt
 COPY alfred/otto /otto
 RUN pip install -e /otto/
