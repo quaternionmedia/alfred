@@ -1,6 +1,5 @@
 import m from 'mithril'
 import Project from './Project'
-import { setActive } from './Menu'
 import Home from './Home'
 import Projects from './Projects'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
@@ -66,5 +65,3 @@ m.route(document.body, '/', {
   '/login': { render: () => m(Layout, m(Login)) },
   '/logout': { render: () => m(Layout, m(Logout)) },
 })
-
-setActive()

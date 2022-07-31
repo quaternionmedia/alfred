@@ -4,20 +4,6 @@ import { User } from './User'
 import LOGO from './assets/alWhite.png'
 import './styles/menu.scss'
 
-function setActive() {
-  //loops through all links and sets the active class to the current page
-  //TODO: in future set active page in state listener
-  var links = document.getElementsByClassName('menuLink')
-  for (var i = 0; i < links.length; i++) {
-    var link = links[i]
-    if (link.href == window.location.href) {
-      link.classList.add('active')
-    } else {
-      link.classList.remove('active')
-    }
-  }
-}
-
 function Menu() {
   // toggles the navContainer visibility
   var open = false
@@ -44,7 +30,7 @@ function Menu() {
               m('img.logoImg', { src: LOGO })
             )
           ),
-          m('.menuLinks', m(Links, { onclick: setActive() })),
+          m('.menuLinks', m(Links)),
           m(
             Link,
             {
@@ -65,7 +51,16 @@ function Menu() {
 function Link() {
   return {
     view: vnode => {
-      return m(m.route.Link, vnode.attrs, vnode.children)
+      return m(
+        m.route.Link,
+        {
+          class: window.location.pathname.startsWith(vnode.attrs.href)
+            ? 'active'
+            : '',
+          ...vnode.attrs,
+        },
+        vnode.children
+      )
     },
   }
 }
@@ -145,4 +140,4 @@ function navLinks() {
   }
 }
 
-export { Menu, Links, Link, navLinks, setActive }
+export { Menu, Links, Link, navLinks }
