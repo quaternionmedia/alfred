@@ -4,7 +4,7 @@ import { User } from './User'
 import LOGO from './assets/alWhite.png'
 import './styles/menu.scss'
 
-function Menu() {
+export function Menu() {
   // toggles the navContainer visibility
   var open = false
   function toggle() {
@@ -48,96 +48,84 @@ function Menu() {
 }
 
 //an individual link
-function Link() {
-  return {
-    view: vnode => {
-      return m(
-        m.route.Link,
-        {
-          class: window.location.pathname.startsWith(vnode.attrs.href)
-            ? 'active'
-            : '',
-          ...vnode.attrs,
-        },
-        vnode.children
-      )
-    },
-  }
-}
+export const Link = () => ({
+  view: vnode => {
+    return m(
+      m.route.Link,
+      {
+        class: window.location.pathname.startsWith(vnode.attrs.href)
+          ? 'active'
+          : '',
+        ...vnode.attrs,
+      },
+      vnode.children
+    )
+  },
+})
 
 //the links in the menu bar
-function Links() {
-  return {
-    view: vnode => {
-      return [
-        m(
-          Link,
-          {
-            class: 'menuLink',
-            href: '/projects',
-            id: 'projects-link',
-            ...vnode.attrs,
-          },
-          'PROJECTS'
-        ),
-        m(
-          Link,
-          {
-            class: 'menuLink',
-            href: '/renders',
-            id: 'renders-link',
-            ...vnode.attrs,
-          },
-          'RENDERS'
-        ),
-      ]
-    },
-  }
-}
+export const Links = () => ({
+  view: vnode => [
+    m(
+      Link,
+      {
+        class: 'menuLink',
+        href: '/projects',
+        id: 'projects-link',
+        ...vnode.attrs,
+      },
+      'PROJECTS'
+    ),
+    m(
+      Link,
+      {
+        class: 'menuLink',
+        href: '/renders',
+        id: 'renders-link',
+        ...vnode.attrs,
+      },
+      'RENDERS'
+    ),
+  ],
+})
 
 //the links in the nav bar, separated to have own style
-function navLinks() {
-  return {
-    view: vnode => {
-      return [
-        m(
-          Link,
-          { class: 'navLink', href: '/', id: 'home-link', ...vnode.attrs },
-          'HOME'
-        ),
-        m(
-          Link,
-          {
-            class: 'navLink',
-            href: '/projects',
-            id: 'projects-link',
-            ...vnode.attrs,
-          },
-          'PROJECTS'
-        ),
-        m(
-          Link,
-          {
-            class: 'navLink',
-            href: '/renders',
-            id: 'renders-link',
-            ...vnode.attrs,
-          },
-          'RENDERS'
-        ),
-        m(
-          Link,
-          {
-            class: 'navLink',
-            href: User.username ? '/logout' : '/login',
-            id: 'login-link',
-            ...vnode.attrs,
-          },
-          User.username ? 'LOGOUT' : 'LOGIN'
-        ),
-      ]
-    },
-  }
-}
-
-export { Menu, Links, Link, navLinks }
+export const navLinks = () => ({
+  view: vnode => [
+    m(
+      Link,
+      { class: 'navLink', href: '/', id: 'home-link', ...vnode.attrs },
+      'HOME'
+    ),
+    m(
+      Link,
+      {
+        class: 'navLink',
+        href: '/projects',
+        id: 'projects-link',
+        ...vnode.attrs,
+      },
+      'PROJECTS'
+    ),
+    m(
+      Link,
+      {
+        class: 'navLink',
+        href: '/renders',
+        id: 'renders-link',
+        ...vnode.attrs,
+      },
+      'RENDERS'
+    ),
+    m(
+      Link,
+      {
+        class: 'navLink',
+        href: User.username ? '/logout' : '/login',
+        id: 'login-link',
+        ...vnode.attrs,
+      },
+      User.username ? 'LOGOUT' : 'LOGIN'
+    ),
+  ],
+})
