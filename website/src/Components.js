@@ -87,22 +87,10 @@ export function Selector() {
   }
 }
 
-
-export function Section() {
-  return {
-    view: vnode => {
-      return m('section', vnode.attrs, vnode.children)
-    }
-  }
+export const Section = {
+  view: vnode => m('section', vnode.attrs, vnode.children),
 }
 
-export function Layout() {
-  return {
-    view: vnode => {
-      return [
-        m(Menu),
-        m(Section, vnode.attrs, vnode.children)
-      ]
-    }
-  }
+export const Layout = {
+  view: vnode => [m(Menu), m(Section, vnode.attrs, vnode.children)],
 }
