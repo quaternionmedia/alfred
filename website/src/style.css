@@ -39,6 +39,8 @@ body {
   flex-direction: column; 
   box-sizing: border-box;
 }
+section {
+  overflow-y: auto;
 }
 
 .title {
