@@ -1,5 +1,4 @@
 import m from 'mithril'
-import { Menu } from './Menu'
 import { Edl } from './Video'
 import { User } from './User'
 import { error } from 'alertifyjs'
@@ -21,7 +20,6 @@ function Projects() {
     },
     view: vnode => {
       return [
-        m(Menu),
         m('.projects', [
           m('h3', 'projects:'),
           m('table.project.projects', {}, [

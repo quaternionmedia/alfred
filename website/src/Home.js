@@ -5,7 +5,6 @@ function Home() {
   return {
     view: vnode => {
       return [
-        m(Menu),
         m('span#main', {}, [
           m(
             'h3.title',
@@ -13,7 +12,6 @@ function Home() {
             'Alfred: the automatic video editor'
           ),
         ]),
-        m(Links),
         m('br'),
         m('a', { href: '/docs/' }, 'User Documentation'),
         m('br'),
