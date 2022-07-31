@@ -1,6 +1,6 @@
 import m from 'mithril'
 import Project from './Project'
-import Home from './Home'
+import { Home } from './Home'
 import Projects from './Projects'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
 import '../node_modules/alertifyjs/build/css/themes/semantic.css'
