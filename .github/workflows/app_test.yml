@@ -4,10 +4,11 @@ on:
   push:
     branches:
       - main
+      - dev
   pull_request:
     branches:
       - main
-      - documentation
+      - dev
 
 jobs:
   run_tests:
@@ -19,11 +20,10 @@ jobs:
         uses: actions/checkout@v3
         with:
           submodules: recursive
-          token: ${{ secrets.GITHUB_TOKEN }}
       - name: init project
         run: ./al init
       - name: Start containers
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: docker-compose -f "docker-compose.yml" -f test.yml up --build
+        run: docker-compose -f docker-compose.yml -f test_cy.yml up --build --exit-code-from cy

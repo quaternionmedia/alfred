@@ -19,7 +19,7 @@ export function Text() {
     }
   }
 }
-export function TextBox() {
+export function Textarea() {
   return {
     view: vnode => {
       return [
@@ -38,10 +38,33 @@ export function Button() {
   }
 }
 
+export function Color() {
+  return {
+    view: vnode => {
+      return [
+        m('label.formlabel', { for: vnode.attrs.name }, vnode.attrs.text),
+        m('input[type=color]', vnode.attrs),
+      ]
+    }
+  }
+}
+
 export function Img() {
   return {
     view: vnode => {
       return m('img', vnode.attrs, vnode.children)
+    }
+  }
+}
+
+export function Image() {
+  return {
+    view: vnode => {
+      return [
+        m('label.formlabel', { for: vnode.attrs.name }, vnode.attrs.text),
+        m('input[type=text]', vnode.attrs),
+        m('img', {src: vnode.attrs.value}, vnode.children)
+      ]
     }
   }
 }

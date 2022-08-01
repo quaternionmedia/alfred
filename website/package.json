@@ -24,6 +24,7 @@
     "mithril": "^2.0.4",
     "mithril-contenteditable": "^0.1.2",
     "mithril-json-viewer": "^2.0.2",
+    "mithril-range": "^1.0.0",
     "sortablejs": "^1.13.0"
   },
   "devDependencies": {

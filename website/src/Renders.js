@@ -38,13 +38,13 @@ export function RenderLink() {
     view: vnode => {
       return link ? m('.bar', {}, [
         m('textarea', {
-          id: vnode.children[0]
+          id: vnode.attrs.id
         }, link),
         m('i.material-icons', {
           onclick: e => {
             // console.log('copied ', e)
             success('copied link to clipboard!', 3)
-            let txt = document.getElementById(vnode.children[0])
+            let txt = document.getElementById(vnode.attrs.id)
             txt.select()
             document.execCommand('copy')
           }
@@ -53,9 +53,7 @@ export function RenderLink() {
           m('i.material-icons', {
             onclick: e => {
               // console.log('getting render link', vnode.children)
-              auth('/render', {
-                params: { name: vnode.children[0] }
-              }).then(res => {
+              auth('/render/' + vnode.attrs.id, {}).then(res => {
                 link = res
               })
             }}, 'link'))
@@ -82,7 +80,7 @@ export function Renders() {
   var renders = []
   
   function getRenders() {
-    auth('/renders').then(e => {
+    auth('/render').then(e => {
       // console.log('renders init')
       renders = e
     })
@@ -136,7 +134,7 @@ export function Renders() {
                 m('td', {}, r['project']),
                 m('td', {}, r['description']),
                 m('td', {}, r['duration']),
-                m('td', {}, r['resolution'] ? `${r['resolution'][0]}x${r['resolution'][1]}` : ''),
+                m('td', {}, `${r['width']}x${r['height']}`),
                 m('td', {}, r['quality']),
                 m('td.tooltip', {}, [
                   shortTime(dateFromObjectId(r['_id'])),
@@ -153,22 +151,19 @@ export function Renders() {
                 m('.tools',
                 m('i.material-icons', {
                   onclick: e => {
-                    auth('/render', {
-                      params: { name: r['filename'] }
-                    }).then(res => {
+                    auth('/render/' + r['_id']).then(res => {
                       // console.log('got signed link', res)
                       preview(res)
                     })
                   }}, 'missed_video_call')) : ''),
                   m('td', r['progress'] >= 100 ?
-                  m(RenderLink, {}, r['filename']) : ''),
+                  m(RenderLink, {id: r['_id']}) : ''),
                   m('td', {}, m('.tools', {}, m('i.material-icons', {
                     onclick: e => {
                       prompt('Report issue', "Please provide a detailed description of the issue", "There's a problem with...", (evt, issue) => {
                         console.log('reporting issue', evt, issue)
-                        auth('/report', {
+                        auth(`/render/${r['_id']}/report`, {
                           method: 'post',
-                          params: { name: r['filename'] },
                           body: issue
                         }).then(win => {
                           success("issue submitted! We'll check it out as soon as we can!")
@@ -185,8 +180,8 @@ export function Renders() {
                   m('.tools',
                   m('i.material-icons', {
                     onclick: e => {
-                      auth(`/renders/${r['filename']}/cancel`, {
-                        method: 'put',
+                      auth(`/render/${r['_id']}`, {
+                        method: 'delete',
                       }).then(res => {
                         console.log('deleted', r['filename'])
                         message(`${r['filename']} removed`, 4)

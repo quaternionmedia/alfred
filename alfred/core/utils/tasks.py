@@ -26,7 +26,8 @@ class Renderer(Task):
 @renderer.task(bind=True, base=Renderer)
 def renderRemote(self, 
         edl: Edl,
-        filename, 
+        filename: str,
+        renderId: str,
         audio=None, 
         moviesize=(1920,1080), 
         fps=30.0,
@@ -34,7 +35,7 @@ def renderRemote(self,
         ffmpeg_params=None, 
         **kwargs):
     try:
-        self.log = DbLogger(self, filename)
+        self.log = DbLogger(self, renderId)
         renderMultitrack(edl=edl, 
             audio=audio, 
             filename=join('videos', filename), 
@@ -47,5 +48,5 @@ def renderRemote(self,
         # self.update_state(state='PROGRESS', meta={'status': 'uploaded'})
         self.log.uploaded()
     except Exception as e:
-        print('error executing render task', filename, e)
-        self.log.failed(filename=filename, exc=e)
+        print('error executing render task', renderId, e)
+        self.log.failed(filename=renderId, exc=e)

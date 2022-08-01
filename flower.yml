@@ -1,0 +1,12 @@
+version: '3.8'
+networks:
+  alfred_isolated:
+
+services:
+  flower:
+    build: ./flower/
+    networks:
+      - alfred_isolated
+    ports:
+      - 5555:5555
+    command: celery --broker=mongodb://db:27017/celery flower --port=5555

@@ -1,0 +1,86 @@
+site_name: Alfred
+side_description: automatic video editing
+site_url: https://alfred.quaternion.media/docs/
+# repo_url: https://github.com/quaternionmedia/alfred
+edit_uri: ""
+
+nav:
+  - Home: index.md
+  - About:
+    - about/index.md
+    - about/concepts.md
+    - about/clip.md
+    - about/template.md
+    - about/edl.md
+    - about/project.md
+    - about/render.md
+  - Examples:
+    - examples/index.md
+    - examples/login.md
+    - examples/media.md
+    - examples/preview.md
+    - examples/render.md
+    - examples/trim.md
+    - examples/combine.md
+    - examples/adjust.md
+    - examples/fade.md
+    - examples/text.md
+    - examples/animation.md
+    - examples/project.md
+    # - examples/advanced.md
+  - API:
+    - api/index.md
+    - api/auth.md
+    - api/otto.md
+    - api/render.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - def_list
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - tables
+
+theme:
+  name: material
+  logo: assets/al-white.png
+  favicon: assets/al-white.png
+  palette:
+    - media: "(prefers-color-scheme: dark)" # 
+      scheme: slate
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)" # 
+      scheme: default
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.indexes
+    - toc.integrate
+    - navigation.top
+    - content.code.annotate
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/quaternionmedia/alfred
+    # - icon: fontawesome/brands/website
+    #   link: https://alfred.quaternion.media

@@ -1,13 +1,12 @@
 /// <reference types="cypress" />
 describe('logs in', () => {
-
   it('fails to access protected resource', () => {
     cy.request({
       url: Cypress.env('HOST') + '/users/me',
       failOnStatusCode: false,
     })
-    .its('status')
-    .should('equal', 401)
+      .its('status')
+      .should('equal', 404)
   })
 
   it('Does not log in with invalid password', () => {
@@ -29,8 +28,6 @@ describe('logs in', () => {
   //   cy.url().should('eq', '/projects')
   // })
 })
-
-
 
 //add verify for completed render
 

@@ -23,21 +23,23 @@ if [ $1 = "version" -o $1 = "v" -o $1 = "-v" ]; then
 elif [ $1 = "dev" ] || [ -z $1 ]; then
   if [ !-z ]; then shift; fi
   echo "Alfred! running dev $1"
-  docker compose -f docker-compose.yml -f dev.yml up $1
+  docker compose -f docker-compose.yml -f dev.yml up "$@"
 
 # Starts in production.
 elif [ $1 = "prod" -o $1 = "production" -o $1 = "p" ]; then
   shift
   echo "Alfred! running production $1"
   docker compose down && \
+  docker run --rm -it -v ${PWD}:/docs -v ${PWD}/alfred/site/:/site/ --user $(id -u):$(id -g) squidfunk/mkdocs-material build -d /site/ && \
   docker compose -f docker-compose.yml -f production.yml up --build -d $1
 
 # Installs website dependencies.
 elif [ $1 = "init" ]; then
   shift
-  mkdir -p $(dirname $0)/videos
   mkdir -p $(dirname $0)/website/dist
+  mkdir -p $(dirname $0)/alfred/videos
   mkdir -p $(dirname $0)/alfred/data
+  mkdir -p $(dirname $0)/alfred/site
   echo "installing dependencies"
   # make install
   docker compose run website yarn install
@@ -83,7 +85,7 @@ elif [ $1 = "sh" ]; then
 
 elif [ $1 = "log" -o $1 = "logs" -o $1 = "l" ]; then
   shift
-  docker compose logs -f
+  docker compose logs -f "$@"
 
 elif [ $1 = "worker" -o $1 = "w" ]; then
   shift
@@ -112,7 +114,20 @@ elif [ $1 = "git" -o $1 = "g" ]; then
   shift
   git pull && git submodule update
 
-elif [ $1 = "test" -o $1 = "t" ]; then
+elif [ $1 = "docs" -o $1 = "d" ]; then
+  # build documentation and serve locally, with hot reloader
   shift
-  docker compose -f docker-compose.yml -f test.yml up --build --exit-code-from cy
+  mkdocs serve -a 0.0.0.0:4000
+
+elif [ $1 = "docker" -o $1 = "dock" ]; then
+  shift
+  docker compose -f docker-compose.yml -f dev.yml "$@"
+
+elif [ $1 = "test" -o $1 = "t" -o $1 = "cy" ]; then
+  shift
+  docker compose -f docker-compose.yml -f test_cy.yml up --build --exit-code-from cy
+
+elif [ $1 = "bats" -o $1 = "bat" ]; then
+  shift
+  docker compose -f test_bats.yml up --build --exit-code-from bats
 fi
