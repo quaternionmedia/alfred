@@ -3,12 +3,12 @@ name: Application Test
 on:
   push:
     branches:
-    - main
-    - dev
+      - main
+      - dev
   pull_request:
     branches:
-    - main
-    - dev
+      - main
+      - dev
 
 jobs:
   run_tests:
@@ -17,10 +17,9 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
-          token: ${{ secrets.QM_TOKEN }}
       - name: init project
         run: ./al init
       - name: Start containers
