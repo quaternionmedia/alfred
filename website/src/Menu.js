@@ -7,6 +7,12 @@ import './styles/menu.scss'
 export function Menu() {
   // toggles the navContainer visibility
   var open = false
+  addEventListener('resize', () => {
+    if (window.innerWidth >= 1026 && open) {
+      open = false
+      m.redraw()
+    }
+  })
   function toggle() {
     console.log('toggling menu', open)
     open = !open
