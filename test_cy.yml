@@ -4,7 +4,6 @@ services:
   cy:
     image: cypress/included:9.7.0
     depends_on:
-      - website
       - api
       - db
     volumes:
@@ -17,6 +16,3 @@ services:
       CYPRESS_RECORD_KEY: ${CYPRESS_RECORD_KEY}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
     command: cypress run --record
-
-  website:
-    command: yarn parcel watch /app/src/index.html /app/src/*.svg /app/src/*.png
