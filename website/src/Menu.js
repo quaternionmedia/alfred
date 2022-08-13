@@ -59,7 +59,7 @@ export const Link = () => ({
     return m(
       m.route.Link,
       {
-        class: window.location.pathname.startsWith(vnode.attrs.href)
+        class: window.location.hash.startsWith(vnode.attrs.href, 2)
           ? 'active'
           : '',
         ...vnode.attrs,
@@ -75,7 +75,6 @@ export const Links = () => ({
     m(
       Link,
       {
-        class: 'menuLink',
         href: '/projects',
         id: 'projects-link',
         ...vnode.attrs,
@@ -85,7 +84,6 @@ export const Links = () => ({
     m(
       Link,
       {
-        class: 'menuLink',
         href: '/renders',
         id: 'renders-link',
         ...vnode.attrs,

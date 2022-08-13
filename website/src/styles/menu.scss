@@ -24,7 +24,8 @@ header {
   padding: 20 0 20 5; //top, right, bottom, left
 }
 
-.menuLink {
+.menuLinks > *,
+#login-link {
   cursor: pointer;
   font-size: 28px;
   color: var(--grey5);
@@ -32,27 +33,23 @@ header {
   padding: 20 15 20 15; //top, right, bottom, left
 }
 
-.menuLink:visited,
-.loginLink:visited {
+.menuLinks :visited,
+#login-Link:visited {
   color: var(--grey5);
 }
 
-.menuLink.active {
+.menuLinks .active {
   color: var(--grey7);
 }
 
-.menuLink:hover,
-.loginLink:hover {
+.menuLinks :hover,
+#login-link:hover {
   cursor: pointer;
   color: var(--grey0);
   background-color: var(--grey6);
 }
 
-.loginLink {
-  cursor: pointer;
-  font-size: 22px;
-  color: var(--grey5);
-  text-decoration: none;
+#login-link {
   padding: 26 15 20 15; //top, right, bottom, left
 }
 
