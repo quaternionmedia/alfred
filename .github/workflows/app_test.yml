@@ -3,12 +3,12 @@ name: Application Test
 on:
   push:
     branches:
-    - main
-    - dev
+      - main
+      - dev
   pull_request:
     branches:
-    - main
-    - dev
+      - main
+      - dev
 
 jobs:
   run_tests:
@@ -16,15 +16,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - name: 📰 Checkout
+        uses: actions/checkout@v3
         with:
           submodules: recursive
-          token: ${{ secrets.QM_TOKEN }}
-      - name: init project
+
+      - name: 🚧 init project
         run: ./al init
-      - name: Start containers
+
+      - name: 🏗️ build site
+        run: docker compose -f docker-compose.yml run website yarn parcel build /app/src/index.html /app/src/*.svg /app/src/*.png
+
+      - name: 🧪 Run test suite
         env:
           CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: docker-compose -f docker-compose.yml -f test_cy.yml up --build --exit-code-from cy
+        run: docker compose -f docker-compose.yml -f test_cy.yml up --build --exit-code-from cy
