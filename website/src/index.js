@@ -2,6 +2,7 @@ import m from 'mithril'
 import Project from './Project'
 import { Home } from './Home'
 import Projects from './Projects'
+import { Documents } from './Documents'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
 import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'
@@ -59,6 +60,7 @@ m.route(document.body, '/', {
   '/': { render: () => m(Layout, m(Home)) },
   '/projects': { render: () => m(Layout, m(Projects)) },
   '/renders': { render: () => m(Layout, m(Renders)) },
+  '/documents': { render: () => m(Layout, m(Documents)) },
   '/otto': Otto,
   '/form': { render: () => m(Layout, m(Magnussens)) },
   '/editor': { render: () => m(Layout, m(TemplateEditor)) },

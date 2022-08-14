@@ -90,6 +90,15 @@ export const Links = () => ({
       },
       'RENDERS'
     ),
+    m(
+      Link,
+      {
+        href: '/documents',
+        id: 'documents-link',
+        ...vnode.attrs,
+      },
+      'DOCUMENTS'
+    ),
   ],
 })
 
@@ -120,6 +129,16 @@ export const navLinks = () => ({
         ...vnode.attrs,
       },
       'RENDERS'
+    ),
+    m(
+      Link,
+      {
+        class: 'navLink',
+        href: '/documents',
+        id: 'documents-link',
+        ...vnode.attrs,
+      },
+      'DOCUMENTS'
     ),
     m(
       Link,
