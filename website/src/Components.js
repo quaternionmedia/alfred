@@ -1,5 +1,6 @@
 import m from 'mithril'
-import { Menu } from './Menu'
+import { Menu } from './Menu' 
+import { Footer } from './Footer'
 
 export function Form() {
   return {
@@ -92,5 +93,5 @@ export const Section = {
 }
 
 export const Layout = {
-  view: vnode => [m(Menu), m(Section, vnode.attrs, vnode.children)],
+  view: vnode => [m(Menu), m(Section, vnode.attrs, vnode.children), m(Footer)],
 }
