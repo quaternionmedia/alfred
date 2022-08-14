@@ -1,5 +1,10 @@
 .json-tree div {
   margin-left: 20px;
+  text-align: left;
+}
+
+h2, h3 {
+  text-align: left;
 }
 
 .json-tree button {

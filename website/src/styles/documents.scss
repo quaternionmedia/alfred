@@ -1,21 +1,20 @@
- 
-.docLink {  
-    width: 12em;
-    text-align: center;
-    text-decoration: none;
-    color: var(--grey5);
-    font-size: 20px;
-    font-weight: bold; 
-    margin-left: auto;
-    margin-right: auto;
-    padding: 10 10 10 10;
+.docLink {
+  width: 12em;
+  text-align: center;
+  text-decoration: none;
+  color: var(--grey5);
+  font-size: 20px;
+  font-weight: bold;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 10 10 10 10;
 }
 
 .docLink:hover {
-    cursor: pointer;
-    color: var(--grey7); 
+  cursor: pointer;
+  color: var(--grey7);
 }
 
 h1 {
-    margin-bottom: 30px;
+  margin-bottom: 30px;
 }
