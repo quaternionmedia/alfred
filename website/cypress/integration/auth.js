@@ -5,10 +5,15 @@ let user
 
 before(function fetchUser() {
   //register user
-  cy.request('POST', '/auth/register', {
-    email: Cypress.env('email'),
-    password: Cypress.env('pwd'),
-    first_name: Cypress.env('name'),
+  cy.request({
+    method: 'POST',
+    url: '/auth/register',
+    body: {
+      email: Cypress.env('email'),
+      password: Cypress.env('pwd'),
+      first_name: Cypress.env('name'),
+    },
+    failOnStatusCode: false,
   })
   // login
   cy.request({
@@ -58,13 +63,13 @@ describe('JWT', () => {
 describe('authd test', () => {
   it('gets projects', () => {
     cy.request({
-      url: '/#!/projects',
+      url: '/project',
       auth: {
         bearer: user.access_token,
       },
     }).then(response => {
       expect(response.status).to.eq(200)
-      expect(response.body).to.contain('al.png')
+      expect(response.body).to.be.an('array')
     })
   })
 })

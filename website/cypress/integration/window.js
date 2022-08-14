@@ -27,12 +27,12 @@ describe('Window Test Suite Commands', () => {
     cy.window().should(win => {
       win.history.back() // win.history.go(-1)
     })
-    cy.get(':nth-child(7) > #login-link').should('be.visible')
+    cy.get('#login-link').should('be.visible')
     cy.window().should(win => {
       win.history.forward() // win.history.go(1)
     })
-    cy.get(':nth-child(6) > #projects-link').should('be.visible')
-    cy.get(':nth-child(7) > #renders-link').should('be.visible')
+    cy.get('#projects-link').should('be.visible')
+    cy.get('#renders-link').should('be.visible')
   })
 
   it('Window Test Commands - Storage', () => {

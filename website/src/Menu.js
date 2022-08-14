@@ -7,6 +7,12 @@ import './styles/menu.scss'
 export function Menu() {
   // toggles the navContainer visibility
   var open = false
+  addEventListener('resize', () => {
+    if (window.innerWidth >= 1026 && open) {
+      open = false
+      m.redraw()
+    }
+  })
   function toggle() {
     console.log('toggling menu', open)
     open = !open
@@ -53,7 +59,7 @@ export const Link = () => ({
     return m(
       m.route.Link,
       {
-        class: window.location.pathname.startsWith(vnode.attrs.href)
+        class: window.location.hash.startsWith(vnode.attrs.href, 2)
           ? 'active'
           : '',
         ...vnode.attrs,
@@ -69,7 +75,6 @@ export const Links = () => ({
     m(
       Link,
       {
-        class: 'menuLink',
         href: '/projects',
         id: 'projects-link',
         ...vnode.attrs,
@@ -79,7 +84,6 @@ export const Links = () => ({
     m(
       Link,
       {
-        class: 'menuLink',
         href: '/renders',
         id: 'renders-link',
         ...vnode.attrs,
