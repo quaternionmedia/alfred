@@ -1,70 +1,70 @@
 //------------------ TABLE ----------------------------------//
-table {  
-    padding: .5em; 
-    border-radius: 1em;
-    background-color: var(--grey1);
-    width: 100%;  
+table {
+  padding: 0.5em;
+  border-radius: 1em;
+  background-color: var(--grey1);
+  width: 100%;
 }
 
 //------------------ TABLE HEAD ----------------------------------//
 th {
-    padding: .5em;
-    background-color: var(--purp1);
-    color: var(--grey7);  
-    position: sticky;
-    top: 0;
-} 
+  padding: 0.5em;
+  background-color: var(--purp1);
+  color: var(--grey7);
+  position: sticky;
+  top: 0;
+}
 
 th:first-child {
-    border-top-left-radius: 0.5em; 
+  border-top-left-radius: 0.5em;
 }
- 
+
 th:last-child {
-    border-top-right-radius: 0.5em; 
+  border-top-right-radius: 0.5em;
 }
 
 //------------------ TABLE ROWS ----------------------------------//
-tr:nth-child(odd){
-    background-color: var(--grey2);
-    color: var(--grey6)
+tr:nth-child(odd) {
+  background-color: var(--grey2);
+  color: var(--grey6);
 }
 
-tr:nth-child(even){
-    background-color: var(--grey3);
-    color: var(--grey6)
+tr:nth-child(even) {
+  background-color: var(--grey3);
+  color: var(--grey6);
 }
 
 tr:hover {
-    background-color: var(--purp1);
+  background-color: var(--purp1);
 }
 
 //------------------ TABLE DATA ----------------------------------//
 td {
-    padding: .5em;
+  padding: 0.5em;
 }
 
 td > .material-icons {
-    cursor: pointer; 
-    color: var(--grey5);  
-} 
- 
+  cursor: pointer;
+  color: var(--grey5);
+}
+
 td > .material-icons:hover {
-    cursor: pointer;
-    color: var(--grey7);  
+  cursor: pointer;
+  color: var(--grey7);
 }
 
 tr:first-child > td:first-of-type {
-    border-top-left-radius: 0.5em; 
+  border-top-left-radius: 0.5em;
 }
 
 tr:first-child > td:last-of-type {
-    border-top-right-radius: 0.5em; 
-} 
+  border-top-right-radius: 0.5em;
+}
 
 tr:last-child > td:first-of-type {
-    border-bottom-left-radius: 0.5em; 
+  border-bottom-left-radius: 0.5em;
 }
 
 tr:last-child > td:last-of-type {
-    border-bottom-right-radius: 0.5em; 
-} 
+  border-bottom-right-radius: 0.5em;
+}
