@@ -15,18 +15,18 @@ Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 #### init
 Install website dependencies
 
-`./alfred init`
+`./al init`
 
 #### dev
-`./alfred dev`
+`./al dev`
 
 then open http://localhost:8000
 
 #### rebuild docker images:
-`./alfred dev --build`
+`./al dev --build`
 
 #### install package
-`./alfred install` [package name]
+`./al install` [package name]
 `npm i` [package name]
 
 When run with no arguments, it will reinstall npm dependencies, which might be needed if package.json has been edited or changed.
@@ -34,7 +34,7 @@ When run with no arguments, it will reinstall npm dependencies, which might be n
 #### demo
 To download the demo media (into `videos/`):
 
-`./alfred demo`
+`./al demo`
 
 Then you can render the `demo.csv` project locally.
 
@@ -50,5 +50,5 @@ Optional: specify a different host address with `-a`. For example:
 
 `mkdocs serve -a 0.0.0.0:4000` will serve the documentation on all available network hosts, at port `4000`.
 #### production
-`./alfred prod`
+`./al prod`
 Assumes a [traefik](https://containo.us/traefik/) instance is already running.
