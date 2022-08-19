@@ -84,3 +84,5 @@ extra:
       link: https://github.com/quaternionmedia/alfred
     - icon: fontawesome/brands/website
       link: https://quaternion.media/alfred
+  version:
+    provider: mike
