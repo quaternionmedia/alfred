@@ -173,10 +173,7 @@ th {
     opacity: 0;
   }
 }
-.flexwrap {
-  display: flex;
-  flex-wrap: wrap;
-}
+
 .timelinegrid {
   display: inline-grid;
   grid-template-columns: 10% 90%;
@@ -249,9 +246,6 @@ th {
   padding: 10px;
 }
 @media screen and (max-width: 700px) {
-  body {
-    font-size: large;
-  }
   .tools .custom {
     padding: 9px;
   }
