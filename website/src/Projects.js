@@ -6,7 +6,7 @@ import { auth } from './Login'
 import './styles/projects.scss'
 import './styles/tables.scss'
 
-function Projects() {
+export function Projects() {
   var projects = []
   return {
     oninit: vnode => {
@@ -68,5 +68,3 @@ function Projects() {
     },
   }
 }
-
-export default Projects
