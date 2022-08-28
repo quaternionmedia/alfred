@@ -1,0 +1,29 @@
+name: 📦 Release
+on:
+  milestone:
+    types: [closed]
+jobs:
+  release:
+    name: 📝 Draft Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📰 Checkout
+        uses: actions/checkout@v3
+
+      - name: 🥌 Set milestone name
+        run: echo MILESTONE_NAME=$(jq --raw-output .milestone.title $GITHUB_EVENT_PATH) >> $GITHUB_ENV
+
+      - name: ✏️ Set milestone description
+        run: echo MILESTONE_DESCRIPTION=$(jq --raw-output .milestone.description $GITHUB_EVENT_PATH) >> $GITHUB_ENV
+
+      - name: 🏷️ Set tag name
+        run: echo TAG_NAME=${MILESTONE_NAME%% *} >> $GITHUB_ENV
+
+      - name: 📦 Generate Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: ${{ env.MILESTONE_NAME }}
+          tag_name: ${{ env.TAG_NAME }}
+          body: ${{ env.MILESTONE_DESCRIPTION }}
+          generate_release_notes: true
+          draft: true
