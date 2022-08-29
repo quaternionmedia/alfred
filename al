@@ -33,6 +33,12 @@ elif [ $1 = "prod" -o $1 = "production" -o $1 = "p" ]; then
   docker run --rm -it -v ${PWD}:/docs -v ${PWD}/alfred/site/:/site/ --user $(id -u):$(id -g) squidfunk/mkdocs-material build -d /site/ && \
   docker compose -f docker-compose.yml -f production.yml up --build -d $1
 
+  # Build docker images
+elif [ $1 = "build" -o $1 = "b" ]; then
+    shift
+    echo "Alfred! building docker images"
+    docker compose -f docker-compose.yml -f dev.yml build "$@"
+
 # Installs website dependencies.
 elif [ $1 = "init" ]; then
   shift
