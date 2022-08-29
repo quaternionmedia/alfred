@@ -11,43 +11,39 @@ var rendererImage =
 
 export const Home = () => ({
   view: vnode =>
-    m(
-      '.homeCntr',
+    m('.homeCntr', {}, [
       m('h1', 'AUTOMATED VIDEO PRODUCTION'),
 
       m(
         '.imgTxtCntr',
         m('img.rightImg', { src: timeline1 }),
-        m(
-          'form.txtBox.alfredText',
+        m('form.txtBox.alfredText', {}, [
           m('.firstLine', 'Alfred '),
           'is a simple, yet powerful video tool, designed to automate and streamline video creation. ',
           m('br'),
           m('br'),
           'Leveraging the power of HTML5 video, it is designed to make editing simple from any modern browser, ',
-          'including mobile devices! '
-        )
+          'including mobile devices! ',
+        ])
       ),
 
       m(
         '.imgTxtCntr',
         m('img.leftImg', { src: imageUpload }),
-        m(
-          'form.txtBox.firstText',
+        m('form.txtBox.firstText', {}, [
           m('.firstLine', 'First, '),
           m('br'),
           'Add photos and videos from the web, or upload custom to use in your project. ',
           m('br'),
           m('br'),
-          'Or, search the media browser for related content available on the web. '
-        )
+          'Or, search the media browser for related content available on the web. ',
+        ])
       ),
 
       m(
         '.imgTxtCntr',
         m('img.rightImg', { src: timeline2 }),
-        m(
-          'form.txtBox.thenText',
+        m('form.txtBox.thenText', {}, [
           m('.firstLine', 'Then, '),
           m('br'),
           "'Generate a timeline of clips that represent your video. Edit the text, resize or rearrange clips, ",
@@ -55,15 +51,14 @@ export const Home = () => ({
           m('br'),
           m('br'),
           'Or, bypass the timeline entirely and let Alfred automatically ',
-          'create videos based on your content. '
-        )
+          'create videos based on your content. ',
+        ])
       ),
 
       m(
         '.imgTxtCntr',
         m('img.leftImg', { src: rendererImage }),
-        m(
-          'form.txtBox.finallyText',
+        m('form.txtBox.finallyText', {}, [
           m('.firstLine', 'Finally, '),
           m('br'),
           'Render your video at multiple resolutions, frame rates, or directly upload to specific output ',
@@ -71,26 +66,24 @@ export const Home = () => ({
           m('br'),
           m('br'),
           'Videos can be rendered in parallel, ',
-          'on multiple machines, simultaneously! '
-        )
+          'on multiple machines, simultaneously! ',
+        ])
       ),
 
       m('.imgTxtCntrs', m('hr')),
 
-      m(
-        '.imgTxtCntrs',
+      m('.imgTxtCntrs', {}, [
         m(
           '.alQuote',
-          m(
-            'i',
-            m('q', 'The pictures over. Now I have to go and put it on film.')
-          ),
+          m('i', {}, [
+            m('q', 'The pictures over. Now I have to go and put it on film.'),
+          ]),
           m('.text', '— Alfred Hitchcock ')
         ),
         m(
           '.honorText',
           'Named in honor of the illustrious Hitchcock, the master of creating film by design. '
-        )
-      )
-    ),
+        ),
+      ]),
+    ]),
 })
