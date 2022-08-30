@@ -32,7 +32,8 @@
     "@babel/plugin-proposal-decorators": "^7.14.5",
     "cssnano": "^4.1.10",
     "cypress": "^6.5.0",
-    "parcel": "^1.12.4"
+    "parcel": "^1.12.4",
+    "sass": "^1.54.4"
   },
   "resolutions": {
     "@babel/preset-env": "7.13.8"

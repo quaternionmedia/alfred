@@ -31,40 +31,43 @@ Cypress.Commands.add('home', () => {
 
 Cypress.Commands.add('renders', () => {
   cy.visit('/#!/renders')
-  cy.url().should('eq', Cypress.config().baseUrl + '#!/renders' )
+  cy.url().should('eq', Cypress.config().baseUrl + '#!/renders')
 })
 
 Cypress.Commands.add('projects', () => {
   cy.visit('/#!/projects')
-  cy.url().should('eq', Cypress.config().baseUrl + '#!/projects' )
+  cy.url().should('eq', Cypress.config().baseUrl + '#!/projects')
 })
 
-Cypress.Commands.add("loginApi", (username = Cypress.env("email"), password = Cypress.env("pwd")) => {
-     return cy.request({method:'POST',
-    url: '/auth/jwt/login',
-    body: {
+Cypress.Commands.add(
+  'loginApi',
+  (username = Cypress.env('email'), password = Cypress.env('pwd')) => {
+    return cy.request({
+      method: 'POST',
+      url: '/auth/jwt/login',
+      body: {
         username: Cypress.env('email'),
         password: Cypress.env('pwd'),
-    },
-    form: true
-  })
-});
+      },
+      form: true,
+    })
+  }
+)
 
-Cypress.Commands.add("loginUI", () => {
-    cy.home()
-    cy.location('pathname').should('equal', '/')
-    cy.get(':nth-child(7) > #login-link').click()
-    
+Cypress.Commands.add('loginUI', () => {
+  cy.home()
+  cy.location('pathname').should('equal', '/')
+  cy.get('#login-link').click({ force: true })
 
-    // enter valid username and password
-    cy.get('[name=username]').type(Cypress.env('email'))
-    cy.get('[name=password]').type(Cypress.env('pwd'))
-    cy.get('#submit').click()
+  // enter valid username and password
+  cy.get('[name=username]').type(Cypress.env('email'))
+  cy.get('[name=password]').type(Cypress.env('pwd'))
+  cy.get('#submit').click({ force: true })
 
-    // confirm we have logged in successfully
-    cy.location('pathname').should('equal', '/')
+  // confirm we have logged in successfully
+  cy.location('pathname').should('equal', '/')
 })
 
-Cypress.Commands.add("logout", () => {
+Cypress.Commands.add('logout', () => {
   cy.visit('/#!/logout')
 })

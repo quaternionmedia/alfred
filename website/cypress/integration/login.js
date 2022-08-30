@@ -1,23 +1,22 @@
 /// <reference types="cypress" />
 describe('logs in', () => {
-
   it('fails to access protected resource', () => {
     cy.request({
-      url: Cypress.env('HOST') + '/users/me',
+      url: '/users/me',
       failOnStatusCode: false,
     })
-    .its('status')
-    .should('equal', 401)
+      .its('status')
+      .should('equal', 401)
   })
 
   it('Does not log in with invalid password', () => {
     cy.home()
     cy.location('pathname').should('equal', '/')
-    cy.get(':nth-child(7) > #login-link').click()
+    cy.get('#login-link').click({ force: true })
     // try logging in with invalid password
     cy.get('[name=username]').type('username')
     cy.get('[name=password]').type('wrong-password')
-    cy.get('#submit').click()
+    cy.get('#submit').click({ force: true })
 
     // still on /login page plus an error is displayed
     cy.location('pathname').should('equal', '/')
@@ -29,8 +28,6 @@ describe('logs in', () => {
   //   cy.url().should('eq', '/projects')
   // })
 })
-
-
 
 //add verify for completed render
 

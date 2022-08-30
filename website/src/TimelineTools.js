@@ -32,7 +32,7 @@ export default class TimelineTools {
       m('i.material-icons', {
         title: 'move',
         onclick: (vnode) => {
-          t.style.cursor = 'url(swap-horizontal.svg), -webkit-grab'
+          t.style.cursor = 'url(./assets/swap-horizontal.svg), -webkit-grab'
           state.tool('move')
         },
         style: {
@@ -42,7 +42,7 @@ export default class TimelineTools {
       m('i.material-icons', {
         title: 'cut',
         onclick: (vnode) => {
-          t.style.cursor = 'url(content-cut.svg), auto'
+          t.style.cursor = 'url(./assets/content-cut.svg), auto'
           state.tool('cut')
         },
         style: {

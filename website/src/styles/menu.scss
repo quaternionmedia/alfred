@@ -1,0 +1,123 @@
+//----------------------------  General  -----------------------------------
+header {
+  display: flex;
+  width: 100%;
+  background: var(--grey);
+  font-weight: bold;
+}
+
+//----------------------------  Menu Bar  -----------------------------------
+.logo {
+  width: 180px;
+  padding: 9 15 15 15; //top, right, bottom, left
+}
+
+.logoImg {
+  cursor: pointer;
+  margin-top: 10px;
+  width: 180;
+}
+
+.menuLinks {
+  width: 100%;
+  text-align: center;
+  padding: 20 0 20 5; //top, right, bottom, left
+}
+
+.menuLinks > *,
+#login-link {
+  cursor: pointer;
+  font-size: 28px;
+  color: var(--grey5);
+  text-decoration: none;
+  padding: 20 15 20 15; //top, right, bottom, left
+}
+
+.menuLinks :visited,
+#login-Link:visited {
+  color: var(--grey5);
+}
+
+.menuLinks .active {
+  color: var(--grey7);
+}
+
+.menuLinks :hover,
+#login-link:hover {
+  cursor: pointer;
+  color: var(--grey0);
+  background-color: var(--grey6);
+}
+
+#login-link {
+  padding: 26 15 20 15; //top, right, bottom, left
+}
+
+//----------------------------  Nav Container  -----------------------------------
+.navContainer {
+  height: 100%;
+  width: 0;
+  z-index: 10;
+  position: fixed;
+  left: 0;
+  padding-top: 70px;
+  overflow-x: hidden;
+  transition: 0.2s;
+  background-color: var(--grey4);
+}
+
+.navbutton {
+  cursor: pointer;
+  color: var(--grey6);
+  display: none;
+  width: 35px;
+  z-index: 11;
+  padding: 18px 15px 15px 20px; //top, right, bottom, left
+}
+
+.navbutton > i.material-icons {
+  font-size: 45px;
+}
+
+.navLink {
+  text-decoration: none;
+  display: block;
+  color: var(--grey6);
+  font-size: 28px;
+  padding: 10px 15px 10px 20px; //top, right, bottom, left
+}
+
+.navLink:visited {
+  color: var(--grey6);
+}
+
+.navLink:hover {
+  background-color: var(--grey6);
+  color: var(--grey0);
+}
+
+//----------------------------  Window Resize  -----------------------------------
+@media only screen and (max-width: 1026px) {
+  .menuLinks {
+    display: none;
+  }
+  .navbutton {
+    display: inline-flex;
+  }
+  .loginLink {
+    position: absolute;
+    right: 0;
+    top: 0;
+  }
+}
+
+@media only screen and (max-width: 321px) {
+  .logoImg {
+    width: 150px;
+  }
+  .navbutton {
+    height: 30;
+    width: 30;
+    padding-right: 5;
+  }
+}
