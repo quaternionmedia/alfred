@@ -16,20 +16,20 @@ before(function fetchUser() {
     failOnStatusCode: false,
   })
   // login
-  cy.request({
-    method: 'POST',
-    url: '/auth/jwt/login',
-    body: {
-      username: Cypress.env('email'),
-      password: Cypress.env('pwd'),
-    },
-    form: true,
-    retryOnStatusCodeFailure: true,
-  })
-    .its('body')
-    .then(res => {
-      user = res
-    })
+  // cy.request({
+  //   method: 'POST',
+  //   url: '/auth/jwt/login',
+  //   body: {
+  //     username: Cypress.env('email'),
+  //     password: Cypress.env('pwd'),
+  //   },
+  //   form: true,
+  //   retryOnStatusCodeFailure: true,
+  // })
+  //   .its('body')
+  //   .then(res => {
+  //     user = res
+  //   })
 })
 
 // but set the user before visiting the page
