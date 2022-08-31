@@ -24,6 +24,7 @@ before(function fetchUser() {
       password: Cypress.env('pwd'),
     },
     form: true,
+    retryOnStatusCodeFailure: true,
   })
     .its('body')
     .then(res => {
