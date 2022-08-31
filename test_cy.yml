@@ -21,7 +21,6 @@ services:
       dockerfile: ./Dockerfile
     image: alfred_api
     depends_on:
-      - website
       - db
     volumes:
       - ./alfred/:/app/
