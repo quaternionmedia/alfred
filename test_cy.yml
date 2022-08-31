@@ -9,8 +9,6 @@ services:
     volumes:
       - ./website/:/e2e/
     working_dir: /e2e/
-    networks:
-      - alfred_isolated
     environment:
       CYPRESS_baseUrl: http://api/
       CYPRESS_RECORD_KEY: ${CYPRESS_RECORD_KEY}
