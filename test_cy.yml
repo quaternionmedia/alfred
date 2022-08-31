@@ -16,6 +16,7 @@ services:
       CYPRESS_RECORD_KEY: ${CYPRESS_RECORD_KEY}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
     command: cypress run --record
+
   api:
     build:
       context: .
@@ -25,13 +26,8 @@ services:
       - website
       - db
     volumes:
-      - ./alfred/:/app/:Z
-      - ./website/dist/:/app/dist/:z
-      - ./videos/:/app/videos/:Z
-      - ./cred_api.json:/cred.json:Z
-    networks:
-      - alfred_isolated
-      - alfred_outgoing
+      - ./alfred/:/app/
+      - ./website/dist/:/app/dist/
     environment:
       - CELERY_BROKER=mongodb://db:27017/celery
       - CELERY_BACKEND=mongodb://db:27017/celery
@@ -41,7 +37,3 @@ services:
 
   db:
     image: mongo:bionic
-    volumes:
-      - ./database:/data/db
-    networks:
-      - alfred_isolated
