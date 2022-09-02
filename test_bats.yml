@@ -5,7 +5,6 @@ services:
     # image: bats/bats:latest
     build: ./test
     depends_on:
-      - website
       - api
       - db
     volumes:
