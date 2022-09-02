@@ -14,3 +14,21 @@ services:
     environment:
       BATS_baseURL: https://stage.alfred.quaternion.media
     entrypoint: bats test/alfred.bats
+  api:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: alfred_api
+    depends_on:
+      - db
+    volumes:
+      - ./alfred/:/app/
+      - ./website/dist/:/app/dist/
+    environment:
+      - CELERY_BROKER=mongodb://db:27017/celery
+      - CELERY_BACKEND=mongodb://db:27017/celery
+      - DB_URL=mongodb://db:27017
+      - DB_NAME=alfred
+
+  db:
+    image: mongo:bionic

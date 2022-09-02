@@ -1,4 +1,4 @@
-name: Bats
+name: 🦇 Bats
 on:
   push:
     branches:
@@ -10,18 +10,18 @@ on:
       - dev
 jobs:
   build:
-    name: build
+    name: 🏏 build bats
     runs-on: ubuntu-latest
     steps:
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.2.1
-
-      - name: Check out code
+      - name: 📝 Checkout
         uses: actions/checkout@v3
         with:
           submodules: recursive
 
-      - name: Test
-        run: docker compose -f docker-compose.yml -f test_bats.yml up --build --exit-code-from bats
+      - name: 🦇 Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.7.0
+
+      - name: 🧪 Test
+        run: docker compose -f test_bats.yml up --build --exit-code-from bats
