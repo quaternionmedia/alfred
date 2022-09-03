@@ -10,7 +10,7 @@ on:
       - dev
 jobs:
   build:
-    name: 🏏 build bats
+    name: 🏏 build and test with Bats
     runs-on: ubuntu-latest
     steps:
       - name: 📝 Checkout
@@ -22,6 +22,9 @@ jobs:
         uses: mig4/setup-bats@v1
         with:
           bats-version: 1.7.0
+
+      - name: 🎥 Setup Alfred
+        run: ./al init
 
       - name: 🧪 Test
         run: docker compose -f test_bats.yml up --build --exit-code-from bats
