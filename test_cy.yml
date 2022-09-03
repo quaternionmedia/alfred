@@ -9,10 +9,28 @@ services:
     volumes:
       - ./website/:/e2e/
     working_dir: /e2e/
-    networks:
-      - alfred_isolated
     environment:
       CYPRESS_baseUrl: http://api/
       CYPRESS_RECORD_KEY: ${CYPRESS_RECORD_KEY}
       GITHUB_TOKEN: ${GITHUB_TOKEN}
     command: cypress run --record
+
+  api:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: alfred_api
+    depends_on:
+      - db
+    volumes:
+      - ./alfred/:/app/
+      - ./website/dist/:/app/dist/
+    environment:
+      - CELERY_BROKER=mongodb://db:27017/celery
+      - CELERY_BACKEND=mongodb://db:27017/celery
+      - DB_URL=mongodb://db:27017
+      - DB_NAME=alfred
+      - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+
+  db:
+    image: mongo:bionic
