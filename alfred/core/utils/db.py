@@ -21,12 +21,12 @@ def get_db(db_url=DB_URL, database=DB_NAME):
     return get_client(db_url=db_url)[DB_NAME]
 
 
-class DBUser(BeanieBaseUser[PydanticObjectId]):
+class User(BeanieBaseUser[PydanticObjectId]):
     first_name: str = Field(...)
 
 
 async def get_user_db():
-    yield BeanieUserDatabase(DBUser, get_db()['users'])
+    yield BeanieUserDatabase(User, get_db()['users'])
 
 
 def deOid(results: List):

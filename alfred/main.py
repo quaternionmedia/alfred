@@ -23,7 +23,7 @@ from core.routes.users import (
     current_active_superuser,
 )
 from core.models.users import UserRead, UserUpdate
-from core.utils.db import DBUser
+from core.utils.db import User
 from seed import seed
 import docs
 
@@ -44,7 +44,7 @@ async def on_startup():
     await init_beanie(
         database=get_db(),
         document_models=[
-            DBUser,
+            User,
         ],
     )
 

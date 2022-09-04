@@ -10,28 +10,28 @@ from fastapi_users.authentication import (
 )
 from beanie import PydanticObjectId
 
-from ..utils.db import get_user_db, DBUser
+from ..utils.db import get_user_db, User
 
 from alfred.config import SECRET_KEY
 
 
 class UserManager(
     ObjectIDIDMixin,
-    BaseUserManager[DBUser, PydanticObjectId],
+    BaseUserManager[User, PydanticObjectId],
 ):
     reset_password_token_secret = SECRET_KEY
     verification_token_secret = SECRET_KEY
 
-    async def on_after_register(self, user: DBUser, request: Optional[Request] = None):
+    async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
 
     async def on_after_forgot_password(
-        self, user: DBUser, token: str, request: Optional[Request] = None
+        self, user: User, token: str, request: Optional[Request] = None
     ):
         print(f"User {user.id} has forgot their password. Reset token: {token}")
 
     async def on_after_request_verify(
-        self, user: DBUser, token: str, request: Optional[Request] = None
+        self, user: User, token: str, request: Optional[Request] = None
     ):
         print(f"Verification requested for user {user.id}. Verification token: {token}")
 
@@ -52,7 +52,7 @@ auth_backend = AuthenticationBackend(
     transport=bearer_transport,
     get_strategy=get_jwt_strategy,
 )
-fastapi_users = FastAPIUsers[DBUser, PydanticObjectId](get_user_manager, [auth_backend])
+fastapi_users = FastAPIUsers[User, PydanticObjectId](get_user_manager, [auth_backend])
 
 current_active_user = fastapi_users.current_user(active=True)
 current_active_superuser = fastapi_users.current_user(
