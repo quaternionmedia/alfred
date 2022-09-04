@@ -4,7 +4,7 @@ from beanie import PydanticObjectId
 from datetime import datetime
 
 
-class User(schemas.BaseUser[PydanticObjectId]):
+class UserRead(schemas.BaseUser[PydanticObjectId]):
     first_name: str
     birthdate: Optional[datetime]
     address: Optional[str]

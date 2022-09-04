@@ -1,7 +1,7 @@
 from fastapi import Depends
 from typing import List, Optional
 from .users import current_active_user, current_active_superuser
-from ..models import User
+from ..models import UserRead as User
 from ..models.render import Render, RenderUpdate
 from otto.models import Edl
 from otto.getdata import timestr

@@ -10,7 +10,6 @@ from fastapi_users.authentication import (
 )
 from beanie import PydanticObjectId
 
-from ..models import User, UserCreate, UserUpdate
 from ..utils.db import get_user_db, DBUser
 
 from alfred.config import SECRET_KEY

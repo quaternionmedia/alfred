@@ -4,7 +4,6 @@ from typing import List
 from pydantic import Field
 from fastapi_users.db import BeanieBaseUser, BeanieUserDatabase
 from beanie import PydanticObjectId
-from ..models import User
 
 
 def get_sync_db(database=DB_NAME):

@@ -22,7 +22,7 @@ from core.routes.users import (
     current_active_user,
     current_active_superuser,
 )
-from core.models.users import User, UserUpdate
+from core.models.users import UserRead, UserUpdate
 from core.utils.db import DBUser
 from seed import seed
 import docs
@@ -86,7 +86,9 @@ async def checkFonts():
 
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
 app.include_router(
-    fastapi_users.get_users_router(User, UserUpdate), prefix='/users', tags=['users']
+    fastapi_users.get_users_router(UserRead, UserUpdate),
+    prefix='/users',
+    tags=['users'],
 )
 
 renders = RenderAPI()
