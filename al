@@ -1,6 +1,35 @@
 #!/bin/sh
 VERSION=v0.1.3
 
+HELP="./al
+
+Init script and helper functions for Alfred
+
+USAGE:
+./al COMMAND [args]
+
+
+COMMANDS:
+b | build
+bats
+d | dev
+docker | dock
+dump
+git
+i | install
+init
+l | log
+p | production
+reload
+r | restart
+reseed
+restore
+s | sh
+t | test
+v | version
+w | worker
+"
+
 # Returns a greeting quote to the user.
 echo
 shuf -n 1 quotes.csv
@@ -16,7 +45,10 @@ downloadMedia() {
   cd ..
 }
 
-if [ $1 = "version" -o $1 = "v" -o $1 = "-v" ]; then
+if [ -z $1 ]; then
+  echo "$HELP"
+
+elif [ $1 = "version" -o $1 = "v" -o $1 = "-v" ]; then
   echo $VERSION
 
 # Starts in development (optional "--build")
@@ -130,4 +162,10 @@ elif [ $1 = "test" -o $1 = "t" -o $1 = "cy" ]; then
 elif [ $1 = "bats" -o $1 = "bat" ]; then
   shift
   docker compose -f test_bats.yml up --build --exit-code-from bats
+
+else
+  echo "Unknown command: $1"
+  echo "Error when running $@"
+  echo "$HELP"
+
 fi
