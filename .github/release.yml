@@ -2,18 +2,22 @@ changelog:
   categories:
     - title: Breaking Changes 🪅
       labels:
-        - 'breaking :broken_heart:'
+        - 'breaking 💔'
+
     - title: New Features 🎉
       labels:
-        - 'enhancement :heavy_plus_sign:'
-    - title: 'Bugfixes :bug:'
+        - 'enhancement ➕'
+
+    - title: 'Bugfixes 🐛'
       labels:
-        - 'bug :bug:'
-    - title: 'Maintenance :nut_and_bolt:'
+        - 'bug 🐛'
+
+    - title: 'Maintenance 🔩'
       labels:
-        - 'maintenance :wrench:'
-        - 'CI :test_tube:'
-        - 'CD :building_construction:'
+        - 'maintenance 🔧'
+        - 'CI 🦾'
+        - 'CD 🏗️'
+
     - title: Other Changes
       labels:
         - '*'
