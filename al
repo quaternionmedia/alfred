@@ -98,7 +98,7 @@ elif [ $1 = "restart" -o $1 = "r" ]; then
 
 elif [ $1 = "seed" -o $1 = "db" ]; then
   shift
-  docker compose exec api python3 -c """
+  docker compose exec api python3.10 -c """
 from seed import seed
 from db import db
 
