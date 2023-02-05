@@ -2,37 +2,37 @@ site_name: Alfred
 side_description: automatic video editing
 site_url: https://alfred.quaternion.media/docs/
 # repo_url: https://github.com/quaternionmedia/alfred
-edit_uri: ""
+edit_uri: ''
 
 nav:
   - Home: index.md
   - About:
-    - about/index.md
-    - about/concepts.md
-    - about/clip.md
-    - about/template.md
-    - about/edl.md
-    - about/project.md
-    - about/render.md
+      - about/index.md
+      - about/concepts.md
+      - about/clip.md
+      - about/template.md
+      - about/edl.md
+      - about/project.md
+      - about/render.md
   - Examples:
-    - examples/index.md
-    - examples/login.md
-    - examples/media.md
-    - examples/preview.md
-    - examples/render.md
-    - examples/trim.md
-    - examples/combine.md
-    - examples/adjust.md
-    - examples/fade.md
-    - examples/text.md
-    - examples/animation.md
-    - examples/project.md
+      - examples/index.md
+      - examples/login.md
+      - examples/media.md
+      - examples/preview.md
+      - examples/render.md
+      - examples/trim.md
+      - examples/combine.md
+      - examples/adjust.md
+      - examples/fade.md
+      - examples/text.md
+      - examples/animation.md
+      - examples/project.md
     # - examples/advanced.md
   - API:
-    - api/index.md
-    - api/auth.md
-    - api/otto.md
-    - api/render.md
+      - api/index.md
+      - api/auth.md
+      - api/otto.md
+      - api/render.md
 
 markdown_extensions:
   - pymdownx.highlight
@@ -56,12 +56,12 @@ theme:
   logo: assets/al-white.png
   favicon: assets/al-white.png
   palette:
-    - media: "(prefers-color-scheme: dark)" # 
+    - media: '(prefers-color-scheme: dark)'
       scheme: slate
       toggle:
         icon: material/toggle-switch
         name: Switch to light mode
-    - media: "(prefers-color-scheme: light)" # 
+    - media: '(prefers-color-scheme: light)'
       scheme: default
       toggle:
         icon: material/toggle-switch-off-outline
@@ -82,5 +82,7 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/quaternionmedia/alfred
-    # - icon: fontawesome/brands/website
-    #   link: https://alfred.quaternion.media
+    - icon: material/web
+      link: https://alfred.quaternion.media
+  version:
+    provider: mike
