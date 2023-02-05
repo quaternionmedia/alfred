@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Response, HTTPException, status
 from .users import fastapi_users, auth_backend
+from ..models import UserRead, UserCreate, UserUpdate
 
 from alfred.config import SECRET_KEY
 
@@ -15,19 +16,14 @@ credentials_exception = HTTPException(
 auth = APIRouter()
 
 
-auth.include_router(
-    fastapi_users.get_auth_router(auth_backend), prefix='/jwt'
-)
-auth.include_router(
-    fastapi_users.get_register_router()
-)
-auth.include_router(
-    fastapi_users.get_reset_password_router(),
-)
-auth.include_router(
-    fastapi_users.get_verify_router(),
-)
+auth.include_router(fastapi_users.get_auth_router(auth_backend), prefix='/jwt')
+auth.include_router(fastapi_users.get_register_router(UserRead, UserCreate))
+auth.include_router(fastapi_users.get_reset_password_router())
+auth.include_router(fastapi_users.get_verify_router(UserRead))
+
 
 @auth.post("/jwt/refresh")
-async def refresh_jwt(response: Response, user=Depends(fastapi_users.current_user(active=True))):
+async def refresh_jwt(
+    response: Response, user=Depends(fastapi_users.current_user(active=True))
+):
     return await auth_backend.get_login_response(user, response, fastapi_users)

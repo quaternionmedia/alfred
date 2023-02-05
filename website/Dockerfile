@@ -1,4 +1,4 @@
-FROM node:14
+FROM node:current-alpine
 
 # RUN apk add util-linux make python gcc
 WORKDIR /app

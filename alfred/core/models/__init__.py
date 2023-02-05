@@ -1,2 +1,2 @@
 from .project import Project, ProjectUpdate
-from .users import User, UserCreate, UserUpdate, UserDB
+from .users import UserRead, UserCreate, UserUpdate
