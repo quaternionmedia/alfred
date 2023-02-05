@@ -9,7 +9,7 @@ setup_file() {
 setup() {
     echo "# --Starting alfred test" >&3
 
-    echo "* --.......load support submodules" >&3
+    echo "# --.......load support submodules" >&3
     load '../opt/bats-support/load'
     load '../opt/bats-assert/load'
 
