@@ -14,7 +14,10 @@ jobs:
       - name: 🎥 Setup Alfred
         run: ./al init
 
-      - name: 🦇 Test BATS
-        uses: docker://ghcr.io/ffurrer2/bats:latest
+      - name: 🦇 Setup BATS
+        uses: mig4/setup-bats@v1
         with:
-          args: --recursive .
+          bats-version: 1.8.2
+
+      - name: 🧪 Test BATS
+        run: bats -r .
