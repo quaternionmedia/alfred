@@ -17,4 +17,4 @@ jobs:
       - name: 🦇 Test BATS
         uses: docker://ghcr.io/ffurrer2/bats:latest
         with:
-          args: tests/alfred.bats
+          args: ../tests/alfred.bats
