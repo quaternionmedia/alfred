@@ -13,13 +13,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: 🦇 Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: 1.8.2
-
       - name: 🎥 Setup Alfred
         run: ./al init
 
-      - name: 🧪 Test
-        run: docker compose -f test_bats.yml up --build --exit-code-from bats
+      - name: 🦇 Test BATS
+        uses: docker://ghcr.io/ffurrer2/bats:latest
+        args: tests/alfred.bats
