@@ -10,8 +10,8 @@ setup() {
     echo "# --Starting alfred test" >&3
 
     echo "# --.......load support submodules" >&3
-    load '../../opt/bats-support/load'
-    load '../../opt/bats-assert/load'
+    load '/opt/bats-support/load'
+    load '/opt/bats-assert/load'
 
     echo "# --.......link token file" >&3
     token_file=test/token.sesh

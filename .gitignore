@@ -67,4 +67,3 @@ alfred/site
 instrumented/
 website/coverage/
 website/cypress-coverage/
-test/
