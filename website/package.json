@@ -18,7 +18,7 @@
   "dependencies": {
     "alertifyjs": "^1.13.1",
     "interactjs": "^1.10.3",
-    "json-logic-engine": "^1.1.2",
+    "json-logic-engine": "^1.2.0",
     "jwt-decode": "^3.1.2",
     "material-design-icons-iconfont": "^6.7.0",
     "mithril": "^2.2.2",
@@ -30,14 +30,14 @@
   "devDependencies": {
     "@babel/core": "^7.18.3",
     "@babel/plugin-proposal-decorators": "^7.18.10",
-    "@parcel/transformer-sass": "2.7.0",
+    "@parcel/transformer-sass": "2.8.3",
     "cssnano": "^5.1.13",
-    "cypress": "^10.6.0",
-    "parcel": "^2.7.0",
-    "sass": "^1.54.5"
+    "cypress": "^10.11.0",
+    "parcel": "^2.8.3",
+    "sass": "^1.58.0"
   },
   "resolutions": {
-    "@babel/preset-env": "7.18.10"
+    "@babel/preset-env": "7.20.2"
   },
   "bugs": {
     "url": "https://github.com/quaternionmedia/alfred/issues"
