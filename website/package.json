@@ -33,8 +33,8 @@
     "@parcel/transformer-sass": "2.8.3",
     "cssnano": "^5.1.13",
     "cypress": "^10.11.0",
-    "parcel": "^2.7.0",
-    "sass": "^1.54.5"
+    "parcel": "^2.8.3",
+    "sass": "^1.58.0"
   },
   "resolutions": {
     "@babel/preset-env": "7.20.2"
