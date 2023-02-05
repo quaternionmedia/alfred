@@ -1,6 +1,35 @@
 #!/bin/sh
 VERSION=v0.1.3
 
+HELP="./al
+
+Init script and helper functions for Alfred
+
+USAGE:
+./al COMMAND [args]
+
+
+COMMANDS:
+b | build
+bats
+d | dev
+docker | dock
+dump
+git
+i | install
+init
+l | log
+p | production
+reload
+r | restart
+reseed
+restore
+s | sh
+t | test
+v | version
+w | worker
+"
+
 # Returns a greeting quote to the user.
 echo
 shuf -n 1 quotes.csv
@@ -16,17 +45,25 @@ downloadMedia() {
   cd ..
 }
 
-if [ $1 = "version" -o $1 = "v" -o $1 = "-v" ]; then
+if [ -z $1 ]; then
+  echo "$HELP"
+
+elif [ $1 = "version" -o $1 = "v" -o $1 = "-v" ]; then
   echo $VERSION
 
+elif [ $1 = "b" -o $1 = "build" ]; then
+  echo "Building docker image"
+  shift
+  docker compose -f docker-compose.yml -f dev.yml build "$@"
+
 # Starts in development (optional "--build")
-elif [ $1 = "dev" ] || [ -z $1 ]; then
+elif [ $1 = "d" ] || [ $1 = "dev" ]; then
   if [ !-z ]; then shift; fi
   echo "Alfred! running dev $1"
   docker compose -f docker-compose.yml -f dev.yml up "$@"
 
 # Starts in production.
-elif [ $1 = "prod" -o $1 = "production" -o $1 = "p" ]; then
+elif [ $1 = "p" -o $1 = "production" -o $1 = "prod" ]; then
   shift
   echo "Alfred! running production $1"
   docker compose down && \
@@ -61,7 +98,7 @@ elif [ $1 = "restart" -o $1 = "r" ]; then
 
 elif [ $1 = "seed" -o $1 = "db" ]; then
   shift
-  docker compose exec api python3 -c """
+  docker compose exec api python3.10 -c """
 from seed import seed
 from db import db
 
@@ -81,18 +118,20 @@ db.Project.insert_many(seed)
 
 elif [ $1 = "sh" ]; then
   shift
-  docker compose -f docker-compose.yml -f dev.yml exec api sh
+  docker compose -f docker-compose.yml -f dev.yml exec api sh "$@"
 
-elif [ $1 = "log" -o $1 = "logs" -o $1 = "l" ]; then
+elif [ $1 = "l" -o $1 = "logs" -o $1 = "log" ]; then
   shift
   docker compose logs -f "$@"
 
-elif [ $1 = "worker" -o $1 = "w" ]; then
+elif [ $1 = "w" -o $1 = "worker" ]; then
   shift
   # . operator used in place of source
   . ./.cred
   # DB_URL=mongodb://$1:27017 CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A tasks:renderer --workdir alfred/ -b $CELERY_BROKER --result-backend $CELERY_BACKEND worker --concurrency=4
-  DB_URL=mongodb://$1:27017 DB_NAME=alfred CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A alfred.core.utils:renderer --workdir alfred/ worker --concurrency=4
+  # DB_URL=mongodb://$1:27017 DB_NAME=alfred CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A alfred.core.utils:renderer --workdir alfred/ worker --concurrency=4
+  docker compose -f docker-compose.yml -f dev.yml run -it --entrypoint "celery -A alfred.core.utils.tasks:renderer --workdir /app/ -b mongodb://$1:27017/celery --result-backend mongodb://$1:27017/celery worker --loglevel=info --concurrency=1" renderer
+
 elif [ $1 = "dump" ]; then
   shift
   DATE=`date "+%Y-%m-%d-%H%M%S"`
@@ -110,11 +149,11 @@ elif [ $1 = "reload" ]; then
   # reload otto
   docker compose -f docker-compose.yml -f dev.yml up -d --build api
 
-elif [ $1 = "git" -o $1 = "g" ]; then
+elif [ $1 = "g" -o $1 = "git" ]; then
   shift
   git pull && git submodule update
 
-elif [ $1 = "docs" -o $1 = "d" ]; then
+elif [ $1 = "docs" -o $1 = "doc" ]; then
   # build documentation and serve locally, with hot reloader
   shift
   mkdocs serve -a 0.0.0.0:4000
@@ -123,11 +162,17 @@ elif [ $1 = "docker" -o $1 = "dock" ]; then
   shift
   docker compose -f docker-compose.yml -f dev.yml "$@"
 
-elif [ $1 = "test" -o $1 = "t" -o $1 = "cy" ]; then
+elif [ $1 = "t" -o $1 = "test" -o $1 = "cy" ]; then
   shift
-  docker compose -f docker-compose.yml -f test_cy.yml up --build --exit-code-from cy
+  docker compose -f test_cy.yml up --exit-code-from cy
 
 elif [ $1 = "bats" -o $1 = "bat" ]; then
   shift
   docker compose -f test_bats.yml up --build --exit-code-from bats
+
+else
+  echo "Unknown command: $1"
+  echo "Error when running $@"
+  echo "$HELP"
+
 fi

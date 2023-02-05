@@ -7,7 +7,7 @@ services:
       - 8001:8001
     command: yarn run dev
 
-# TODO API description
+  # TODO API description
   api:
     ports:
       - 8000:80
@@ -34,6 +34,8 @@ services:
       - DB_URL=mongodb://db:27017
       - DB_NAME=alfred
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+
   db:
     ports:
       - 27017:27017
+    user: '${UID}:${GID}'
