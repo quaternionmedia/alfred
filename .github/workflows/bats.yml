@@ -19,5 +19,8 @@ jobs:
         with:
           bats-version: 1.8.2
 
+      - name: 📚 Setup BATS libs
+        uses: brokenpip3/setup-bats-libs@0.1.0
+
       - name: 🧪 Test BATS
         run: bats test/alfred.bats
