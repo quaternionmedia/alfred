@@ -1,13 +1,8 @@
 name: 🦇 Bats
 on:
   push:
-    branches:
-      - main
-      - dev
   pull_request:
-    branches:
-      - main
-      - dev
+
 jobs:
   build:
     name: 🏏 build and test with Bats
@@ -21,7 +16,7 @@ jobs:
       - name: 🦇 Setup BATS
         uses: mig4/setup-bats@v1
         with:
-          bats-version: 1.7.0
+          bats-version: 1.8.2
 
       - name: 🎥 Setup Alfred
         run: ./al init
