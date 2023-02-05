@@ -20,4 +20,4 @@ jobs:
           bats-version: 1.8.2
 
       - name: 🧪 Test BATS
-        run: bats -r .
+        run: bats test/alfred.bats
