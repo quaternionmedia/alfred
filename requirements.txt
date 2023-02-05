@@ -1,4 +1,4 @@
-FastAPI>=0.81.0
+FastAPI>=0.89.1
 aiofiles>=0.8.0
 python-multipart>=0.0.5
 ffmpeg-python>=0.2.0
