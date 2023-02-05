@@ -1,14 +1,14 @@
-FROM quaternionmedia/alfred-docker:latest
+FROM quaternionmedia/alfred-docker:v2
 
 RUN mkdir -p /app/data/
 
 COPY alfred/ /alfred/alfred
 
-RUN pip3 install --user -e /alfred/alfred/otto/
+RUN pip3 install -e /alfred/alfred/otto/
 
 
 COPY /setup.py /alfred/
-RUN pip3 install --user -e /alfred/
+RUN pip3 install -e /alfred/
 
 COPY alfred/otto/fonts/* /usr/share/fonts/truetype/
 RUN fc-cache -fv

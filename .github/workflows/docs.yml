@@ -5,11 +5,7 @@ on:
       - main
       - dev
       - docs
-  pull_request:
-    branches:
-      - main
-      - dev
-      - docs
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
