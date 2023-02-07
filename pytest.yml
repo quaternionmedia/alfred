@@ -1,0 +1,16 @@
+version: '3.8'
+services:
+  pytest:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: alfred_test
+    command: -f tests/noxfile.py
+    volumes:
+      - .:/app
+    environment:
+      - CELERY_BROKER=mongodb://db:27017/celery
+      - CELERY_BACKEND=mongodb://db:27017/celery
+      - DB_URL=mongodb://db:27017
+      - DB_NAME=alfred
+      - GOOGLE_APPLICATION_CREDENTIALS=/cred.json

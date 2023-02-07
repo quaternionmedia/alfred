@@ -12,3 +12,4 @@ celery>=5.1.2,<5.2.0
 google-cloud-storage>=1.42.3
 pdfrw>=0.4
 reportlab>=3.6.2
+fastapi-users-db-beanie >= 1.0.1
