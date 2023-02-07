@@ -166,6 +166,10 @@ elif [ $1 = "t" -o $1 = "test" -o $1 = "cy" ]; then
   shift
   docker compose -f test_cy.yml up --exit-code-from cy
 
+elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
+  shift
+  docker compose -f pytest.yml up --exit-code-from pytest
+
 elif [ $1 = "bats" -o $1 = "bat" ]; then
   shift
   docker compose -f test_bats.yml up --build --exit-code-from bats
