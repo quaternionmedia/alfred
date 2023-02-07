@@ -1,0 +1,23 @@
+name: 🐍 pytest
+
+on:
+  workflow_call:
+
+jobs:
+  run_pytest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📰 Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: 🚧 init project
+        run: ./al init
+
+      - name: setup testing environment
+        run: pip3 install -r tests/requirements.tests.txt
+
+      - name: 🧪 Run pytest suite
+        run: nox -f tests/noxfile.py

@@ -1,0 +1,14 @@
+name: ⚗️ CI tests
+
+on: [push, pull_request]
+    
+
+jobs:
+  api_tests:
+    name: 🐢 API tests
+    uses: ./.github/workflows/pytest.yml
+
+    
+  integration_tests:
+    name: 🔏 Integration tests
+    uses: ./.github/workflows/cypress.yml

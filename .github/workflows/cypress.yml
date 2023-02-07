@@ -1,9 +1,8 @@
-name: Application Test
+name: 🦢 Cypress Tests
 
 on:
-  push:
-  pull_request:
-
+  workflow_call:
+    
 jobs:
   run_tests:
     timeout-minutes: 15
