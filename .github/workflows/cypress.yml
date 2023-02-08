@@ -5,6 +5,7 @@ on:
     
 jobs:
   run_tests:
+    name: 🦢 Cypress
     timeout-minutes: 15
     runs-on: ubuntu-latest
 

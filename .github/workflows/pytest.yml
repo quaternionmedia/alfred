@@ -5,6 +5,7 @@ on:
 
 jobs:
   run_pytest:
+    name: 🐍 pytest
     runs-on: ubuntu-latest
 
     steps:
@@ -13,11 +14,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: 🚧 init project
+      - name: 🚧 Init project
         run: ./al init
 
-      - name: setup testing environment
-        run: pip3 install -r tests/requirements-tests.txt
+      - name: 🏗️ Setup testing environment
+        run: pip3 install -r requirements-tests.txt
 
       - name: 🧪 Run pytest suite
         run: nox -f tests/noxfile.py
