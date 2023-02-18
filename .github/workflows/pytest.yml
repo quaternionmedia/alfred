@@ -20,7 +20,7 @@ jobs:
           python-version: 3.11
 
       - name: 🏗️ Setup testing environment
-        run: pip3 install -r requirements-tests.txt
+        run: pip3 install -r tests/requirements-tests.txt
 
       - name: 🧪 Run pytest suite
         run: nox -f tests/noxfile.py
