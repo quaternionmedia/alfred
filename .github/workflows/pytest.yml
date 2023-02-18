@@ -24,7 +24,9 @@ jobs:
           python-version: 3.11
 
       - name: 🏗️ Setup testing environment
-        run: BEZIER_NO_EXTENSION=true pip3 install --no-binary=bezier -r tests/requirements-tests.txt
+        run: |
+          pip3 install -r tests/requirements-tests.txt
+          BEZIER_NO_EXTENSION=true pip3 install --no-binary=bezier bezier
 
       - name: 🧪 Run pytest suite
         run: nox -f tests/noxfile.py -s ${{ inputs.args }}
