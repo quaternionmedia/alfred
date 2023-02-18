@@ -1,6 +1,41 @@
 #!/bin/sh
 VERSION=v0.1.3
 
+HELP="./al
+init script for Alfred
+
+USAGE
+./al COMMAND [ARGS]
+
+COMMANDS
+
+v | version     Show the version number
+d | dev         Start the devlopment server
+p | prod        Start the production server
+b | build       Build the docker images
+init            Initialize repository
+i | install     Install a new node dependency
+demo            Download sample media
+restart         Restart the production image
+seed            Seed the database
+reseed          Reseed (drop) the database
+sh              Start an sh shell to the API
+l | log         Show the docker logs
+w | worker      Run a rendering worker
+
+dump            Dump the database to a file
+restore         Restore the database from a file
+
+reload          Reload the development server
+g | git         Restore the git submodules
+d | docs        Build the documentation site
+docker          Execute a docker compose command
+
+t | test        Run the pytest suite
+cy | cypress    Run the Cypress integration tests
+bats            Run the bats test suite
+"
+
 # Returns a greeting quote to the user.
 echo
 shuf -n 1 quotes.csv
@@ -136,4 +171,7 @@ elif [ $1 = "test" -o $1 = "t" -o $1 = "cy" ]; then
 elif [ $1 = "bats" -o $1 = "bat" ]; then
   shift
   docker compose -f test_bats.yml up --build --exit-code-from bats
+
+else
+  echo "$HELP"
 fi
