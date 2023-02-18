@@ -14,8 +14,9 @@ jobs:
         with:
           submodules: recursive
 
-      - name: 🚧 Init project
-        run: ./al init
+      - uses: 🐍 actions/setup-python@v4
+        with:
+          python-version: '3.11'
 
       - name: 🏗️ Setup testing environment
         run: pip3 install -r requirements-tests.txt

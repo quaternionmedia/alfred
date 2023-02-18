@@ -4,8 +4,7 @@ import nox
 @nox.session
 def blacken(session):
     session.install("black")
-    session.run("black", "-v", ".")
-    # session.run("black", "-v", "..")
+    session.run("black", "-S", "-v", ".")
 
 
 @nox.session
@@ -14,7 +13,7 @@ def lint(session):
     session.run("flake8", "-v", ".")
 
 
-@nox.session(python="3.9", tags=["test"])
+@nox.session(python=["3.11"], tags=["test"])
 def coverage(session):
     session.install("-r", "../requirements.txt")
     session.install("-r", "requirements-tests.txt")

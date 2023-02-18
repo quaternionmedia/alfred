@@ -2,8 +2,7 @@ version: '3.8'
 services:
   pytest:
     build:
-      context: .
-      dockerfile: ./Dockerfile
+      context: tests
     image: alfred_test
     command: -f tests/noxfile.py
     volumes:

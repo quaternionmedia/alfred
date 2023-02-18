@@ -48,12 +48,12 @@ output/*
 alfred/output/*
 alfred/data
 alfred/site
+alfred.egg*
 
 *.mp3
 *.mp4
 *.png
 *.pdf
-*.txt
 *.json
 *.jpg
 *.edl
