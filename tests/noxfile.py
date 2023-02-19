@@ -13,7 +13,7 @@ def lint(session):
     session.run("flake8", "-v", ".")
 
 
-@nox.session(python=["3.11"], tags=["test"])
+@nox.session(tags=["test"])
 def coverage(session):
     session.install("-r", "../requirements.txt")
     session.install("-r", "requirements-tests.txt")
