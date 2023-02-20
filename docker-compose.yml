@@ -44,5 +44,3 @@ services:
       - ./database:/data/db
     networks:
       - alfred_isolated
-    ports:
-      - 27017:27017
