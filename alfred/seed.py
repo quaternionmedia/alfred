@@ -18,7 +18,7 @@ seed = [
                         "name": "makeColor",
                         "duration": 7.2,
                         "start": 17.1,
-                        "data": {"preserve": {"color": "#FFFFFF", "opacity": 1}},
+                        "data": {"preserve": {"color": "#FFFFFF"}},
                     }
                 },
                 {
