@@ -5,19 +5,19 @@ on: [push, pull_request]
 jobs:
   api_tests:
     name: 🐢 API tests
-    uses: ./.github/workflows/pytest.yml
+    uses: ./.github/workflows/nox.yml
     with:
       args: coverage
 
   lint:
     name: 👖 Linter
-    uses: ./.github/workflows/pytest.yml
+    uses: ./.github/workflows/nox.yml
     with:
       args: lint
 
   format:
     name: ⬛ Black Formatter
-    uses: ./.github/workflows/pytest.yml
+    uses: ./.github/workflows/nox.yml
     with:
       args: blacken
 
