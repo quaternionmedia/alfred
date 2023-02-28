@@ -1,4 +1,4 @@
-name: 🐍 pytest
+name: 🛢️ nox
 
 on:
   workflow_call:
@@ -8,8 +8,8 @@ on:
         type: string
 
 jobs:
-  run_pytest:
-    name: 🐍 pytest
+  run_nox:
+    name: 🛢️ nox
     runs-on: ubuntu-latest
 
     steps:
@@ -26,5 +26,5 @@ jobs:
       - name: 🏗️ Setup testing environment
         run: pip3 install -r tests/requirements-tests.txt
 
-      - name: 🧪 Run pytest suite
+      - name: 🧪 Run nox test suite
         run: nox -f tests/noxfile.py -s ${{ inputs.args }}
