@@ -19,6 +19,7 @@ git
 i | install
 init
 l | log
+n | nox
 p | production
 reload
 r | restart
@@ -168,6 +169,10 @@ elif [ $1 = "t" -o $1 = "test" -o $1 = "cy" ]; then
 elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   shift
   docker compose -f pytest.yml up --exit-code-from pytest "$@"
+
+elif [ $1 = "n" -o $1 = "nox" ]; then
+  shift
+  nox -f tests/noxfile.py "$@"
 
 elif [ $1 = "bats" -o $1 = "bat" ]; then
   shift
