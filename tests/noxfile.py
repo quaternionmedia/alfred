@@ -17,7 +17,6 @@ def lint(session):
 def coverage(session):
     session.install("-r", "../requirements.txt")
     session.install("-r", "requirements-tests.txt")
-    session.install("-r", "../alfred/otto/requirements.txt")
     session.install("-e", "../alfred/otto")
     session.install("-e", "..")
     session.run(
