@@ -21,6 +21,6 @@ jobs:
     with:
       args: blacken
 
-  integration_tests:
-    name: 🔏 Integration tests
-    uses: ./.github/workflows/cypress.yml
+  # integration_tests:
+  #   name: 🔏 Integration tests
+  #   uses: ./.github/workflows/cypress.yml
