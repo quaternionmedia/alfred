@@ -1,14 +1,14 @@
-FastAPI>=0.89.1
+FastAPI>=0.92.0
 aiofiles>=0.8.0
-python-multipart>=0.0.5
-ffmpeg-python>=0.2.0
+# python-multipart>=0.0.5
+# ffmpeg-python>=0.2.0
 python-jose[cryptography]>=3.3.0
 fastapi-users[mongodb]>=9.2.0
-git+https://github.com/quaternionmedia/fastapi-crudrouter.git@refs/heads/motor
+git+https://github.com/quaternionmedia/fastapi-crudrouter.git@refs/heads/motor-reupdate
 motor>=2.5.1
 beanie>=1.8.10
 passlib[bcrypt]>=1.7.4
-celery>=5.1.2,<5.2.0
+celery>=5.2.3,<5.3.0
 google-cloud-storage>=1.42.3
 pdfrw>=0.4
 reportlab>=3.6.2

@@ -1,4 +1,5 @@
 import nox
+from os.path import join
 
 
 @nox.session
@@ -19,6 +20,10 @@ def coverage(session):
     session.install("-r", "requirements-tests.txt")
     session.install("-e", "../alfred/otto")
     session.install("-e", "..")
+    session.run("mkdir", "-p", "data")
+    session.run("mkdir", "-p", "dist")
+    session.run("mkdir", "-p", "site")
+    session.run("touch", join("dist", "index.html"))
     session.run(
         "pytest",
         "-vv",

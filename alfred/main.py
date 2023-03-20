@@ -39,16 +39,6 @@ app = FastAPI(
 app.add_middleware(GZipMiddleware)
 
 
-@app.on_event("startup")
-async def on_startup():
-    await init_beanie(
-        database=get_db(),
-        document_models=[
-            User,
-        ],
-    )
-
-
 @app.on_event('startup')
 async def seedDb():
     db = get_db()
@@ -126,6 +116,23 @@ app.mount('/docs', StaticFiles(directory='site', html=True), name='docs')
 
 # if request does not match the above api, try to return a StaticFiles match
 app.mount('/', StaticFiles(directory='dist', html=True), name='static')
+
+
+@app.on_event("startup")
+async def on_startup():
+    await init_beanie(
+        database=get_db(),
+        document_models=[
+            User,
+            renders.schema,
+            renders.create_schema,
+            renders.update_schema,
+            projects.schema,
+            projects.create_schema,
+            projects.update_schema,
+        ],
+    )
+
 
 if __name__ == '__main__':
     from uvicorn import run
