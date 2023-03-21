@@ -18,7 +18,7 @@ seed = [
                         "name": "makeColor",
                         "duration": 7.2,
                         "start": 17.1,
-                        "data": {"preserve": {"color": [255, 255, 255], "opacity": 1}},
+                        "data": {"preserve": {"color": "#FFFFFF"}},
                     }
                 },
                 {
@@ -66,7 +66,7 @@ seed = [
                                 },
                                 "position": [
                                     "center",
-                                    {"floor": {"*": [0.1, {"var": "height"}]}},
+                                    {"floor": {"*": [0.2, {"var": "height"}]}},
                                 ],
                                 "opacity": 1,
                                 "fxs": {
@@ -227,7 +227,7 @@ seed = [
                                 },
                                 "position": [
                                     "center",
-                                    {"floor": {"*": [0.14, {"var": "height"}]}},
+                                    {"floor": {"*": [0.25, {"var": "height"}]}},
                                 ],
                                 "opacity": 1,
                                 "fxs": {
@@ -387,7 +387,7 @@ seed = [
                                 },
                                 "position": [
                                     "center",
-                                    {"floor": {"*": [0.1, {"var": "height"}]}},
+                                    {"floor": {"*": [0.2, {"var": "height"}]}},
                                 ],
                                 "opacity": 1,
                                 "fxs": {

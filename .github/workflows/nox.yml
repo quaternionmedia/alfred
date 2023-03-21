@@ -1,0 +1,30 @@
+name: 🛢️ nox
+
+on:
+  workflow_call:
+    inputs:
+      args:
+        required: true
+        type: string
+
+jobs:
+  run_nox:
+    name: 🛢️ nox
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📰 Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.11
+
+      - name: 🏗️ Setup testing environment
+        run: pip3 install -r tests/requirements-tests.txt
+
+      - name: 🧪 Run nox test suite
+        run: nox -f tests/noxfile.py -s ${{ inputs.args }}

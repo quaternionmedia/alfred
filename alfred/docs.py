@@ -1,4 +1,4 @@
-from _version import __version__ 
+from alfred._version import __version__
 
 title = """Alfred API"""
 

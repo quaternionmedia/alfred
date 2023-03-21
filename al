@@ -19,6 +19,7 @@ git
 i | install
 init
 l | log
+n | nox
 p | production
 reload
 r | restart
@@ -78,7 +79,6 @@ elif [ $1 = "init" ]; then
   mkdir -p $(dirname $0)/alfred/data
   mkdir -p $(dirname $0)/alfred/site
   echo "installing dependencies"
-  # make install
   docker compose run website yarn install
 
   # Installs the dependencies.
@@ -164,11 +164,19 @@ elif [ $1 = "docker" -o $1 = "dock" ]; then
 
 elif [ $1 = "t" -o $1 = "test" -o $1 = "cy" ]; then
   shift
-  docker compose -f test_cy.yml up --exit-code-from cy
+  docker compose -f test_cy.yml up --exit-code-from cy "$@"
+
+elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
+  shift
+  docker compose -f pytest.yml up --exit-code-from pytest "$@"
+
+elif [ $1 = "n" -o $1 = "nox" ]; then
+  shift
+  nox -f tests/noxfile.py "$@"
 
 elif [ $1 = "bats" -o $1 = "bat" ]; then
   shift
-  docker compose -f test_bats.yml up --build --exit-code-from bats
+  docker compose -f test_bats.yml up --build --exit-code-from bats "$@"
 
 else
   echo "Unknown command: $1"

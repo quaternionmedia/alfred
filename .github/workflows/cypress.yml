@@ -1,11 +1,11 @@
-name: Application Test
+name: 🦢 Cypress Tests
 
 on:
-  push:
-  pull_request:
-
+  workflow_call:
+    
 jobs:
   run_tests:
+    name: 🦢 Cypress
     timeout-minutes: 15
     runs-on: ubuntu-latest
 

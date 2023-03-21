@@ -1,31 +1,31 @@
 from fastapi import FastAPI, Depends
-from typing import Optional
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.staticfiles import StaticFiles
 from beanie import init_beanie
 
 from subprocess import run as bash
 
-from core.routes import authAPI
-from core.routes import videoAPI
-from core.routes import issueAPI
-from core.routes import adminAPI
-from core.routes import fontAPI
-from core.routes import ProjectAPI
-from core.routes import RenderAPI
-from core.routes import previewAPI
-from otto.main import app as ottoApi
-from core.utils import get_db
-from core.utils.db import deOid
-from core.routes.users import (
+from alfred.core.routes import authAPI
+from alfred.core.routes import videoAPI
+from alfred.core.routes import issueAPI
+from alfred.core.routes import adminAPI
+from alfred.core.routes import fontAPI
+from alfred.core.routes import ProjectAPI
+from alfred.core.routes import RenderAPI
+from alfred.core.routes import previewAPI
+
+# from otto.main import app as ottoApi
+from alfred.core.utils import get_db
+
+# from alfred.core.utils.db import deOid
+from alfred.core.routes.users import (
     fastapi_users,
     current_active_user,
     current_active_superuser,
 )
-from core.models.users import UserRead, UserUpdate
-from core.utils.db import User
-from seed import seed
-import docs
+from alfred.core.models.users import UserRead, UserUpdate
+from alfred.core.utils.db import User
+from alfred import docs
 
 
 app = FastAPI(
@@ -37,16 +37,6 @@ app = FastAPI(
     docs_url='/api',
 )
 app.add_middleware(GZipMiddleware)
-
-
-@app.on_event("startup")
-async def on_startup():
-    await init_beanie(
-        database=get_db(),
-        document_models=[
-            User,
-        ],
-    )
 
 
 @app.on_event('startup')
@@ -126,6 +116,23 @@ app.mount('/docs', StaticFiles(directory='site', html=True), name='docs')
 
 # if request does not match the above api, try to return a StaticFiles match
 app.mount('/', StaticFiles(directory='dist', html=True), name='static')
+
+
+@app.on_event("startup")
+async def on_startup():
+    await init_beanie(
+        database=get_db(),
+        document_models=[
+            User,
+            renders.schema,
+            renders.create_schema,
+            renders.update_schema,
+            projects.schema,
+            projects.create_schema,
+            projects.update_schema,
+        ],
+    )
+
 
 if __name__ == '__main__':
     from uvicorn import run
