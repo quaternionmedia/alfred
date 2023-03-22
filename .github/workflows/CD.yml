@@ -1,0 +1,16 @@
+name: 🪂 Deploy
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  release:
+    types: [published, edited, prereleased]
+
+jobs:
+  build:
+    name: 🔨 Build and deploy to gchr
+    uses: quaternionmedia/.github/.github/workflows/build.yml@main
