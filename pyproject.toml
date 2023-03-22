@@ -1,0 +1,38 @@
+[tool.poetry]
+name = "alfred"
+version = "0.2.0"
+description = "The automated video engine"
+authors = ["Your Name <you@example.com>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+fastapi = "^0.92.0"
+aiofiles = "^23.1.0"
+python-jose = "^3.3.0"
+fastapi-users = "^10.4.0"
+motor = "^3.1.1"
+beanie = "^1.17.0"
+passlib = "^1.7.4"
+bcrypt = "^4.0.1"
+celery = "^5.2.7"
+google-cloud-storage = "^2.7.0"
+pdfrw = "^0.4"
+reportlab = "^3.6.12"
+fastapi-users-db-beanie = "^1.1.4"
+fastapi-crudrouter = {git = "https://github.com/quaternionmedia/fastapi-crudrouter.git", rev = "refs/heads/motor-reupdate"}
+
+[tool.poetry.group.dev.dependencies]
+uvicorn = "^0.20.0"
+
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.2.2"
+pytest-cov = "^4.0.0"
+pytest-sugar = "^0.9.6"
+pytest-xdist = "^3.2.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
