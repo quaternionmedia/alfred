@@ -12,5 +12,7 @@ on:
 
 jobs:
   build:
-    name: 🔨 Build and deploy to gchr
+    name: 🔨 Build and deploy to ghcr
     uses: quaternionmedia/.github/.github/workflows/build.yml@main
+    with:
+      submodules: true
