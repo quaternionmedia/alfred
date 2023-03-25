@@ -26,6 +26,8 @@ fastapi-crudrouter = {git = "https://github.com/quaternionmedia/fastapi-crudrout
 [tool.poetry.group.dev.dependencies]
 uvicorn = "^0.20.0"
 
+[tool.poetry.group.test]
+optional = true
 
 [tool.poetry.group.test.dependencies]
 pytest = "^7.2.2"
