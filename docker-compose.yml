@@ -21,7 +21,7 @@ services:
       - website
       - db
     volumes:
-      - ./alfred/:/app/
+      - ./:/app/
       - ./website/dist/:/app/dist/
       - ./videos/:/app/videos/
       - ./cred_api.json:/cred.json

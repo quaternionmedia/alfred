@@ -1,13 +1,15 @@
-FROM quaternionmedia/alfred-docker:v2
+FROM python
 
-RUN mkdir -p /app/data/
+WORKDIR /app
 
-COPY alfred/ /alfred/alfred
+RUN mkdir -p data
 
-RUN pip3 install -e /alfred/alfred/otto/
+COPY pyproject.toml README.md ./
+COPY alfred alfred
 
+RUN pip3 install -e alfred/otto
+RUN pip3 install -e . uvicorn
 
-COPY /setup.py /alfred/
-RUN pip3 install -e /alfred/
+RUN rm /etc/ImageMagick-6/policy.xml
 
-ENTRYPOINT ["python3.10", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
+CMD ["uvicorn", "alfred.main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
