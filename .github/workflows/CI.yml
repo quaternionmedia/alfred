@@ -16,7 +16,7 @@ jobs:
       args: lint
 
   format:
-    name: ⬛ Black Formatter
+    name: 🖤 Black
     uses: quaternionmedia/.github/.github/workflows/black.yml@main
 
   # integration_tests:
