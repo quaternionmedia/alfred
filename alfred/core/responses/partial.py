@@ -25,6 +25,7 @@ try:
 except ImportError:  # pragma: nocover
     ujson = None  # type: ignore
 
+
 class PartialFileResponse(Response):
     chunk_size = 4096
 
@@ -53,19 +54,17 @@ class PartialFileResponse(Response):
             content_disposition = 'attachment; filename="{}"'.format(self.filename)
             self.headers.setdefault("content-disposition", content_disposition)
         self.stat_result = stat_result
-        self.defaultSize = 1024*1024*4
+        self.defaultSize = 1024 * 1024 * 4
         # self.size = None
         if stat_result is not None:
             # self.size = stat_result.st_size
             self.set_stat_headers(stat_result)
-
 
     def set_stat_headers(self, stat_result: os.stat_result) -> None:
         content_length = str(min(stat_result.st_size, self.defaultSize))
         last_modified = formatdate(stat_result.st_mtime, usegmt=True)
         etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
         etag = hashlib.md5(etag_base.encode()).hexdigest()
-
 
         self.headers.setdefault("content-length", content_length)
         self.headers.setdefault("last-modified", last_modified)
@@ -100,7 +99,9 @@ class PartialFileResponse(Response):
                 # print('processed range: ', self.range)
                 self.start = int(self.range[0])
                 self.end = min(self.start + self.defaultSize, self.size)
-                self.headers['content-range'] =  f"bytes {self.start}-{self.end - 1}/{self.size}"
+                self.headers[
+                    'content-range'
+                ] = f"bytes {self.start}-{self.end - 1}/{self.size}"
                 self.headers['content-length'] = str(self.end - self.start)
         await send(
             {
@@ -115,7 +116,9 @@ class PartialFileResponse(Response):
             async with aiofiles.open(self.path, mode="rb") as f:
                 r = await f.seek(0, 2)
                 s = await f.tell()
-                assert s == self.size,f'{r}, {type(s)}, {s} is not {self.size}, {type(self.size)}!'
+                assert (
+                    s == self.size
+                ), f'{r}, {type(s)}, {s} is not {self.size}, {type(self.size)}!'
                 await f.seek(self.start)
                 more_body = True
                 sent = 0

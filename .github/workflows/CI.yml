@@ -16,10 +16,8 @@ jobs:
       args: lint
 
   format:
-    name: ⬛ Black Formatter
-    uses: ./.github/workflows/nox.yml
-    with:
-      args: blacken
+    name: 🖤 Black
+    uses: quaternionmedia/.github/.github/workflows/black.yml@main
 
   # integration_tests:
   #   name: 🔏 Integration tests

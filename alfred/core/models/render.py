@@ -5,6 +5,7 @@ from otto.models import Edl
 from fastapi import Query
 from beanie import PydanticObjectId
 
+
 class Render(Document):
     edl: Edl
     name: Optional[str]
@@ -26,6 +27,7 @@ class Render(Document):
     # class Config:
     #     title = 'Alfred Render'
     #     collection = 'Render'
+
 
 class RenderUpdate(Render):
     edl: Optional[Edl]

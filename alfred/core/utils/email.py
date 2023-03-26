@@ -1,8 +1,16 @@
 from smtplib import SMTP
 from email.message import EmailMessage
-from alfred.config import EMAIL_PORT, EMAIL_SERVER, EMAIL_USERNAME, EMAIL_PASSWORD, EMAIL_SENDTO, INVOICE_EMAIL_BODY
+from alfred.config import (
+    EMAIL_PORT,
+    EMAIL_SERVER,
+    EMAIL_USERNAME,
+    EMAIL_PASSWORD,
+    EMAIL_SENDTO,
+    INVOICE_EMAIL_BODY,
+)
 from mimetypes import guess_type
 from pytz import UTC
+
 
 def sendMail(recepients, subject, message, attachments=[]):
     try:
@@ -20,9 +28,11 @@ def sendMail(recepients, subject, message, attachments=[]):
                     ctype = 'application/octet-stream'
                 maintype, subtype = ctype.split('/', 1)
                 with open(path, 'rb') as f:
-                    msg.add_attachment(f.read(), maintype=maintype, subtype=subtype, filename=path)
-        
-        s=SMTP(EMAIL_SERVER, EMAIL_PORT)
+                    msg.add_attachment(
+                        f.read(), maintype=maintype, subtype=subtype, filename=path
+                    )
+
+        s = SMTP(EMAIL_SERVER, EMAIL_PORT)
         # s.set_debuglevel(1)
         s.starttls()
         s.login(EMAIL_USERNAME, EMAIL_PASSWORD)
