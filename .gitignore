@@ -73,3 +73,6 @@ tests/reports/
 
 # Virtual environment
 .venv
+
+# Logs
+logs
