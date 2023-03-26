@@ -16,9 +16,8 @@ def lint(session):
 
 @nox.session(tags=["test"])
 def coverage(session):
-    session.install("-r", "../requirements.txt")
-    session.install("-r", "requirements-tests.txt")
     session.install("-e", "../alfred/otto")
+    session.install("-r", "requirements-tests.txt")
     session.install("-e", "..")
     session.run("mkdir", "-p", "data")
     session.run("mkdir", "-p", "dist")

@@ -70,3 +70,6 @@ website/cypress-coverage/
 tests/.nox/
 tests/.benchmarks/
 tests/reports/
+
+# Virtual environment
+.venv
