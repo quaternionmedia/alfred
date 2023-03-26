@@ -57,7 +57,6 @@ async def checkFonts():
         .replace('"', '')
         .split('\n')
     )
-    results = []
     for f in fonts:
         if f:
             font = f.split('-')

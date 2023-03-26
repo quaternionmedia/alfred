@@ -1,12 +1,10 @@
 from fastapi import Depends
-from typing import List, Optional
+from typing import Optional
 from .users import current_active_user, current_active_superuser
 from ..models import UserRead as User
 from ..models.render import Render, RenderUpdate
-from otto.models import Edl
 from otto.getdata import timestr
 from ..utils.tasks import renderRemote
-from ..utils.db import get_db
 from ..utils.bucket import generate_signed_url
 from fastapi_crudrouter import MotorCRUDRouter
 from alfred.config import DB_URL, DB_NAME
@@ -50,10 +48,9 @@ class RenderAPI(MotorCRUDRouter):
             render.username = user.email
             render.filename = filename
             # TODO: rework to async logic
-            db = get_db()
             result = await self.schema.insert_one(render)
             print('rendering!', render, result)
-            task = renderRemote.delay(
+            renderRemote.delay(
                 edl=render.edl,
                 renderId=result.id,
                 filename=filename,
@@ -68,11 +65,9 @@ class RenderAPI(MotorCRUDRouter):
         async def reQueueRender(
             id: str, user: User = Depends(current_active_superuser)
         ):
-            ts = timestr()
-            db = get_db()
             render = await self.schema.find_one({'_id': ObjectId(id)})
             print('rerendering!', id, render)
-            task = renderRemote.delay(
+            renderRemote.delay(
                 edl=render.edl,
                 renderId=ObjectId(id),
                 filename=render.filename,

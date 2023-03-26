@@ -21,7 +21,7 @@ async def sendInvoice(client: str, startDate: date, endDate: date):
     body = INVOICE_EMAIL_BODY
     if not sendMail(
         recepients=EMAIL_SENDTO,
-        subject=f'alfred invoice',
+        subject='alfred invoice',
         message=body,
         attachments=invoices,
     ):
