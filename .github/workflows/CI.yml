@@ -17,9 +17,7 @@ jobs:
 
   format:
     name: ⬛ Black Formatter
-    uses: ./.github/workflows/nox.yml
-    with:
-      args: blacken
+    uses: quaternionmedia/.github/.github/workflows/black.yml@main
 
   # integration_tests:
   #   name: 🔏 Integration tests

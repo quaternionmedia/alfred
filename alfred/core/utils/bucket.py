@@ -8,6 +8,7 @@ from bson import ObjectId
 
 NOT_FOUND = HTTPException(status_code=404, detail="Item not found")
 
+
 def get_bucket(bucket=BUCKET_NAME):
     """Get bucket:
     Returns the storage bucket of the same name.
@@ -15,10 +16,12 @@ def get_bucket(bucket=BUCKET_NAME):
     client = storage.Client()
     return client.bucket(bucket)
 
+
 def upload(filename, directory=None):
     """Upload file to cloud directory"""
     blob = get_bucket().blob(filename, chunk_size=DEFAULT_CHUNK_SIZE)
     blob.upload_from_filename(join(directory, filename) if directory else filename)
+
 
 def generate_signed_url(renderId, minutes=15):
     """Generates a v4 signed URL for downloading a blob.

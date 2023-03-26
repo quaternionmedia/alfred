@@ -16,7 +16,7 @@ version = __version__
 contact = {
     'name': 'Quaternion Media',
     'url': 'https://quaternion.media',
-    'email': 'alfred@quaternion.media'
+    'email': 'alfred@quaternion.media',
 }
 # license_info = {}
 
@@ -24,7 +24,7 @@ tags_metadata = [
     {
         'name': 'auth',
         'description': """# Auth
-Authentication operations, including **Login** and **Registration**"""
+Authentication operations, including **Login** and **Registration**""",
     },
     {
         'name': 'users',
@@ -49,13 +49,13 @@ A **Project** is an alfred document with a `logic` object which contains the nec
     {
         'name': 'render',
         'description': """# Render
-Render an `Edl` and check status on existing renders."""
+Render an `Edl` and check status on existing renders.""",
     },
     {
         'name': 'video',
         'description': """# Video
 Serve videos directly from this instance.
-        """
+        """,
     },
     {
         'name': 'font',
@@ -63,8 +63,8 @@ Serve videos directly from this instance.
 Get a list of fonts available to be rendered on this instance.""",
     },
     {
-    'name': 'admin',
-    'description': """# admin
+        'name': 'admin',
+        'description': """# admin
 Admin tasks. Only accessable for superusers.""",
     },
 ]

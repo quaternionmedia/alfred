@@ -3,6 +3,7 @@ from ..utils.db import get_db
 
 fontAPI = APIRouter()
 
+
 @fontAPI.get('/fonts')
 async def getFonts():
     """# Get fonts
