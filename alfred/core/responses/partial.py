@@ -127,7 +127,7 @@ class PartialFileResponse(Response):
                     sent += readSize
                     chunk = await f.read(readSize)
                     # more_body = len(chunk) == self.chunk_size
-                    more_body = readSize is not 0
+                    more_body = readSize != 0
                     await send(
                         {
                             "type": "http.response.body",
