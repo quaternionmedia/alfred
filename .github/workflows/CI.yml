@@ -11,7 +11,9 @@ jobs:
 
   lint:
     name: 👖 Linter
-    uses: quaternionmedia/.github/.github/workflows/lint.yml@main
+    uses: ./.github/workflows/nox.yml
+    with:
+      args: lint
 
   format:
     name: 🖤 Black

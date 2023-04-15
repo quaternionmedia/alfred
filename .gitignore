@@ -75,4 +75,9 @@ tests/reports/
 .venv
 
 # Logs
-logs
+logs/
+alfred/logs/
+
+# PDM
+.pdm-python
+build/
