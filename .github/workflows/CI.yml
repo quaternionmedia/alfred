@@ -5,7 +5,8 @@ on: [push, pull_request]
 jobs:
   api_tests:
     name: 🐢 API tests
-    uses: quaternionmedia/.github/.github/workflows/pytest.yml@main
+    uses: quaternionmedia/.github/.github/workflows/pytest.yml@codecov
+    secrets: inherit
 
   lint:
     name: 👖 Linter
