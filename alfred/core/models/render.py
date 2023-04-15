@@ -1,9 +1,8 @@
 from typing import Optional, List
-from datetime import datetime
 from beanie import Document
 from otto.models import Edl
-from fastapi import Query
 from beanie import PydanticObjectId
+
 
 class Render(Document):
     edl: Edl
@@ -26,6 +25,7 @@ class Render(Document):
     # class Config:
     #     title = 'Alfred Render'
     #     collection = 'Render'
+
 
 class RenderUpdate(Render):
     edl: Optional[Edl]

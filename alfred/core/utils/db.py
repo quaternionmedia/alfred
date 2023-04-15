@@ -31,7 +31,8 @@ async def get_user_db():
 
 def deOid(results: List):
     """De-ObjectID
-    Takes a list of objects, and converts the objectID (_id) to a string for serialization"""
+    Takes a list of objects, and converts the ObjectID (_id) to a string
+    """
     for r in results:
         r['_id'] = str(r['_id'])
     return results

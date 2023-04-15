@@ -12,7 +12,9 @@ adminAPI = APIRouter()
 @adminAPI.post('/invoice')
 async def sendInvoice(client: str, startDate: date, endDate: date):
     """# Send Invoice
-    Generates a PDF invoice and sends an email to the client for all renders executed in the specified period"""
+    Generates a PDF invoice and sends an email to the client
+    for all renders executed in the specified period
+    """
     midnight = time(0)
     startDate = datetime.combine(startDate, midnight, timezone.utc)
     endDate = datetime.combine(endDate, midnight, timezone.utc)
@@ -20,7 +22,7 @@ async def sendInvoice(client: str, startDate: date, endDate: date):
     body = INVOICE_EMAIL_BODY
     if not sendMail(
         recepients=EMAIL_SENDTO,
-        subject=f'alfred invoice',
+        subject='alfred invoice',
         message=body,
         attachments=invoices,
     ):

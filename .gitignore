@@ -73,3 +73,11 @@ tests/reports/
 
 # Virtual environment
 .venv
+
+# Logs
+logs/
+alfred/logs/
+
+# PDM
+.pdm-python
+build/
