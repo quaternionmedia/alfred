@@ -26,7 +26,7 @@ from alfred.core.routes.users import (
 from alfred.core.models.users import UserRead, UserUpdate
 from alfred.core.utils.db import User
 from alfred import docs
-from alfred.config import DATA_DIR
+from alfred.config import DATA_DIR, STATIC_DIR
 
 
 app = FastAPI(
@@ -115,7 +115,7 @@ app.include_router(
 app.mount('/data', StaticFiles(directory=DATA_DIR, html=True), name='data')
 
 # if request does not match the above api, try to return a StaticFiles match
-app.mount('/', StaticFiles(directory='dist', html=True), name='static')
+app.mount('/', StaticFiles(directory=STATIC_DIR, html=True), name='dist')
 
 
 @app.on_event("startup")

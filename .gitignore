@@ -1,6 +1,7 @@
 # project based
 node_modules
-*/dist/*
+alfred/dist/*
+website/dist/*
 /dist/*
 .cache
 package-lock.json
