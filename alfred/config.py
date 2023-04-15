@@ -21,7 +21,9 @@ EMAIL_SENDTO = environ.get('EMAIL_SENDTO')
 if EMAIL_SENDTO:
     EMAIL_SENDTO = EMAIL_SENDTO.split(',')
 
-INVOICE_EMAIL_BODY = '''Please find attached an invoice for this week's renders. If you have any questions, feel free to contact us.
+INVOICE_EMAIL_BODY = '''Please find attached an invoice for this week's renders. 
+
+If you have any questions, feel free to contact us.
 
 Thanks!
 

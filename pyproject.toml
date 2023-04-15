@@ -18,7 +18,8 @@ dependencies = [
     "pdfrw<1.0,>=0.4",
     "reportlab<4.0.0,>=3.6.12",
     "fastapi-users-db-beanie<2.0.0,>=1.1.4",
-    "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate"
+    "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate",
+    "ujson>=5.7.0",
 ]
 requires-python = ">=3.8.1,<4.0"
 readme = "README.md"

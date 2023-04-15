@@ -1,5 +1,4 @@
 from typing import Optional, List
-from datetime import datetime
 from beanie import Document
 
 

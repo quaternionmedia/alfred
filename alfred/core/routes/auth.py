@@ -1,8 +1,6 @@
 from fastapi import APIRouter, Depends, Response, HTTPException, status
 from .users import fastapi_users, auth_backend
-from ..models import UserRead, UserCreate, UserUpdate
-
-from alfred.config import SECRET_KEY
+from ..models import UserRead, UserCreate
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 90

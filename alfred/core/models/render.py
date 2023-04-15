@@ -1,8 +1,6 @@
 from typing import Optional, List
-from datetime import datetime
 from beanie import Document
 from otto.models import Edl
-from fastapi import Query
 from beanie import PydanticObjectId
 
 
