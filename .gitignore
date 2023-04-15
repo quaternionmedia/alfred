@@ -81,3 +81,6 @@ alfred/logs/
 # PDM
 .pdm-python
 build/
+
+# Data
+data/
