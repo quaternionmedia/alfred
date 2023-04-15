@@ -6,6 +6,7 @@ jobs:
   api_tests:
     name: 🐢 API tests
     uses: quaternionmedia/.github/.github/workflows/pytest.yml@main
+    secrets: inherit
 
   lint:
     name: 👖 Linter
