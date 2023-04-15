@@ -113,7 +113,6 @@ app.include_router(
 #  note: we can't secure the /data route because the otto preview is rendered into the
 # <img> tag in the browser. Should find a workaround for this, but it is not critical.
 app.mount('/data', StaticFiles(directory=DATA_DIR, html=True), name='data')
-app.mount('/docs', StaticFiles(directory='site', html=True), name='docs')
 
 # if request does not match the above api, try to return a StaticFiles match
 app.mount('/', StaticFiles(directory='dist', html=True), name='static')
