@@ -38,6 +38,9 @@ To download the demo media (into `videos/`):
 
 Then you can render the `demo.csv` project locally.
 
+#### nox
+`./al nox`
+
 #### documentation
 To build the documentation locally with [mkdocs](https://www.mkdocs.org/)
 ##### install dependencies
