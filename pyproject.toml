@@ -20,6 +20,7 @@ dependencies = [
     "fastapi-users-db-beanie<2.0.0,>=1.1.4",
     "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate",
     "ujson>=5.7.0",
+    "pillow<10.0.0"
 ]
 requires-python = ">=3.8.1,<4.0"
 readme = "README.md"
