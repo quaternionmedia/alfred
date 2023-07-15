@@ -13,14 +13,14 @@ dependencies = [
     "beanie<2.0.0,>=1.17.0",
     "passlib<2.0.0,>=1.7.4",
     "bcrypt<5.0.0,>=4.0.1",
-    "celery<6.0.0,>=5.2.7",
+    "celery<6.0.0,>=5.3.1",
     "google-cloud-storage<3.0.0,>=2.7.0",
     "pdfrw<1.0,>=0.4",
     "reportlab<4.0.0,>=3.6.12",
     "fastapi-users-db-beanie<2.0.0,>=1.1.4",
     "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate",
     "ujson>=5.7.0",
-    "pillow<10.0.0"
+    "pillow==9.5.0",
 ]
 requires-python = ">=3.8.1,<4.0"
 readme = "README.md"
@@ -46,6 +46,9 @@ test = [
     "pytest-xdist >= 3.2.1",
     "pytest-timeout>=2.1.0",
     "httpx>=0.24.0",
+]
+render = [
+    "al-otto[render]>=0.2.2",
 ]
 
 [tool.pdm]
