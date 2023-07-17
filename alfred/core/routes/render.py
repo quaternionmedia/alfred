@@ -44,7 +44,7 @@ class RenderAPI(MotorCRUDRouter):
             render: Render, user: User = Depends(current_active_user)
         ):
             ts = timestr()
-            filename = f'{render.project}{"_" + render.description if render.description else ""}_{render.width}x{render.height}{"_" + render.quality if render.quality else ""}_{render.edl.duration}s_{ts}.mp4'
+            filename = f'{render.project}{"_" + render.description if render.description else ""}_{render.width}x{render.height}{"_" + render.quality if render.quality else ""}_{render.edl.duration}s_{ts}.mp4'  # noqa: E501
             render.username = user.email
             render.filename = filename
             # TODO: rework to async logic

@@ -50,6 +50,8 @@ def generate_invoice(user, startDate, endDate):
     renders += list(db.renders.find(q))
     results = []
     date = datetime.today()
+    startDate_iso = startDate.isoformat().split('T')[0]
+    endDate_iso = endDate.isoformat().split('T')[0]
     invoiceNumber = f'{date.year}{date.month:02d}{date.day:02d}'
     for page in range(ceil(len(renders) / lines) or 1):
         data = BytesIO()
@@ -64,7 +66,7 @@ def generate_invoice(user, startDate, endDate):
         pdf.drawString(
             x=left,
             y=top,
-            text=f'Alfred - Renders from {startDate.isoformat().split("T")[0]} to {endDate.isoformat().split("T")[0]}',
+            text=f'Alfred - Renders from {startDate_iso} to {endDate_iso}',
         )
         pdf.setFont("Helvetica", 10)
         for i, render in enumerate(renders[page * lines : (page + 1) * lines]):

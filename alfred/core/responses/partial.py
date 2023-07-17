@@ -1,10 +1,6 @@
 import hashlib
-import http.cookies
-import inspect
-import json
 import os
 import stat
-import typing
 from email.utils import formatdate
 from mimetypes import guess_type
 
@@ -93,8 +89,6 @@ class PartialFileResponse(Response):
         # print('got a bytes!', request.headers)
         if request.headers.get('range'):
             if request.headers['range'].startswith('bytes='):
-                # print('range: ', request.headers['range'], request.headers['range'][:6], request.headers['range'].startswith('bytes='), type(request.headers['range'][:6]))
-
                 self.range = request.headers['range'].split('bytes=')[1].split('-')
                 # print('processed range: ', self.range)
                 self.start = int(self.range[0])

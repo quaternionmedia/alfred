@@ -109,7 +109,8 @@ app.include_router(
 app.include_router(
     adminAPI, dependencies=[Depends(current_active_superuser)], tags=['admin']
 )
-#  note: we can't secure the /data route because the otto preview is rendered into the <img> tag in the browser. Should find a workaround for this, but it is not critical.
+#  note: we can't secure the /data route because the otto preview is rendered into the
+# <img> tag in the browser. Should find a workaround for this, but it is not critical.
 app.mount('/data', StaticFiles(directory='data', html=True), name='data')
 app.mount('/docs', StaticFiles(directory='site', html=True), name='docs')
 

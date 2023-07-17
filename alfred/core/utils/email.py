@@ -5,11 +5,8 @@ from alfred.config import (
     EMAIL_SERVER,
     EMAIL_USERNAME,
     EMAIL_PASSWORD,
-    EMAIL_SENDTO,
-    INVOICE_EMAIL_BODY,
 )
 from mimetypes import guess_type
-from pytz import UTC
 
 
 def sendMail(recepients, subject, message, attachments=[]):

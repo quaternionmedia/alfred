@@ -2,10 +2,7 @@ from fastapi import APIRouter, Header
 from os import listdir
 from os.path import join
 from ..responses import PartialFileResponse
-from starlette.responses import Response, FileResponse
-
-from moviepy.editor import ImageClip, VideoFileClip
-from math import floor
+from starlette.responses import Response
 
 videoAPI = APIRouter()
 
@@ -27,6 +24,7 @@ async def buffer(video: str, response: Response, bits: int = Header(0)):
     """# video
     Get a specific video by filename.
 
-    Returns an `HTTP 206 Partial Content` response, allowing the client to jump to a specific potion of a large video file.
+    Returns an `HTTP 206 Partial Content` response,
+    allowing the client to jump to a specific potion of a large video file.
     """
     return PartialFileResponse(join('/app/videos', video))
