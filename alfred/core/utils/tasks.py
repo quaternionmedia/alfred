@@ -36,7 +36,7 @@ def renderRemote(
     fps=30.0,
     bitrate=None,
     ffmpeg_params=None,
-    **kwargs
+    **kwargs,
 ):
     try:
         self.log = DbLogger(self, renderId)

@@ -13,7 +13,7 @@ class ProjectAPI(MotorCRUDRouter):
         update_schema=ProjectUpdate,
         db_name=DB_NAME,
         *args,
-        **kwargs
+        **kwargs,
     ):
         self.schema = schema
         self.create_schema = (create_schema,)

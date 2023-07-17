@@ -1,40 +1,53 @@
-[tool.poetry]
-name = "alfred"
-version = "0.2.0"
+[project]
+name = "al"
+dynamic = ["version"]
 description = "The automated video engine"
-authors = ["Your Name <you@example.com>"]
-license = "MIT"
+authors = [{ name = "Quaternion Media", email = "alfred@quaternion.media" }]
+dependencies = [
+    "al-otto >= 0.2.2",
+    "fastapi<1.0.0,>=0.92.0",
+    "aiofiles<24.0.0,>=23.1.0",
+    "python-jose<4.0.0,>=3.3.0",
+    "fastapi-users<11.0.0,>=10.4.0",
+    "motor<4.0.0,>=3.1.1",
+    "beanie<2.0.0,>=1.17.0",
+    "passlib<2.0.0,>=1.7.4",
+    "bcrypt<5.0.0,>=4.0.1",
+    "celery<6.0.0,>=5.2.7",
+    "google-cloud-storage<3.0.0,>=2.7.0",
+    "pdfrw<1.0,>=0.4",
+    "reportlab<4.0.0,>=3.6.12",
+    "fastapi-users-db-beanie<2.0.0,>=1.1.4",
+    "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate"
+]
+requires-python = ">=3.8.1,<4.0"
 readme = "README.md"
+license = { text = "MIT" }
 
-[tool.poetry.dependencies]
-python = "^3.8"
-fastapi = "^0.92.0"
-aiofiles = "^23.1.0"
-python-jose = "^3.3.0"
-fastapi-users = "^10.4.0"
-motor = "^3.1.1"
-beanie = "^1.17.0"
-passlib = "^1.7.4"
-bcrypt = "^4.0.1"
-celery = "^5.2.7"
-google-cloud-storage = "^2.7.0"
-pdfrw = "^0.4"
-reportlab = "^3.6.12"
-fastapi-users-db-beanie = "^1.1.4"
-fastapi-crudrouter = {git = "https://github.com/quaternionmedia/fastapi-crudrouter.git", rev = "refs/heads/motor-reupdate"}
-
-[tool.poetry.group.dev.dependencies]
-uvicorn = "^0.20.0"
-
-[tool.poetry.group.test]
-optional = true
-
-[tool.poetry.group.test.dependencies]
-pytest = "^7.2.2"
-pytest-cov = "^4.0.0"
-pytest-sugar = "^0.9.6"
-pytest-xdist = "^3.2.1"
+[project.urls]
+homepage = "https://github.com/quaternionmedia/alfred"
+repository = "https://github.com/quaternionmedia/alfred"
+documentation = "https://quaternionmedia.github.io/alfred/"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
+
+[tool.pdm.dev-dependencies]
+dev = ["uvicorn >= 0.20.0", "ruff~=0.0", "black"]
+
+[project.optional-dependencies]
+test = [
+    "pytest >= 7.2.2",
+    "pytest-cov >= 4.0.0",
+    "pytest-sugar >= 0.9.6",
+    "pytest-xdist >= 3.2.1",
+    "pytest-timeout>=2.1.0",
+    "httpx>=0.24.0",
+]
+
+[tool.pdm]
+version = { source = "file", path = "alfred/_version.py" }
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
