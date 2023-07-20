@@ -4,6 +4,9 @@ PRODUCTION = environ.get('ALFRED_PRODUCTION')
 
 SECRET_KEY = environ.get('ALFRED_SECRET_KEY')
 
+DATA_DIR = environ.get('DATA_DIR', 'data')
+STATIC_DIR = environ.get('STATIC_DIR', 'dist')
+
 DB_URL = environ.get('DB_URL')
 DB_NAME = environ.get('DB_NAME', 'db')
 

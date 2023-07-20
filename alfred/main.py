@@ -26,6 +26,7 @@ from alfred.core.routes.users import (
 from alfred.core.models.users import UserRead, UserUpdate
 from alfred.core.utils.db import User
 from alfred import docs
+from alfred.config import DATA_DIR, STATIC_DIR
 
 
 app = FastAPI(
@@ -111,11 +112,10 @@ app.include_router(
 )
 #  note: we can't secure the /data route because the otto preview is rendered into the
 # <img> tag in the browser. Should find a workaround for this, but it is not critical.
-app.mount('/data', StaticFiles(directory='data', html=True), name='data')
-app.mount('/docs', StaticFiles(directory='site', html=True), name='docs')
+app.mount('/data', StaticFiles(directory=DATA_DIR, html=True), name='data')
 
 # if request does not match the above api, try to return a StaticFiles match
-app.mount('/', StaticFiles(directory='dist', html=True), name='static')
+app.mount('/', StaticFiles(directory=STATIC_DIR, html=True), name='dist')
 
 
 @app.on_event("startup")

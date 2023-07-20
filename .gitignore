@@ -1,6 +1,7 @@
 # project based
 node_modules
-*/dist/*
+alfred/dist/*
+website/dist/*
 /dist/*
 .cache
 package-lock.json
@@ -81,3 +82,6 @@ alfred/logs/
 # PDM
 .pdm-python
 build/
+
+# Data
+data/

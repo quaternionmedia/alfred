@@ -5,9 +5,8 @@ on: [push, pull_request]
 jobs:
   api_tests:
     name: 🐢 API tests
-    uses: ./.github/workflows/nox.yml
-    with:
-      args: coverage
+    uses: quaternionmedia/.github/.github/workflows/pytest.yml@main
+    secrets: inherit
 
   lint:
     name: 👖 Linter

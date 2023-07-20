@@ -129,8 +129,8 @@ elif [ $1 = "w" -o $1 = "worker" ]; then
   # . operator used in place of source
   . ./.cred
   # DB_URL=mongodb://$1:27017 CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A tasks:renderer --workdir alfred/ -b $CELERY_BROKER --result-backend $CELERY_BACKEND worker --concurrency=4
-  # DB_URL=mongodb://$1:27017 DB_NAME=alfred CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A alfred.core.utils:renderer --workdir alfred/ worker --concurrency=4
-  docker compose -f docker-compose.yml -f dev.yml run -it --entrypoint "celery -A alfred.core.utils.tasks:renderer --workdir /app/ -b mongodb://$1:27017/celery --result-backend mongodb://$1:27017/celery worker --loglevel=info --concurrency=1" renderer
+  DB_URL=mongodb://$1:27017 DB_NAME=alfred CELERY_BROKER=$DB_URL/celery CELERY_BACKEND=$CELERY_BROKER celery -A alfred.core.utils:renderer --workdir alfred/ worker --concurrency=4
+  # docker compose -f docker-compose.yml -f dev.yml run -it --entrypoint "celery -A alfred.core.utils.tasks:renderer --workdir /app/alfred -b mongodb://$1:27017/celery --result-backend mongodb://$1:27017/celery worker --loglevel=debug --concurrency=1" renderer
 
 elif [ $1 = "dump" ]; then
   shift
