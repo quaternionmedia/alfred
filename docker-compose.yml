@@ -39,7 +39,7 @@ services:
       - .secret_key
 
   db:
-    image: mongo:bionic
+    image: mongo:6.0
     volumes:
       - ./database:/data/db
     networks:
