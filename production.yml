@@ -9,6 +9,8 @@ services:
   api:
     networks:
       - web
+    volumes:
+      - ./alfred/otto/fonts:/usr/share/fonts/truetype/
     labels:
       - traefik.http.services.alfred.loadbalancer.server.port=80
       - traefik.http.routers.alfred.rule=Host(`alfred.quaternion.media`)
