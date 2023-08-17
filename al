@@ -138,12 +138,12 @@ elif [ $1 = "dump" ]; then
   DATE=`date "+%Y-%m-%d-%H%M%S"`
   FILENAME=alfred_db_$DATE.gz
   docker compose exec db sh -c "mongodump --db alfred --gzip --archive=$FILENAME"
-  docker container cp alfred_db_1:$FILENAME $FILENAME
+  docker container cp alfred-db-1:$FILENAME $FILENAME
 
 elif [ $1 = "restore" ]; then
   shift
-  docker container cp $1 alfred_db_1:/$1
-  docker compose exec db sh -c "mongorestore --gzip --db alfred --archive=/$1 --drop"
+  docker container cp $1 alfred-db-1:/$1
+  docker compose exec db sh -c "mongorestore --gzip --archive=/$1 --drop"
 
 elif [ $1 = "reload" ]; then
   shift
