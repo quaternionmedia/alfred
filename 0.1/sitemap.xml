@@ -2,132 +2,132 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/about/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/about/clip/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/about/concepts/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/about/edl/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/about/project/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/about/render/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/about/template/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/api/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/api/auth/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/api/otto/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/api/render/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/adjust/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/advanced/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/animation/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/combine/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/fade/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/login/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/media/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/preview/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/project/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/render/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/text/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/examples/trim/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://alfred.quaternion.media/docs/0.1/models/</loc>
-         <lastmod>2023-07-20</lastmod>
+         <lastmod>2023-08-17</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
