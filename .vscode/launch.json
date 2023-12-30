@@ -16,7 +16,7 @@
         "CELERY_BACKEND": "mongodb://localhost:27017/celery",
         "DB_URL": "mongodb://localhost:27017",
         "DB_NAME": "alfred",
-        "GOOGLE_APPLICATION_CREDENTIALS": "/cred.json",
+        "GOOGLE_APPLICATION_CREDENTIALS": "../cred.json",
         "ALFRED_SECRET_KEY": "ALFRED_SECRET_KEY"
       },
       "jinja": false,
