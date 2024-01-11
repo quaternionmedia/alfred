@@ -8,6 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 👺 Check for haiku
-        uses: quaternionmedia/haiku@v1
+        uses: quaternionmedia/haiku@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
