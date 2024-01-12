@@ -7,7 +7,7 @@ SECRET_KEY = environ.get('ALFRED_SECRET_KEY')
 DATA_DIR = environ.get('DATA_DIR', 'data')
 STATIC_DIR = environ.get('STATIC_DIR', 'dist')
 
-DB_URL = environ.get('DB_URL')
+DB_URL = environ.get('DB_URL', 'mongodb://localhost:27017/')
 DB_NAME = environ.get('DB_NAME', 'db')
 
 CELERY_BROKER = environ.get('CELERY_BROKER')

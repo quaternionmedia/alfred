@@ -98,9 +98,10 @@ elif [ $1 = "restart" -o $1 = "r" ]; then
 
 elif [ $1 = "seed" -o $1 = "db" ]; then
   shift
-  docker compose exec api python3.10 -c """
-from seed import seed
-from db import db
+  docker compose exec api python -c """
+from alfred.seed import seed
+from alfred.core.utils import get_sync_db
+db = get_sync_db()
 
 if db.projects.count_documents({}) == 0:
   db.projects.insert_many(seed)
@@ -108,8 +109,8 @@ if db.projects.count_documents({}) == 0:
 
 elif [ $1 = "reinit" -o $1 = "reseed" ]; then
   shift
-  docker compose -f docker-compose.yml -f dev.yml exec api python3.10 -c """
-from seed import seed
+  docker compose -f docker-compose.yml -f dev.yml exec api python -c """
+from alfred.seed import seed
 from alfred.core.utils import get_sync_db
 db = get_sync_db()
 db.Project.drop()
@@ -137,12 +138,12 @@ elif [ $1 = "dump" ]; then
   DATE=`date "+%Y-%m-%d-%H%M%S"`
   FILENAME=alfred_db_$DATE.gz
   docker compose exec db sh -c "mongodump --db alfred --gzip --archive=$FILENAME"
-  docker container cp alfred_db_1:$FILENAME $FILENAME
+  docker container cp alfred-db-1:$FILENAME $FILENAME
 
 elif [ $1 = "restore" ]; then
   shift
-  docker container cp $1 alfred_db_1:/$1
-  docker compose exec db sh -c "mongorestore --gzip --db alfred --archive=/$1 --drop"
+  docker container cp $1 alfred-db-1:/$1
+  docker compose exec db sh -c "mongorestore --gzip --archive=/$1 --drop"
 
 elif [ $1 = "reload" ]; then
   shift

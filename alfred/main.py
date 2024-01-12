@@ -1,33 +1,34 @@
-from fastapi import FastAPI, Depends
-from fastapi.middleware.gzip import GZipMiddleware
-from starlette.staticfiles import StaticFiles
-from beanie import init_beanie
-
 from subprocess import run as bash
 
-from alfred.core.routes import authAPI
-from alfred.core.routes import videoAPI
-from alfred.core.routes import issueAPI
-from alfred.core.routes import adminAPI
-from alfred.core.routes import fontAPI
-from alfred.core.routes import ProjectAPI
-from alfred.core.routes import RenderAPI
-from alfred.core.routes import previewAPI
+from beanie import init_beanie
+from fastapi import Depends, FastAPI
+from fastapi.middleware.gzip import GZipMiddleware
+from starlette.staticfiles import StaticFiles
 
-# from otto.main import app as ottoApi
-from alfred.core.utils import get_db
+from alfred import docs
+from alfred.config import DATA_DIR, STATIC_DIR
+from alfred.core.models.users import UserRead, UserUpdate
+from alfred.core.routes import (
+    ProjectAPI,
+    RenderAPI,
+    adminAPI,
+    authAPI,
+    fontAPI,
+    issueAPI,
+    previewAPI,
+    videoAPI,
+)
 
 # from alfred.core.utils.db import deOid
 from alfred.core.routes.users import (
-    fastapi_users,
-    current_active_user,
     current_active_superuser,
+    current_active_user,
+    fastapi_users,
 )
-from alfred.core.models.users import UserRead, UserUpdate
-from alfred.core.utils.db import User
-from alfred import docs
-from alfred.config import DATA_DIR, STATIC_DIR
 
+# from otto.main import app as ottoApi
+from alfred.core.utils import get_db
+from alfred.core.utils.db import User
 
 app = FastAPI(
     title=docs.title,
