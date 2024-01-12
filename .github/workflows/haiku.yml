@@ -7,6 +7,11 @@ jobs:
   detect_haiku:
     runs-on: ubuntu-latest
     steps:
+      - name: 🛒 Checkout action repository
+        uses: actions/checkout@v4
+        with:
+          repository: quaternionmedia/haiku
+          path: ./.github/actions/haiku
       - name: 👺 Check for haiku
         uses: quaternionmedia/haiku@main
         with:
