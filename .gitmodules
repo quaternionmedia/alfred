@@ -2,3 +2,7 @@
 	path = alfred/otto
 	url = git@github.com:quaternionmedia/otto.git
 	branch = master
+[submodule "governance/qm"]
+	path = governance/qm
+	url = git@github.com:quaternionmedia/qm.git
+	branch = project/alfred

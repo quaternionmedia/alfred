@@ -59,6 +59,13 @@ alfred.egg*
 *.jpg
 *.edl
 
+# The blanket *.json rule above also swallows the checked-in editor config
+# that governance discovery depends on. Negated explicitly rather than
+# narrowed, so media files stay ignored.
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
+
 .email
 .secret_key
 .s3
