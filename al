@@ -26,7 +26,7 @@ r | restart
 reseed
 restore
 s | sh
-t | test
+t | test | e2e
 v | version
 w | worker
 "
@@ -162,9 +162,9 @@ elif [ $1 = "docker" -o $1 = "dock" ]; then
   shift
   docker compose -f docker-compose.yml -f dev.yml "$@"
 
-elif [ $1 = "t" -o $1 = "test" -o $1 = "cy" ]; then
+elif [ $1 = "t" -o $1 = "test" -o $1 = "e2e" ]; then
   shift
-  docker compose -f test_cy.yml up --exit-code-from cy "$@"
+  docker compose -f test_e2e.yml up --exit-code-from e2e "$@"
 
 elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   shift

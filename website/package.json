@@ -12,8 +12,10 @@
   "scripts": {
     "build": "parcel build src/index.html",
     "dev": "parcel watch src/index.html --hmr-port=8001",
-    "cy:run": "npx cypress run",
-    "cy:open": "npx cypress open"
+    "e2e": "playwright test --project=chromium",
+    "e2e:ui": "playwright test --project=chromium --ui",
+    "e2e:perf": "playwright test --project=perf",
+    "e2e:report": "playwright show-report"
   },
   "dependencies": {
     "alertifyjs": "^1.13.1",
@@ -31,8 +33,8 @@
     "@babel/core": "^7.18.3",
     "@babel/plugin-proposal-decorators": "^7.18.10",
     "@parcel/transformer-sass": "2.8.3",
+    "@playwright/test": "^1.62.1",
     "cssnano": "^5.1.13",
-    "cypress": "^10.11.0",
     "parcel": "^2.8.3",
     "sass": "^1.58.0"
   },

@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.62.1-noble
+    depends_on:
+      - api
+      - db
+    volumes:
+      - ./website/:/e2e/
+    working_dir: /e2e/
+    environment:
+      # The api service listens on port 80 inside the compose network.
+      E2E_BASE_URL: http://api
+      CI: 'true'
+    # No cloud recording. The Cypress setup this replaces ran
+    # `cypress run --record`, which shipped every run to Cypress Cloud -- a
+    # hosted service in the test path, holding a key in CI secrets. Reports
+    # are written to website/playwright-report/ and uploaded by the workflow
+    # as an artifact instead.
+    command: sh -c "npm install --no-audit --no-fund && npx playwright test --project=chromium"
+
+  api:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: alfred_api
+    # The image's default command runs uvicorn with --reload. Combined with
+    # mounting the repo at /app, the reloader restarts the server whenever the
+    # test run writes playwright-report/ or test-results/ under website/,
+    # dropping in-flight connections and failing tests for no reason of their
+    # own. Reload is a development convenience and has no place in a test run.
+    command:
+      ['uvicorn', 'alfred.main:app', '--host', '0.0.0.0', '--port', '80']
+    depends_on:
+      - db
+    # Mount the repo root, matching docker-compose.yml. The Cypress compose
+    # file this replaces mounted ./alfred/ onto /app, which shadows the
+    # installed package root that `uvicorn alfred.main:app` resolves against.
+    volumes:
+      - ./:/app/
+      - ./website/dist/:/app/dist/
+    environment:
+      - CELERY_BROKER=mongodb://db:27017/celery
+      - CELERY_BACKEND=mongodb://db:27017/celery
+      - DB_URL=mongodb://db:27017
+      - DB_NAME=alfred
+      - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+
+  db:
+    image: mongo:bionic
