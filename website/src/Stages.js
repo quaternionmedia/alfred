@@ -59,8 +59,16 @@ export const Flow = {
     })
   },
 
-  load: () => {
+  generating: null,
+
+  load: opts => {
     if (!User.loggedIn) return
+    // `force` re-reads after generating something, so the panel that offered
+    // to create a demo shows it rather than still offering.
+    if (opts && opts.force) {
+      Flow.projects = []
+      Flow.videos = []
+    }
     auth('/project')
       .then(p => {
         Flow.projects = p
@@ -141,6 +149,43 @@ export const StageRail = () => ({
 
 const Empty = message => m('p.stageempty', message)
 
+/** An empty state that offers to fix itself.
+ *
+ * "No projects yet." and "No media on the server. `./al demo` downloads some."
+ * were the two previous messages. Both accurate, neither useful: the first is
+ * a dead end, and the second sends you to a shell to download four files over
+ * the network before the editor will show you anything.
+ *
+ * Both are generated locally now, with ffmpeg's own test sources, so a first
+ * run needs no downloads -- which also keeps a fresh install clear of the
+ * third-party fetches the adoption record flags.
+ */
+const Generate = (message, label, action, busyKey) =>
+  m('.stageempty', [
+    m('p', message),
+    m(
+      'button.generate',
+      {
+        disabled: Flow.generating === busyKey,
+        onclick: () => {
+          Flow.generating = busyKey
+          Flow.error = null
+          action()
+            .then(() => {
+              Flow.generating = null
+              Flow.load({ force: true })
+            })
+            .catch(() => {
+              Flow.generating = null
+              Flow.error = `Could not generate ${busyKey}`
+              m.redraw()
+            })
+        },
+      },
+      Flow.generating === busyKey ? 'Generating…' : label
+    ),
+  ])
+
 /** Stage 1 -- pick the project, see what material is available to it. */
 const SourcePanel = {
   view: () => {
@@ -172,14 +217,24 @@ const SourcePanel = {
               )
             )
           )
-        : Empty('No projects yet.'),
+        : Generate(
+            'No projects yet.',
+            'Generate a demo project',
+            () => auth('/demo/project', { method: 'POST' }),
+            'project'
+          ),
       m('h3', 'Material'),
       Flow.videos.length
         ? m(
             'ul.medialist',
             Flow.videos.map(v => m('li.mediaitem', typeof v === 'string' ? v : v.name))
           )
-        : Empty('No media on the server. `./al demo` downloads some.'),
+        : Generate(
+            'No media on the server.',
+            'Generate demo media',
+            () => auth('/demo/media', { method: 'POST' }),
+            'media'
+          ),
     ])
   },
 }

@@ -6,6 +6,8 @@ edit_uri: ''
 
 nav:
   - Home: index.md
+  - Cookbook: cookbook.md
+  - Retrospective (0.3.0): retrospective-0.3.0.md
   - Development:
       - dev-auth.md
   - About:

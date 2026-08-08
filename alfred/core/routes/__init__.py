@@ -7,6 +7,7 @@ from .project import ProjectAPI
 from .render import RenderAPI
 from .preview import previewAPI
 from .templates import templateAPI
+from .demo import demoAPI
 
 __all__ = [
     adminAPI,
@@ -18,4 +19,5 @@ __all__ = [
     RenderAPI,
     previewAPI,
     templateAPI,
+    demoAPI,
 ]

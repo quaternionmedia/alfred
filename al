@@ -11,6 +11,7 @@ USAGE:
 
 COMMANDS:
 b | build
+cookbook
 d | dev
 docker | dock
 flower
@@ -93,6 +94,13 @@ elif [ $1 = "i" -o $1 = "install" ]; then
     echo "installing dependencies"
     # make install
     docker compose -f docker-compose.yml run website yarn add "$@"
+
+elif [ $1 = "cookbook" ]; then
+  shift
+  # Regenerate docs/cookbook.md from the end-to-end specs. The tests are the
+  # source; the prose is a build artefact. tests/unit/test_cookbook.py fails if
+  # the committed file drifts from them.
+  node website/e2e/cookbook.js "$@"
 
 elif [ $1 = "flower" ]; then
   shift

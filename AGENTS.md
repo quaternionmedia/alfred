@@ -71,7 +71,7 @@ arguments prints the full command list.
 |---|---|
 | `./al dev` | Run the dev stack; app on http://localhost:8000 |
 | `./al dev --build` | Rebuild images first |
-| `./al demo` | Download demo media into `videos/` |
+| `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
 | `./al pytest` | Run the API test suite in Docker |
 | `./al nox -s lint` | Ruff |
 | `./al nox -s blacken` | Black (`-S`, single quotes) |
