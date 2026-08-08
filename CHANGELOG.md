@@ -176,12 +176,7 @@ and in `tests/README.md`. The largest: MongoDB is SSPL-licensed and fills
 three roles at once; object storage is reached through a vendor SDK rather
 than a protocol seam; the frontend loads a font and two images from third-party
 CDNs; and `renderMultitrack` ignores its own `fps` argument, so a caller asking
-for 60 silently gets 30. `title` returns `None` on every call -- "'tuple' object has
-no attribute 'lower'", with any font and either method -- so one of the six
-advertised templates cannot render; it is a defect in `otto`, which is a
-separate package outside this seam, and is pinned as a strict xfail. Parcel's
-watcher does not see edits through a Docker bind mount from a non-Linux host,
-so the website container must be restarted after frontend changes; the polling
-backend aborts on startup. And the API image installs from the loose ranges in
-`pyproject.toml` rather than `pdm.lock`, so the app runs different versions of
-beanie, fastapi and motor than the test suite does.
+for 60 silently gets 30. And `final` is
+advertised by no allowlist: it requires `address`, `website` and `phone`, and
+`TemplateData` -- the only shape a clip's `data` can take -- models none of
+them, so it cannot be driven through this API at all.

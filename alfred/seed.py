@@ -520,14 +520,9 @@ seed = [
         "fields": [],
         "edl": {
             "clips": [
-                # textBox, not title. `title` raises inside otto on every
-                # call -- "'tuple' object has no attribute 'lower'", with any
-                # font and either method -- so a demo project opening with it
-                # would be a demo that cannot render. Pinned as a strict xfail
-                # in tests/unit/test_template_rendering.py.
                 {
                     "type": "template",
-                    "name": "textBox",
+                    "name": "title",
                     "duration": 3.0,
                     "start": 0.0,
                     "data": {"text": "Alfred", "color": "#101820"},

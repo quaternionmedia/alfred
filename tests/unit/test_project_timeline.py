@@ -72,25 +72,23 @@ class TestTheSeedExercisesTheTimeline:
         types = {c['type'] for c in demo['edl']['clips']}
         assert types == {'template'}, f'demo timeline uses non-template clips: {types}'
 
-    def test_the_seeded_timeline_only_uses_templates_that_render(self):
-        """Specifically: not `title`, which raises inside otto on every call.
+    def test_the_seeded_timeline_only_uses_allowlisted_templates(self):
+        """A demo whose clips the preview endpoint would refuse is no demo.
 
-        A demo project whose first clip cannot render is a worse demo than no
-        demo at all -- it looks like the editor is broken.
+        This previously also asserted the demo avoided `title`, which returned
+        None on every call. That defect is fixed in otto, so the demo opens
+        with `title` again -- whether each name renders is now
+        test_template_rendering.py's job, and this only has to keep the demo
+        inside what the API will serve.
         """
         from alfred.core.routes.templates import TEMPLATE_NAMES
 
         demo = next(p for p in seed if p.get('name') == DEMO)
-        names = [c['name'] for c in demo['edl']['clips']]
-        for name in names:
-            assert name in TEMPLATE_NAMES, (
-                f'{name} is not on the template allowlist, so the preview '
-                'endpoint would refuse it'
+        for clip in demo['edl']['clips']:
+            assert clip['name'] in TEMPLATE_NAMES, (
+                f'{clip["name"]} is not on the template allowlist, so the '
+                'preview endpoint would refuse it'
             )
-        assert 'title' not in names, (
-            'the demo timeline uses `title`, which returns None on every call '
-            '-- see the xfail in test_template_rendering.py'
-        )
 
     def test_the_original_projects_still_have_no_timeline(self):
         """The form-driven projects are unchanged.

@@ -42,23 +42,30 @@ class TestTheContractWithoutRendering:
         result = _renders('title', text='anything')
         assert result is None or hasattr(result, 'size')
 
-    def test_final_requires_the_parameters_it_declares(self):
-        """`final` is not broken -- it needs address, website and phone.
+    def test_final_is_not_advertised_because_it_cannot_be_driven(self):
+        """The template that needs parameters a clip cannot carry.
 
-        Called without them it raises KeyError internally and returns None,
-        which looks identical to the `title` defect below. The difference
-        matters: this one is fixed by the caller, that one cannot be.
-        /templates advertises all three, so a caller has what it needs.
+        `final` raises KeyError without address, website and phone, and
+        TemplateData -- the only shape a clip's `data` can take -- models none
+        of them. Pydantic drops unknown keys silently, so no caller can supply
+        them through an EDL or the preview endpoint. Advertising it would mean
+        every attempt failing as "A clip did not get made properly", which
+        reads as a bug in the caller's data rather than a gap in the model.
         """
-        for parameter in ('address', 'website', 'phone'):
-            assert parameter in TEMPLATE_NAMES or True  # documented below
-        from alfred.core.routes.templates import available_templates
+        from otto.models import TemplateData
 
-        final = next(t for t in available_templates() if t.name == 'final')
+        from alfred.core.routes.templates import UNDRIVABLE_TEMPLATES
+
+        assert 'final' in UNDRIVABLE_TEMPLATES
+        assert 'final' not in TEMPLATE_NAMES
+
+        carried = TemplateData(
+            text='x', address='1 Main', website='a.test', phone='555'
+        ).dict(exclude_none=True)
         for parameter in ('address', 'website', 'phone'):
-            assert parameter in final.parameters, (
-                f'/templates must advertise {parameter}, or a caller cannot '
-                'know to supply it and `final` will silently render nothing'
+            assert parameter not in carried, (
+                f'TemplateData now carries {parameter}, so `final` may be '
+                'drivable -- re-check whether it belongs on the allowlist'
             )
 
 
@@ -71,49 +78,32 @@ class TestWhatActuallyRenders:
     def test_makecolor_renders(self):
         assert _renders('makeColor', color='#f2aa4c') is not None
 
-    def test_final_renders_when_given_its_parameters(self):
-        clip = _renders(
-            'final',
-            text='Alfred',
-            address='1 Main St',
-            website='alfred.test',
-            phone='555',
-        )
-        assert clip is not None
-
-    @pytest.mark.xfail(
-        reason=(
-            "otto's `title` raises internally and returns None on every call: "
-            "\"'tuple' object has no attribute 'lower'\". Reproduced with and "
-            'without an explicit color, with font=DejaVu-Sans and font=Courier, '
-            'and with method=label and method=caption -- so it is neither a '
-            'font nor a configuration problem. It is a defect in otto, which '
-            'is a separate package and outside this seam, so it is pinned here '
-            'rather than patched. The seeded demo project uses textBox for the '
-            'same reason.'
-        ),
-    )
     def test_title_renders(self):
+        """Was a strict xfail: `title` returned None on every call.
+
+        makeColor accepted only a '#rrggbb' string and passed it to PIL's
+        getcolor, which calls .lower() on it -- while `title` passed the tuple
+        (0, 0, 0) with no background colour and rgbToDec's list of 0-1 floats
+        with one. Both branches raised, so there was no argument for which
+        `title` worked. otto swallowed the traceback in its own `except` and
+        returned None, and generateEdl reported that one frame later as "A clip
+        did not get made properly".
+
+        Fixed in otto by normalising the colour in makeColor rather than
+        patching the one caller that was noticed.
+        """
         assert _renders('title', text='Alfred') is not None
 
-    def test_every_advertised_template_except_title_renders(self):
+    def test_every_advertised_template_renders(self):
         """The bin should not offer what cannot be drawn.
 
         Kept separate from the parametrized cases so that a newly added
-        template is covered without anyone remembering to list it.
+        template is covered without anyone remembering to list it. `title` used
+        to be excepted here; it no longer is, which is the whole point.
         """
-        needs_parameters = {
-            'final': dict(
-                text='Alfred', address='1 Main St', website='a.test', phone='555'
-            ),
-        }
         broken = []
         for name in TEMPLATE_NAMES:
-            if name == 'title':
-                continue
-            kwargs = needs_parameters.get(name, {})
-            if not kwargs:
-                kwargs = {'color': '#f2aa4c'} if name == 'makeColor' else {'text': 'x'}
+            kwargs = {'color': '#f2aa4c'} if name == 'makeColor' else {'text': 'x'}
             if _renders(name, **kwargs) is None:
                 broken.append(name)
         assert not broken, (

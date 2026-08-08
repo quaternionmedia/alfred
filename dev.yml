@@ -3,25 +3,22 @@ services:
   website:
     ports:
       - 8001:8001
-    # NOTE: hot reload does not work when the host is not Linux.
+    # `yarn run dev` polls rather than watching; see website/dev-watch.js.
     #
     # @parcel/watcher subscribes to inotify, and inotify events do not cross a
     # Docker Desktop bind mount from a Windows or macOS host. The container
     # sees the edited file -- content and mtime both update -- but is never
-    # told it changed, so `parcel watch` sits idle and dist/ goes stale
-    # silently. Verified by editing src/ and watching dist/ stay untouched for
-    # 30 seconds.
+    # told it changed, so `parcel watch` sat idle and dist/ went stale
+    # silently. Every frontend edit needed a container restart.
     #
-    # Neither available remedy works. PARCEL_WATCHER_BACKEND is the obvious
-    # env var and parcel never reads it; the equivalent CLI flag,
-    # `--watch-backend brute-force`, is the polling backend and it aborts on
-    # startup (SIGABRT, "terminate called after throwing an instance of
-    # 'char const*'"). watchman is not installed in this image.
+    # Parcel's own polling backend is not an option: `--watch-backend
+    # brute-force` aborts on startup (SIGABRT), and watchman is not installed.
+    # PARCEL_WATCHER_BACKEND looks like the obvious env var and parcel never
+    # reads it.
     #
-    # So: after editing anything under website/src, run
-    #   docker compose -f docker-compose.yml -f dev.yml restart website
-    # The API's --reload is unaffected; that watches through a different path
-    # and does pick up changes.
+    # The trade is that there is no HMR -- dist/ is current within a second,
+    # but the browser will not refresh itself. `yarn run dev:hmr` restores the
+    # original behaviour on a Linux host, where the events do arrive.
     command: yarn run dev
 
   # TODO API description

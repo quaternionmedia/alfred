@@ -34,9 +34,23 @@ TEMPLATE_NAMES = (
     'textBox',
     'bullets',
     'initial',
-    'final',
     'makeColor',
 )
+
+# `final` is deliberately absent, and it is the interesting case.
+#
+# It requires `address`, `website` and `phone` -- it raises KeyError without
+# them -- and `TemplateData`, the only thing a clip's `data` can be, models
+# none of the three. Pydantic drops unknown keys silently, so those values
+# cannot reach the template through an EDL or through the preview endpoint no
+# matter what a caller sends. It is structurally undrivable through this API.
+#
+# otto's own docstring marks it DEPRICATED, so the fix is to stop advertising
+# it rather than to widen TemplateData for a template that is on the way out.
+# Advertising a template that cannot be driven is worse than omitting one:
+# every attempt fails as "A clip did not get made properly", which reads as a
+# bug in the caller's data.
+UNDRIVABLE_TEMPLATES = ('final',)
 
 # Parameters every template takes from the engine rather than from the caller.
 # Excluded from the advertised parameter list so the bin does not offer a field

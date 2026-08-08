@@ -5,12 +5,12 @@ Dockerfiles, because that is where the failures actually were: for most of this
 project's recent history the stack did not start, and not one of those failures
 was a bug in the application code.
 
-Deliberately no YAML parser. The repository locks only `default` and `render`,
-so adding PyYAML for a handful of assertions means re-resolving the whole
-lockfile to read five lines. These read the files as text and look for specific,
-distinctive lines. That is narrower than parsing -- reordering a compose file
-freely could fool them -- and it is the right trade here: the point is to fail
-when someone deletes a line that has already cost a day, not to model YAML.
+Deliberately no YAML parser. These read the files as text and look for
+specific, distinctive lines, which is narrower than parsing -- reordering a
+compose file freely could fool them -- and it is the right trade here: the
+point is to fail when someone deletes a line that has already cost a day, not
+to model YAML. Comments are stripped first, because otherwise the prose
+explaining a line satisfies the assertion about it.
 
 `test_the_website_container_resolves_its_parcel_binding` is the one that would
 actually have caught the bug these were written for. It needs Docker.
@@ -260,6 +260,29 @@ class TestDependencyPinning:
         assert not mismatched, (
             f'requirements.lock pins versions absent from pdm.lock: '
             f'{mismatched[:5]}. Regenerate it -- see the header of the file.'
+        )
+
+    def test_the_installed_otto_is_the_vendored_one(self):
+        """Tests must import the same engine the application runs.
+
+        The image installs `alfred/otto` editable; a developer environment
+        that installed the published al-otto instead would import a different
+        copy of the same package. That is not hypothetical -- it was the state
+        of this checkout, so a fix made in the submodule was invisible to the
+        local suite while the container had it. Every otto assertion in this
+        repository was evidence about the wrong code.
+
+        Fix with: pip install -e alfred/otto --no-deps
+        """
+        import otto
+
+        installed = Path(otto.__file__).resolve()
+        vendored = (REPO / 'alfred' / 'otto' / 'otto').resolve()
+        assert vendored in installed.parents or installed.parent == vendored, (
+            f'otto is imported from {installed.parent}, not the vendored '
+            f'submodule at {vendored}. The suite is testing a different copy '
+            'of the engine than the image runs. '
+            'Fix with: pip install -e alfred/otto --no-deps'
         )
 
     def test_al_otto_is_not_pinned_in_the_export(self):
