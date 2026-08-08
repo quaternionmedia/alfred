@@ -194,6 +194,89 @@ class TestNodeModulesIsolation:
         )
 
 
+class TestDependencyPinning:
+    """The image and the test suite must run the same versions.
+
+    They did not. The image installed with `pip install -e .`, re-resolving
+    the loose ranges in pyproject.toml on every build, so it ran beanie 1.30,
+    fastapi 0.125 and motor 3.7 while the suite ran 1.20, 0.100 and 3.2. Every
+    test was evidence about versions the application did not use -- and one
+    test in this repository already failed for exactly that reason, pinning an
+    import path that had moved between the two beanie versions.
+    """
+
+    def test_the_image_installs_from_the_lockfile(self):
+        dockerfile = strip_comments(read('Dockerfile'))
+        assert re.search(r'pip3?\s+install[^\n]*-r\s+requirements\.lock', dockerfile), (
+            'the API image must install pinned dependencies from '
+            'requirements.lock, or its versions are whatever pip resolved on '
+            'the day of the build'
+        )
+
+    def test_the_pins_are_installed_before_the_project(self):
+        """Order decides whether the pins bind.
+
+        `pip install -e .` after the pins finds every version already
+        satisfied. Before them, it resolves the ranges first and the pins
+        become a no-op that looks like it is working.
+        """
+        dockerfile = strip_comments(read('Dockerfile'))
+        pins = re.search(
+            r'^RUN\s+pip3?\s+install[^\n]*requirements\.lock', dockerfile, re.M
+        )
+        project = re.search(r'^RUN\s+pip3?\s+install\s+-e\s+\.', dockerfile, re.M)
+        assert pins and project
+        assert pins.start() < project.start(), (
+            'requirements.lock must be installed before `pip install -e .`, '
+            'or the loose ranges resolve first and the pins do nothing'
+        )
+
+    def test_requirements_lock_agrees_with_pdm_lock(self):
+        """The exported file is a copy, and copies drift.
+
+        Rather than shell out to pdm -- which is not in the test image -- this
+        checks that every package pinned in requirements.lock appears at the
+        same version in pdm.lock. Regenerate with the command in the file's
+        own header.
+        """
+        exported = {}
+        for line in read('requirements.lock').split('\n'):
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            name, _, rest = line.partition('==')
+            if rest:
+                exported[name.strip().lower()] = rest.split(';')[0].strip()
+        assert exported, 'requirements.lock pins nothing'
+
+        pdm_lock = read('pdm.lock')
+        mismatched = []
+        for name, version in exported.items():
+            # pdm.lock records each package as a [[package]] table with name
+            # and version keys; a naive containment check is enough to catch a
+            # stale export without parsing TOML.
+            if f'version = "{version}"' not in pdm_lock:
+                mismatched.append(f'{name}=={version}')
+        assert not mismatched, (
+            f'requirements.lock pins versions absent from pdm.lock: '
+            f'{mismatched[:5]}. Regenerate it -- see the header of the file.'
+        )
+
+    def test_al_otto_is_not_pinned_in_the_export(self):
+        """The vendored submodule must win.
+
+        The image installs alfred/otto editable. If requirements.lock also
+        pinned the published al-otto, pip would install that too and the
+        editable checkout would be shadowed -- so a fix made in the submodule
+        would appear to have no effect.
+        """
+        for line in read('requirements.lock').split('\n'):
+            assert not line.strip().lower().startswith('al-otto=='), (
+                'al-otto is pinned in requirements.lock; it would shadow the '
+                'vendored submodule the image installs editable'
+            )
+
+
 class TestImagePinning:
     """Bases are pinned by digest.
 

@@ -7,8 +7,23 @@ FROM python:3.11@sha256:d0199e2a90bf7a206a485b115323a75bc946f30b463d704c5435a454
 WORKDIR /app
 RUN mkdir -p data
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md requirements.lock ./
 COPY alfred alfred
+
+# Pinned dependencies first, from the lockfile.
+#
+# This was `pip install -e .`, which re-resolves the loose ranges in
+# pyproject.toml on every build -- so the image ran beanie 1.30, fastapi 0.125
+# and motor 3.7 while the test suite ran 1.20, 0.100 and 3.2. The tests were
+# not testing the versions the application used, and two builds a month apart
+# were not the same application.
+#
+# Installing the pins before the project means pip already has every version
+# resolved when `pip install -e .` runs, so the ranges cannot pull anything
+# newer. `--no-deps` on the project install would be stricter still, but it
+# would also silently skip a dependency added to pyproject.toml and not yet
+# locked; letting pip check is the better failure.
+RUN pip3 install --no-cache-dir -r requirements.lock
 
 RUN BEZIER_NO_EXTENSION=true pip3 install -e alfred/otto[render]
 RUN pip3 install -e . uvicorn
