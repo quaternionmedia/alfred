@@ -117,11 +117,26 @@ file never having worked.
 |---|---|---|
 | Login, logout, bad password | `login.spec.js` | UI |
 | Token issue, `/users/me`, 401s | `auth.spec.js` | API |
-| Project list authorized + anonymous | `auth.spec.js`, `projects.spec.js` | API + UI |
+| Project list, table columns, row-per-project | `projects.spec.js` | UI + API |
+| Project row actions route to editor and form | `projects.spec.js` | UI |
 | Render list authorized + anonymous | `renders.spec.js` | API + UI |
+| Renders, documents and home views render | `views.spec.js` | UI |
+| No uncaught page errors across the main views | `views.spec.js` | UI |
+| Unknown route leaves the shell intact | `views.spec.js` | UI |
+| A reload ends the session | `views.spec.js` | UI |
 | Routing, history, menu | `navigation.spec.js` | UI |
 | Editor toolbar presence | `otto.spec.js` | UI |
 | Page-load budget | `performance.spec.js` | UI, `@perf` |
+
+The project assertions read the expected set from `GET /project` rather than
+hardcoding names, so they survive a different seed. The app seeds three demo
+projects into an empty database at startup, so a fresh stack has content to
+assert against — that seeding was broken until the DB cleanup, which is why
+these tests are possible now and were not before.
+
+The uncaught-page-error check is worth more than it looks: a mithril view that
+raises during render leaves the page half-drawn without failing any request,
+so no other test in this suite would notice.
 
 ## What is not covered
 
