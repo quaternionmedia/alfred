@@ -21,6 +21,10 @@ class Render(Document):
     link: Optional[str]
     username: Optional[str]
     filename: Optional[str]
+    # Where this render was sent, once it has been. `link` records the
+    # resulting URL or path; this records which transport produced it, so a
+    # link can be interpreted without guessing from its shape.
+    destination: Optional[str]
 
     # class Config:
     #     title = 'Alfred Render'
@@ -38,3 +42,4 @@ class RenderUpdate(Render):
     progress: Optional[float]
     link: Optional[str]
     filename: Optional[str]
+    destination: Optional[str]

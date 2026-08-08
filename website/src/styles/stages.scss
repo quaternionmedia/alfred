@@ -1,0 +1,171 @@
+// The four-stage rail and its panels.
+//
+// Deliberately plain: this sits above a video timeline, and anything with
+// strong colour of its own competes with the thing being edited. Sizes are in
+// rem so the rail scales with the page rather than pinning to one viewport.
+
+.stagerail {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.4rem 0.75rem;
+  background: #1b1b1b;
+  border-bottom: 1px solid #2e2e2e;
+  overflow-x: auto;
+
+  .stage {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 0.9rem;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: #9a9a9a;
+    font: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+
+    &:hover {
+      color: #e6e6e6;
+      border-color: #3a3a3a;
+    }
+
+    // The active stage is the only thing here with a fill, so the current
+    // position in the flow reads at a glance without a legend.
+    &.active {
+      color: #101820;
+      background: #f2aa4c;
+      border-color: #f2aa4c;
+    }
+
+    .stagenum {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.25rem;
+      height: 1.25rem;
+      border-radius: 50%;
+      border: 1px solid currentColor;
+      font-size: 0.75rem;
+    }
+  }
+}
+
+.stagepanel {
+  padding: 0.75rem 1rem;
+  background: #161616;
+  border-bottom: 1px solid #2e2e2e;
+  color: #d8d8d8;
+
+  h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8f8f8f;
+  }
+
+  label {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-right: 1rem;
+    font-size: 0.85rem;
+  }
+
+  input,
+  select {
+    padding: 0.3rem 0.4rem;
+    background: #101010;
+    color: inherit;
+    border: 1px solid #3a3a3a;
+    border-radius: 3px;
+  }
+
+  button {
+    padding: 0.35rem 0.8rem;
+    border: 1px solid #3a3a3a;
+    border-radius: 3px;
+    background: #222;
+    color: #e6e6e6;
+    font: inherit;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      border-color: #f2aa4c;
+    }
+
+    // A disabled action still has to look like an action, or people assume
+    // the page is broken rather than that a step is missing.
+    &:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    &.primary {
+      background: #f2aa4c;
+      border-color: #f2aa4c;
+      color: #101820;
+    }
+  }
+}
+
+.projectpicker,
+.medialist,
+.renderlist {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.projectchoice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+
+  .projectname {
+    font-weight: 600;
+  }
+
+  .projectclips {
+    font-size: 0.75rem;
+    color: #8f8f8f;
+  }
+
+  &.active {
+    border-color: #f2aa4c;
+  }
+}
+
+.mediaitem,
+.renderitem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #2e2e2e;
+  border-radius: 3px;
+  font-size: 0.85rem;
+}
+
+.delivered {
+  color: #7bbf7b;
+  font-size: 0.8rem;
+}
+
+.stageempty {
+  margin: 0 0 0.75rem;
+  color: #8f8f8f;
+  font-size: 0.85rem;
+}
+
+.stageerror {
+  margin: 0.5rem 0 0;
+  color: #d98a8a;
+  font-size: 0.85rem;
+}

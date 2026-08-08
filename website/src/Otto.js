@@ -14,11 +14,18 @@ import { Timecode } from './Timecode'
 
 import TimelineTools from './TimelineTools'
 import { Scale } from './Scale'
+import { StageRail, StagePanel, Flow } from './Stages'
 
 export var Otto = {
   view: (vnode) => {
+    // The stage rail sits directly under the menu, so the whole flow --
+    // source, edit, render, deliver -- is legible without leaving the page.
+    // The timeline stays mounted underneath whichever stage is showing: it is
+    // the thing being worked on, not one of four interchangeable screens.
     return [
       m(Menu),
+      m(StageRail),
+      m(StagePanel),
       m(Head, [
         m(Preview)
       ]),

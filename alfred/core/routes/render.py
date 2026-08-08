@@ -1,11 +1,14 @@
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from typing import Optional
+from os.path import join
 from .users import current_active_user, current_active_superuser
 from ..models import UserRead as User
 from ..models.render import Render, RenderUpdate
 from otto.getdata import timestr
 from ..utils.tasks import renderRemote
-from ..utils.bucket import generate_signed_url
+from ..utils.bucket import generate_signed_url, INVALID_ID, NOT_FOUND
+from ..utils.destinations import DeliveryError, get_destination
+from alfred.config import DATA_DIR
 from fastapi_crudrouter import MotorCRUDRouter
 from alfred.config import DB_URL, DB_NAME
 from ..utils.db import get_client
@@ -76,6 +79,48 @@ class RenderAPI(MotorCRUDRouter):
                 bitrate=render.bitrate,
                 ffmpeg_params=render.ffmpeg_params,
             )
+
+        @self.post('/{item_id}/deliver', *args, **kwargs)
+        async def deliverRender(
+            item_id: str,
+            destination: Optional[str] = None,
+            user: User = Depends(current_active_user),
+        ):
+            """# Deliver a render
+
+            Sends a finished render to a destination and records where it went.
+
+            The destination defaults to the project's saved one, then to
+            `local` -- so a server with no cloud account still has somewhere to
+            put a render, which the previous single path to a Google bucket did
+            not allow.
+            """
+            if not ObjectId.is_valid(item_id):
+                raise INVALID_ID
+            render = await self.schema.find_one({'_id': ObjectId(item_id)})
+            if render is None:
+                raise NOT_FOUND
+            if not render.filename:
+                raise HTTPException(
+                    status_code=409,
+                    detail='That render has no output file yet',
+                )
+
+            chosen = destination or render.destination
+            try:
+                delivery = get_destination(chosen).deliver(
+                    join(DATA_DIR, render.filename)
+                )
+            except DeliveryError as exc:
+                # 502, not 500: the render is fine and the request was valid.
+                # Something downstream would not take it, and that is worth
+                # retrying, which a 500 does not suggest.
+                raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+            render.destination = delivery.destination
+            render.link = delivery.location
+            await render.save()
+            return delivery
 
         @self.get('/{item_id}', *args, **kwargs)
         async def getSignedRenderLink(

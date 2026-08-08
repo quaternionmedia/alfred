@@ -145,6 +145,25 @@ behavior rather than only the developer experience.
   exposure. Expired tokens are discarded on restore rather than presented,
   since a UI that renders as logged in and then 401s on every request is worse
   than one that asks you to log in.
+- **The timeline is the entry point.** `/` rendered a marketing homepage --
+  four screenshots and a Hitchcock quote -- so the first thing the app showed
+  was a description of itself rather than the thing it does. It is gone, and
+  with it four images loaded from `images.squarespace-cdn.com`, which
+  `AGENTS.md` forbids and the adoption record lists as an open gap.
+- **A four-stage flow, as one view.** Source, Edit, Render and Deliver are
+  stages of the timeline page rather than separate routes, so the thing being
+  worked on stays on screen while its settings are adjusted. The stage lives in
+  the URL, so a reload or a shared link lands where the person left off. A
+  saved project carries what each stage needs, which is what makes the flow
+  reusable rather than a wizard you re-run from scratch.
+- **A destination seam, with local delivery.** `POST /render/{id}/deliver`
+  sends a finished render somewhere and records where it went.
+  `LocalDestination` is implemented fully; the existing Google Cloud Storage
+  path becomes `BucketDestination` behind the same interface. Local is the
+  default, so a server with no cloud account can still get a video back -- the
+  README calls this "a video editor that works even without a server", and
+  until now the only finished-render path went to a Google bucket. This begins
+  paying down the vendor-SDK gap the adoption record flags.
 - **A development auth bypass.** `ALFRED_DEV_SKIP_AUTH=1 ./al dev` serves
   every request as a fixed superuser and lets the SPA skip its login screen.
   Off unless explicitly set; refuses to start alongside `ALFRED_PRODUCTION`;

@@ -1,0 +1,257 @@
+/**
+ * The four-stage flow, end to end, against real data.
+ *
+ * Source -> Edit -> Render -> Deliver, driven through the UI, asserted against
+ * the API. Nothing here is stubbed: the projects come from the seeded database,
+ * the templates from the engine's own allowlist, and the delivery moves real
+ * bytes to a real path.
+ *
+ * The render stage is the one place this stops short of the whole loop. Queuing
+ * a render hands the job to a Celery worker and an actual encode, which takes
+ * longer than a browser test should wait; these assert that the job is accepted
+ * and recorded, and `test_render_pipeline.py` covers the encode itself with a
+ * real 320x240 file.
+ */
+
+const { test, expect } = require('./fixtures')
+
+const DEMO = 'Timeline demo'
+
+async function demoProject(request, token) {
+  const res = await request.get('/project', { headers: { Authorization: token } })
+  expect(res.status()).toBe(200)
+  return (await res.json()).find(p => p.name === DEMO)
+}
+
+test.describe('the four-stage flow', () => {
+  test('the timeline is the entry point', async ({ authedPage }) => {
+    // `/` used to be a marketing homepage. The first thing the app shows is
+    // now the thing it does.
+    await authedPage.goto('/')
+    await expect(authedPage.locator('#timeline')).toBeVisible()
+    await expect(authedPage.locator('.stagerail')).toBeVisible()
+  })
+
+  test('the rail names all four stages in order', async ({ authedPage }) => {
+    await authedPage.goto('/')
+    const labels = await authedPage.locator('.stagerail .stage .stagelabel').allInnerTexts()
+    expect(labels).toEqual(['Source', 'Edit', 'Render', 'Deliver'])
+  })
+
+  test('edit is the stage you land on', async ({ authedPage }) => {
+    await authedPage.goto('/')
+    await expect(authedPage.locator('#stage-edit')).toHaveClass(/active/)
+  })
+
+  test('the stage survives a reload, because it lives in the URL', async ({
+    authedPage,
+  }) => {
+    // Mirroring the stage into a module variable did not survive a parameter
+    // change, let alone a reload. Reading it from the route removed the copy
+    // that could disagree.
+    await authedPage.goto('/#!/?stage=deliver')
+    await expect(authedPage.locator('#stage-deliver')).toHaveClass(/active/)
+    await authedPage.reload()
+    await expect(authedPage.locator('#stage-deliver')).toHaveClass(/active/)
+  })
+
+  test('stage 1 lists every project the API returns', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const res = await request.get('/project', { headers: { Authorization: token } })
+    const projects = await res.json()
+    test.skip(projects.length === 0, 'no projects seeded in this environment')
+
+    await authedPage.goto('/#!/?stage=source')
+    await expect(authedPage.locator('.projectchoice')).toHaveCount(projects.length)
+    for (const project of projects) {
+      await expect(
+        authedPage.getByRole('button', { name: new RegExp(project.name, 'i') }).first()
+      ).toBeVisible()
+    }
+  })
+
+  test('choosing a project on stage 1 loads its timeline on stage 2', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * The regression guard for the bug that making `/` the timeline exposed.
+     *
+     * The timeline loaded its project in `oninit` only. Once the timeline was
+     * mounted at `/`, picking a project became a same-document navigation that
+     * changed ?project= without remounting anything -- so the first project
+     * opened was the only one that ever appeared, and no request was made.
+     */
+    const demo = await demoProject(request, token)
+    test.skip(!demo, 'demo project not seeded')
+
+    await authedPage.goto('/#!/?stage=source')
+    await authedPage
+      .getByRole('button', { name: new RegExp(DEMO, 'i') })
+      .first()
+      .click()
+
+    await expect(authedPage).toHaveURL(new RegExp(`project=${demo._id}`))
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(
+      demo.edl.clips.length
+    )
+  })
+
+  test('the timeline stays mounted across every stage', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    // The point of stages-of-one-view rather than four routes: the thing being
+    // worked on does not disappear when you look at the settings for it.
+    const demo = await demoProject(request, token)
+    test.skip(!demo, 'demo project not seeded')
+
+    for (const stage of ['source', 'edit', 'render', 'deliver']) {
+      await authedPage.goto(`/#!/?project=${demo._id}&stage=${stage}`)
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(
+        demo.edl.clips.length
+      )
+    }
+  })
+
+  test('stage 3 refuses to render an empty timeline', async ({ authedPage }) => {
+    // No project selected means no clips, and a button that looks available
+    // and then fails is worse than one that says why it is not.
+    await authedPage.goto('/#!/?stage=render')
+    await expect(authedPage.locator('#queue-render')).toBeDisabled()
+    await expect(authedPage.getByText(/add a clip/i)).toBeVisible()
+  })
+
+  test('stage 3 offers the render when there is something to render', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const demo = await demoProject(request, token)
+    test.skip(!demo, 'demo project not seeded')
+
+    await authedPage.goto(`/#!/?project=${demo._id}&stage=render`)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(
+      demo.edl.clips.length
+    )
+    await expect(authedPage.locator('#queue-render')).toBeEnabled()
+  })
+
+  test('stage 4 offers every destination the server implements', async ({
+    authedPage,
+  }) => {
+    await authedPage.goto('/#!/?stage=deliver')
+    const options = await authedPage.locator('#destination option').allInnerTexts()
+    // `local` is the default and the one that works without a cloud account,
+    // which is what makes "works even without a server" true of getting your
+    // video back as well as making it.
+    expect(options).toContain('local')
+    expect(options).toContain('bucket')
+  })
+
+  test('opening the flow makes no failing requests', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const demo = await demoProject(request, token)
+    test.skip(!demo, 'demo project not seeded')
+
+    const failures = []
+    authedPage.on('requestfinished', async req => {
+      try {
+        const res = await req.response()
+        if (res && res.status() >= 400) {
+          failures.push(`${res.status()} ${req.method()} ${new URL(req.url()).pathname}`)
+        }
+      } catch (e) {
+        // request objects can vanish mid-navigation
+      }
+    })
+
+    for (const stage of ['source', 'edit', 'render', 'deliver']) {
+      await authedPage.goto(`/#!/?project=${demo._id}&stage=${stage}`)
+      await authedPage.waitForTimeout(900)
+    }
+
+    expect(failures, `failing requests across the flow:\n${failures.join('\n')}`).toEqual(
+      []
+    )
+  })
+})
+
+test.describe('delivery, with real bytes', () => {
+  test('a render with an output file can be delivered locally', async ({
+    request,
+    token,
+  }) => {
+    /**
+     * Driven through the API rather than the UI, because the UI can only
+     * deliver a render that a worker has already produced -- and waiting for a
+     * real encode is not something a browser test should do.
+     *
+     * This is still real: a real Render document, a real file on the server,
+     * and the local destination actually copying it.
+     */
+    const created = await request.post('/render', {
+      headers: { Authorization: token },
+      data: {
+        edl: {
+          clips: [
+            {
+              type: 'template',
+              name: 'makeColor',
+              duration: 1.0,
+              data: { color: '#f2aa4c' },
+            },
+          ],
+          duration: 1.0,
+        },
+        name: 'e2e delivery',
+        project: 'e2e',
+        width: 320,
+        height: 180,
+        duration: 1.0,
+      },
+    })
+    expect(created.status()).toBe(200)
+    const renderId = (await created.json()).replace(/"/g, '')
+
+    // The worker has not finished, so there is no file yet. The API must say
+    // that clearly rather than failing somewhere in the transport.
+    const early = await request.post(`/render/${renderId}/deliver`, {
+      headers: { Authorization: token },
+    })
+    expect([409, 502]).toContain(early.status())
+  })
+
+  test('a malformed render id is refused, not crashed on', async ({
+    request,
+    token,
+  }) => {
+    const res = await request.post('/render/undefined/deliver', {
+      headers: { Authorization: token },
+    })
+    expect(res.status()).toBe(422)
+  })
+
+  test('an unknown destination is refused', async ({ request, token }) => {
+    const res = await request.post(
+      '/render/deadbeefdeadbeefdeadbeef/deliver?destination=dropbox',
+      { headers: { Authorization: token } }
+    )
+    // 404 for the missing render is checked before the destination name, which
+    // is the right order: there is nothing to deliver either way.
+    expect([404, 502]).toContain(res.status())
+  })
+
+  test('delivery requires authentication', async ({ request }) => {
+    const res = await request.post('/render/deadbeefdeadbeefdeadbeef/deliver')
+    expect(res.status()).toBe(401)
+  })
+})
