@@ -74,6 +74,33 @@ export const Flow = {
     Flow.loadRenders()
   },
 
+  chosenDestination: () => {
+    const project = Flow.project()
+    return (project && project.destination) || 'local'
+  },
+
+  /** Save a stage's settings onto the project, so the flow is reusable.
+   *
+   * Silent on failure by design: a saved preference is a convenience, and
+   * losing it should not interrupt a render that already succeeded. An
+   * anonymous visitor has no project to save to and skips this entirely.
+   */
+  remember: patch => {
+    const id = m.route.param('project')
+    if (!id || !User.loggedIn) return
+    // `/settings`, not a PUT to the project itself. The crud router's update
+    // replaces the whole document, so a partial body writes null over every
+    // field it omits -- which is not theoretical: doing that here wiped a
+    // project's name and logic, and every subsequent GET of it answered 500,
+    // because writes are not validated and reads are.
+    auth(`/project/${id}/settings`, { method: 'PUT', body: patch })
+      .then(updated => {
+        Flow.projects = Flow.projects.map(p => (p._id === id ? updated : p))
+        m.redraw()
+      })
+      .catch(() => {})
+  },
+
   loadRenders: () =>
     auth('/render')
       .then(r => {
@@ -157,9 +184,23 @@ const RenderPanel = {
     const project = Flow.project()
     return m('.stagepanel#panel-render', [
       m('h3', 'Render'),
+      // Defaults come from the project when it has an opinion, so reopening
+      // one brings back the size it renders at rather than asking again.
       m('.renderfields', [
-        m('label', ['Width', m('input#render-width', { type: 'number', value: state.width() })]),
-        m('label', ['Height', m('input#render-height', { type: 'number', value: state.height() })]),
+        m('label', [
+          'Width',
+          m('input#render-width', {
+            type: 'number',
+            value: (project && project.render_settings && project.render_settings.width) || state.width(),
+          }),
+        ]),
+        m('label', [
+          'Height',
+          m('input#render-height', {
+            type: 'number',
+            value: (project && project.render_settings && project.render_settings.height) || state.height(),
+          }),
+        ]),
       ]),
       m(
         'button#queue-render.primary',
@@ -182,6 +223,15 @@ const RenderPanel = {
             })
               .then(() => {
                 Flow.busy = false
+                // Remember what this project renders at. This is the whole of
+                // "reusable pipeline": the settings live on the project, so
+                // picking it again is picking the pipeline.
+                Flow.remember({
+                  render_settings: {
+                    width: Number(document.getElementById('render-width').value),
+                    height: Number(document.getElementById('render-height').value),
+                  },
+                })
                 Flow.loadRenders()
                 Flow.go('deliver')
               })
@@ -212,7 +262,13 @@ const DeliverPanel = {
         'Destination',
         m(
           'select#destination',
-          Flow.destinations.map(d => m('option', { value: d }, d))
+          Flow.destinations.map(d =>
+            m(
+              'option',
+              { value: d, selected: d === Flow.chosenDestination() },
+              d
+            )
+          )
         ),
       ]),
       Flow.renders.length
@@ -233,7 +289,10 @@ const DeliverPanel = {
                             `/render/${r._id}/deliver?destination=${destination}`,
                             { method: 'POST' }
                           )
-                            .then(() => Flow.loadRenders())
+                            .then(() => {
+                              Flow.remember({ destination })
+                              Flow.loadRenders()
+                            })
                             .catch(() => {
                               Flow.error = 'Delivery failed'
                               m.redraw()

@@ -107,13 +107,33 @@ def test_get_sync_db_honours_both_parameters():
 # --- the public surface ---------------------------------------------------
 
 
-def test_star_import_works():
-    """`__all__` held function objects rather than names, so
-    `from alfred.core.utils import *` raised TypeError."""
+@pytest.mark.parametrize(
+    'package,expected',
+    [
+        (
+            'alfred.core.utils',
+            ('get_db', 'get_sync_db', 'get_client', 'renderer', 'sendMail'),
+        ),
+        (
+            'alfred.core.models',
+            ('Project', 'ProjectUpdate', 'RenderSettings', 'UserRead'),
+        ),
+    ],
+)
+def test_star_import_works(package, expected):
+    """`__all__` must hold names, not the objects themselves.
+
+    `from ... import *` raises TypeError when it holds objects. This covered
+    only `alfred.core.utils` at first, and the identical defect sat in
+    `alfred.core.models` untouched -- fixing one instance of a bug is not
+    evidence about the others, and a test written against one module is not
+    either. Both are checked now, and a new package with the same mistake will
+    at least have somewhere obvious to be added.
+    """
     namespace = {}
-    exec('from alfred.core.utils import *', namespace)  # noqa: S102
-    for name in ('get_db', 'get_sync_db', 'get_client', 'renderer', 'sendMail'):
-        assert name in namespace
+    exec(f'from {package} import *', namespace)  # noqa: S102
+    for name in expected:
+        assert name in namespace, f'{package} does not export {name}'
 
 
 def test_dead_helper_is_gone():

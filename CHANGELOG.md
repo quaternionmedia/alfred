@@ -50,6 +50,10 @@ behavior rather than only the developer experience.
   mount is now a subdirectory, so project fonts are additive, and the image
   installs `fonts-urw-base35` because moviepy defaults to `Courier`, which the
   base does not ship.
+- **`alfred.core.models.__all__` held classes rather than names**, so
+  `from alfred.core.models import *` raised TypeError. The identical defect
+  was fixed in `alfred.core.utils` earlier in this release; it was in two
+  modules and the test written for the first did not cover the second.
 - **The logo was broken on every page.** `import LOGO from './assets/...png'`
   yielded an object rather than a URL, so the img src was literally
   `[object Object]` and the browser requested `/[object%20Object]` -- eleven
@@ -150,6 +154,14 @@ behavior rather than only the developer experience.
   was a description of itself rather than the thing it does. It is gone, and
   with it four images loaded from `images.squarespace-cdn.com`, which
   `AGENTS.md` forbids and the adoption record lists as an open gap.
+- **`PUT /project/{id}/settings`.** A project remembers the size it renders at
+  and where its output goes, which is what makes the flow reusable rather than
+  a wizard re-run from scratch. A separate route from the project's own PUT:
+  the crud router's update replaces the whole document, so a partial body
+  writes null over every field it omits. That is not theoretical -- doing it
+  wiped a project's `name` and `logic`, and every subsequent `GET` of that
+  project answered 500, because writes are not validated and reads are. The
+  settings route names the two fields it may write and touches nothing else.
 - **A four-stage flow, as one view.** Source, Edit, Render and Deliver are
   stages of the timeline page rather than separate routes, so the thing being
   worked on stays on screen while its settings are adjusted. The stage lives in
