@@ -41,8 +41,12 @@ def test_requested_resolution_reaches_the_clip_graph(moviesize, recorded_encode)
 
     assert len(recorded_encode) == 1
     # The composite is built at the requested size, which is what the encoder
-    # then writes; the size is not passed to write_videofile separately.
-    assert recorded_encode[0]['filename'] == 'out.mp4'
+    # then writes; the size is not passed to write_videofile separately. This
+    # previously asserted only the filename -- identically in all four
+    # parametrized cases -- so it would have passed with renderMultitrack
+    # ignoring its own moviesize argument, which is exactly the defect
+    # test_requested_fps_reaches_the_encoder pins for fps.
+    assert recorded_encode[0]['size'] == moviesize
 
 
 # --- frame rate: the argument is dead -------------------------------------
@@ -148,6 +152,23 @@ def test_output_filename_is_passed_through_untouched(filename, recorded_encode):
     assert recorded_encode[0]['filename'] == filename
 
 
-def test_audio_is_not_set_when_no_audio_clip_is_present(recorded_encode):
+def test_audio_encoding_is_requested_even_with_no_audio_clip(recorded_encode):
+    """Audio parameters are sent unconditionally.
+
+    This was named `test_audio_is_not_set_when_no_audio_clip_is_present` and
+    asserted only that one encode happened -- which is true whatever the audio
+    settings are, so it could not have failed. Worse, the name was backwards:
+    the engine passes audio_codec, audio_fps and audio_bitrate on every call,
+    including this one, where the EDL is a single silent template clip.
+
+    Pinned as observed behavior rather than filed as a defect, because whether
+    a silent render should carry an AAC track is a product question. What is
+    not in question is that a test claiming the opposite should not pass.
+    """
     renderMultitrack(_edl(), filename='out.mp4')
+
     assert len(recorded_encode) == 1
+    call = recorded_encode[0]
+    assert call['audio_codec'] == 'aac'
+    assert call['audio_fps'] == 48000
+    assert call['audio_bitrate'] == '320k'

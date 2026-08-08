@@ -6,6 +6,13 @@ services:
       - db
     volumes:
       - ./website/:/e2e/
+      # Same reason as the website service in docker-compose.yml, mirrored.
+      # Without this, the `npm install` below writes Linux binaries and POSIX
+      # .bin symlinks straight into the host's website/node_modules through
+      # the bind mount -- so running `./al test` breaks the host `npx
+      # playwright` that website/e2e/README.md tells you to set up. The report
+      # directories still land on the host, which is the point of the mount.
+      - /e2e/node_modules
     working_dir: /e2e/
     environment:
       # The api service listens on port 80 inside the compose network.

@@ -100,9 +100,16 @@ test.describe('projects', () => {
     await expect(authedPage).toHaveURL(/#!\/form\?project=[0-9a-f]{24}/)
   })
 
-  test('an anonymous visitor gets no project rows', async ({ page }) => {
+  test('an anonymous visitor is sent to login, not to the project list', async ({
+    page,
+  }) => {
     await page.goto('/#!/projects')
+    // Assert the redirect, not the absence of rows. `toHaveCount(0)` passed
+    // trivially: the app bounces an unauthenticated visitor to #!/login, so
+    // the projects table is never on the page and a count of zero says
+    // nothing. It would have kept passing if the table were renamed, or if
+    // the redirect broke and the view rendered empty for a different reason.
+    await expect(page).toHaveURL(/#!\/login/)
     await expect(page.locator(SELECTORS.login)).toHaveText(/login/i)
-    await expect(page.locator('table.projTable tr')).toHaveCount(0)
   })
 })
