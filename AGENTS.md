@@ -96,6 +96,16 @@ Two things bite on a first run, neither obvious from the error:
   bash, so compose warns and substitutes blanks. Harmless on Docker Desktop;
   export both if the db container fails to start on a Linux host.
 
+- **`website/node_modules` is not shared with the container.** The image
+  installs its own, and an anonymous volume keeps the `./website:/app` bind
+  mount from covering them. This is load-bearing on any non-Linux host: parcel
+  needs a per-platform native binding, so a host install would otherwise hand
+  an Alpine container a Windows or macOS one. Install on the host freely --
+  you need to, for Playwright. One consequence: anonymous volumes survive an
+  ordinary `up`, so after changing a dependency run `./al init` (or
+  `docker compose up --renew-anon-volumes`) or the container keeps the
+  previous install.
+
 `./al dev` runs with `--reload`, so edits under `alfred/` restart the API. That
 also means a test run writing into the repo can restart the server mid-request
 — `test_e2e.yml` overrides the command to disable reload for exactly that

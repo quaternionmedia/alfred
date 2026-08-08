@@ -9,6 +9,16 @@ services:
     image: alfred_site
     volumes:
       - ./website/:/app/
+      # Keep the container's node_modules its own. The line above mounts the
+      # host's website/ over /app, which otherwise shadows the image's install
+      # with the host's -- and native bindings are per-platform, so a Windows
+      # or macOS host feeds an Alpine container bindings it cannot load. This
+      # anonymous volume masks that one path back out. src/ and dist/ stay
+      # shared, which is the point of the mount; the api serves dist/.
+      #
+      # Anonymous volumes persist across `up`, so after changing a dependency
+      # refresh it: `./al init`, or `docker compose up --renew-anon-volumes`.
+      - /app/node_modules
 
   # TODO API description
   api:

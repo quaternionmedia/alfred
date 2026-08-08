@@ -40,6 +40,18 @@ behavior rather than only the developer experience.
   ships ImageMagick 7. Both fixed; `setuptools` is an explicit dependency
   because three installed packages import `pkg_resources` at runtime without
   declaring it.
+- **The dev stack's website container took its dependencies from the host.**
+  `docker-compose.yml` mounts `./website` over `/app`, and the image shipped no
+  `node_modules` at all, so every dependency the container used came from
+  whatever the host had installed. parcel resolves a native binding per
+  platform: an Alpine container needs `@parcel/rust-linux-x64-musl`, and a
+  Windows or macOS host installs a binding for itself and nothing else. The
+  container exited 1 on startup with `Cannot find module
+  '@parcel/rust-linux-x64-musl'`. Following the documented setup -- a host
+  install, which the README asks for to get Playwright -- broke the documented
+  dev command. The image now installs its own dependencies with
+  `--frozen-lockfile`, and an anonymous volume keeps the host's out of the
+  container. Host installs are now harmless.
 - **The frontend bundle did not build.** `parcel` floated to 2.16.4 against
   `@parcel/transformer-sass` pinned at exactly 2.8.3, which parcel requires to
   match. `yarn.lock` is now committed so the two cannot drift apart again.

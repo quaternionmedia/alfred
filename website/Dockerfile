@@ -10,4 +10,19 @@ WORKDIR /app
 # upgrading it at build time reintroduced exactly the nondeterminism pinning
 # the base is meant to remove.
 
+# The image installs its own dependencies. It did not before -- it shipped no
+# node_modules at all, and every dependency reached the container through the
+# ./website:/app bind mount, i.e. from whatever the host happened to have.
+#
+# That is unsound the moment the host is not this container's platform. parcel
+# resolves a native binding per platform: an Alpine container needs
+# @parcel/rust-linux-x64-musl, and a Windows or macOS host installs a binding
+# for itself and nothing else. The container then died on startup with
+# "Cannot find module '@parcel/rust-linux-x64-musl'". Anyone who ran a host
+# install -- which the README asks for, to get Playwright -- broke `./al dev`.
+#
+# Copying only the manifests first keeps this layer cached across source edits.
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
 CMD ["yarn", "parcel", "build", "/app/src/index.html", "/app/src/*.svg", "/app/src/*.png"]

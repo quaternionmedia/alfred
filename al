@@ -13,6 +13,7 @@ COMMANDS:
 b | build
 d | dev
 docker | dock
+flower
 dump
 git
 i | install
@@ -78,7 +79,13 @@ elif [ $1 = "init" ]; then
   mkdir -p $(dirname $0)/alfred/data
   mkdir -p $(dirname $0)/alfred/site
   echo "installing dependencies"
-  docker compose run website yarn install
+  # Dependencies live in the image, not in the host's website/node_modules, so
+  # this builds rather than installing into the bind mount. --renew-anon-volumes
+  # is what actually picks up a dependency change: the anonymous volume holding
+  # /app/node_modules survives an ordinary `up`, so without it a rebuilt image
+  # still serves the previous install.
+  docker compose build website
+  docker compose up --no-start --renew-anon-volumes website
 
   # Installs the dependencies.
 elif [ $1 = "i" -o $1 = "install" ]; then
@@ -86,6 +93,12 @@ elif [ $1 = "i" -o $1 = "install" ]; then
     echo "installing dependencies"
     # make install
     docker compose -f docker-compose.yml run website yarn add "$@"
+
+elif [ $1 = "flower" ]; then
+  shift
+  # Celery monitoring on http://localhost:5555. Needs the dev stack up for the
+  # broker; flower.yml only brings up flower itself.
+  docker compose -f flower.yml up "$@"
 
 elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
   shift

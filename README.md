@@ -55,6 +55,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al nox -s blacken` | Black (`-S`) |
 | `./al docs` | Serve the docs locally on :4000 |
 | `./al prod` | Production stack; expects a running traefik |
+| `./al flower` | Celery monitoring on :5555; needs the dev stack for its broker |
 | `./al install <pkg>` | Add a website dependency |
 
 `./al dev` publishes MongoDB on 27017. If something already holds that port

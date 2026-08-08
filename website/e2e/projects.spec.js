@@ -51,9 +51,13 @@ test.describe('projects', () => {
     const rows = authedPage.locator('table.projTable tr')
     await expect(rows).toHaveCount(projects.length)
 
+    // Exact cell text, not `hasText`. The seed carries both "Magnussens" and
+    // "Magnussens 2021_2", and hasText matches substrings -- so the shorter
+    // name resolved to two cells and failed on strict mode rather than on
+    // anything being wrong with the page.
     for (const project of projects) {
       await expect(
-        authedPage.locator('table.projTable td', { hasText: project.name })
+        authedPage.getByRole('cell', { name: project.name, exact: true })
       ).toBeVisible()
     }
   })
