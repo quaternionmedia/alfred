@@ -58,6 +58,11 @@ DEV_SKIP_AUTH = resolve_dev_skip_auth(environ)
 DEV_USER_EMAIL = environ.get('ALFRED_DEV_USER_EMAIL', 'dev@example.com')
 
 DATA_DIR = environ.get('DATA_DIR', 'data')
+# Where finished renders are written, and therefore where anything wanting to
+# read one has to look. It was a bare 'videos' literal inside the Celery task,
+# so nothing else could agree with it without repeating the string -- and the
+# delivery endpoint duly looked in DATA_DIR instead and found nothing.
+VIDEO_DIR = environ.get('VIDEO_DIR', 'videos')
 STATIC_DIR = environ.get('STATIC_DIR', 'dist')
 
 DB_URL = environ.get('DB_URL')

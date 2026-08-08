@@ -2,6 +2,7 @@ from celery import Celery, Task
 from otto.render import renderMultitrack
 from otto.models import Edl
 from os.path import join
+from alfred.config import VIDEO_DIR
 from alfred import config
 from .logger import DbLogger
 from .bucket import upload
@@ -43,16 +44,34 @@ def renderRemote(
         renderMultitrack(
             edl=edl,
             audio=audio,
-            filename=join('videos', filename),
+            filename=join(VIDEO_DIR, filename),
             logger=self.log,
             moviesize=moviesize,
             fps=fps,
             bitrate=bitrate,
             ffmpeg_params=ffmpeg_params,
         )
-        upload(filename, directory='videos')
-        # self.update_state(state='PROGRESS', meta={'status': 'uploaded'})
-        self.log.uploaded()
     except Exception as e:
         print('error executing render task', renderId, e)
         self.log.failed(filename=renderId, exc=e)
+        return
+
+    # The render is finished and the file exists. Say so before attempting to
+    # put it anywhere, because those are separate outcomes.
+    self.log.rendered()
+
+    # Uploading is now one destination among several, reachable explicitly via
+    # POST /render/{id}/deliver. Attempt it here for the deployments that
+    # depended on it happening automatically, but do not let it fail the
+    # render: this ran inside the same try as the encode, so a missing
+    # credentials file marked a perfectly good video as a failed render. On a
+    # checkout without GCS credentials that is every render -- docker creates
+    # the absent ./cred.json as a directory, and the upload dies with
+    # IsADirectoryError long after the video is safely on disk.
+    try:
+        upload(filename, directory=VIDEO_DIR)
+    except Exception as e:
+        print('render succeeded but the automatic upload did not', renderId, e)
+        return
+
+    self.log.uploaded()

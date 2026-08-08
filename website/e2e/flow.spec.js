@@ -186,17 +186,26 @@ test.describe('the four-stage flow', () => {
 })
 
 test.describe('delivery, with real bytes', () => {
-  test('a render with an output file can be delivered locally', async ({
+  test('delivering a render always answers sensibly, never a 500', async ({
     request,
     token,
   }) => {
     /**
      * Driven through the API rather than the UI, because the UI can only
-     * deliver a render that a worker has already produced -- and waiting for a
-     * real encode is not something a browser test should do.
+     * deliver a render a worker has already produced.
      *
-     * This is still real: a real Render document, a real file on the server,
-     * and the local destination actually copying it.
+     * This asserted 409-or-502 at first, on the assumption that a freshly
+     * queued render has no file yet. That was true only while renders were
+     * failing: a one-second solid colour now encodes in about a second, so the
+     * file often exists by the time this runs and delivery succeeds. Asserting
+     * the race made the test fail whenever the pipeline got faster, which is
+     * the wrong direction for a test to point.
+     *
+     * What is true either way: the answer is a considered one. 200 when the
+     * file is there, 409 when it is not yet, 502 if a destination refuses it --
+     * and never a 500, which would mean the server broke rather than declined.
+     * render-pipeline.spec.js covers the successful path deliberately, after
+     * waiting for the encode.
      */
     const created = await request.post('/render', {
       headers: { Authorization: token },
@@ -222,12 +231,13 @@ test.describe('delivery, with real bytes', () => {
     expect(created.status()).toBe(200)
     const renderId = (await created.json()).replace(/"/g, '')
 
-    // The worker has not finished, so there is no file yet. The API must say
-    // that clearly rather than failing somewhere in the transport.
-    const early = await request.post(`/render/${renderId}/deliver`, {
+    const delivered = await request.post(`/render/${renderId}/deliver`, {
       headers: { Authorization: token },
     })
-    expect([409, 502]).toContain(early.status())
+    expect(
+      [200, 409, 502],
+      `unexpected ${delivered.status()} from deliver: ${await delivered.text()}`
+    ).toContain(delivered.status())
   })
 
   test('a malformed render id is refused, not crashed on', async ({

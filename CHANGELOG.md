@@ -154,6 +154,27 @@ behavior rather than only the developer experience.
   was a description of itself rather than the thing it does. It is gone, and
   with it four images loaded from `images.squarespace-cdn.com`, which
   `AGENTS.md` forbids and the adoption record lists as an open gap.
+- **The render pipeline produces a video.** It could not before: the renderer
+  container had no `videos/` mount, so every encode died on "Error opening
+  output videos/....mp4: No such file or directory" -- recorded as a failed
+  render and nowhere else. The path is now absolute and configured
+  (`VIDEO_DIR`), which is what the delivery endpoint reads too; it had been
+  looking in `DATA_DIR` and would have reported every render missing.
+- **A render is marked `RENDERED` when the encode finishes.** The task ran the
+  encode and the cloud upload inside one `try`, so a missing credentials file
+  marked a perfectly good video as a failed render -- which on a checkout
+  without GCS credentials is every render. `status` is also modelled on
+  `Render` now; the logger had always written it and the API had always dropped
+  it, so a caller could watch progress reach 100 and still not know whether the
+  render succeeded.
+- **Render filenames include the render's id.** Everything else in the name can
+  repeat, so two renders of the same project in the same second produced the
+  same filename and the second silently overwrote the first's output. Three
+  concurrent renders in the e2e suite collided on exactly that, shared one
+  file, and each reported success.
+- **`aria-selected` carries a value.** Mithril rendered the boolean as a bare
+  `aria-selected=""`, the HTML boolean form, which conveys no state to a screen
+  reader at all.
 - **`PUT /project/{id}/settings`.** A project remembers the size it renders at
   and where its output goes, which is what makes the flow reusable rather than
   a wizard re-run from scratch. A separate route from the project's own PUT:

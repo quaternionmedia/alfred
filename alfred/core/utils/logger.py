@@ -31,6 +31,19 @@ class DbLogger(ProgressBarLogger):
     def set_status(self, status):
         db.Render.update_one({'_id': self.id}, {'$set': {'status': status}})
 
+    def rendered(self):
+        """The encode finished and the file is on disk.
+
+        Distinct from `uploaded`, which used to be the only way a render could
+        be marked complete -- so a render that encoded perfectly and then
+        failed to reach cloud storage was recorded as failed. With delivery a
+        separate step, "the video exists" is the outcome the render task is
+        responsible for.
+        """
+        db.Render.update_one(
+            {'_id': self.id}, {'$set': {'progress': 100, 'status': 'RENDERED'}}
+        )
+
     def uploaded(self):
         db.Render.update_one(
             {'_id': self.id}, {'$set': {'progress': 100, 'status': 'UPLOADED'}}

@@ -123,7 +123,13 @@ export const StageRail = () => ({
             id: `stage-${stage.id}`,
             role: 'tab',
             class: Flow.stage() === stage.id ? 'active' : '',
-            'aria-selected': Flow.stage() === stage.id,
+            // The strings, not a boolean. `aria-selected` is an enumerated
+            // attribute, and mithril renders `true` as a bare `aria-selected=""`
+            // -- the HTML boolean form -- which conveys no state to a screen
+            // reader at all. `false` would drop the attribute entirely, which
+            // is worse: an unselected tab becomes indistinguishable from an
+            // element that never had the attribute.
+            'aria-selected': Flow.stage() === stage.id ? 'true' : 'false',
             title: stage.hint,
             onclick: () => Flow.go(stage.id),
           },

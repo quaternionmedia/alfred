@@ -8,7 +8,7 @@ from otto.getdata import timestr
 from ..utils.tasks import renderRemote
 from ..utils.bucket import generate_signed_url, INVALID_ID, NOT_FOUND
 from ..utils.destinations import DeliveryError, get_destination
-from alfred.config import DATA_DIR
+from alfred.config import VIDEO_DIR
 from fastapi_crudrouter import MotorCRUDRouter
 from alfred.config import DB_URL, DB_NAME
 from ..utils.db import get_client
@@ -46,12 +46,23 @@ class RenderAPI(MotorCRUDRouter):
         async def queueRender(
             render: Render, user: User = Depends(current_active_user)
         ):
-            ts = timestr()
-            filename = f'{render.project}{"_" + render.description if render.description else ""}_{render.width}x{render.height}{"_" + render.quality if render.quality else ""}_{render.edl.duration}s_{ts}.mp4'  # noqa: E501
             render.username = user.email
-            render.filename = filename
             # TODO: rework to async logic
             result = await self.schema.insert_one(render)
+
+            # The render's own id goes in the filename, because everything else
+            # in it can repeat. It was project, description, size, quality,
+            # duration and a second-resolution timestamp -- so two renders of
+            # the same project in the same second produced the same filename
+            # and the second silently overwrote the first's output. Three
+            # concurrent renders in the e2e suite collided on exactly that and
+            # ended up sharing one file, each reporting success.
+            ts = timestr()
+            filename = f'{render.project}{"_" + render.description if render.description else ""}_{render.width}x{render.height}{"_" + render.quality if render.quality else ""}_{render.edl.duration}s_{ts}_{result.id}.mp4'  # noqa: E501
+            render.filename = filename
+            await self.schema.find_one({'_id': result.id}).update(
+                {'$set': {'filename': filename}}
+            )
             print('rendering!', render, result)
             renderRemote.delay(
                 edl=render.edl,
@@ -108,8 +119,11 @@ class RenderAPI(MotorCRUDRouter):
 
             chosen = destination or render.destination
             try:
+                # VIDEO_DIR, not DATA_DIR. The Celery task writes finished
+                # renders to videos/; this looked in data/ and would have
+                # reported every render missing.
                 delivery = get_destination(chosen).deliver(
-                    join(DATA_DIR, render.filename)
+                    join(VIDEO_DIR, render.filename)
                 )
             except DeliveryError as exc:
                 # 502, not 500: the render is fine and the request was valid.

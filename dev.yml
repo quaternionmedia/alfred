@@ -50,6 +50,10 @@ services:
       # Only in dev.yml -- production.yml has no such passthrough, so there is
       # no environment variable a production stack will even look at.
       - ALFRED_DEV_SKIP_AUTH=${ALFRED_DEV_SKIP_AUTH:-}
+      # The same absolute path the renderer writes to, so delivery reads the
+      # file the worker actually produced rather than guessing from its own
+      # working directory.
+      - VIDEO_DIR=/app/videos
 
   renderer:
     build:
@@ -61,6 +65,13 @@ services:
       - alfred_isolated
     volumes:
       - ./alfred/:/app/alfred/
+      # The renderer writes finished videos here, and had nowhere to write
+      # them: the api mounts ./videos and the renderer did not, so every render
+      # died with "Error opening output videos/....mp4: No such file or
+      # directory" -- reported into the database as a failed render and
+      # nowhere else. The render pipeline could not produce a file at all in
+      # this configuration.
+      - ./videos/:/app/videos/
       # Mounted into a subdirectory, not over the system font directory.
       #
       # As `/usr/share/fonts/truetype/` this replaced the image's fonts with
@@ -85,6 +96,13 @@ services:
       - DB_URL=mongodb://db:27017
       - DB_NAME=alfred
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+      # Absolute, because a relative path here depends on a working directory
+      # nobody sets deliberately. Celery is started with `--workdir
+      # /app/alfred`, so a bare `videos/` resolved to /app/alfred/videos --
+      # which does not exist -- while the mount is at /app/videos. Every render
+      # died on "Error opening output videos/....mp4: No such file or
+      # directory", recorded as a failed render and nowhere else.
+      - VIDEO_DIR=/app/videos
 
   db:
     ports:

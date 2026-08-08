@@ -84,12 +84,21 @@
   }
 
   button {
+    // An explicit height, because padding alone did not give one.
+    //
+    // Measured across the stages, action buttons came out 32px on the Render
+    // panel and 30px on Deliver -- close enough to look like a mistake rather
+    // than a choice, and the kind of two-pixel drift nobody finds by looking.
+    // The project chooser opts out below: it carries two lines and is meant to
+    // be taller.
+    min-height: 2rem;
     padding: 0.35rem 0.8rem;
     border: 1px solid #3a3a3a;
     border-radius: 3px;
     background: #222;
     color: #e6e6e6;
     font: inherit;
+    line-height: 1.25;
     cursor: pointer;
 
     &:hover:not(:disabled) {
@@ -123,6 +132,9 @@
 }
 
 .projectchoice {
+  // Deliberately taller than the single-line action buttons: it stacks a
+  // project name over its clip count.
+  min-height: 3rem;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
