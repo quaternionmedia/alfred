@@ -1,57 +1,90 @@
 # alfred
+
 > *"Drama is life with all the dull bits cut out."*
 >
->  ~ Alfred Hitchcock
+> ~ Alfred Hitchcock
 
-Alfred is a video editor that works even without a server, designed for quick editing from anywhere, including mobile devices!
+Alfred is a video editor that works even without a server, designed for quick
+editing from anywhere, including mobile devices.
 
 Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 
-## clone
-`git clone --recurse-submodules git@github.com:quaternionmedia/alfred.git`
+## Shape
 
+A small **control plane** (`alfred/`) orchestrating a **render engine**
+(`otto`, published separately as `al-otto`). The control plane owns auth,
+project and render lifecycle, and orchestration; it does not touch media.
+`website/` is a mithril SPA built with parcel.
 
-### Common commands:
-#### init
-Install website dependencies
+The project is governed by the [Quaternion Media
+constitution](https://github.com/quaternionmedia/qm), vendored at
+`governance/qm`. Start at [AGENTS.md](AGENTS.md) — it is the entry point for
+contributors and coding agents alike, and it names the project's known
+governance gaps.
 
-`./al init`
+## Clone
 
-#### dev
-`./al dev`
+```sh
+git clone --recurse-submodules git@github.com:quaternionmedia/alfred.git
+cd alfred
+./al init          # install website dependencies
+```
 
-then open http://localhost:8000
+Already cloned without submodules:
 
-#### rebuild docker images:
-`./al dev --build`
+```sh
+git submodule update --init --recursive
+```
 
-#### install package
-`./al install` [package name]
-`npm i` [package name]
+On Windows, `CLAUDE.md` and `.github/copilot-instructions.md` are symlinks;
+see [AGENTS.md](AGENTS.md) for the one-time `core.symlinks` step.
 
-When run with no arguments, it will reinstall npm dependencies, which might be needed if package.json has been edited or changed.
+## Common commands
 
-#### demo
-To download the demo media (into `videos/`):
+Everything routes through `./al`. Run it with no arguments for the full list.
 
-`./al demo`
+| Command | What it does |
+|---|---|
+| `./al init` | Install website dependencies |
+| `./al dev` | Run the dev stack; app on http://localhost:8000 |
+| `./al dev --build` | Rebuild images first |
+| `./al demo` | Download demo media into `videos/` |
+| `./al pytest` | API test suite, in Docker |
+| `./al test` | End-to-end suite (Playwright), in Docker |
+| `./al nox -s lint` | Ruff |
+| `./al nox -s blacken` | Black (`-S`) |
+| `./al docs` | Serve the docs locally on :4000 |
+| `./al prod` | Production stack; expects a running traefik |
+| `./al install <pkg>` | Add a website dependency |
 
-Then you can render the `demo.csv` project locally.
+`./al dev` publishes MongoDB on 27017. If something already holds that port
+the stack will not start — see the dev-server notes in [AGENTS.md](AGENTS.md).
 
-#### nox
-`./al nox`
+## Tests
 
-#### documentation
-To build the documentation locally with [mkdocs](https://www.mkdocs.org/)
-##### install dependencies
-`pip install -r requirements-docs.txt`
+```sh
+pdm install                       # Python deps
+pdm run pytest                    # unit + pipeline suite
+pdm run pytest -m "not needs_ffmpeg and not needs_db"   # no external tools
 
-##### rebuild docs
-`mkdocs serve`
+cd website && npm install
+npx playwright install chromium
+npm run e2e                       # end-to-end, against a running ./al dev
+```
 
-Optional: specify a different host address with `-a`. For example:
+Strategy and known gaps: [tests/README.md](tests/README.md) for the backend,
+[website/e2e/README.md](website/e2e/README.md) for the browser suite. Both
+list what is *not* covered, deliberately.
 
-`mkdocs serve -a 0.0.0.0:4000` will serve the documentation on all available network hosts, at port `4000`.
-#### production
-`./al prod`
-Assumes a [traefik](https://containo.us/traefik/) instance is already running.
+## Documentation
+
+Built with [mkdocs](https://www.mkdocs.org/):
+
+```sh
+./al docs                         # serves on :4000
+```
+
+## Versioning
+
+`alfred/_version.py` is the source of truth; `website/package.json` tracks it.
+See [CHANGELOG.md](CHANGELOG.md).
