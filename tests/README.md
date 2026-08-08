@@ -3,6 +3,24 @@
 Scope: the backend and the render engine. Browser coverage lives in
 `website/e2e/` and is out of scope here.
 
+## Status
+
+Phase 0 and IS-1 through IS-4 are implemented: **78 passed, 19 xfailed, in
+about 3 seconds.** IS-5 (render queueing, needs a database) is not started.
+
+```sh
+pdm run pytest                                          # everything
+pdm run pytest -m "not needs_ffmpeg and not needs_db"    # no external tools
+pdm run pytest -m needs_ffmpeg                           # the real encode
+```
+
+The `needs_ffmpeg` encode is left in the default run, which deviates from the
+plan's "default is the fast tier". It earns it: `imageio_ffmpeg` ships its own
+binary, so it needs nothing installed, and it completes in under a second. It
+is also the only test that proves the product's core function works, so
+excluding it by default would waste it. The marker is there for environments
+that need to opt out.
+
 Four areas, in the order they should be built:
 
 1. **Config validity** — does a config the editor could emit validate, and
@@ -267,7 +285,7 @@ Carried here so they are not rediscovered. None are fixed by these tests.
 
 | # | Defect | Where |
 |---|---|---|
-| 1 | Unknown clip type silently duplicates the previous clip | `otto/render.py` if/elif chain |
+| 1 | Unknown clip type silently emits a duplicate layer: the dispatch chain has no `else`, so `c` is unbound on the first clip and stale on a later one. The stale clip is re-processed with the bad clip's timing, producing a second layer with the previous clip's picture. | `otto/render.py` if/elif chain |
 | 2 | `download()` returns `None` on any failure | `otto/getdata.py` |
 | 3 | `fps` argument ignored; `30.0` hardcoded | `otto/render.py` `renderMultitrack` |
 | 4 | `outpoint` silently ignored | `otto/render.py`, commented out |
@@ -278,4 +296,23 @@ Carried here so they are not rediscovered. None are fixed by these tests.
 | 9 | Seeding never runs: `count_documents` on a motor handle returns a truthy coroutine | `alfred/main.py` |
 | 10 | `test_login_fail` posts to `/auth/login`, which is not a route; it asserts the static-file mount's 405 | `tests/test_alfred.py` |
 
-Defect 10 should be deleted or rewritten as part of IS-1, not preserved.
+Defect 10 was rewritten while implementing IS-1: the file now asserts that
+`/auth/jwt/login` is mounted and `/auth/login` is not, which is the check that
+would actually have caught a typo'd route.
+
+## Found while implementing
+
+Not in the original plan; surfaced by writing the tests.
+
+| # | Defect | Where |
+|---|---|---|
+| 11 | Request validation requires a database. `Render` is a beanie `Document`, and `Document.__init__` calls `get_motor_collection()`, so deciding whether an incoming payload is well-formed needs a live MongoDB connection. This is why filename-construction coverage had to move to IS-5. | `alfred/core/models/render.py` |
+| 12 | Fades cannot be switched off on a template clip. `makeColor` hardcodes `.crossfadein(1).crossfadeout(1)` before the engine consults `fadeIn`/`fadeOut`, so `fadeIn=0` only removes the *second* fade. | `otto/templates.py` |
+| 13 | Requesting a fade stacks it on the template's. Asking for a 2s fade in yields the template's 1s crossfade *and* a 2s one. | `otto/templates.py` + `otto/render.py` |
+| 14 | The template lookup reaches any module attribute. `getattr(templates, clip.name)` resolves imported helpers such as `concatenate_videoclips` and `rgbToDec`, which were never meant to be reachable as templates. | `otto/render.py` |
+
+Defect 1's description was corrected against measured behavior: the duplicate
+layer is not the same object as its predecessor, because the effects chain
+rebinds `c` at each step. It is a re-processed derivative carrying the
+previous clip's pixels — verified identical frame data — with the bad clip's
+duration. The corruption is the same; the mechanism is not object identity.
