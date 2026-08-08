@@ -1,0 +1,81 @@
+name: Submodule refs
+
+# SEED FILE: copy verbatim into a forking project's .github/workflows/.
+#
+# Verifies every submodule's pinned commit exists on that submodule's own
+# remote, so "committed a pointer bump without pushing the submodule" is caught
+# here with an actionable message, rather than later as a cryptic
+# actions/checkout failure in whichever workflow happens to fetch first:
+#
+#   fatal: remote error: upload-pack: not our ref <sha>
+#
+# Two QM projects have hit exactly that. qmetronome's v0.0.28 Alpha Release
+# build broke on it and the project wrote this check in response; apothecary
+# hit the identical error on 2026-07-21 with no check, because nothing carried
+# qmetronome's fix across. Carrying it is what the seed is for.
+#
+# Unlike the ADR lint, this check is SELF-CONTAINED rather than run from the
+# governance submodule -- it has to be. It checks out with submodules: false on
+# purpose, since the submodule fetch is the thing being guarded and letting it
+# run first would mask this check's clearer error. A script living inside the
+# submodule would not be present to run.
+#
+# Triggers on every push and PR, deliberately broader than a main/PR-only
+# workflow: a stale pointer can be introduced on any branch, and the breakage
+# surfaces later, at tag time, in a different workflow.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check-submodule-refs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Verify submodule commits are pushed to their own remotes
+        run: |
+          set -uo pipefail
+          status=0
+          while IFS= read -r line; do
+            # `git submodule status` lines are " <sha> <path> (<describe>)",
+            # optionally prefixed with `-` (uninitialized), `+` (checked-out SHA
+            # differs from the index) or `U` (merge conflict). Strip all three:
+            # without stripping `U` the SHA reads "U<sha>" as one token and the
+            # error would name a SHA that does not exist.
+            sha=$(echo "$line" | sed 's/^[-+U]//' | awk '{print $1}')
+            path=$(echo "$line" | sed 's/^[-+U]//' | awk '{print $2}')
+            url=$(git config -f .gitmodules --get "submodule.${path}.url" || true)
+            if [ -z "$url" ]; then
+              echo "::warning::No .gitmodules URL for submodule '$path' - skipping"
+              continue
+            fi
+            # A filesystem path here resolves on the machine that set it up and
+            # nowhere else -- it is how an unreachable commit gets pinned in the
+            # first place, and it fails in CI as a missing directory rather than
+            # as anything that names the cause.
+            case "$url" in
+              *://*|*@*:*) ;;
+              *) echo "::error::Submodule '$path' has a filesystem URL in .gitmodules: $url"
+                 echo "::error::Set it to the canonical remote, then run: git submodule sync $path"
+                 status=1; continue ;;
+            esac
+            echo "Checking $path @ $sha against $url ..."
+            scratch=$(mktemp -d)
+            git init --quiet --bare "$scratch"
+            if git -C "$scratch" fetch --quiet --depth=1 "$url" "$sha" >/dev/null 2>&1; then
+              echo "  ok - reachable"
+            else
+              echo "::error::Submodule '$path' is pinned to $sha, which is NOT on its remote ($url)."
+              echo "::error::Committed inside the submodule without pushing? Run: (cd $path && git push origin HEAD), then re-push this repo."
+              status=1
+            fi
+            rm -rf "$scratch"
+          done < <(git submodule status)
+          exit $status

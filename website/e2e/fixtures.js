@@ -1,4 +1,4 @@
-const { test: base, expect } = require('@playwright/test')
+const { test: base, expect, request } = require('@playwright/test')
 const { CREDENTIALS } = require('./credentials')
 
 /**
@@ -62,10 +62,41 @@ const test = base.extend({
     await use(page)
   },
 
-  /** A bearer token for direct API assertions. */
-  token: async ({ request }, use) => {
-    await use(await apiLogin(request))
-  },
+  /** A bearer token for direct API assertions.
+   *
+   * Worker-scoped: one login per worker, not one per test.
+   *
+   * Per-test login meant roughly a hundred logins across eight parallel
+   * workers, and the dev server is a single uvicorn process running with
+   * `--reload`. It dropped connections under that -- `socket hang up` on
+   * POST /auth/jwt/login, about one full-suite run in four, surfacing as
+   * whichever unlucky test happened to be logging in at the time. It reads as
+   * a flaky app and is a load pattern the suite creates for itself.
+   *
+   * Not a fix for the server's concurrency, which is a real question for a
+   * production stack and out of scope here; it stops the suite manufacturing
+   * the problem. `test_e2e.yml` already disables --reload for a related
+   * reason.
+   */
+  token: [
+    async ({ browser }, use, workerInfo) => {
+      const context = await request.newContext({
+        baseURL: workerInfo.project.use.baseURL,
+      })
+      const bearer = await apiLogin(context)
+      await use(bearer)
+      await context.dispose()
+    },
+    { scope: 'worker' },
+  ],
 })
 
 module.exports = { test, expect, login, apiLogin, CREDENTIALS, SELECTORS }
+
+/** The shared media fixture, created once in global-setup.js.
+ *
+ * Named here so specs and setup cannot disagree about it. Specs must not
+ * create it themselves: eight workers doing check-then-create produced three
+ * copies and broke a spec that counts project rows.
+ */
+module.exports.MEDIA_PROJECT = 'Tool test'

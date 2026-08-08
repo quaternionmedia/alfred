@@ -1,4 +1,5 @@
 import m from "mithril"
+import './styles/editor.scss'
 import { Menu } from './Menu'
 import { Head } from './Head'
 
@@ -18,55 +19,52 @@ import { StageRail, StagePanel, Flow } from './Stages'
 
 export var Otto = {
   view: (vnode) => {
-    // The stage rail sits directly under the menu, so the whole flow --
-    // source, edit, render, deliver -- is legible without leaving the page.
-    // The timeline stays mounted underneath whichever stage is showing: it is
-    // the thing being worked on, not one of four interchangeable screens.
+    /**
+     * The timeline is the subject; everything else adorns it.
+     *
+     * What was here read as a stack of unrelated bars: aspect and resolution
+     * pickers floating above the preview, playback controls on their own row,
+     * speed and project actions buried inside the timeline's own grid, and the
+     * zoom control stranded below it. Related things sat apart and unrelated
+     * things sat together, so nothing indicated what acted on what.
+     *
+     * Three regions now, in the order you work:
+     *
+     *   viewer   the preview, with output settings beside it -- they describe
+     *            what you are looking at
+     *   transport playback and speed, together, because both move the playhead
+     *   editor   the timeline, flanked by the tools that edit it and the zoom
+     *            that scales it, with the bin beneath as its source of clips
+     *
+     * Each region is one element with one purpose, which is also what lets the
+     * appearance tests assert alignment between them.
+     */
     return [
       m(Menu),
       m(StageRail),
       m(StagePanel),
-      m(Head, [
-        m(Preview)
-      ]),
-      m('.fit.center', {}, [
-        m(Aspect, [
-          '16:9',
-          '4:3',
-          '4:5',
-          '1:1',
-          '5:4',
-          '3:4',
-          '9:16'
-        ]),
-        m(Resolution, [
-          '1080p',
-          '720p',
-          '480p',
-          '240p',
+
+      m('section.viewer', [
+        m(Head, [m(Preview)]),
+        m('.viewersettings', [
+          m(Aspect, ['16:9', '4:3', '4:5', '1:1', '5:4', '3:4', '9:16']),
+          m(Resolution, ['1080p', '720p', '480p', '240p']),
         ]),
       ]),
-      m(PlaybackTools),
-      m('.bar.fullwidth.timelinegrid', {}, [
-        m(TimelineTools),
-        m('.vcenter', {}, [
-          m('.bar', {}, [
-            m(Timecode),
-            m(Slider),
-          ]),
-          m('.bar.right', {}, [
-            m(SpeedTools),
-            m('.right', {}, [
-              m(ProjectTools),
-            ]),
-          ]),
-          m(OttoTimeline),
-        ]),
+
+      m('section.transport', [
+        m(Timecode),
+        m(Slider),
+        m('.transportcontrols', [m(PlaybackTools), m(SpeedTools)]),
       ]),
-      m(Scale),
-      m('.spacer', {style:{height:'3em'}}, []),
-      m(Bin),
+
+      m('section.editor', [
+        m('.editortools', [m(TimelineTools), m(Scale)]),
+        m('.editorsurface', [m(OttoTimeline), m(Bin)]),
+        m('.editoractions', [m(ProjectTools)]),
+      ]),
     ]
-  }
+  },
 }
+
 

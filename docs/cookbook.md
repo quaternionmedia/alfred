@@ -346,7 +346,25 @@ real 320x240 file.
 - **the timeline stays mounted across every stage**
 - **stage 3 refuses to render an empty timeline**
 - **stage 3 offers the render when there is something to render**
-- **stage 4 offers every destination the server implements**
+
+  Built from `GET /destinations`, not hardcoded in the editor.
+
+  Cloud delivery is the next phase, so the server currently offers only
+  `local` -- the one that needs no account, which is what makes "works
+  even without a server" true of getting your video back as well as making
+  it. Asserting against the endpoint rather than a literal means enabling
+  a destination is a server change, and this test follows it.
+
+- **stage 4 offers exactly what the server offers**
+
+  Built from `GET /destinations`, not hardcoded in the editor.
+
+  Cloud delivery is the next phase, so the server currently offers only
+  `local` -- the one that needs no account, which is what makes "works
+  even without a server" true of getting your video back as well as making
+  it. Asserting against the endpoint rather than a literal means enabling
+  a destination is a server change, and this test follows it.
+
 - **opening the flow makes no failing requests**
 ### delivery, with real bytes
 
@@ -388,7 +406,31 @@ waiting for the encode.
 - **menu links change the route**
 - **back and forward move between routes**
 - **serves the SPA shell at the root**
+
+  This was annotated `test.fail()` as a known defect: the header rendered
+  the same links twice, once as a drawer and once as a bar, emitting
+  home-link, projects-link, renders-link, documents-link and login-link
+  twice each -- and every clip repeated clipname, inpoint and outpoint, so
+  a page with 17 clips carried 52 duplicates.
+
+  Both are fixed: the header renders one list and CSS decides whether it
+  is a drawer, and per-clip labels are classes. Invalid HTML either way,
+  and `#id` selectors silently address only the first match, which is a
+  trap for anything written against this page later.
+
 - **every element id is unique**
+
+  This was annotated `test.fail()` as a known defect: the header rendered
+  the same links twice, once as a drawer and once as a bar, emitting
+  home-link, projects-link, renders-link, documents-link and login-link
+  twice each -- and every clip repeated clipname, inpoint and outpoint, so
+  a page with 17 clips carried 52 duplicates.
+
+  Both are fixed: the header renders one list and CSS decides whether it
+  is a drawer, and per-clip labels are classes. Invalid HTML either way,
+  and `#id` selectors silently address only the first match, which is a
+  trap for anything written against this page later.
+
 
 ## otto
 
@@ -460,6 +502,65 @@ assertion that says nothing.
 - **renders view loads for an authenticated user**
 - **render list is available from the API**
 - **refuses renders to an anonymous caller**
+
+## tools
+
+The timeline tools, and the media they act on.
+
+# Recipe: editing with the timeline tools
+
+The editor is three regions in the order you work: a **viewer** showing the
+selected clip with the output settings beside it, a **transport** carrying
+everything that moves the playhead, and an **editor** with the timeline
+flanked by the tools that change it and the bin that feeds it.
+
+All media here is the generated demo footage -- `POST /demo/media`
+synthesises it locally with ffmpeg, so these tests need no downloads and no
+cloud account.
+
+### selected media renders
+
+The preview was blank for every video clip.
+
+`<video src="videos/x.mp4">` is a browser-issued request with no
+Authorization header, and /videos requires a session -- so it 401'd and
+showed nothing. Selecting media in the bin looked like a click that did
+not register. The element is handed an object URL fetched with the token
+instead.
+
+- **a video clip previews from generated demo footage**
+- **a template clip previews as a rendered frame**
+- **previewing makes no unauthorised requests**
+### the tools pass their events
+
+- **choosing a timeline tool marks it active**
+- **only one timeline tool is active at a time**
+- **the transport controls are present and clickable**
+- **clicking transport controls raises no page errors**
+
+  These call into `Edl.jump`, which indexes the clip list. With an empty
+  or short timeline that is where an off-by-one would surface, and a
+  thrown handler leaves the toolbar looking fine and doing nothing.
+
+### the editor layout groups its tools
+
+Viewer, transport, editor. The arrangement used to be a stack of bars
+with related controls apart and unrelated controls together -- aspect
+and resolution floating above the preview, speed buried inside the
+timeline's grid, zoom stranded below it.
+
+- **the three regions are present and in order**
+- **every region starts on the same left edge**
+- **the timeline is the widest thing in the editor**
+- **related tools sit in one group, not scattered**
+### async actions say they are working
+
+Every action on these panels talks to the server and none of them said
+so, so a slow request looked like a click that missed. Buttons carry a
+spinner and `aria-busy` while their request is in flight.
+
+- **the render button reports itself busy**
+- **a busy button is disabled, so it cannot be double-fired**
 
 ## views
 

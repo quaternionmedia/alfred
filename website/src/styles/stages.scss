@@ -170,6 +170,38 @@
   font-size: 0.8rem;
 }
 
+// The pending indicator on async actions.
+//
+// A spinner rather than only a label change: a label that reads "Delivering…"
+// is easy to miss on a row of identical buttons, and there is one per render.
+.spinner {
+  display: inline-block;
+  width: 0.75em;
+  height: 0.75em;
+  margin-right: 0.45em;
+  vertical-align: -0.05em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Respect a stated preference for less motion. The button still reports itself
+// as busy through aria-busy and its label, so nothing is lost by holding still.
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    border-right-color: currentColor;
+    opacity: 0.5;
+  }
+}
+
 .stageempty {
   margin: 0 0 0.75rem;
   color: #8f8f8f;

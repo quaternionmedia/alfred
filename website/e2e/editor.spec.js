@@ -73,9 +73,19 @@ test.describe('timeline editor', () => {
     await authedPage.goto('/#!/otto')
     const bin = authedPage.locator('#bin')
     await expect(bin).toBeVisible()
+
     // The bin was permanently empty: it asked for /otto/templates, which has
     // never existed, and the rejection was unhandled so nothing showed.
-    await expect(bin.locator('.clip.template')).toHaveCount(templates.length)
+    //
+    // Polled rather than asserted once. The bin fills from two requests --
+    // templates and videos -- and mithril redraws between them, so a one-shot
+    // count caught an intermediate state about one run in three. That looked
+    // like a flaky app and was a flaky assertion.
+    await expect
+      .poll(() => bin.locator('.clip.template').count(), {
+        message: 'the bin never listed every template the API offers',
+      })
+      .toBe(templates.length)
   })
 
   test('the editor opens without a project and asks for one', async ({

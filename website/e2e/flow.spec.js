@@ -142,16 +142,29 @@ test.describe('the four-stage flow', () => {
     await expect(authedPage.locator('#queue-render')).toBeEnabled()
   })
 
-  test('stage 4 offers every destination the server implements', async ({
+  test('stage 4 offers exactly what the server offers', async ({
     authedPage,
+    request,
+    token,
   }) => {
+    /**
+     * Built from `GET /destinations`, not hardcoded in the editor.
+     *
+     * Cloud delivery is the next phase, so the server currently offers only
+     * `local` -- the one that needs no account, which is what makes "works
+     * even without a server" true of getting your video back as well as making
+     * it. Asserting against the endpoint rather than a literal means enabling
+     * a destination is a server change, and this test follows it.
+     */
+    const offered = await (
+      await request.get('/destinations', { headers: { Authorization: token } })
+    ).json()
+    expect(offered).toContain('local')
+
     await authedPage.goto('/#!/?stage=deliver')
+    await expect(authedPage.locator('#destination')).toBeVisible()
     const options = await authedPage.locator('#destination option').allInnerTexts()
-    // `local` is the default and the one that works without a cloud account,
-    // which is what makes "works even without a server" true of getting your
-    // video back as well as making it.
-    expect(options).toContain('local')
-    expect(options).toContain('bucket')
+    expect(options.sort()).toEqual([...offered].sort())
   })
 
   test('opening the flow makes no failing requests', async ({

@@ -117,6 +117,14 @@ DESTINATIONS = {
     BucketDestination.name: BucketDestination,
 }
 
+# What the editor offers. Cloud delivery is the next phase, so the bucket stays
+# implemented and reachable by name -- the seam is only worth having with more
+# than one implementation behind it -- but is not presented as a choice until
+# credentials, failure handling and the SSPL/vendor questions in the adoption
+# record have been worked through. Offering a destination that needs a service
+# account nobody has configured is a button that fails.
+OFFERED_DESTINATIONS = (LocalDestination.name,)
+
 DEFAULT_DESTINATION = LocalDestination.name
 
 

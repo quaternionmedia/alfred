@@ -111,3 +111,16 @@ async def listTemplates():
     against when `type` is `template`.
     """
     return available_templates()
+
+
+@templateAPI.get('/destinations', response_model=list[str])
+async def listDestinations():
+    """# Destinations
+
+    Where a finished render may be sent. The editor builds its choices from
+    this rather than hardcoding them, so a destination becoming available is a
+    server change, not a frontend release.
+    """
+    from ..utils.destinations import OFFERED_DESTINATIONS
+
+    return list(OFFERED_DESTINATIONS)

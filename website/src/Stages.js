@@ -33,7 +33,10 @@ export const Flow = {
   projects: [],
   videos: [],
   renders: [],
-  destinations: ['local', 'bucket'],
+  // Fetched, not hardcoded. Cloud delivery is the next phase, so the server
+  // currently offers only `local` -- and a destination becoming available
+  // should be a server change rather than a frontend release.
+  destinations: [],
   busy: false,
   error: null,
 
@@ -60,6 +63,7 @@ export const Flow = {
   },
 
   generating: null,
+  delivering: null,
 
   load: opts => {
     if (!User.loggedIn) return
@@ -77,6 +81,12 @@ export const Flow = {
     auth('/videos')
       .then(v => {
         Flow.videos = v
+      })
+      .catch(() => {})
+    auth('/destinations')
+      .then(d => {
+        Flow.destinations = d
+        m.redraw()
       })
       .catch(() => {})
     Flow.loadRenders()
@@ -149,6 +159,32 @@ export const StageRail = () => ({
 
 const Empty = message => m('p.stageempty', message)
 
+/** A button that says when it is working.
+ *
+ * Every action on these panels talks to the server, and none of them said so:
+ * the render button changed its own label and the deliver and generate buttons
+ * changed nothing at all, so a slow request looked like a click that missed.
+ * One component now carries the pending state, so a new async action cannot
+ * quietly ship without an indicator.
+ */
+const Busy = () =>
+  m('span.spinner', { 'aria-hidden': 'true' })
+
+export const AsyncButton = () => ({
+  view: vnode => {
+    const { busy, label, busyLabel, ...attrs } = vnode.attrs
+    return m(
+      'button',
+      {
+        ...attrs,
+        disabled: busy || attrs.disabled,
+        'aria-busy': busy ? 'true' : 'false',
+      },
+      busy ? [Busy(), busyLabel || label] : label
+    )
+  },
+})
+
 /** An empty state that offers to fix itself.
  *
  * "No projects yet." and "No media on the server. `./al demo` downloads some."
@@ -163,11 +199,12 @@ const Empty = message => m('p.stageempty', message)
 const Generate = (message, label, action, busyKey) =>
   m('.stageempty', [
     m('p', message),
-    m(
-      'button.generate',
-      {
-        disabled: Flow.generating === busyKey,
-        onclick: () => {
+    m(AsyncButton, {
+      class: 'generate',
+      busy: Flow.generating === busyKey,
+      label,
+      busyLabel: 'Generating…',
+      onclick: () => {
           Flow.generating = busyKey
           Flow.error = null
           action()
@@ -180,10 +217,8 @@ const Generate = (message, label, action, busyKey) =>
               Flow.error = `Could not generate ${busyKey}`
               m.redraw()
             })
-        },
       },
-      Flow.generating === busyKey ? 'Generating…' : label
-    ),
+    }),
   ])
 
 /** Stage 1 -- pick the project, see what material is available to it. */
@@ -263,11 +298,14 @@ const RenderPanel = {
           }),
         ]),
       ]),
-      m(
-        'button#queue-render.primary',
-        {
-          disabled: Flow.busy || !Edl.edl.length,
-          onclick: () => {
+      m(AsyncButton, {
+        id: 'queue-render',
+        class: 'primary',
+        busy: Flow.busy,
+        disabled: !Edl.edl.length,
+        label: 'Queue render',
+        busyLabel: 'Queueing…',
+        onclick: () => {
             Flow.busy = true
             Flow.error = null
             auth('/render', {
@@ -301,10 +339,8 @@ const RenderPanel = {
                 Flow.error = 'Could not queue the render'
                 m.redraw()
               })
-          },
         },
-        Flow.busy ? 'Queueing…' : 'Queue render'
-      ),
+      }),
       // A timeline with no clips cannot be rendered, and saying so beats a
       // button that looks available and fails.
       Edl.edl.length ? null : Empty('Add a clip on the Edit stage first.'),
@@ -340,28 +376,34 @@ const DeliverPanel = {
                 m('span.rendername', r.filename || r.name || r._id),
                 r.destination
                   ? m('span.delivered', `delivered → ${r.destination}`)
-                  : m(
-                      'button.deliver',
-                      {
-                        onclick: () => {
-                          const destination =
-                            document.getElementById('destination').value
-                          auth(
-                            `/render/${r._id}/deliver?destination=${destination}`,
-                            { method: 'POST' }
-                          )
-                            .then(() => {
-                              Flow.remember({ destination })
-                              Flow.loadRenders()
-                            })
-                            .catch(() => {
-                              Flow.error = 'Delivery failed'
-                              m.redraw()
-                            })
-                        },
+                  : m(AsyncButton, {
+                      class: 'deliver',
+                      busy: Flow.delivering === r._id,
+                      label: 'Deliver',
+                      busyLabel: 'Delivering…',
+                      onclick: () => {
+                        const destination =
+                          document.getElementById('destination').value
+                        // Per-render, not a single flag: several rows each
+                        // have a button, and one shared flag would spin all
+                        // of them for one click.
+                        Flow.delivering = r._id
+                        auth(
+                          `/render/${r._id}/deliver?destination=${destination}`,
+                          { method: 'POST' }
+                        )
+                          .then(() => {
+                            Flow.delivering = null
+                            Flow.remember({ destination })
+                            Flow.loadRenders()
+                          })
+                          .catch(() => {
+                            Flow.delivering = null
+                            Flow.error = 'Delivery failed'
+                            m.redraw()
+                          })
                       },
-                      'Deliver'
-                    ),
+                    }),
               ])
             )
           )

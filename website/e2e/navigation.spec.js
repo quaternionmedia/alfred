@@ -53,14 +53,21 @@ test.describe('navigation', () => {
     await expect(page).toHaveTitle(/alfred/i)
   })
 
-  test('every element id is unique', async ({ page }) => {
-    // Known defect, so the suite stays green while recording it. When the
-    // duplication is fixed this turns red as "expected to fail but passed",
-    // which is the prompt to delete this annotation.
-    test.fail()
-
-    await page.goto('/')
-    const duplicates = await page.evaluate(() => {
+  test('every element id is unique', async ({ authedPage }) => {
+    /**
+     * This was annotated `test.fail()` as a known defect: the header rendered
+     * the same links twice, once as a drawer and once as a bar, emitting
+     * home-link, projects-link, renders-link, documents-link and login-link
+     * twice each -- and every clip repeated clipname, inpoint and outpoint, so
+     * a page with 17 clips carried 52 duplicates.
+     *
+     * Both are fixed: the header renders one list and CSS decides whether it
+     * is a drawer, and per-clip labels are classes. Invalid HTML either way,
+     * and `#id` selectors silently address only the first match, which is a
+     * trap for anything written against this page later.
+     */
+    await authedPage.goto('/')
+    const duplicates = await authedPage.evaluate(() => {
       const counts = {}
       document.querySelectorAll('[id]').forEach(el => {
         counts[el.id] = (counts[el.id] || 0) + 1
@@ -70,11 +77,6 @@ test.describe('navigation', () => {
         .map(([id, n]) => `${id} x${n}`)
     })
 
-    // Known failing: the nav bar and the menu bar render the same components,
-    // emitting home-link, projects-link, renders-link, documents-link and
-    // login-link twice each. Invalid HTML, and it makes every `#id` selector
-    // ambiguous. Recorded as a test rather than a comment so that fixing it
-    // is visible and so it cannot regress silently once fixed.
-    expect(duplicates, 'duplicate element ids in the rendered page').toEqual([])
+    expect(duplicates, `duplicate element ids: ${duplicates.join(', ')}`).toEqual([])
   })
 })

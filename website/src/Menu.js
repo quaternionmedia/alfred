@@ -18,41 +18,55 @@ export function Menu() {
     }
   })
   function toggle() {
-    console.log('toggling menu', open)
     open = !open
+  }
+
+  // Closing on navigation matters on a phone: the drawer covers the editor,
+  // and leaving it open after a tap hides the thing you just navigated to.
+  function close() {
+    open = false
   }
 
   return {
     view: vnode => {
-      return [
+      // One set of links, rendered once.
+      //
+      // This rendered `navLinks` into a drawer *and* `Links` into the bar, both
+      // carrying the same destinations with the same element ids -- so every id
+      // in the header appeared twice, and `navigation.spec.js` pinned that as a
+      // known defect. Two copies also meant two things to keep in step, which
+      // they were not: the drawer carried HOME and LOGIN and the bar did not.
+      //
+      // Whether the list is a drawer or a row is now a question for CSS, which
+      // is where it belongs. The stage rail carries navigation *within* the
+      // editor, so this header only has to get you between the few views that
+      // are not the editor.
+      return m('header', { class: open ? 'open' : '' }, [
         m(
-          'header',
-          m('.navbutton', m('i.material-icons', { onclick: toggle }, 'menu')),
-          m('.navContainer', { style: { width: open ? '250px' : '0px' } }, [
-            m(navLinks, { onclick: toggle }),
-          ]),
-          //TODO: change logo to new image in the future when location of images is known
-          m(
-            'div.logo',
-            m(
-              Link,
-              { href: '/', id: 'home-link', ...vnode.attrs },
-              m('img.logoImg', { src: LOGO })
-            )
-          ),
-          m('.menuLinks', m(Links)),
+          '.navbutton',
+          m('i.material-icons', { onclick: toggle, title: 'menu' }, 'menu')
+        ),
+        m(
+          'div.logo',
           m(
             Link,
-            {
-              class: 'loginLink',
-              href: User.username ? '/logout' : '/login',
-              id: 'login-link',
-              ...vnode.attrs,
-            },
-            User.username ? 'Logout' : 'Login'
+            { href: '/', id: 'home-link', ...vnode.attrs },
+            m('img.logoImg', { src: LOGO })
           )
         ),
-      ]
+        m('nav.menuLinks', m(Links, { onclick: close })),
+        m(
+          Link,
+          {
+            class: 'loginLink',
+            href: User.username ? '/logout' : '/login',
+            id: 'login-link',
+            onclick: close,
+            ...vnode.attrs,
+          },
+          User.username ? 'Logout' : 'Login'
+        ),
+      ])
     },
   }
 }
@@ -106,53 +120,3 @@ export const Links = () => ({
   ],
 })
 
-//the links in the nav bar, separated to have own style
-export const navLinks = () => ({
-  view: vnode => [
-    m(
-      Link,
-      { class: 'navLink', href: '/', id: 'home-link', ...vnode.attrs },
-      'HOME'
-    ),
-    m(
-      Link,
-      {
-        class: 'navLink',
-        href: '/projects',
-        id: 'projects-link',
-        ...vnode.attrs,
-      },
-      'PROJECTS'
-    ),
-    m(
-      Link,
-      {
-        class: 'navLink',
-        href: '/renders',
-        id: 'renders-link',
-        ...vnode.attrs,
-      },
-      'RENDERS'
-    ),
-    m(
-      Link,
-      {
-        class: 'navLink',
-        href: '/documents',
-        id: 'documents-link',
-        ...vnode.attrs,
-      },
-      'DOCUMENTS'
-    ),
-    m(
-      Link,
-      {
-        class: 'navLink',
-        href: User.username ? '/logout' : '/login',
-        id: 'login-link',
-        ...vnode.attrs,
-      },
-      User.username ? 'LOGOUT' : 'LOGIN'
-    ),
-  ],
-})
