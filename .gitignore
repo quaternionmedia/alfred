@@ -5,7 +5,13 @@ website/dist/*
 /dist/*
 .cache
 package-lock.json
-yarn.lock
+# yarn.lock is committed: the frontend build broke because parcel floated to
+# 2.16.4 against a transformer pinned at 2.8.3, which parcel requires to
+# match. A lockfile is what makes the build reproducible from the repository
+# alone, which P8 asks for. npm's lockfile stays ignored -- this project
+# installs with yarn (`al init`, website/Dockerfile) and two lockfiles
+# disagreeing is worse than none.
+!yarn.lock
 media/
 /website/playwright-report/
 /website/test-results/
