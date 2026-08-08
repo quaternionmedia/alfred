@@ -64,6 +64,16 @@ behavior rather than only the developer experience.
   not always present. The two failed through different exception hierarchies
   and needed separate fixes; both now answer 422, and the frontend no longer
   makes the request at all.
+- **`/users/me` returned an unusable id** -- `{}` under real authentication,
+  `null` under the dev bypass, while the stored user had a real ObjectId in
+  both cases. Three things were wrong in sequence. Subscripting the generic
+  base left `UserRead.id` typed `typing.Any`. Typing it correctly exposed the
+  next: FastAPI serialises through `jsonable_encoder`, which has no rule for a
+  `bson.ObjectId` subclass and falls back to `vars(value)` -- and an
+  ObjectId's `vars()` is `{}`. Adding `json_encoders` to Config fixed the
+  model in isolation and changed nothing on the route, because FastAPI clones
+  a response model into a fresh class and the clone does not carry Config. The
+  fix is a pre-validator, which belongs to the field and survives the cloning.
 - **The dev stack's website container took its dependencies from the host.**
   `docker-compose.yml` mounts `./website` over `/app`, and the image shipped no
   `node_modules` at all, so every dependency the container used came from
@@ -157,10 +167,7 @@ and in `tests/README.md`. The largest: MongoDB is SSPL-licensed and fills
 three roles at once; object storage is reached through a vendor SDK rather
 than a protocol seam; the frontend loads a font and two images from third-party
 CDNs; and `renderMultitrack` ignores its own `fps` argument, so a caller asking
-for 60 silently gets 30. `/users/me` never returns a usable `id`: it
-serialises as `{}` under real authentication and as `null` under the dev
-bypass, though the stored user has a real ObjectId either way -- a `UserRead`
-serialisation defect, found while building the bypass and predating it. `title` returns `None` on every call -- "'tuple' object has
+for 60 silently gets 30. `title` returns `None` on every call -- "'tuple' object has
 no attribute 'lower'", with any font and either method -- so one of the six
 advertised templates cannot render; it is a defect in `otto`, which is a
 separate package outside this seam, and is pinned as a strict xfail. Parcel's
