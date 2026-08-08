@@ -7,6 +7,29 @@ export var User = {
   username: null,
   token: null,
   loggedIn: false,
+  devMode: false,
+  // Detects the server-side auth bypass (ALFRED_DEV_SKIP_AUTH) by asking for
+  // the current user with no credentials. With auth on that is a 401 and
+  // nothing changes; with the bypass on it returns the dev user, so the SPA
+  // can skip the login screen instead of merely tolerating an API that no
+  // longer refuses it.
+  //
+  // Probing the server rather than reading a build-time flag keeps the two
+  // from disagreeing: the frontend is a static bundle that outlives any
+  // particular backend, so a baked-in constant would eventually be wrong.
+  detectDevMode: () => {
+    return m
+      .request('/users/me')
+      .then(me => {
+        User.devMode = true
+        User.loggedIn = true
+        User.username = me.first_name || me.email
+        console.warn('auth is disabled on the server; running as', User.username)
+        m.redraw()
+        return true
+      })
+      .catch(() => false)
+  },
   login: (token) => {
     User.jwt = token
     let decoded = jwt_decode(token['access_token'])

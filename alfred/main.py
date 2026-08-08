@@ -26,7 +26,7 @@ from alfred.core.routes.users import (
 from alfred.core.models.users import UserRead, UserUpdate
 from alfred.core.utils.db import User
 from alfred import docs
-from alfred.config import DATA_DIR, STATIC_DIR
+from alfred.config import DATA_DIR, STATIC_DIR, DEV_SKIP_AUTH, DEV_USER_EMAIL
 
 app = FastAPI(
     title=docs.title,
@@ -37,6 +37,27 @@ app = FastAPI(
     docs_url='/api',
 )
 app.add_middleware(GZipMiddleware)
+
+
+@app.on_event('startup')
+async def warnIfAuthIsDisabled():
+    """Say so, every boot, unmissably.
+
+    A bypass that runs quietly is one that reaches an environment nobody
+    meant it to. config.py refuses to combine this with ALFRED_PRODUCTION, so
+    this cannot be a production process -- but ALFRED_PRODUCTION is only set
+    by production.yml, and a deployment that forgets it would get no such
+    refusal. The banner is the second line of defence.
+    """
+    if DEV_SKIP_AUTH:
+        line = '=' * 72
+        print(line, flush=True)
+        print('  AUTHENTICATION IS DISABLED (ALFRED_DEV_SKIP_AUTH)', flush=True)
+        print(
+            f'  Every request is served as {DEV_USER_EMAIL}, a superuser.', flush=True
+        )
+        print('  Local development only. Never expose this process.', flush=True)
+        print(line, flush=True)
 
 
 @app.on_event('startup')
@@ -78,6 +99,25 @@ async def checkFonts():
 
 
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
+
+if DEV_SKIP_AUTH:
+    # Registered before the fastapi-users router so this match wins; FastAPI
+    # resolves routes in registration order.
+    #
+    # Swapping `current_active_user` is not enough to cover /users/me.
+    # get_users_router builds its own dependency internally from the
+    # authenticator, so it is a different callable from the one this module
+    # exports -- and dependency_overrides keys on identity, so that does not
+    # reach it either. Without this route the SPA's probe 401s and the login
+    # screen comes back, with every other endpoint open. Shadowing the one
+    # route is the smallest thing that makes the bypass coherent.
+    from alfred.core.routes.users import get_dev_user
+
+    @app.get('/users/me', response_model=UserRead, tags=['users'])
+    async def dev_users_me(user: User = Depends(get_dev_user)):
+        return user
+
+
 app.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
     prefix='/users',

@@ -61,6 +61,11 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 `./al dev` publishes MongoDB on 27017. If something already holds that port
 the stack will not start — see the dev-server notes in [AGENTS.md](AGENTS.md).
 
+To work without logging in, `ALFRED_DEV_SKIP_AUTH=1 ./al dev` serves every
+request as a fixed superuser and skips the login screen. It refuses to start
+alongside `ALFRED_PRODUCTION` and prints a banner on every boot — see
+[docs/dev-auth.md](docs/dev-auth.md).
+
 ## Tests
 
 ```sh

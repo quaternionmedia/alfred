@@ -4,6 +4,59 @@ PRODUCTION = environ.get('ALFRED_PRODUCTION')
 
 SECRET_KEY = environ.get('ALFRED_SECRET_KEY')
 
+
+def _truthy(value):
+    """Explicit opt-in only.
+
+    Deliberately not `bool(environ.get(...))`, which treats `ALFRED_DEV_SKIP_AUTH=0`
+    and `=false` as on -- the two spellings someone reaches for to turn a flag
+    off. For a flag that disables authentication, the failure has to be in the
+    direction of staying locked.
+    """
+    return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def resolve_dev_skip_auth(env):
+    """Whether to accept unauthenticated requests as a fixed dev user.
+
+    Refuses to combine with ALFRED_PRODUCTION. Raising here means a
+    misconfigured production container fails to boot instead of coming up
+    wide open, which is the only acceptable direction for this mistake --
+    an unauthenticated API that starts successfully looks healthy.
+
+    Takes the environment as an argument so this is testable without
+    reimporting the module; the module-level value below is the real one.
+    """
+    requested = _truthy(env.get('ALFRED_DEV_SKIP_AUTH', ''))
+    if not requested:
+        return False
+    if env.get('ALFRED_PRODUCTION'):
+        raise RuntimeError(
+            'ALFRED_DEV_SKIP_AUTH is set together with ALFRED_PRODUCTION. '
+            'The auth bypass is a local development convenience and must '
+            'never run in production. Refusing to start.'
+        )
+    return True
+
+
+# Skips login entirely and treats every caller as a fixed local user. Off
+# unless explicitly asked for. See docs/dev-auth.md.
+DEV_SKIP_AUTH = resolve_dev_skip_auth(environ)
+
+# The account the bypass acts as. A real, persisted user, so routes that
+# attribute a render to `user.id` behave as they will with auth on.
+#
+# RFC 2606 reserved, so it cannot reach anyone if a code path ever mails it.
+#
+# It has to be reserved *and* valid, which narrows the field more than it
+# looks. dev@localhost was the first attempt: the User document stored it, so
+# every gated route worked, but UserRead types email as EmailStr and rejected
+# it on the way out -- /users/me alone returned 500. dev@alfred.invalid was
+# the second: `.invalid` is the RFC's own "guaranteed not to resolve" TLD, but
+# pydantic's validator rejects reserved TLDs outright. RFC 2606 also reserves
+# the second-level domains example.com/net/org, which do validate.
+DEV_USER_EMAIL = environ.get('ALFRED_DEV_USER_EMAIL', 'dev@example.com')
+
 DATA_DIR = environ.get('DATA_DIR', 'data')
 STATIC_DIR = environ.get('STATIC_DIR', 'dist')
 
