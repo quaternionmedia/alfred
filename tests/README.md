@@ -293,7 +293,7 @@ Carried here so they are not rediscovered. None are fixed by these tests.
 | 6 | Models accept configs the editor cannot produce | `otto/models.py` |
 | 7 | `Edl(clips=[])` fails only at render time | model vs `generateEdl` |
 | 8 | `bitrate` typed as a list, encoder wants a string | `models/render.py` |
-| 9 | Seeding never runs: `count_documents` on a motor handle returns a truthy coroutine | `alfred/main.py` |
+| 9 | Seeding never runs: `count_documents` on a motor handle returns a `Future`, which is always truthy, so `if not ...` never fires and the block is skipped. Verified by inspecting the returned type against a live handle. | `alfred/main.py` |
 | 10 | `test_login_fail` posts to `/auth/login`, which is not a route; it asserts the static-file mount's 405 | `tests/test_alfred.py` |
 
 Defect 10 was rewritten while implementing IS-1: the file now asserts that
