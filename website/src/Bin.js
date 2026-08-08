@@ -10,15 +10,25 @@ var Bin = {
   videos: [],
   templates: [],
   oninit: (vnode) => {
-    m.request('/videos').then( e => {
-      // console.log('got videos!', e)
-      Bin.videos = e
-    })
+    // `m.request` here, not `auth`, meant no Authorization header on a route
+    // that requires one -- so /videos answered 401 every time and the media
+    // bin was permanently empty. Nothing surfaced it: the rejection was never
+    // handled, so the bin simply rendered nothing.
+    auth('/videos')
+      .then(e => {
+        Bin.videos = e
+      })
+      .catch(e => {
+        console.error('could not load videos for the bin', e)
+      })
 
-    auth('/otto/templates').then( e => {
-      // console.log('got videos!', e)
-      Bin.templates = e
-    })
+    auth('/templates')
+      .then(e => {
+        Bin.templates = e
+      })
+      .catch(e => {
+        console.error('could not load templates for the bin', e)
+      })
   },
   oncreate: vnode => {
     new Sortable(vnode.dom, {

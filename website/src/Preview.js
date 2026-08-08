@@ -1,5 +1,6 @@
 import m from 'mithril'
 import { Video, Edl } from './Video'
+import { User } from './User'
 var state = require("./Globals").state
 
 const urlfy = obj => Object
@@ -14,6 +15,59 @@ export function ImagePreview() {
         src: vnode.attrs.src
       })
     }
+  }
+}
+
+// An <img> whose source needs the Authorization header.
+//
+// A bare `src` is a browser-issued request carrying no header, so pointing one
+// at an authenticated route just yields a 401 and a broken image. That is the
+// constraint main.py records next to the /data mount -- "we can't secure the
+// /data route because the otto preview is rendered into the <img> tag" -- and
+// the reason a preview route would otherwise have to be left open.
+//
+// Fetching with the token and handing the <img> an object URL keeps the route
+// authenticated. The URL is revoked when it is replaced or the component is
+// removed; without that, every redraw of a moving playhead leaks a blob.
+export function AuthedImage() {
+  let objectUrl = null
+  let lastRequested = null
+
+  const release = () => {
+    if (objectUrl) {
+      URL.revokeObjectURL(objectUrl)
+      objectUrl = null
+    }
+  }
+
+  const load = url => {
+    if (url === lastRequested) return
+    lastRequested = url
+    m.request({
+      url,
+      headers: { Authorization: User.token },
+      responseType: 'blob',
+      extract: xhr => xhr.response,
+    })
+      .then(blob => {
+        release()
+        objectUrl = URL.createObjectURL(blob)
+        m.redraw()
+      })
+      .catch(() => {
+        // A template that cannot render is not worth a broken-image icon on
+        // every redraw; leave the previous frame up.
+      })
+  }
+
+  return {
+    oninit: vnode => load(vnode.attrs.src),
+    onupdate: vnode => load(vnode.attrs.src),
+    onremove: release,
+    view: vnode =>
+      objectUrl
+        ? m('img.preview', { id: vnode.attrs.id, src: objectUrl })
+        : m('.preview.loading'),
   }
 }
 export function VideoPreview() {
@@ -92,15 +146,20 @@ export var Preview = ( () => {
       let clip = Edl.edl[Edl.current]
       if (clip) {
         if (clip.type == 'template') {
-          return m('.bkg#preview', {
-            style: {
-              'background-image': `url(bkg/${encodeURIComponent(m.route.param('project'))}?width=${state.width()}&height=${state.height()}&t=${Edl.time})`
-            }
-          }, [m(ImagePreview, {
-            id: 'preview',
-            src: `otto/template/${clip['name']}?${urlfy(clip.data)}&width=${state.width()}&height=${ state.height()}&t=${Video.time()}`
-          })
-        ])
+          // `preview/template/...`, not `otto/template/...`. The latter has
+          // never been a route on this server, so previewing a template clip
+          // 404'd every time; the endpoint now lives under the preview router
+          // and validates the name against the template allowlist.
+          //
+          // The `bkg/` background-image that used to wrap this is gone for the
+          // same reason -- no such route ever existed -- and it contributed
+          // nothing but a second 404 per redraw.
+          return m('.bkg#preview', {}, [
+            m(AuthedImage, {
+              id: 'preview',
+              src: `preview/template/${encodeURIComponent(clip['name'])}?${urlfy(clip.data)}&width=${state.width()}&height=${state.height()}&t=${Video.time()}`,
+            }),
+          ])
         } else {
             return m(VideoPreview, {
               id: 'preview',

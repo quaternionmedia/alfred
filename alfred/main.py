@@ -1,5 +1,7 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError as PydanticValidationError
 from starlette.staticfiles import StaticFiles
 from beanie import init_beanie
 
@@ -13,6 +15,7 @@ from alfred.core.routes import fontAPI
 from alfred.core.routes import ProjectAPI
 from alfred.core.routes import RenderAPI
 from alfred.core.routes import previewAPI
+from alfred.core.routes import templateAPI
 
 # from otto.main import app as ottoApi
 from alfred.core.utils import get_db
@@ -98,6 +101,42 @@ async def checkFonts():
     # db.fonts.update_many(results, upsert=True)
 
 
+@app.exception_handler(PydanticValidationError)
+async def malformedIdentifier(request, exc):
+    """Turn an unparseable path identifier into 422 rather than 500.
+
+    `GET /project/undefined` returned 500. fastapi-crudrouter hands the raw
+    path segment to beanie's `Document.get`, which parses it into a
+    PydanticObjectId and raises; nothing caught it. The frontend does send
+    `undefined` -- the editor routes read a `project` query parameter that is
+    not always there -- so this was reachable from the UI, and a 500 says the
+    server broke when the request was malformed.
+
+    A well-formed id that matches nothing already returned 404 correctly. This
+    only covers the unparseable case, and answers 422 rather than 404 to keep
+    "you sent something that is not an id" distinguishable from "that id does
+    not exist" -- the frontend can act on the difference.
+
+    Deliberately narrow: it re-raises anything that is not an identifier parse
+    failure. A blanket handler for pydantic's ValidationError would turn every
+    server-side model mistake into a client error, which is exactly the kind
+    of 500-shaped bug that should stay loud. Response validation is unaffected
+    either way -- FastAPI's ResponseValidationError does not inherit from
+    pydantic's ValidationError.
+    """
+    if not _isIdentifierParseError(exc):
+        raise exc
+    return JSONResponse(
+        status_code=422,
+        content={'detail': 'Not a valid identifier'},
+    )
+
+
+def _isIdentifierParseError(exc):
+    model = getattr(exc, 'model', None)
+    return 'PydanticObjectId' in str(getattr(model, '__name__', model))
+
+
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
 
 if DEV_SKIP_AUTH:
@@ -135,6 +174,9 @@ app.include_router(
 )
 
 app.include_router(fontAPI, dependencies=[Depends(current_active_user)], tags=['font'])
+app.include_router(
+    templateAPI, dependencies=[Depends(current_active_user)], tags=['template']
+)
 app.include_router(
     videoAPI, dependencies=[Depends(current_active_user)], tags=['video']
 )

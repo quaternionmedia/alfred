@@ -13,7 +13,8 @@ import { Magnussens } from './Magnussens'
 import { Layout } from './Components'
 import { TemplateEditor } from './TemplateEditor'
 import { Otto } from './Otto'
-import ICON from './assets/al-white.svg'
+// Same as the logo in Menu.js: the default import is not a URL string.
+const ICON = new URL('./assets/al-white.svg', import.meta.url).href
 
 var state = require('./Globals').state
 
@@ -27,7 +28,7 @@ if (
   window.matchMedia('(prefers-color-scheme: dark)').matches
 ) {
   // swap favicon if in dark mode
-  let favicon = (document.getElementById('favicon').href = ICON)
+  document.getElementById('favicon').href = ICON
 }
 
 window.addEventListener('storage', event => {

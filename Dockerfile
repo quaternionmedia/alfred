@@ -24,4 +24,22 @@ RUN pip3 install -e . uvicorn
 # rendering needs. Revisit in the security pass.
 RUN rm -f /etc/ImageMagick-6/policy.xml /etc/ImageMagick-7/policy.xml
 
+# Fonts, without which no template that draws text can render at all.
+#
+# moviepy's TextClip defaults to the font named "Courier". The base ships only
+# DejaVu, so ImageMagick answered "unable to read font `Courier'", TextClip
+# raised, and otto's template functions returned None. generateEdl reports
+# that as "A clip did not get made properly" -- which names neither fonts nor
+# ImageMagick, so the symptom points nowhere near the cause. Five of the six
+# templates are TextClip (title, textBox, bullets, initial, final), so this
+# was most of the template feature.
+#
+# urw-base35 is the standard PostScript font set; ImageMagick's own
+# type-urw-base35.xml was already present in the base, describing fonts that
+# were not installed. Installing them takes the font count from 8 to 105 and
+# makes Courier, Helvetica and Times resolve.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends fonts-urw-base35 \
+    && rm -rf /var/lib/apt/lists/*
+
 CMD ["uvicorn", "alfred.main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]

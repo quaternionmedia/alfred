@@ -50,9 +50,26 @@ def _has_ffmpeg():
         return False
 
 
+def _has_imagemagick():
+    """Not "is convert installed" -- "can it draw text".
+
+    The binary being present proves nothing: the API image had ImageMagick
+    and zero fonts, because a bind mount of an empty host directory replaced
+    the image's font directory. `convert` ran fine and every text template
+    returned None. The only probe worth making is the operation itself.
+    """
+    try:
+        from moviepy.editor import TextClip
+
+        return TextClip('probe', fontsize=12, color='white') is not None
+    except Exception:
+        return False
+
+
 _EXTERNAL_TOOLS = {
     'needs_docker': (_has_docker, 'no docker binary available'),
     'needs_ffmpeg': (_has_ffmpeg, 'no ffmpeg available to moviepy'),
+    'needs_imagemagick': (_has_imagemagick, 'ImageMagick cannot render text here'),
 }
 
 

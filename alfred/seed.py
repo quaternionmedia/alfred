@@ -504,6 +504,55 @@ seed = [
             {"type": "Textarea", "attrs": {"name": "legaltext", "text": "Legal Text"}},
         ],
     },
+    # A project the timeline editor can actually open.
+    #
+    # The three projects above carry `logic` and `fields` and no `edl`: they
+    # drive the form flow, where a filled-in form is compiled into clips at
+    # render time. Nothing seeded had a timeline, so /otto opened empty on
+    # every project and there was no way to see whether it worked at all.
+    #
+    # Every clip here is a template, so this renders with no media files
+    # present -- `./al demo` is not a prerequisite for opening it. Template
+    # names are from the allowlist in core/routes/templates.py.
+    {
+        "name": "Timeline demo",
+        "logic": {},
+        "fields": [],
+        "edl": {
+            "clips": [
+                # textBox, not title. `title` raises inside otto on every
+                # call -- "'tuple' object has no attribute 'lower'", with any
+                # font and either method -- so a demo project opening with it
+                # would be a demo that cannot render. Pinned as a strict xfail
+                # in tests/unit/test_template_rendering.py.
+                {
+                    "type": "template",
+                    "name": "textBox",
+                    "duration": 3.0,
+                    "start": 0.0,
+                    "data": {"text": "Alfred", "color": "#101820"},
+                },
+                {
+                    "type": "template",
+                    "name": "textBox",
+                    "duration": 4.0,
+                    "start": 3.0,
+                    "data": {
+                        "text": "Drama is life with the dull bits cut out.",
+                        "color": "#101820",
+                    },
+                },
+                {
+                    "type": "template",
+                    "name": "makeColor",
+                    "duration": 2.0,
+                    "start": 7.0,
+                    "data": {"color": "#f2aa4c"},
+                },
+            ],
+            "duration": 9.0,
+        },
+    },
 ]
 seed_v1 = [
     {

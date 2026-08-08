@@ -62,6 +62,7 @@ markers = [
     "needs_ffmpeg: requires a working ffmpeg binary; actually encodes video",
     "needs_db: requires a running MongoDB",
     "needs_docker: requires a working Docker daemon; builds or runs containers",
+    "needs_imagemagick: requires ImageMagick able to render text with a findable font",
 ]
 # xfail(strict=True) is used to pin defects: the marked test fails if it ever
 # passes, so fixing the defect turns the suite red and prompts removing the
