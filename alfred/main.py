@@ -28,7 +28,6 @@ from alfred.core.utils.db import User
 from alfred import docs
 from alfred.config import DATA_DIR, STATIC_DIR
 
-
 app = FastAPI(
     title=docs.title,
     description=docs.description,
@@ -43,8 +42,12 @@ app.add_middleware(GZipMiddleware)
 @app.on_event('startup')
 async def seedDb():
     db = get_db()
-    if not db.Project.count_documents({}):
-        from seed import seed
+    # `count_documents` is a coroutine on a motor handle. Calling it without
+    # awaiting returned a Future, which is always truthy, so `if not ...`
+    # never fired and this block never ran. The import was also `from seed`,
+    # which only resolves with alfred/ as the working directory.
+    if await db.Project.count_documents({}) == 0:
+        from alfred.seed import seed
 
         await db.Project.insert_many(seed)
 
