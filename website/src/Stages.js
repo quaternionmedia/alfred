@@ -65,14 +65,28 @@ export const Flow = {
   generating: null,
   delivering: null,
 
+  loaded: false,
+
   load: opts => {
+    // Two things this has to get right, learned one at a time.
+    //
+    // Retry once a session exists. A restored session resolves
+    // asynchronously -- `User.restore()` only sets `loggedIn` after
+    // /users/me answers -- and `StagePanel.oninit` runs before that. Loading
+    // only on init left every stage panel empty after a reload: no projects,
+    // no media, no renders, and no error to explain it. Arriving by logging in
+    // worked and arriving by refreshing did not.
+    //
+    // Then cache, or `onupdate` refetches on every frame. The cache is module
+    // state and survives a hash navigation, so `force` exists for the cases
+    // where the data has certainly changed -- entering the Source stage, or
+    // having just generated something. It does not clear the lists first:
+    // blanking them made the panel flash empty on every visit, which reads as
+    // data being lost rather than refreshed.
     if (!User.loggedIn) return
-    // `force` re-reads after generating something, so the panel that offered
-    // to create a demo shows it rather than still offering.
-    if (opts && opts.force) {
-      Flow.projects = []
-      Flow.videos = []
-    }
+    if (Flow.loaded && !(opts && opts.force)) return
+    Flow.loaded = true
+
     auth('/project')
       .then(p => {
         Flow.projects = p
@@ -223,6 +237,14 @@ const Generate = (message, label, action, busyKey) =>
 
 /** Stage 1 -- pick the project, see what material is available to it. */
 const SourcePanel = {
+  // Re-read on entering the stage.
+  //
+  // `Flow.load` caches, so it does not refetch on every draw -- but the cache
+  // is module state and a hash navigation keeps it, so arriving at Source
+  // after creating a project elsewhere showed the list from before. This panel
+  // is the one place freshness matters, and it is mounted anew each time the
+  // stage is entered, so this is once per visit rather than once per frame.
+  oninit: () => Flow.load({ force: true }),
   view: () => {
     const current = m.route.param('project')
     return m('.stagepanel#panel-source', [
@@ -415,6 +437,9 @@ const DeliverPanel = {
 /** The panel for the current stage. Edit has none -- it *is* the timeline. */
 export const StagePanel = () => ({
   oninit: () => Flow.load(),
+  // Same reason as the media bin: the session may not exist yet on the first
+  // draw, and a panel that gave up then would stay empty for the whole visit.
+  onupdate: () => Flow.load(),
   view: () => {
     const stage = Flow.stage()
     if (stage === 'source') return m(SourcePanel)

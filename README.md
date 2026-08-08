@@ -104,6 +104,12 @@ Built with [mkdocs](https://www.mkdocs.org/):
 ./al docs                         # serves on :4000
 ```
 
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the workflow, what CI checks, and the
+two rules that are easy to break by accident: everything arrives as a pull
+request, and contributor fields name humans.
+
 ## Versioning
 
 `alfred/_version.py` is the source of truth; `website/package.json` tracks it.

@@ -12,6 +12,7 @@ USAGE:
 COMMANDS:
 b | build
 cookbook
+recipes
 d | dev
 docker | dock
 flower
@@ -94,6 +95,14 @@ elif [ $1 = "i" -o $1 = "install" ]; then
     echo "installing dependencies"
     # make install
     docker compose -f docker-compose.yml run website yarn add "$@"
+
+elif [ $1 = "recipes" ]; then
+  shift
+  # Record the @recipe walkthroughs as video and put them where the cookbook
+  # links them. Needs a running dev stack; the recordings are what the docs
+  # show, and a recipe that fails leaves no video rather than a stale one.
+  cd website &&     npx playwright test --project=docs --reporter=json > recipe-report.json &&     node e2e/collect-recipe-videos.js &&     node e2e/cookbook.js
+  cd ..
 
 elif [ $1 = "cookbook" ]; then
   shift

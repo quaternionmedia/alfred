@@ -8,6 +8,80 @@ database, a real render worker, and real files on disk. If a step here is
 wrong, a test is failing. That is the point -- prose describing behaviour
 goes stale silently, and a test describing behaviour goes red.
 
+## api contract
+
+Contracts the editor depends on, asserted at the HTTP level.
+
+# Recipe: what the API promises the editor
+
+The browser specs check that the editor works. These check the promises it
+is built on, where a change would break the editor without breaking any
+assertion about the DOM: which templates exist, what a preview returns, what
+a malformed request gets back, and which fields a write may touch.
+
+All of it against the running stack with real data.
+
+### the template preview
+
+`Preview.js` builds this URL for every template clip on the timeline,
+and it 404'd for years because the route it named -- `otto/template/...`
+-- had never existed on this server.
+
+Rendered past the fade-in: templates carry `fadeIn: 1`, so a frame at
+t=0 is the faded-out first frame and every template returns a
+near-identical few kilobytes. Asserting a real picture means asking for
+one after the fade.
+
+- **renders a real image for every advertised template**
+- **refuses a name that is not an advertised template**
+
+  The allowlist is load-bearing, not decorative.
+
+  `generateEdl` resolves a template with `getattr(templates, clip.name)`
+  on a name from the client, and otto's module namespace holds fourteen
+  callables of which five are templates -- the rest are imports it happens
+  to carry. Without the check, `ColorClip` and `rgbToDec` are reachable by
+  name from a URL.
+
+- **previewing requires a session**
+- **the same request twice gives the same size image**
+### malformed input is answered, not crashed on
+
+The editor really does send `undefined`: its routes read a `project`
+query parameter that is not always present, and `'/project/' + undefined`
+is a string the browser will happily request. Both of these answered
+500 -- through two different exception hierarchies needing two
+different fixes, one in beanie and one in bson.
+
+- **GET <path> answers <expected>**
+### project writes touch only what they claim
+
+- **the settings route saves render settings and destination**
+
+  The guard for a defect that cost a document.
+
+  `PUT /project/{id}` goes through the crud router's update, which
+  replaces the whole record with the request body -- so a partial save
+  wrote null over `name` and `logic`. The write succeeded, because writes
+  are not validated; every subsequent read of that project answered 500,
+  because reads are. One request turned a readable project into an
+  unreadable one and nothing reported an error until the next reader
+  arrived.
+
+- **saving settings leaves the rest of the project intact**
+
+  The guard for a defect that cost a document.
+
+  `PUT /project/{id}` goes through the crud router's update, which
+  replaces the whole record with the request body -- so a partial save
+  wrote null over `name` and `logic`. The write succeeded, because writes
+  are not validated; every subsequent read of that project answered 500,
+  because reads are. One request turned a readable project into an
+  unreadable one and nothing reported an error until the next reader
+  arrived.
+
+- **the project stays readable afterwards**
+
 ## appearance
 
 Visual consistency, symmetry, and the functionality that depends on them.
@@ -457,6 +531,72 @@ waiting for the encode.
 - **the create-video action routes to the form for that project**
 - **an anonymous visitor is sent to login, not to the project list**
 
+## recipes
+
+The recipes, written to be watched.
+
+# Recipes
+
+These are tagged `@recipe` and are the source of both halves of the
+documentation: `docs/cookbook.md` is generated from their titles and
+comments, and `./al recipes` records them as video through the `docs`
+Playwright project. A demonstration made this way cannot drift from the
+behaviour, because it is the behaviour -- and when a recipe breaks there is
+no video rather than a misleading one.
+
+They are deliberately unhurried. Every other spec asserts as fast as it can;
+these pause between steps so a person watching can follow, which is the one
+place in this suite where a `waitForTimeout` is the point rather than a
+smell.
+
+Excluded from the `chromium` project, so the gate on every pull request does
+not pay for the pauses.
+
+### @recipe walkthroughs
+
+The editor is the first thing the app shows. Three regions, in the order
+you work: the **viewer** with the output settings beside it, the
+**transport** that moves the playhead, and the **editor** where the
+timeline sits with its tools and the media bin beneath.
+
+- **recipe: open the editor and look around**
+
+  [▶ watch](recipes/open-the-editor-and-look-around.webm)
+
+- **recipe: generate a demo from an empty install**
+
+  [▶ watch](recipes/generate-a-demo-from-an-empty-install.webm)
+
+
+  A first run needs no downloads. The Source stage offers to generate both
+  a project and its media, synthesised locally with ffmpeg's test sources.
+
+- **recipe: choose a project and edit its timeline**
+
+  [▶ watch](recipes/choose-a-project-and-edit-its-timeline.webm)
+
+
+  Choosing a project on the Source stage loads its timeline. The clips are
+  laid out left to right, and each one is as wide as it is long.
+
+- **recipe: pick a tool and move the playhead**
+
+  [▶ watch](recipes/pick-a-tool-and-move-the-playhead.webm)
+
+
+  The tools that change clips sit beside the timeline; the ones that move
+  the playhead sit above it, in the transport.
+
+- **recipe: render the timeline and deliver the result**
+
+  [▶ watch](recipes/render-the-timeline-and-deliver-the-result.webm)
+
+
+  The Render stage turns the timeline into a video; the Deliver stage
+  sends it somewhere. Delivery is local by default, so this works on a
+  machine with no cloud account.
+
+
 ## render pipeline
 
 The whole loop, with a video at the end of it.
@@ -502,6 +642,86 @@ assertion that says nothing.
 - **renders view loads for an authenticated user**
 - **render list is available from the API**
 - **refuses renders to an anonymous caller**
+
+## session
+
+The session lifecycle: refresh, logout, and what a token is worth.
+
+# Recipe: staying logged in, and stopping
+
+The editor keeps a JWT in sessionStorage and sends it as a bearer token. When
+a request comes back 401 the app tries `/auth/jwt/refresh` before giving up
+and redirecting to the login screen -- so refresh is the only mechanism that
+keeps anybody logged in past a token's lifetime, and it is worth testing at
+the HTTP level rather than only through the UI.
+
+These are deliberately API-level. The browser path is covered in
+views.spec.js ("a reload keeps the session"); what is checked here is the
+contract the browser depends on.
+
+### token refresh
+
+This answered 500 for every caller.
+
+The route called `auth_backend.get_login_response(...)`, which has not
+existed on fastapi-users' AuthenticationBackend for several major
+versions -- it carries `login` and `logout` and nothing else. So the one
+path that exists to keep somebody logged in was the one path that could
+not work, and a session reaching its expiry failed with a server error
+rather than renewing.
+
+- **a valid token can be exchanged for a new one**
+- **the refreshed token actually authenticates**
+- **refresh refuses an anonymous caller**
+
+  Pinned as a property, not filed as a defect.
+
+  These are stateless JWTs with no server-side revocation list, so logging
+  out clears the browser's copy and cannot invalidate a token somebody
+  already holds. That is how the mechanism works and it is a real
+  consequence: a leaked token stays valid until it expires, and "log out
+  everywhere" is not something this design can offer.
+
+  If revocation is ever added this test goes red, which is the moment to
+  decide deliberately rather than discover it.
+
+- **refresh refuses a malformed token**
+
+  Pinned as a property, not filed as a defect.
+
+  These are stateless JWTs with no server-side revocation list, so logging
+  out clears the browser's copy and cannot invalidate a token somebody
+  already holds. That is how the mechanism works and it is a real
+  consequence: a leaked token stays valid until it expires, and "log out
+  everywhere" is not something this design can offer.
+
+  If revocation is ever added this test goes red, which is the moment to
+  decide deliberately rather than discover it.
+
+### logout
+
+Pinned as a property, not filed as a defect.
+
+These are stateless JWTs with no server-side revocation list, so logging
+out clears the browser's copy and cannot invalidate a token somebody
+already holds. That is how the mechanism works and it is a real
+consequence: a leaked token stays valid until it expires, and "log out
+everywhere" is not something this design can offer.
+
+If revocation is ever added this test goes red, which is the moment to
+decide deliberately rather than discover it.
+
+- **logout succeeds for an authenticated caller**
+- **a bearer token still works after logout**
+### what a token gets you
+
+The e2e user is not a superuser, so the admin router must refuse it.
+A 200 here would mean any registered account can reach the admin
+surface, which is the kind of thing that is only noticed deliberately.
+
+- **every gated route refuses an anonymous caller**
+- **a token from one login works across every gated route**
+- **the admin surface needs more than an ordinary session**
 
 ## tools
 

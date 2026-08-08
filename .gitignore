@@ -100,3 +100,5 @@ build/
 
 # Data
 data/
+# Playwright JSON report, an intermediate for the recipe video collector.
+website/recipe-report.json
