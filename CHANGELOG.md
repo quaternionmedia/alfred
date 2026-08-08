@@ -136,6 +136,15 @@ behavior rather than only the developer experience.
   URL since before it existed. The name is validated against the allowlist --
   which matters, because `generateEdl` resolves templates with
   `getattr(templates, clip.name)` on a client-supplied name.
+- **The session survives a reload.** The JWT lived in a module-level object,
+  so refreshing any page logged you out. It is kept in `sessionStorage` now
+  and restored before routing, so no guarded view flashes the login screen
+  first. sessionStorage rather than localStorage: it is scoped to one tab and
+  cleared when the tab closes, and the token already passed through
+  localStorage momentarily for cross-tab sharing, so this adds no new class of
+  exposure. Expired tokens are discarded on restore rather than presented,
+  since a UI that renders as logged in and then 401s on every request is worse
+  than one that asks you to log in.
 - **A development auth bypass.** `ALFRED_DEV_SKIP_AUTH=1 ./al dev` serves
   every request as a fixed superuser and lets the SPA skip its login screen.
   Off unless explicitly set; refuses to start alongside `ALFRED_PRODUCTION`;

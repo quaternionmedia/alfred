@@ -30,10 +30,55 @@ export var User = {
       })
       .catch(() => false)
   },
+  // sessionStorage, not localStorage. The token is already put through
+  // localStorage momentarily by the cross-tab credential sharing below, so
+  // this is not a new class of exposure -- but sessionStorage is scoped to one
+  // tab and cleared when it closes, which is the weaker of the two claims a
+  // stored token can make.
+  //
+  // Restored before routing, so a guarded view does not redirect to /login in
+  // the moment before the session comes back.
+  restore: () => {
+    try {
+      const stored = window.sessionStorage.getItem('alfred.jwt')
+      if (!stored) return false
+      const token = JSON.parse(stored)
+      const decoded = jwt_decode(token['access_token'])
+      // Expired tokens are worse than none: they let the UI render as logged
+      // in and then fail every request with a 401.
+      if (decoded.exp && decoded.exp * 1000 <= Date.now()) {
+        window.sessionStorage.removeItem('alfred.jwt')
+        return false
+      }
+      User.jwt = token
+      User.token = token['token_type'] + ' ' + token['access_token']
+      auth('/users/me').then(
+        me => {
+          User.username = me.first_name
+          User.loggedIn = true
+          m.redraw()
+        },
+        () => {
+          User.logout()
+        }
+      )
+      return true
+    } catch (e) {
+      window.sessionStorage.removeItem('alfred.jwt')
+      return false
+    }
+  },
   login: (token) => {
     User.jwt = token
     let decoded = jwt_decode(token['access_token'])
-    
+
+    try {
+      window.sessionStorage.setItem('alfred.jwt', JSON.stringify(token))
+    } catch (e) {
+      // Private browsing modes can refuse storage. Staying logged in for this
+      // page view is still better than failing the login.
+    }
+
     console.log('authenticated!', decoded)
     User.token = token['token_type'] + ' ' + token['access_token']
     auth('/users/me').then(me => {
@@ -60,6 +105,11 @@ export var User = {
     User.username = null
     User.token = null
     User.loggedIn = false
+    try {
+      window.sessionStorage.removeItem('alfred.jwt')
+    } catch (e) {
+      // nothing stored to clear
+    }
     window.localStorage.setItem('CREDENTIALS_FLUSH', Date.now().toString())
     window.localStorage.removeItem('CREDENTIALS_FLUSH')
     m.route.set('/')

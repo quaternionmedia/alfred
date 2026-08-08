@@ -57,10 +57,16 @@ window.localStorage.removeItem('REQUESTING_SHARED_CREDENTIALS')
 
 console.log('sup!')
 
-// Ask the server whether auth is disabled before routing. Routing first would
-// let a guarded view redirect to /login in the moment before the answer comes
-// back, which is the flicker this is meant to remove.
-User.detectDevMode()
+// Restore a stored session, then ask the server whether auth is disabled --
+// both before routing. Routing first would let a guarded view redirect to
+// /login in the moment before either answer arrives, which is the flicker this
+// is meant to remove.
+//
+// Only probe for the bypass if there is no session to restore; with one, the
+// probe is a wasted request that would report devMode for an ordinary login.
+if (!User.restore()) {
+  User.detectDevMode()
+}
 
 m.route(document.body, '/', {
   '/': { render: () => m(Layout, m(Home)) },
