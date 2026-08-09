@@ -3,6 +3,7 @@ from typing import Optional
 from bson import ObjectId
 from fastapi import Depends
 from fastapi_crudrouter import MotorCRUDRouter
+from otto.models import Edl
 from pydantic import BaseModel
 
 from alfred.config import DB_NAME, DB_URL
@@ -79,5 +80,35 @@ class ProjectAPI(MotorCRUDRouter):
             patch = settings.dict(exclude_none=True)
             for field, value in patch.items():
                 setattr(project, field, value)
+            await project.save()
+            return project
+
+        @self.put('/{item_id}/timeline', *args, **kwargs)
+        async def saveProjectTimeline(
+            item_id: str,
+            edl: Edl,
+            user: User = Depends(current_active_user),
+        ):
+            """# Save a project's timeline
+
+            The clips, and nothing else.
+
+            The editor had a save button that posted to `/edl`, which is not a
+            route on this server and never has been -- so the timeline could
+            not be persisted at all, and every edit was lost on reload. The
+            obvious alternative, `PUT /project/{id}`, replaces the whole
+            document: a partial body arrives with `logic` unset, `logic` is
+            required, and the project is left unreadable. That is not
+            hypothetical; it happened, and every subsequent GET answered 500.
+
+            So this writes one field, for the same reason `/settings` does.
+            """
+            if not ObjectId.is_valid(item_id):
+                raise INVALID_ID
+            project = await self.schema.find_one({'_id': ObjectId(item_id)})
+            if project is None:
+                raise NOT_FOUND
+
+            project.edl = edl
             await project.save()
             return project

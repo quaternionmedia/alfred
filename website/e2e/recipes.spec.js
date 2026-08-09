@@ -94,6 +94,7 @@ test.describe('@recipe walkthroughs', () => {
 
     await authedPage.goto('/#!/?stage=source')
     await authedPage
+      .locator('.projectpicker')
       .getByRole('button', { name: new RegExp(MEDIA_PROJECT, 'i') })
       .first()
       .click()

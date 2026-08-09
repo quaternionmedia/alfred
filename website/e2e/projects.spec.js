@@ -53,7 +53,10 @@ test.describe('the project selector', () => {
 
     for (const project of projects) {
       await expect(
-        authedPage.getByRole('button', { name: new RegExp(project.name, 'i') }).first()
+        authedPage
+          .locator('.projectpicker')
+          .getByRole('button', { name: new RegExp(project.name, 'i') })
+          .first()
       ).toBeVisible()
     }
   })

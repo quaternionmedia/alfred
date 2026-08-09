@@ -68,7 +68,10 @@ test.describe('the four-stage flow', () => {
     await expect(authedPage.locator('.projectchoice')).toHaveCount(projects.length)
     for (const project of projects) {
       await expect(
-        authedPage.getByRole('button', { name: new RegExp(project.name, 'i') }).first()
+        authedPage
+          .locator('.projectpicker')
+          .getByRole('button', { name: new RegExp(project.name, 'i') })
+          .first()
       ).toBeVisible()
     }
   })
@@ -90,7 +93,14 @@ test.describe('the four-stage flow', () => {
     test.skip(!demo, 'demo project not seeded')
 
     await authedPage.goto('/#!/?stage=source')
+    // Scoped to the project list. Material entries are buttons too, named
+    // for their file, and a render is named after the project that produced
+    // it -- so `Timeline demo` matches a project card and half a dozen
+    // `Timeline demo_1280x720_....mp4` clips. Unscoped, `.first()` picked
+    // whichever the page had drawn first, and the test failed about one run
+    // in three with no change to the code under test.
     await authedPage
+      .locator('.projectpicker')
       .getByRole('button', { name: new RegExp(DEMO, 'i') })
       .first()
       .click()

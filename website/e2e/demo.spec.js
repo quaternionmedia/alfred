@@ -229,6 +229,7 @@ test.describe('the empty state offers a way out', () => {
 
     await authedPage.goto('/#!/?stage=source')
     await authedPage
+      .locator('.projectpicker')
       .getByRole('button', { name: new RegExp(DEMO_PROJECT, 'i') })
       .first()
       .click()

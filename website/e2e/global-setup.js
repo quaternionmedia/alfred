@@ -79,6 +79,10 @@ module.exports = async () => {
   const token = await login(api)
   await ensureDemoMedia(api, token)
   await ensureMediaProject(api, token)
+  // Called here, not from inside ensureMediaProject: that function returns
+  // early when its own project already exists, so on every run after the
+  // first this never executed and the four tests depending on it skipped.
+  await ensureTimelineDemo(api, { Authorization: token })
 
   await api.dispose()
 }
@@ -159,6 +163,72 @@ async function ensureMediaProject(api, token) {
   if (created.status() !== 200) {
     throw new Error(
       `E2E setup: could not create ${MEDIA_PROJECT} (${created.status()})`
+    )
+  }
+
+}
+
+/**
+ * A project with a short, all-template timeline of three different lengths.
+ *
+ * `appearance.spec.js` has four tests that look for a project called
+ * "Timeline demo" and `test.skip` when it is absent. Nothing created it: it
+ * was a leftover in whichever database the suite happened to run against, so
+ * those four tests ran on one machine and silently skipped on another, and
+ * deleting the stray project would have retired them without a word.
+ *
+ * Templates rather than files, so it does not depend on generated media, and
+ * three distinct durations because one of those tests asserts that a longer
+ * clip is drawn wider.
+ */
+async function ensureTimelineDemo(api, headers) {
+  const TIMELINE_DEMO = 'Timeline demo'
+  const projects = await (await api.get('/project', { headers })).json()
+  const existing = projects.filter(p => p.name === TIMELINE_DEMO)
+
+  // Same de-duplication as above: parallel workers must find exactly one.
+  for (const extra of existing.slice(1)) {
+    await api.delete(`/project/${extra._id}`, { headers })
+  }
+  if (existing.length) return
+
+  const created = await api.post('/project', {
+    headers,
+    data: {
+      name: TIMELINE_DEMO,
+      logic: {},
+      fields: [],
+      edl: {
+        clips: [
+          {
+            type: 'template',
+            name: 'makeColor',
+            duration: 3.0,
+            start: 0.0,
+            data: { color: '#f2aa4c' },
+          },
+          {
+            type: 'template',
+            name: 'makeColor',
+            duration: 4.0,
+            start: 3.0,
+            data: { color: '#101820' },
+          },
+          {
+            type: 'template',
+            name: 'makeColor',
+            duration: 2.0,
+            start: 7.0,
+            data: { color: '#7bbf7b' },
+          },
+        ],
+        duration: 9.0,
+      },
+    },
+  })
+  if (created.status() !== 200) {
+    throw new Error(
+      `E2E setup: could not create ${TIMELINE_DEMO} (${created.status()})`
     )
   }
 }

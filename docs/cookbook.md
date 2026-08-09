@@ -467,8 +467,9 @@ waiting for the encode.
 
 ### navigation
 
-- **menu exposes the primary sections**
-- **menu links change the route**
+- **the rail exposes every stage**
+- **the header carries no navigation of its own**
+- **choosing a stage changes the route**
 - **back and forward move between routes**
 - **serves the SPA shell at the root**
 
@@ -502,6 +503,7 @@ waiting for the encode.
 ### otto editor
 
 - **<group> are present**
+- **action buttons are present**
 - **the play control is present**
 - **timeline slider is positionable**
 
@@ -517,11 +519,6 @@ waiting for the encode.
 
 - **the old projects URL redirects into the flow**
 - **one row per project, named as the API names them**
-
-  The table showed a name and two icons. Whether a project had anything on
-  its timeline — the thing that decides if opening it is worthwhile — was
-  not visible until you opened it.
-
 - **each row shows what is on the project, not just its name**
 
   The table showed a name and two icons. Whether a project had anything on
@@ -687,6 +684,12 @@ makes the Deliver button a guess.
   that fails is worse than one that explains itself. The row disables it
   and says why in the title.
 
+  Asserted as a rule over one DOM snapshot, not by picking an unfinished
+  render from the API and then looking for its row. That version raced
+  the worker: other specs queue renders, so a render chosen as unfinished
+  could complete between the API read and the assertion, and the test
+  failed for having been right a moment earlier.
+
 - **a delivered render says where it went**
 
 ## session
@@ -823,6 +826,23 @@ instead.
   it inert -- on exactly the project a new user presses play on first.
 
 - **the transport says so when there is nothing to play**
+### the project actions
+
+# Recipe: saving a timeline
+
+The save button posted to `/edl`, which is not a route on this server
+and never has been, with a bare `m.request` that would not have carried
+a token if it were. The rejection was handled nowhere, so the button
+reported nothing. Timelines could not be saved at all.
+
+The name assertion is the point of the second half. The obvious way to
+write a timeline back is `PUT /project/{id}`, which replaces the whole
+document -- a partial body arrives with `logic` unset, `logic` is
+required, and every later GET of that project answers 500. This checks
+that saving clips did not take the name with it.
+
+- **saving a timeline persists it, and keeps the rest of the project**
+- **the actions say why they are unavailable**
 
   Viewer, transport, editor. The arrangement used to be a stack of bars
   with related controls apart and unrelated controls together -- aspect

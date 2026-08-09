@@ -102,8 +102,27 @@ async def previewTemplate(
         duration=max(t, 0) + 1,
         data=TemplateData(**data),
     )
-    video = generateEdl(Edl(clips=[clip]), moviesize=(width, height))
 
-    frame_name = frame_path()
-    video.save_frame(frame_name, t=t, withmask=False)
+    # A template that cannot render with the data it was given is a 422, not a
+    # 500.
+    #
+    # otto's templates catch their own exceptions and return None, so a
+    # missing field does not raise here -- it produces a clip with nothing in
+    # it, and the failure surfaces further along when there is no frame to
+    # save. `GET /preview/template/title` with no `text` answered 500, which
+    # says the server is broken when the truth is that the request was
+    # incomplete. The editor showed a blank frame either way.
+    try:
+        video = generateEdl(Edl(clips=[clip]), moviesize=(width, height))
+        frame_name = frame_path()
+        video.save_frame(frame_name, t=t, withmask=False)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f'{name} could not be rendered from the data supplied. '
+                'Templates that take text need it; check the fields on the clip.'
+            ),
+        ) from exc
+
     return FileResponse(frame_name, media_type='image/jpeg')

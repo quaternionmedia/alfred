@@ -17,17 +17,17 @@ const { CREDENTIALS } = require('./credentials')
  * (`src/Menu.js`), so asserting it is visible -- as the Cypress suite did --
  * cannot fail in either state.
  *
- * Note the selector is `a.loginLink`, not `#login-link`. The app renders both
- * a nav bar and a menu bar from the same component set, so five ids are
- * emitted twice each on every page: home-link, projects-link, renders-link,
- * and login-link. Duplicate ids are invalid HTML, and
- * `#login-link` is genuinely ambiguous. `SELECTORS` below resolves each to
- * exactly one element; see e2e/README.md.
+ * Note the selector is `a.loginLink`, not `#login-link`. The header used to
+ * render two link sets from the same components, so several ids appeared
+ * twice on every page; `SELECTORS` resolved each to exactly one element. The
+ * duplication is gone, and the session link now lives in the footer rather
+ * than the header, but addressing it by class is still the stable choice.
  */
 const SELECTORS = {
   login: 'a.loginLink',
-  projects: '.menuLinks a#projects-link',
-  renders: '.menuLinks a#renders-link',
+  // The stage rail is the navigation. The header carried PROJECTS and
+  // RENDERS, which pointed at two of the four stages the rail already lists.
+  stages: '.stagerail .stage',
 }
 
 async function login(page, creds = CREDENTIALS) {

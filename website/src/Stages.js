@@ -77,6 +77,9 @@ export const Flow = {
 
   delivering: null,
 
+  // The most recent addition to the timeline, for the confirmation line.
+  added: null,
+
   loaded: false,
 
   load: opts => {
@@ -249,6 +252,18 @@ const addMedia = name => {
   // click not having worked.
   Player.pause()
   Edl.jump(Edl.startOf(Edl.edl.length - 1))
+
+  // Say it landed, and where.
+  //
+  // The timeline is below the fold on a short window, so the only evidence of
+  // a successful click could be off screen -- which is indistinguishable from
+  // the click having done nothing, and was reported as exactly that.
+  Flow.added = { name: basename(name), at: Edl.edl.length }
+  clearTimeout(addMedia.timer)
+  addMedia.timer = setTimeout(() => {
+    Flow.added = null
+    m.redraw()
+  }, 4000)
 }
 
 const Generate = (message, label, action, busyKey) =>
@@ -369,6 +384,12 @@ const SourcePanel = {
               'p.stagehint',
               'Choose a clip to put it on the timeline.'
             ),
+            Flow.added
+              ? m('p.stageconfirm#media-added', [
+                  m('i.material-icons', 'check'),
+                  `${Flow.added.name} added — clip ${Flow.added.at} on the timeline`,
+                ])
+              : null,
             m(
               'ul.medialist',
               Flow.videos.map(v =>

@@ -55,17 +55,6 @@ export function Menu() {
           )
         ),
         m('nav.menuLinks', m(Links, { onclick: close })),
-        m(
-          Link,
-          {
-            class: 'loginLink',
-            href: User.username ? '/logout' : '/login',
-            id: 'login-link',
-            onclick: close,
-            ...vnode.attrs,
-          },
-          User.username ? 'Logout' : 'Login'
-        ),
       ])
     },
   }
@@ -87,33 +76,17 @@ export const Link = () => ({
   },
 })
 
-//the links in the menu bar
+// The links in the menu bar.
+//
+// Empty, and deliberately so. It carried PROJECTS and RENDERS, which pointed
+// at `?stage=source` and `?stage=deliver` -- two of the four stages the rail
+// already lists, directly below, with the other two beside them. A second
+// control for the same destination is not redundancy, it is a second thing to
+// keep in step and a second place to look.
+//
+// The component stays because the header still needs somewhere to put a link
+// that belongs to the whole app rather than to the editor. There is no such
+// link today.
 export const Links = () => ({
-  view: vnode => [
-    m(
-      Link,
-      {
-        // Into the flow, not to the retired standalone views. Those routes
-        // still redirect here, so an old bookmark works; the menu should not
-        // teach the old path.
-        href: '/?stage=source',
-        id: 'projects-link',
-        ...vnode.attrs,
-      },
-      'PROJECTS'
-    ),
-    m(
-      Link,
-      {
-        href: '/?stage=deliver',
-        id: 'renders-link',
-        ...vnode.attrs,
-      },
-      'RENDERS'
-    ),
-    // No DOCUMENTS entry: it was a route holding two links, and those links
-    // are in the footer now, present on every page rather than behind a
-    // navigation that left the editor.
-  ],
+  view: () => [],
 })
-

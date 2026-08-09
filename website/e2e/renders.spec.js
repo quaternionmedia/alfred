@@ -52,30 +52,37 @@ test.describe('the render list', () => {
     await expect(first.locator('.renderstatus')).toBeVisible()
   })
 
-  test('an unfinished render cannot be delivered', async ({
-    authedPage,
-    request,
-    token,
-  }) => {
+  test('an unfinished render cannot be delivered', async ({ authedPage }) => {
     /**
      * There is no file to send until the worker has finished, and a button
      * that fails is worse than one that explains itself. The row disables it
      * and says why in the title.
+     *
+     * Asserted as a rule over one DOM snapshot, not by picking an unfinished
+     * render from the API and then looking for its row. That version raced
+     * the worker: other specs queue renders, so a render chosen as unfinished
+     * could complete between the API read and the assertion, and the test
+     * failed for having been right a moment earlier.
      */
-    const renders = await (
-      await request.get('/render', { headers: { Authorization: token } })
-    ).json()
-    const unfinished = renders.find(
-      r => !r.destination && r.status !== 'RENDERED' && r.status !== 'UPLOADED'
-    )
-    test.skip(!unfinished, 'every render here has finished')
-
     await authedPage.goto('/#!/?stage=deliver')
-    const row = authedPage
-      .locator('.renderitem')
-      .filter({ hasText: unfinished.project || unfinished.name || '' })
-      .first()
-    await expect(row.locator('button.deliver')).toBeDisabled()
+    await authedPage.waitForTimeout(300)
+
+    const rows = await authedPage.evaluate(() =>
+      [...document.querySelectorAll('.renderitem')].map(row => ({
+        status: (row.querySelector('.renderstatus') || {}).textContent || '',
+        deliverable: !(row.querySelector('button.deliver') || {}).disabled,
+        delivered: !!row.querySelector('.delivered'),
+      }))
+    )
+    test.skip(rows.length === 0, 'nothing rendered in this environment')
+
+    const FINISHED = /RENDERED|UPLOADED/i
+    const wrong = rows.filter(r => r.deliverable && !FINISHED.test(r.status) && !r.delivered)
+
+    expect(
+      wrong,
+      `offered delivery for renders that have not finished: ${JSON.stringify(wrong)}`
+    ).toEqual([])
   })
 
   test('a delivered render says where it went', async ({

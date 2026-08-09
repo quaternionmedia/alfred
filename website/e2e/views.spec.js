@@ -89,7 +89,7 @@ test.describe('views', () => {
     await authedPage.goto('/#!/no-such-route')
     // Whatever the router does with an unknown hash, the shell must survive:
     // the menu is still there and the document is not empty.
-    await expect(authedPage.locator(SELECTORS.projects)).toBeVisible()
+    await expect(authedPage.locator(SELECTORS.stages)).toHaveCount(4)
     const text = await authedPage.locator('body').innerText()
     expect(text.trim().length).toBeGreaterThan(0)
   })

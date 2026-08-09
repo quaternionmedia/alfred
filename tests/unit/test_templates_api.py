@@ -15,8 +15,30 @@ from otto import templates as otto_templates
 
 from alfred.core.routes.templates import (
     TEMPLATE_NAMES,
+    UNDRIVABLE_TEMPLATES,
     available_templates,
 )
+
+
+def unadvertised_callables():
+    """Every callable in otto's namespace that is not an advertised template.
+
+    Derived, not typed. The guard below used a hand-written list of four
+    names -- `ColorClip`, `TextClip`, `CompositeVideoClip`,
+    `concatenate_videoclips` -- against a namespace holding eight that must be
+    refused, so five were unchecked and nothing said so. A list written once
+    describes the namespace on the day it was written; this describes it on
+    the day the test runs, and a new import in otto arrives as a new test
+    case rather than as a silent gap.
+    """
+    allowed = set(TEMPLATE_NAMES) | set(UNDRIVABLE_TEMPLATES)
+    return sorted(
+        name
+        for name in dir(otto_templates)
+        if not name.startswith('_')
+        and callable(getattr(otto_templates, name))
+        and name not in allowed
+    )
 
 
 class TestTheAllowlistMatchesTheEngine:
@@ -68,17 +90,30 @@ class TestTheAllowlistIsNarrowerThanTheNamespace:
             'whether otto.templates changed and simplify accordingly'
         )
 
-    @pytest.mark.parametrize(
-        'leaked',
-        ['ColorClip', 'TextClip', 'CompositeVideoClip', 'concatenate_videoclips'],
-    )
+    @pytest.mark.parametrize('leaked', unadvertised_callables())
     def test_imported_helpers_are_not_advertised_as_templates(self, leaked):
-        """Named individually so a regression says which one came back."""
-        assert hasattr(
-            otto_templates, leaked
-        ), f'{leaked} is no longer in otto.templates, so this guard is stale'
+        """Every unadvertised callable, named individually.
+
+        Parametrised over the derived set rather than a written one, so the
+        count of cases tracks the namespace. A regression still says which
+        name came back, which is why this is one case per name rather than a
+        single assertion over the set.
+        """
         assert leaked not in TEMPLATE_NAMES
         assert leaked not in [t.name for t in available_templates()]
+
+    def test_the_derived_set_is_not_empty(self):
+        """A parametrised test over an empty list passes by vacuum.
+
+        If otto's namespace ever holds nothing beyond the allowlist, the guard
+        above silently becomes zero test cases and keeps reporting success.
+        This is the assertion that notices.
+        """
+        assert unadvertised_callables(), (
+            'nothing in otto.templates is outside the allowlist, so the guard '
+            'above now runs zero cases -- check what changed in otto rather '
+            'than trusting the green'
+        )
 
     def test_nothing_advertised_comes_from_moviepy(self):
         for name in TEMPLATE_NAMES:

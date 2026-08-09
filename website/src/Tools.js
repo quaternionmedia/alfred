@@ -2,8 +2,9 @@ import m from 'mithril'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 import { Player } from './Player'
 import { Video, Edl } from './Video'
+import { auth } from './Login'
 var state = require("./Globals").state
-import { message, success, defaults } from 'alertifyjs'
+import { message, success, error, defaults } from 'alertifyjs'
 import { Resolution, Aspect } from './Resolution'
 
 export function downloadFile(url) {
@@ -101,48 +102,96 @@ export function SpeedTools() {
 }
 
 export function ProjectTools() {
+  let saving = false
+  let rendering = false
+
   return {
-    view: vnode => {
+    view: () => {
+      const project = m.route.param('project')
+      const clips = Edl.edl.length
+
+      // Why each action is unavailable, or null when it is available. Saying
+      // which of two preconditions is missing is the difference between a
+      // control a person can act on and one that is merely inert.
+      const cannotSave = !project
+        ? 'Select a project before saving a timeline to it'
+        : !clips
+          ? 'Nothing on the timeline to save'
+          : null
+      const cannotRender = !project
+        ? 'Select a project before rendering'
+        : !clips
+          ? 'Nothing on the timeline to render'
+          : null
+
       return m('.tools.toolbar', {}, [
-          m('i.material-icons', {
-            title: 'save',
-            onclick: vnode => {
-              m.request({
-                url: '/edl',
-                method: 'post',
-                params: {
-                  filename: m.route.param('edl')
-                },
-                body: {'edl': Edl.edl}
-              }).then(e => {
-                let resp = JSON.parse(e)
-                console.log('sucessfully saved', resp)
-                message(`saved! ${resp.filename}`, 3)
+        m(
+          'i.material-icons#save-timeline',
+          {
+            title: cannotSave || 'Save this timeline to the project',
+            class: cannotSave ? 'disabled' : '',
+            onclick: () => {
+              if (cannotSave || saving) return
+              saving = true
+              // `/project/{id}/timeline`, and with a token.
+              //
+              // This posted to `/edl` with a bare `m.request` -- no route of
+              // that name has ever existed on this server, and no
+              // Authorization header would have been sent if it had. So the
+              // save button had never once saved anything, and said nothing
+              // when it failed: the response was parsed inside a `.then` with
+              // no `.catch`, so the rejection went nowhere.
+              auth(`/project/${project}/timeline`, {
+                method: 'PUT',
+                body: { clips: Edl.edl },
               })
-            }
-          }, 'save'),
-          m('i.material-icons', {
-            title: 'render',
-            onclick: (vnode) => {
-              // console.log('export')
-              m.request({
-                url: '/render',
-                method: 'post',
+                .then(() => {
+                  saving = false
+                  success(`Saved ${Edl.edl.length} clips to the project`)
+                  m.redraw()
+                })
+                .catch(() => {
+                  saving = false
+                  error('Could not save the timeline', 4)
+                  m.redraw()
+                })
+            },
+          },
+          saving ? 'hourglass_top' : 'save'
+        ),
+        m(
+          'i.material-icons#render-timeline',
+          {
+            title: cannotRender || 'Render this timeline',
+            class: cannotRender ? 'disabled' : '',
+            onclick: () => {
+              if (cannotRender || rendering) return
+              rendering = true
+              auth('/render', {
+                method: 'POST',
                 params: {
-                  project: m.route.param('project'),
+                  project,
                   width: state.width(),
                   height: state.height(),
                 },
-                body: { edl: Edl.edl },
-              }).then(e => {
-                console.log('got result', e)
-                message(`Added ${m.route.param("project")} to render queue`, 5)
-                m.route.set('/renders')
-              }
-            )
-          }
-        }, 'file_upload'),
+                body: { edl: { clips: Edl.edl } },
+              })
+                .then(() => {
+                  rendering = false
+                  message('Added to the render queue', 5)
+                  // Into the flow, not to the retired `/renders` route.
+                  m.route.set('/', { stage: 'deliver', project })
+                })
+                .catch(() => {
+                  rendering = false
+                  error('Could not queue the render', 4)
+                  m.redraw()
+                })
+            },
+          },
+          rendering ? 'hourglass_top' : 'file_upload'
+        ),
       ])
-    }
+    },
   }
 }

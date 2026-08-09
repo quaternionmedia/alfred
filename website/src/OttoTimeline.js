@@ -6,68 +6,103 @@ import { ContentEditable } from 'mithril-contenteditable'
 var state = require("./Globals").state
 import { Video, Edl, array_move } from './Video'
 import { Preview } from './Preview'
+import { Player } from './Player'
 import { auth } from './Login'
 
 export function Clip() {
+  // Listeners for an in-progress trim, held so they can be removed again.
+  let dragging = null
+
   return {
-    oncreate: (vnode) => {
-      let data = vnode.attrs
-      let i = vnode.attrs.i
-      let element = vnode.dom
-      let original_width = 0;
-      let original_x = 0;
-      let original_mouse_x = 0;
+    oncreate: vnode => {
+      const element = vnode.dom
 
       element.addEventListener('mousedown', e => {
+        // `vnode.attrs`, read now rather than captured at oncreate. This
+        // component instance is reused for whatever clip ends up at its
+        // position -- the list is unkeyed -- so a reference taken once
+        // describes the clip that used to be here.
+        const attrs = vnode.attrs
+
         if (state.tool() == 'trim') {
           e.preventDefault()
-          original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
-          original_x = element.getBoundingClientRect().left;
-          original_mouse_x = e.pageX;
+          if (dragging) return
 
-          function resize(e) {
-            const w = original_width + (e.pageX - original_mouse_x);
-            const dx = e.movementX / state.scale()
-            if ((w + dx) > 0)
-            element.style.width = w + dx + 'px'
-            console.log('trimmed', e, dx, element)
-          }
-          function stopResize() {
-            element.removeEventListener('mousemove', resize)
-            Edl.edl[vnode.attrs.i]['duration'] = parseFloat(element.style.width) / state.scale()
-            Edl.update()
-          }
-          element.addEventListener('mousemove', resize)
-          element.addEventListener('mouseup', stopResize)
+          const startWidth = element.getBoundingClientRect().width
+          const startX = e.pageX
 
+          const resize = ev => {
+            const w = startWidth + (ev.pageX - startX)
+            if (w > 4) element.style.width = w + 'px'
+          }
+
+          const stop = () => {
+            document.removeEventListener('mousemove', resize)
+            document.removeEventListener('mouseup', stop)
+            dragging = null
+            const clip = Edl.edl[attrs.i]
+            if (clip) {
+              clip.duration = parseFloat(element.style.width) / state.scale()
+              Edl.update()
+            }
+          }
+
+          // On `document`, not on the clip.
+          //
+          // Both were bound to the element itself, so dragging past its edge
+          // -- which is the whole gesture, since the point is to make it
+          // wider -- stopped `mousemove` firing, and releasing the button
+          // anywhere but over the clip never reached `stopResize`. The
+          // `mousemove` handler then stayed attached for the life of the
+          // page, and every subsequent press added another.
+          //
+          // The visible result was that clips resized without being dragged:
+          // after pressing two or three of them, moving the pointer across
+          // any one resized it, and they appeared to respond in parallel.
+          dragging = { resize, stop }
+          document.addEventListener('mousemove', resize)
+          document.addEventListener('mouseup', stop)
         } else if (state.tool() == 'time') {
-          let p = e.offsetX / e.target.offsetWidth
-          let d = p * e.target.offsetWidth / state.scale()
-          Edl.current = vnode.attrs.i
-          Edl.time = d + Edl.durations(Edl.edl.slice(0, vnode.attrs.i))
-          Video.clip = data
-          Video.time(d)
-          console.log('clicked on clip', this, vnode, e, p, d, Edl, Video)
-          m.redraw()
+          const p = e.offsetX / e.target.offsetWidth
+          const within = p * (Number(attrs.duration) || 0)
+          // Through the transport, so the viewer follows the click. Setting
+          // `Edl.time` directly moved the playhead marker and left the
+          // preview showing whatever it had been showing.
+          Player.seek(Edl.startOf(attrs.i) + within)
         }
       })
     },
-    view: (vnode) => {
-      return m('.clip', {
-        style: {
-          width: vnode.attrs.duration*state.scale()
+
+    onremove: () => {
+      // A clip removed mid-drag would otherwise leave both handlers on the
+      // document, resizing an element that is no longer in the page.
+      if (dragging) {
+        document.removeEventListener('mousemove', dragging.resize)
+        document.removeEventListener('mouseup', dragging.stop)
+        dragging = null
+      }
+    },
+
+    view: vnode => {
+      return m(
+        '.clip',
+        {
+          style: {
+            width: vnode.attrs.duration * state.scale(),
+          },
+          ...vnode.attrs,
         },
-        ...vnode.attrs
-        }, [
+        [
           m('i.material-icons.progress', {
             style: {
-              display: (Edl.current == vnode.attrs.i) ? 'inherit': 'none',
-              left: Video.time()*state.scale(),
-            }
+              display: Edl.current == vnode.attrs.i ? 'inherit' : 'none',
+              left: Video.time() * state.scale(),
+            },
           }),
-          ...vnode.children
-        ])
-    }
+          ...vnode.children,
+        ]
+      )
+    },
   }
 }
 
@@ -181,8 +216,15 @@ export function OttoTimeline() {
       Edl.update()
       return
     }
+    // Remember which request this is, so a slow one cannot overwrite newer
+    // state when it finally lands. Without this, selecting a project and
+    // adding material before the fetch returned discarded the addition: the
+    // response assigns the whole clip list, and it assigned the version from
+    // before the click.
+    const pending = projectId
     auth(`/project/${projectId}`, {})
         .then(e => {
+          if (pending !== loaded) return
           // `e.edl` is the API's Edl document, {clips, duration}. This module's
           // `Edl.edl` is the flat clips array -- it is indexed, mapped, sliced
           // and reduced everywhere below. Assigning the document straight in

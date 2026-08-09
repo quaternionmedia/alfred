@@ -33,6 +33,7 @@ export function ImagePreview() {
 export function AuthedImage() {
   let objectUrl = null
   let lastRequested = null
+  let problem = null
 
   const release = () => {
     if (objectUrl) {
@@ -48,16 +49,41 @@ export function AuthedImage() {
       url,
       headers: { Authorization: User.token },
       responseType: 'blob',
-      extract: xhr => xhr.response,
+      extract: xhr => {
+        if (xhr.status >= 400) {
+          // The body is JSON even though the request asked for a blob, so it
+          // is read as text and the server's own explanation is kept.
+          const err = new Error(xhr.responseText)
+          err.status = xhr.status
+          throw err
+        }
+        return xhr.response
+      },
     })
       .then(blob => {
         release()
+        problem = null
         objectUrl = URL.createObjectURL(blob)
         m.redraw()
       })
-      .catch(() => {
-        // A template that cannot render is not worth a broken-image icon on
-        // every redraw; leave the previous frame up.
+      .catch(e => {
+        // Say why, rather than leaving the last good frame up.
+        //
+        // This swallowed every failure on the grounds that a broken-image
+        // icon per redraw is worse than nothing -- which is true, and left a
+        // template that cannot render looking identical to one that simply
+        // had not loaded yet. The server now answers 422 with the reason a
+        // template refused, and that reason is worth more on screen than a
+        // stale frame.
+        let detail = ''
+        try {
+          detail = JSON.parse(e.message).detail || ''
+        } catch (_) {
+          detail = ''
+        }
+        problem = detail || 'This template could not be rendered.'
+        release()
+        m.redraw()
       })
   }
 
@@ -68,7 +94,12 @@ export function AuthedImage() {
     view: vnode =>
       objectUrl
         ? m('img.preview', { id: vnode.attrs.id, src: objectUrl })
-        : m('.preview.loading'),
+        : problem
+          ? m('.preview.unrenderable', { id: vnode.attrs.id }, [
+              m('i.material-icons', 'report_problem'),
+              m('span', problem),
+            ])
+          : m('.preview.loading'),
   }
 }
 export function VideoPreview() {

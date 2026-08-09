@@ -311,6 +311,22 @@
   }
 }
 
+// Confirms an addition landed. The timeline can be below the fold, so the
+// result of a successful click is not always visible from the control that
+// caused it.
+.stageconfirm {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  color: #7bbf7b;
+
+  i {
+    font-size: 1rem;
+  }
+}
+
 // Says what clicking does, once, above the list -- rather than relying on
 // every item's tooltip to carry it.
 .stagehint {

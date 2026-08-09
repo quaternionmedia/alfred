@@ -137,10 +137,27 @@ These bite on a first run, none obvious from the error:
   `docker compose up --renew-anon-volumes`) or the container keeps the
   previous install.
 
-`./al dev` runs with `--reload`, so edits under `alfred/` restart the API. That
-also means a test run writing into the repo can restart the server mid-request
-— `test_e2e.yml` overrides the command to disable reload for exactly that
-reason.
+- **`--reload` does not see your edits on Windows or macOS.** `./al dev` runs
+  uvicorn with `--reload`, which watches with inotify — and inotify events do
+  not cross a Docker bind mount from a non-Linux host. This is the same
+  limitation that costs the frontend its HMR, but the frontend has a polling
+  watcher and the API does not, so the API silently keeps running the code it
+  loaded at startup.
+
+  The symptom is a fix that does not take effect, and the tell is a traceback
+  whose frame shows a line number with **no source line** beside it — Python
+  cannot map the frame because the file changed under the loaded module. Run
+  `docker compose -f docker-compose.yml -f dev.yml restart api` after editing
+  anything under `alfred/`.
+
+  A syntax error is worse: the container reports `Up` while crash-looping, and
+  every request answers connection-refused rather than 500. `docker logs
+  alfred-api-1` names it immediately; nothing else does.
+
+`./al dev` runs with `--reload`, so on a Linux host edits under `alfred/`
+restart the API. That also means a test run writing into the repo can restart
+the server mid-request — `test_e2e.yml` overrides the command to disable
+reload for exactly that reason.
 
 ## Conventions
 

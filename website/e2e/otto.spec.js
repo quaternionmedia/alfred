@@ -31,7 +31,10 @@ const TRANSPORT = ['start', 'back 5s', 'forward 5s', 'end']
 
 const SPEED = ['slower', 'reset speed', 'faster']
 
-const ACTIONS = ['save', 'render']
+// The project actions, by id. Their titles are now the reason they are
+// unavailable when they are -- "Nothing on the timeline to save" rather than
+// "save" -- so a title is not a stable handle for them.
+const ACTION_IDS = ['#save-timeline', '#render-timeline']
 
 test.describe('otto editor', () => {
   test.beforeEach(async ({ authedPage }) => {
@@ -42,7 +45,6 @@ test.describe('otto editor', () => {
     'edit tools': TOOLS,
     'transport controls': TRANSPORT,
     'speed controls': SPEED,
-    'action buttons': ACTIONS,
   })) {
     test(`${group} are present`, async ({ authedPage }) => {
       for (const title of titles) {
@@ -53,6 +55,12 @@ test.describe('otto editor', () => {
       }
     })
   }
+
+  test('action buttons are present', async ({ authedPage }) => {
+    for (const id of ACTION_IDS) {
+      await expect(authedPage.locator(id), `missing control: ${id}`).toBeVisible()
+    }
+  })
 
   test('the play control is present', async ({ authedPage }) => {
     await expect(authedPage.locator('#playpause')).toBeVisible()

@@ -206,20 +206,31 @@ test.describe('the tools pass their events', () => {
     await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
     await expect(authedPage.locator('#timeline .clip').first()).toBeVisible()
 
-    for (const control of ['start', 'forward 5s', 'back 5s', 'end']) {
-      await authedPage.locator(`#PlaybackTools i[title="${control}"]`).click()
+    // Every control the toolbar actually has, asked of the toolbar.
+    //
+    // This looped a written list -- `['start', 'forward 5s', 'back 5s',
+    // 'end']` -- against a toolbar of five. The omitted one was play, and
+    // play was the only one still broken: all five had reached through a
+    // module that was never mounted, and the four seek controls had since
+    // been rewritten to call `Edl.jump` directly. So the suite reported the
+    // transport as raising no errors, about a transport whose most-used
+    // control threw on every click.
+    //
+    // Deriving the list means a sixth control is covered the day it is added
+    // rather than the day somebody remembers to add it here.
+    const controls = authedPage.locator('#PlaybackTools i')
+    const count = await controls.count()
+    expect(count, 'the transport has no controls to press').toBeGreaterThan(0)
+
+    for (let i = 0; i < count; i++) {
+      await controls.nth(i).click()
       await authedPage.waitForTimeout(150)
     }
 
-    // Play was missing from this list, and its absence was the bug. Every one
-    // of these controls reached through a module that was never mounted, so
-    // its element reference was null and the handler threw on the first
-    // click -- but the four seek controls were rewritten to call `Edl.jump`
-    // directly and stopped throwing, leaving play as the only one still
-    // broken and the only one this loop did not press.
+    // Pressed twice, because play and pause are one control in two states and
+    // only one of them is reachable per press.
     await authedPage.locator('#playpause').click()
-    await authedPage.waitForTimeout(300)
-    await authedPage.locator('#playpause').click()
+    await authedPage.waitForTimeout(200)
 
     expect(errors, `transport controls threw: ${errors.join('; ')}`).toEqual([])
   })
@@ -276,6 +287,93 @@ test.describe('the tools pass their events', () => {
     const play = authedPage.locator('#playpause')
     await expect(play).toHaveClass(/disabled/)
     await expect(play).toHaveAttribute('title', /nothing on the timeline/i)
+  })
+})
+
+test.describe('the project actions', () => {
+  test('saving a timeline persists it, and keeps the rest of the project', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * # Recipe: saving a timeline
+     *
+     * The save button posted to `/edl`, which is not a route on this server
+     * and never has been, with a bare `m.request` that would not have carried
+     * a token if it were. The rejection was handled nowhere, so the button
+     * reported nothing. Timelines could not be saved at all.
+     *
+     * The name assertion is the point of the second half. The obvious way to
+     * write a timeline back is `PUT /project/{id}`, which replaces the whole
+     * document -- a partial body arrives with `logic` unset, `logic` is
+     * required, and every later GET of that project answers 500. This checks
+     * that saving clips did not take the name with it.
+     */
+    await request.post('/demo/media', { headers: { Authorization: token } })
+
+    // Its own project, created here and used by nobody else.
+    //
+    // The first version of this test saved into whichever shared project had
+    // clips, which meant it permanently added one every run: the fixtures
+    // grew, a spec asserting clips sit on one row started failing on the
+    // width, and a render of that project began pulling in a file this test
+    // had put there. A test that writes to shared state has to bring its own.
+    const created = await request.post('/project', {
+      headers: { Authorization: token },
+      data: {
+        name: `save test ${test.info().workerIndex}-${test.info().repeatEachIndex}`,
+        logic: {},
+        edl: { clips: [] },
+      },
+    })
+    expect(created.status(), await created.text()).toBeLessThan(400)
+    const project = await created.json()
+    const before = 0
+
+    await authedPage.goto(`/#!/?stage=source&project=${project._id}`)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(before)
+
+    await authedPage.locator('.mediachoice').first().click()
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
+
+    await authedPage.locator('#save-timeline').click()
+
+    await expect
+      .poll(async () => {
+        const saved = await (
+          await request.get(`/project/${project._id}`, {
+            headers: { Authorization: token },
+          })
+        ).json()
+        return ((saved.edl || {}).clips || []).length
+      })
+      .toBe(before + 1)
+
+    const saved = await (
+      await request.get(`/project/${project._id}`, {
+        headers: { Authorization: token },
+      })
+    ).json()
+    expect(saved.name, 'saving the timeline overwrote the project name').toBe(
+      project.name
+    )
+
+    await authedPage.reload()
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
+  })
+
+  test('the actions say why they are unavailable', async ({ authedPage }) => {
+    // Both were always enabled and always clickable, whether or not there was
+    // a project to act on or a clip to act with.
+    await authedPage.goto('/#!/?stage=edit')
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(0)
+
+    for (const id of ['#save-timeline', '#render-timeline']) {
+      const button = authedPage.locator(id)
+      await expect(button).toHaveClass(/disabled/)
+      await expect(button).toHaveAttribute('title', /select a project|nothing on the timeline/i)
+    }
   })
 })
 
