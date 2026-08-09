@@ -9,9 +9,7 @@ stays a second or two rather than a minute.
 """
 
 import pytest
-
 from moviepy.video.VideoClip import VideoClip
-
 from otto.exceptions import EmptyClipsException
 from otto.models import Clip, Edl, TemplateData
 from otto.render import generateEdl, renderMultitrack
@@ -203,6 +201,7 @@ def test_an_audio_clip_is_also_appended_as_a_video_layer():
     as well. Flagged for review; not changed here.
     """
     import inspect
+
     from otto import render
 
     source = inspect.getsource(render.generateEdl)

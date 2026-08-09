@@ -1,10 +1,12 @@
+from datetime import date, datetime, time, timezone
+
 from fastapi import APIRouter
 from fastapi.exceptions import HTTPException
-from datetime import datetime, date, time
-from datetime import timezone
+
+from alfred.config import EMAIL_SENDTO, INVOICE_EMAIL_BODY
+
 from ..utils import sendMail
 from .invoicer import generate_invoice
-from alfred.config import INVOICE_EMAIL_BODY, EMAIL_SENDTO
 
 adminAPI = APIRouter()
 

@@ -11,12 +11,12 @@ matter here are about that distinction rather than about the endpoint.
 import inspect
 
 import pytest
+from otto import templates as otto_templates
 
 from alfred.core.routes.templates import (
     TEMPLATE_NAMES,
     available_templates,
 )
-from otto import templates as otto_templates
 
 
 class TestTheAllowlistMatchesTheEngine:

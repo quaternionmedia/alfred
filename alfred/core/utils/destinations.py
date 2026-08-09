@@ -103,7 +103,7 @@ class BucketDestination:
     name = 'bucket'
 
     def deliver(self, filename: str) -> Delivery:
-        from .bucket import upload, generate_signed_url
+        from .bucket import generate_signed_url, upload
 
         try:
             upload(filename)

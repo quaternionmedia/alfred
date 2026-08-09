@@ -3,10 +3,11 @@ from functools import lru_cache
 from weakref import WeakKeyDictionary
 
 import motor.motor_asyncio
-from alfred.config import DB_URL, DB_NAME
-from pydantic import Field
-from fastapi_users.db import BeanieBaseUser, BeanieUserDatabase
 from beanie import PydanticObjectId
+from fastapi_users.db import BeanieBaseUser, BeanieUserDatabase
+from pydantic import Field
+
+from alfred.config import DB_NAME, DB_URL
 
 # Async clients are cached per event loop, not globally.
 #

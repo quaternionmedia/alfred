@@ -5,12 +5,13 @@ from fastapi import Depends
 from fastapi_crudrouter import MotorCRUDRouter
 from pydantic import BaseModel
 
+from alfred.config import DB_NAME, DB_URL
+
 from ..models import Project, ProjectUpdate, RenderSettings
 from ..models import UserRead as User
 from ..utils.bucket import INVALID_ID, NOT_FOUND
 from ..utils.db import get_client
 from .users import current_active_user
-from alfred.config import DB_URL, DB_NAME
 
 
 class ProjectSettings(BaseModel):

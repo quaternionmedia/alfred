@@ -1,15 +1,16 @@
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import FileResponse
-from ..models.render import Render
-from otto.models import Edl, Clip, TemplateData
-from otto.render import generateEdl
-from otto.getdata import timestr
 from os import makedirs
 from os.path import join
 from uuid import uuid4
 
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse
+from otto.getdata import timestr
+from otto.models import Clip, Edl, TemplateData
+from otto.render import generateEdl
+
 from alfred.config import DATA_DIR
 
+from ..models.render import Render
 from .templates import TEMPLATE_NAMES
 
 previewAPI = APIRouter()

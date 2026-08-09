@@ -1,36 +1,38 @@
-from fastapi import FastAPI, Depends
+from subprocess import run as bash
+
+from beanie import init_beanie
+from fastapi import Depends, FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 from starlette.staticfiles import StaticFiles
-from beanie import init_beanie
 
-from subprocess import run as bash
-
-from alfred.core.routes import authAPI
-from alfred.core.routes import videoAPI
-from alfred.core.routes import issueAPI
-from alfred.core.routes import adminAPI
-from alfred.core.routes import fontAPI
-from alfred.core.routes import ProjectAPI
-from alfred.core.routes import RenderAPI
-from alfred.core.routes import previewAPI
-from alfred.core.routes import templateAPI
-from alfred.core.routes import demoAPI
-
-# from otto.main import app as ottoApi
-from alfred.core.utils import get_db
+from alfred import docs
+from alfred.config import DATA_DIR, DEV_SKIP_AUTH, DEV_USER_EMAIL, STATIC_DIR
+from alfred.core.models.users import UserRead, UserUpdate
+from alfred.core.routes import (
+    ProjectAPI,
+    RenderAPI,
+    adminAPI,
+    authAPI,
+    demoAPI,
+    fontAPI,
+    issueAPI,
+    previewAPI,
+    templateAPI,
+    videoAPI,
+)
 
 # from alfred.core.utils.db import deOid
 from alfred.core.routes.users import (
-    fastapi_users,
-    current_active_user,
     current_active_superuser,
+    current_active_user,
+    fastapi_users,
 )
-from alfred.core.models.users import UserRead, UserUpdate
+
+# from otto.main import app as ottoApi
+from alfred.core.utils import get_db
 from alfred.core.utils.db import User
-from alfred import docs
-from alfred.config import DATA_DIR, STATIC_DIR, DEV_SKIP_AUTH, DEV_USER_EMAIL
 
 app = FastAPI(
     title=docs.title,

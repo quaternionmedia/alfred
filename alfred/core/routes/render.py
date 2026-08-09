@@ -1,18 +1,20 @@
-from fastapi import Depends, HTTPException
-from typing import Optional
 from os.path import join
-from .users import current_active_user, current_active_superuser
+from typing import Optional
+
+from bson import ObjectId
+from fastapi import Depends, HTTPException
+from fastapi_crudrouter import MotorCRUDRouter
+from otto.getdata import timestr
+
+from alfred.config import DB_NAME, DB_URL, VIDEO_DIR
+
 from ..models import UserRead as User
 from ..models.render import Render, RenderUpdate
-from otto.getdata import timestr
-from ..utils.tasks import renderRemote
-from ..utils.bucket import generate_signed_url, INVALID_ID, NOT_FOUND
-from ..utils.destinations import DeliveryError, get_destination
-from alfred.config import VIDEO_DIR
-from fastapi_crudrouter import MotorCRUDRouter
-from alfred.config import DB_URL, DB_NAME
+from ..utils.bucket import INVALID_ID, NOT_FOUND, generate_signed_url
 from ..utils.db import get_client
-from bson import ObjectId
+from ..utils.destinations import DeliveryError, get_destination
+from ..utils.tasks import renderRemote
+from .users import current_active_superuser, current_active_user
 
 
 class RenderAPI(MotorCRUDRouter):

@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from ..utils.db import get_db
 
 fontAPI = APIRouter()

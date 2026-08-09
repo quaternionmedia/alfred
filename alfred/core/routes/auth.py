@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, Response, HTTPException, status
-from .users import fastapi_users, auth_backend
-from ..models import UserRead, UserCreate
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+
+from ..models import UserCreate, UserRead
+from .users import auth_backend, current_active_user, fastapi_users
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 90
@@ -23,7 +24,7 @@ auth.include_router(fastapi_users.get_verify_router(UserRead))
 @auth.post("/jwt/refresh")
 async def refresh_jwt(
     response: Response,
-    user=Depends(fastapi_users.current_user(active=True)),
+    user=Depends(current_active_user),
     strategy=Depends(auth_backend.get_strategy),
 ):
     """Issue a fresh token to a caller whose current one is still valid.
