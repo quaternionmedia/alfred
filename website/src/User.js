@@ -95,9 +95,18 @@ export var User = {
       User.username = me.first_name
       User.loggedIn = true
       console.log('logged in as: ', User)
-      if (m.route.param('redirect')) {
-        m.route.set(m.route.param('redirect'))
-      } else if (m.route.get() == '/login') {
+      // Go somewhere that is not the login screen.
+      //
+      // This checked `m.route.get() == '/login'`, which is false the moment
+      // the route carries a query string -- and the session guard sends people
+      // here as `/login?redirect=...`. So an empty or absent redirect fell
+      // through to `m.route.set(m.route.get())`, which re-set the login route
+      // and left the person looking at the form they had just submitted.
+      const target = m.route.param('redirect')
+      const onLogin = (m.route.get() || '').split('?')[0].startsWith('/login')
+      if (target && !target.split('?')[0].startsWith('/login')) {
+        m.route.set(target)
+      } else if (onLogin) {
         m.route.set('/')
       } else {
         m.route.set(m.route.get())

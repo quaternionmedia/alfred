@@ -108,3 +108,6 @@ website/recipe-report.json
 # stubs instead, so generated multi-megabyte binaries do not accumulate in
 # history.
 docs/recipes/*.webm
+
+# Test-render output moved aside during review prep; regenerable, never shipped.
+videos-test-output/
