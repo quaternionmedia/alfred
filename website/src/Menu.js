@@ -93,7 +93,10 @@ export const Links = () => ({
     m(
       Link,
       {
-        href: '/projects',
+        // Into the flow, not to the retired standalone views. Those routes
+        // still redirect here, so an old bookmark works; the menu should not
+        // teach the old path.
+        href: '/?stage=source',
         id: 'projects-link',
         ...vnode.attrs,
       },
@@ -102,7 +105,7 @@ export const Links = () => ({
     m(
       Link,
       {
-        href: '/renders',
+        href: '/?stage=deliver',
         id: 'renders-link',
         ...vnode.attrs,
       },

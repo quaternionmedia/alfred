@@ -8,6 +8,8 @@ export var User = {
   token: null,
   loggedIn: false,
   devMode: false,
+  // Set once restore and the dev-mode probe have both had their say.
+  booted: false,
   // Detects the server-side auth bypass (ALFRED_DEV_SKIP_AUTH) by asking for
   // the current user with no credentials. With auth on that is a 401 and
   // nothing changes; with the bypass on it returns the dev user, so the SPA
@@ -52,17 +54,25 @@ export var User = {
       }
       User.jwt = token
       User.token = token['token_type'] + ' ' + token['access_token']
-      auth('/users/me').then(
+      // Resolves when the session is *confirmed*, not when it is attempted.
+      //
+      // This returned true synchronously while `loggedIn` was still false
+      // until /users/me answered. The boot guard read that as "restored", ran
+      // immediately, saw `loggedIn` false and sent a perfectly good session to
+      // the login screen -- so a reload logged you out, which is the exact
+      // behaviour the stored token exists to prevent.
+      return auth('/users/me').then(
         me => {
           User.username = me.first_name
           User.loggedIn = true
           m.redraw()
+          return true
         },
         () => {
-          User.logout()
+          window.sessionStorage.removeItem('alfred.jwt')
+          return false
         }
       )
-      return true
     } catch (e) {
       window.sessionStorage.removeItem('alfred.jwt')
       return false
@@ -98,6 +108,29 @@ export var User = {
     
     // m.redraw()
   },
+  /** Send an anonymous visitor to the login screen, once boot has settled.
+   *
+   * The app is entirely gated: every view needs a session. That used to be
+   * enforced by accident -- each view fetched something, `auth` saw the 401 and
+   * redirected. Migrating #!/projects and #!/renders into the stage flow
+   * removed the accident: the flow's panels skip their fetches when there is no
+   * session, so an anonymous visitor landed on the editor shell and sat there.
+   *
+   * Called after `restore` and `detectDevMode` have settled, because both
+   * resolve asynchronously and redirecting before they answer would bounce
+   * somebody who is in fact logged in.
+   */
+  requireSession: () => {
+    // Nothing to decide until boot has answered. Called from a component's
+    // oninit this fires on the first draw, long before /users/me returns, and
+    // would bounce a session that is about to be confirmed.
+    if (!User.booted) return
+    if (User.loggedIn) return
+    const route = m.route.get() || ''
+    if (route.startsWith('/login') || route.startsWith('/logout')) return
+    m.route.set('/login', { redirect: route })
+  },
+
   logout: () => {
     console.log('logging out', User)
     m.request('/logout', {method: 'post'})

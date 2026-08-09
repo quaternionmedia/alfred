@@ -1,4 +1,5 @@
 import m from 'mithril'
+import { User } from './User'
 import { Menu } from './Menu' 
 import { Footer } from './Footer'
 
@@ -93,5 +94,9 @@ export const Section = {
 }
 
 export const Layout = {
+  // Every gated view outside the editor mounts through here, so this is where
+  // they get the session check. Does nothing until boot has answered, and
+  // nothing at all for a visitor who is logged in.
+  oninit: () => User.requireSession(),
   view: vnode => [m(Menu), m(Section, vnode.attrs, vnode.children), m(Footer)],
 }

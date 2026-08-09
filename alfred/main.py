@@ -155,7 +155,25 @@ if DEV_SKIP_AUTH:
 
     @app.get('/users/me', response_model=UserRead, tags=['users'])
     async def dev_users_me(user: User = Depends(get_dev_user)):
-        return user
+        # Built explicitly rather than returned as a document.
+        #
+        # Returning the Beanie document worked while UserRead.id was optional
+        # and serialised as null. Once id became a required string -- the fix
+        # for /users/me handing back `{}` -- FastAPI could not find it on the
+        # document by field name and answered 500 with "field required". The
+        # bypass then failed at exactly the endpoint the SPA probes to decide
+        # whether it is logged in, so the app sat on the login screen with
+        # every other route wide open.
+        return UserRead(
+            id=str(user.id),
+            email=user.email,
+            is_active=user.is_active,
+            is_superuser=user.is_superuser,
+            is_verified=user.is_verified,
+            first_name=user.first_name,
+            birthdate=getattr(user, 'birthdate', None),
+            address=getattr(user, 'address', None),
+        )
 
 
 app.include_router(

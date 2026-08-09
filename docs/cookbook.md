@@ -521,15 +521,37 @@ waiting for the encode.
 
 ## projects
 
-### projects
+### the project selector
 
-- **renders the projects list for an authenticated user**
-- **table header names the three columns**
+- **the old projects URL redirects into the flow**
 - **one row per project, named as the API names them**
+
+  The table showed a name and two icons. Whether a project had anything on
+  its timeline — the thing that decides if opening it is worthwhile — was
+  not visible until you opened it.
+
+- **each row shows what is on the project, not just its name**
+
+  The table showed a name and two icons. Whether a project had anything on
+  its timeline — the thing that decides if opening it is worthwhile — was
+  not visible until you opened it.
+
 - **each row offers an edit and a create-video action**
 - **the edit action routes to the template editor for that project**
 - **the create-video action routes to the form for that project**
-- **an anonymous visitor is sent to login, not to the project list**
+- **choosing a project opens it on the timeline**
+
+  A filter rather than pagination: the list is small enough to render
+  whole, and typing a name beats scrolling for one. It appears only when
+  there are enough projects to be worth filtering.
+
+- **the filter narrows the list without losing anything**
+
+  A filter rather than pagination: the list is small enough to render
+  whole, and typing a name beats scrolling for one. It appears only when
+  there are enough projects to be worth filtering.
+
+- **an anonymous visitor is sent to login**
 
 ## recipes
 
@@ -560,37 +582,22 @@ you work: the **viewer** with the output settings beside it, the
 timeline sits with its tools and the media bin beneath.
 
 - **recipe: open the editor and look around**
-
-  [▶ watch](recipes/open-the-editor-and-look-around.webm)
-
 - **recipe: generate a demo from an empty install**
-
-  [▶ watch](recipes/generate-a-demo-from-an-empty-install.webm)
-
 
   A first run needs no downloads. The Source stage offers to generate both
   a project and its media, synthesised locally with ffmpeg's test sources.
 
 - **recipe: choose a project and edit its timeline**
 
-  [▶ watch](recipes/choose-a-project-and-edit-its-timeline.webm)
-
-
   Choosing a project on the Source stage loads its timeline. The clips are
   laid out left to right, and each one is as wide as it is long.
 
 - **recipe: pick a tool and move the playhead**
 
-  [▶ watch](recipes/pick-a-tool-and-move-the-playhead.webm)
-
-
   The tools that change clips sit beside the timeline; the ones that move
   the playhead sit above it, in the transport.
 
 - **recipe: render the timeline and deliver the result**
-
-  [▶ watch](recipes/render-the-timeline-and-deliver-the-result.webm)
-
 
   The Render stage turns the timeline into a video; the Deliver stage
   sends it somewhere. Delivery is local by default, so this works on a
@@ -637,11 +644,23 @@ assertion that says nothing.
 
 ## renders
 
-### renders
+### the render list
 
-- **renders view loads for an authenticated user**
+Status and progress lived only in the retired table, and they are what
+tells you whether a render can be delivered at all. A row without them
+makes the Deliver button a guess.
+
+- **the old renders URL redirects into the flow**
 - **render list is available from the API**
 - **refuses renders to an anonymous caller**
+- **each row shows the state of its render**
+- **an unfinished render cannot be delivered**
+
+  There is no file to send until the worker has finished, and a button
+  that fails is worse than one that explains itself. The row disables it
+  and says why in the title.
+
+- **a delivered render says where it went**
 
 ## session
 
@@ -786,7 +805,7 @@ spinner and `aria-busy` while their request is in flight.
 
 ### views
 
-- **renders view loads with its heading**
+- **the renders view is now the deliver stage**
 - **documents view loads with its heading**
 - **home view loads**
 - **each view renders without an uncaught page error**

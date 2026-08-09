@@ -26,24 +26,24 @@ test.describe('navigation', () => {
 
   test('menu links change the route', async ({ authedPage }) => {
     await authedPage.locator(SELECTORS.projects).click()
-    await expect(authedPage).toHaveURL(/#!\/projects/)
+    await expect(authedPage).toHaveURL(/stage=source/)
 
     await authedPage.locator(SELECTORS.renders).click()
-    await expect(authedPage).toHaveURL(/#!\/renders/)
+    await expect(authedPage).toHaveURL(/stage=deliver/)
   })
 
   test('back and forward move between routes', async ({ authedPage }) => {
     await authedPage.locator(SELECTORS.projects).click()
-    await expect(authedPage).toHaveURL(/#!\/projects/)
+    await expect(authedPage).toHaveURL(/stage=source/)
 
     await authedPage.locator(SELECTORS.renders).click()
-    await expect(authedPage).toHaveURL(/#!\/renders/)
+    await expect(authedPage).toHaveURL(/stage=deliver/)
 
     await authedPage.goBack()
-    await expect(authedPage).toHaveURL(/#!\/projects/)
+    await expect(authedPage).toHaveURL(/stage=source/)
 
     await authedPage.goForward()
-    await expect(authedPage).toHaveURL(/#!\/renders/)
+    await expect(authedPage).toHaveURL(/stage=deliver/)
   })
 
   test('serves the SPA shell at the root', async ({ page }) => {

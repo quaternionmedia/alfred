@@ -63,6 +63,15 @@ export const Flow = {
   },
 
   generating: null,
+  filter: '',
+
+  /** Projects matching the filter box, or all of them when it is empty. */
+  matchingProjects: () => {
+    const needle = Flow.filter.trim().toLowerCase()
+    if (!needle) return Flow.projects
+    return Flow.projects.filter(p => (p.name || '').toLowerCase().includes(needle))
+  },
+
   delivering: null,
 
   loaded: false,
@@ -235,7 +244,20 @@ const Generate = (message, label, action, busyKey) =>
     }),
   ])
 
-/** Stage 1 -- pick the project, see what material is available to it. */
+/** Stage 1 -- pick the project, see what material is available to it.
+ *
+ * This is now the only project selector in the app.
+ *
+ * There were two, fetching /project independently and rendering it
+ * differently: this picker, and the table at #!/projects. Two components with
+ * separate state for one list means they disagree -- generate a project here
+ * and the table did not know, and neither told the other when a selection
+ * changed. `Flow` is the single source now, and #!/projects redirects here.
+ *
+ * It absorbs what the table offered rather than dropping it: the edit-template
+ * and create-video actions per project, which were the table's only reason to
+ * exist beyond listing.
+ */
 const SourcePanel = {
   // Re-read on entering the stage.
   //
@@ -247,44 +269,46 @@ const SourcePanel = {
   oninit: () => Flow.load({ force: true }),
   view: () => {
     const current = m.route.param('project')
+    const matches = Flow.matchingProjects()
+
     return m('.stagepanel#panel-source', [
-      m('h3', 'Project'),
+      m('.panelhead', [
+        m('h3', `Project${Flow.projects.length ? ` (${Flow.projects.length})` : ''}`),
+        // A filter rather than pagination: the list is small enough to render
+        // whole, and typing a name beats scrolling for one.
+        Flow.projects.length > 3
+          ? m('input#project-filter.filter', {
+              type: 'search',
+              placeholder: 'Filter projects',
+              value: Flow.filter,
+              oninput: e => {
+                Flow.filter = e.target.value
+              },
+            })
+          : null,
+      ]),
+
       Flow.projects.length
-        ? m(
-            'ul.projectpicker',
-            Flow.projects.map(p =>
-              m(
-                'li',
-                m(
-                  'button.projectchoice',
-                  {
-                    class: p._id === current ? 'active' : '',
-                    onclick: () => {
-                      m.route.set('/otto', { project: p._id, stage: 'edit' })
-                    },
-                  },
-                  [
-                    m('span.projectname', p.name || '(unnamed)'),
-                    m(
-                      'span.projectclips',
-                      `${((p.edl || {}).clips || []).length} clips`
-                    ),
-                  ]
-                )
-              )
+        ? matches.length
+          ? m(
+              'ul.projectpicker',
+              matches.map(p => m(ProjectCard, { project: p, current }))
             )
-          )
+          : Empty(`Nothing matches "${Flow.filter}".`)
         : Generate(
             'No projects yet.',
             'Generate a demo project',
             () => auth('/demo/project', { method: 'POST' }),
             'project'
           ),
-      m('h3', 'Material'),
+
+      m('h3', `Material${Flow.videos.length ? ` (${Flow.videos.length})` : ''}`),
       Flow.videos.length
         ? m(
             'ul.medialist',
-            Flow.videos.map(v => m('li.mediaitem', typeof v === 'string' ? v : v.name))
+            Flow.videos.map(v =>
+              m('li.mediaitem', String(v).split('/').pop())
+            )
           )
         : Generate(
             'No media on the server.',
@@ -295,6 +319,60 @@ const SourcePanel = {
     ])
   },
 }
+
+/** One project, with everything known about it and everything you can do. */
+const ProjectCard = () => ({
+  view: vnode => {
+    const p = vnode.attrs.project
+    const clips = ((p.edl || {}).clips || []).length
+    const duration = (p.edl || {}).duration
+    const size = p.render_settings
+      ? `${p.render_settings.width}×${p.render_settings.height}`
+      : null
+
+    return m('li.projectrow', { class: p._id === vnode.attrs.current ? 'active' : '' }, [
+      m(
+        'button.projectchoice',
+        {
+          title: 'Open this project on the timeline',
+          class: p._id === vnode.attrs.current ? 'active' : '',
+          onclick: () => m.route.set('/', { project: p._id, stage: 'edit' }),
+        },
+        [
+          m('span.projectname', p.name || '(unnamed)'),
+          // What the old table could not show: whether there is anything to
+          // edit, how long it runs, and what it last rendered at.
+          m('span.projectmeta', [
+            m('span.projectclips', `${clips} clip${clips === 1 ? '' : 's'}`),
+            duration ? m('span.projectduration', `${duration}s`) : null,
+            size ? m('span.projectsize', size) : null,
+            p.destination ? m('span.projectdest', `→ ${p.destination}`) : null,
+          ]),
+        ]
+      ),
+      // Carried over from the projects table, which was the only place these
+      // lived.
+      m('.projectactions', [
+        m(
+          'button.iconaction',
+          {
+            title: 'Edit the template for this project',
+            onclick: () => m.route.set('/editor', { project: p._id }),
+          },
+          m('i.material-icons', 'edit')
+        ),
+        m(
+          'button.iconaction',
+          {
+            title: 'Create a video from this project',
+            onclick: () => m.route.set('/form', { project: p._id }),
+          },
+          m('i.material-icons', 'video_call')
+        ),
+      ]),
+    ])
+  },
+})
 
 /** Stage 3 -- queue a render of what is on the timeline. */
 const RenderPanel = {
@@ -371,68 +449,104 @@ const RenderPanel = {
   },
 }
 
-/** Stage 4 -- send a finished render to its destination. */
+/** Stage 4 -- send a finished render to its destination.
+ *
+ * The only render list in the app, for the same reason as the project picker:
+ * there were two, fetching /render separately, and they could not agree.
+ * #!/renders redirects here.
+ *
+ * It carries what the renders table showed -- project, duration, size, status
+ * and progress -- rather than dropping those to keep the panel small. A person
+ * on this stage is deciding which render to send somewhere, and the answer
+ * depends on all of it.
+ */
 const DeliverPanel = {
   oninit: () => Flow.loadRenders(),
   view: () =>
     m('.stagepanel#panel-deliver', [
-      m('h3', 'Deliver'),
-      m('label', [
-        'Destination',
-        m(
-          'select#destination',
-          Flow.destinations.map(d =>
-            m(
-              'option',
-              { value: d, selected: d === Flow.chosenDestination() },
-              d
+      m('.panelhead', [
+        m('h3', `Deliver${Flow.renders.length ? ` (${Flow.renders.length})` : ''}`),
+        m('label.inline', [
+          'Destination',
+          m(
+            'select#destination',
+            Flow.destinations.map(d =>
+              m('option', { value: d, selected: d === Flow.chosenDestination() }, d)
             )
-          )
-        ),
+          ),
+        ]),
       ]),
+
       Flow.renders.length
         ? m(
             'ul.renderlist',
-            Flow.renders.slice(0, 8).map(r =>
-              m('li.renderitem', [
-                m('span.rendername', r.filename || r.name || r._id),
-                r.destination
-                  ? m('span.delivered', `delivered → ${r.destination}`)
-                  : m(AsyncButton, {
-                      class: 'deliver',
-                      busy: Flow.delivering === r._id,
-                      label: 'Deliver',
-                      busyLabel: 'Delivering…',
-                      onclick: () => {
-                        const destination =
-                          document.getElementById('destination').value
-                        // Per-render, not a single flag: several rows each
-                        // have a button, and one shared flag would spin all
-                        // of them for one click.
-                        Flow.delivering = r._id
-                        auth(
-                          `/render/${r._id}/deliver?destination=${destination}`,
-                          { method: 'POST' }
-                        )
-                          .then(() => {
-                            Flow.delivering = null
-                            Flow.remember({ destination })
-                            Flow.loadRenders()
-                          })
-                          .catch(() => {
-                            Flow.delivering = null
-                            Flow.error = 'Delivery failed'
-                            m.redraw()
-                          })
-                      },
-                    }),
-              ])
-            )
+            Flow.renders.slice(0, 12).map(r => m(RenderRow, { render: r }))
           )
-        : Empty('Nothing rendered yet.'),
+        : Empty('Nothing rendered yet. Queue one from the Render stage.'),
+
       Flow.error ? m('p.stageerror', Flow.error) : null,
     ]),
 }
+
+/** One render, with its state and the one action available to it. */
+const RenderRow = () => ({
+  view: vnode => {
+    const r = vnode.attrs.render
+    const progress = typeof r.progress === 'number' ? Math.round(r.progress) : null
+    const done = r.status === 'RENDERED' || r.status === 'UPLOADED'
+    const failed = r.status === 'failed'
+
+    return m('li.renderitem', { class: failed ? 'failed' : done ? 'done' : 'working' }, [
+      m('span.rendername', { title: r.filename || '' }, [
+        r.project || r.name || r._id,
+        r.description ? m('span.renderdesc', r.description) : null,
+      ]),
+
+      m('span.rendermeta', [
+        r.width && r.height ? m('span', `${r.width}×${r.height}`) : null,
+        r.duration ? m('span', `${Math.round(r.duration)}s`) : null,
+        // Status and progress were only in the old table, and they are what
+        // tells you whether a render can be delivered at all.
+        m('span.renderstatus', failed ? 'failed' : r.status || 'queued'),
+        !done && !failed && progress !== null
+          ? m('span.renderprogress', `${progress}%`)
+          : null,
+      ]),
+
+      r.destination
+        ? m('span.delivered', `delivered → ${r.destination}`)
+        : m(AsyncButton, {
+            class: 'deliver',
+            busy: Flow.delivering === r._id,
+            // A render that has not finished has no file to send, and a button
+            // that fails is worse than one that explains itself.
+            disabled: !done,
+            title: done ? 'Send this render to the chosen destination' : 'Not finished yet',
+            label: 'Deliver',
+            busyLabel: 'Delivering…',
+            onclick: () => {
+              const destination = document.getElementById('destination').value
+              // Per-render, not a single flag: several rows each have a
+              // button, and one shared flag would spin all of them.
+              Flow.delivering = r._id
+              auth(`/render/${r._id}/deliver?destination=${destination}`, {
+                method: 'POST',
+              })
+                .then(() => {
+                  Flow.delivering = null
+                  Flow.remember({ destination })
+                  Flow.loadRenders()
+                })
+                .catch(() => {
+                  Flow.delivering = null
+                  Flow.error = 'Delivery failed'
+                  m.redraw()
+                })
+            },
+          }),
+    ])
+  },
+})
 
 /** The panel for the current stage. Edit has none -- it *is* the timeline. */
 export const StagePanel = () => ({

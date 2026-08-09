@@ -18,11 +18,12 @@ function watchForPageErrors(page) {
 }
 
 test.describe('views', () => {
-  test('renders view loads with its heading', async ({ authedPage }) => {
+  test('the renders view is now the deliver stage', async ({ authedPage }) => {
+    // `#!/renders` was a standalone table listing data the flow also listed.
+    // It redirects into the stage that owns that list.
     await authedPage.goto('/#!/renders')
-    await expect(
-      authedPage.getByRole('heading', { name: 'Renders' })
-    ).toBeVisible()
+    await expect(authedPage).toHaveURL(/stage=deliver/)
+    await expect(authedPage.locator('#panel-deliver')).toBeVisible()
   })
 
   test('documents view loads with its heading', async ({ authedPage }) => {

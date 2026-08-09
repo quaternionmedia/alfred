@@ -143,6 +143,15 @@ Two habits came out of that and are worth keeping:
 forces the marker to be removed. That mechanism worked in practice: fixing
 `otto`'s `title` template turned the suite red the moment it started passing.
 
+## A second retrospective
+
+[retrospective-verification-discipline.md](retrospective-verification-discipline.md)
+covers a method failure rather than a code one: every test number in this
+branch was measured against a server whose identity was never established, on a
+default port, with a bypass flag I had set myself and left set. The functional
+findings here stand; the evidence behind them is weaker than the numbers imply,
+and that document says how much.
+
 ## What triage should decide
 
 1. **Push `alfred/otto` or revert the pointer.** Blocking.

@@ -131,6 +131,117 @@
   gap: 0.4rem;
 }
 
+// A heading with its control on the same line, so the filter and the
+// destination select read as belonging to the section rather than floating
+// above the list.
+.panelhead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+
+  h3 {
+    margin-bottom: 0.4rem;
+  }
+
+  .filter {
+    min-width: 12rem;
+  }
+
+  label.inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
+    margin: 0;
+  }
+}
+
+// One project: the choice on the left, its actions on the right. They are
+// separate buttons because they go to different places -- clicking the card
+// opens the timeline, and the icons go to the template editor and the form.
+.projectrow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.25rem;
+  border: 1px solid #2e2e2e;
+  border-radius: 4px;
+  overflow: hidden;
+
+  &.active {
+    border-color: #f2aa4c;
+  }
+
+  .projectchoice {
+    border: none;
+    border-radius: 0;
+    flex: 1 1 auto;
+  }
+
+  .projectactions {
+    display: flex;
+    align-items: center;
+    border-left: 1px solid #2e2e2e;
+  }
+
+  .iconaction {
+    border: none;
+    border-radius: 0;
+    min-height: 100%;
+    padding: 0 0.5rem;
+    color: #9a9a9a;
+
+    &:hover {
+      color: #f2aa4c;
+      background: #1f1f1f;
+    }
+
+    i {
+      font-size: 1.1rem;
+      vertical-align: middle;
+    }
+  }
+}
+
+.projectmeta {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #8f8f8f;
+}
+
+.renderitem {
+  justify-content: space-between;
+  gap: 0.75rem;
+
+  // The state of a render is the first thing to read on the row, so it gets
+  // colour and the rest stays grey.
+  &.failed .renderstatus {
+    color: #d98a8a;
+  }
+
+  &.done .renderstatus {
+    color: #7bbf7b;
+  }
+
+  &.working .renderstatus {
+    color: #f2aa4c;
+  }
+}
+
+.rendermeta {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.75rem;
+  color: #8f8f8f;
+}
+
+.renderdesc {
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+  color: #8f8f8f;
+}
+
 .projectchoice {
   // Deliberately taller than the single-line action buttons: it stacks a
   // project name over its clip count.

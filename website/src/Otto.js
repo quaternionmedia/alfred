@@ -1,6 +1,7 @@
 import m from "mithril"
 import './styles/editor.scss'
 import { Menu } from './Menu'
+import { User } from './User'
 import { Head } from './Head'
 
 import Slider from './Slider'
@@ -18,6 +19,12 @@ import { Scale } from './Scale'
 import { StageRail, StagePanel, Flow } from './Stages'
 
 export var Otto = {
+  // Re-checked on every mount, not only at boot.
+  //
+  // A single check after boot covered whichever route happened to resolve
+  // first and left the others open -- an anonymous visitor reached #!/otto and
+  // stayed. This runs on each mount and does nothing until boot has answered.
+  oninit: () => User.requireSession(),
   view: (vnode) => {
     /**
      * The timeline is the subject; everything else adorns it.
