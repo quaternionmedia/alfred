@@ -81,8 +81,9 @@ arguments prints the full command list.
 
 | Command | What it does |
 |---|---|
-| `./al dev` | Run the dev stack; app on http://localhost:8000 |
+| `./al dev` | Run the dev stack; app on http://localhost:8000 (`ALFRED_PORT` to move it) |
 | `./al dev --build` | Rebuild images first |
+| `./al stop` | Stop the dev stack |
 | `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
 | `./al pytest` | Run the API test suite in Docker |
 | `./al nox -s lint` | Ruff |

@@ -76,15 +76,27 @@ elif [ $1 = "d" ] || [ $1 = "dev" ]; then
   # not discovering it. Override rather than kill: ALFRED_PORT=8100 ./al dev
   ALFRED_PORT="${ALFRED_PORT:-8000}"
   if curl -s -o /dev/null --max-time 3 "http://localhost:$ALFRED_PORT/" 2>/dev/null; then
-    echo
-    echo "  Port $ALFRED_PORT is already answering." >&2
-    echo "  Something else is bound there; this stack would look up while every" >&2
-    echo "  request from your machine reached that instead." >&2
+    # First match, not last: an OpenAPI document has a `title` per schema as
+    # well as the one in `info`, and a greedy pattern finds the wrong one.
+    occupant=$(curl -s --max-time 3 "http://localhost:$ALFRED_PORT/openapi.json" 2>/dev/null       | head -c 400 | grep -o '"title":"[^"]*"' | head -1 | cut -d'"' -f4)
+    # Suggest a port that is actually free, rather than naming the taken one.
+    alternate=$((ALFRED_PORT + 100))
     echo >&2
-    echo "  It identifies itself as:" >&2
-    curl -s --max-time 3 "http://localhost:$ALFRED_PORT/openapi.json" 2>/dev/null       | head -c 300 | grep -o '"title":"[^"]*"' | head -1 | sed 's/^/    /' >&2       || echo "    (no OpenAPI document; not a FastAPI app, or not sharing one)" >&2
-    echo >&2
-    echo "  Start on another port instead:  ALFRED_PORT=8100 ./al dev" >&2
+    if [ "$occupant" = "Alfred API" ]; then
+      echo "  Alfred is already running on port $ALFRED_PORT." >&2
+      echo >&2
+      echo "  Stop it first:                  ./al stop" >&2
+      echo "  or start a second stack:        ALFRED_PORT=$alternate ./al dev" >&2
+    else
+      echo "  Port $ALFRED_PORT is already answering, and not as Alfred." >&2
+      echo "  Starting here would look fine and be wrong: the container would" >&2
+      echo "  serve correctly on its own network while every request from your" >&2
+      echo "  machine reached whatever holds the port." >&2
+      echo >&2
+      echo "  It identifies itself as:  ${occupant:-(no OpenAPI document)}" >&2
+      echo >&2
+      echo "  Start elsewhere instead:  ALFRED_PORT=$alternate ./al dev" >&2
+    fi
     echo >&2
     exit 1
   fi
@@ -147,6 +159,11 @@ elif [ $1 = "flower" ]; then
 elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
   shift
   downloadMedia
+
+# Stops the dev stack
+elif [ $1 = "stop" ]; then
+  shift
+  docker compose -f docker-compose.yml -f dev.yml down "$@"
 
 elif [ $1 = "restart" -o $1 = "r" ]; then
   shift
