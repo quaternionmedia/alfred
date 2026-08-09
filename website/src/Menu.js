@@ -111,15 +111,9 @@ export const Links = () => ({
       },
       'RENDERS'
     ),
-    m(
-      Link,
-      {
-        href: '/documents',
-        id: 'documents-link',
-        ...vnode.attrs,
-      },
-      'DOCUMENTS'
-    ),
+    // No DOCUMENTS entry: it was a route holding two links, and those links
+    // are in the footer now, present on every page rather than behind a
+    // navigation that left the editor.
   ],
 })
 

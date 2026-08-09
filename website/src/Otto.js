@@ -1,6 +1,7 @@
 import m from "mithril"
 import './styles/editor.scss'
 import { Menu } from './Menu'
+import { Footer } from './Footer'
 import { User } from './User'
 import { Head } from './Head'
 
@@ -70,6 +71,10 @@ export var Otto = {
         m('.editorsurface', [m(OttoTimeline), m(Bin)]),
         m('.editoractions', [m(ProjectTools)]),
       ]),
+
+      // The editor is the whole app now, so it carries the footer -- which is
+      // where the documentation links live since #!/documents was retired.
+      m(Footer),
     ]
   },
 }

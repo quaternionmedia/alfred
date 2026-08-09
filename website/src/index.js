@@ -1,14 +1,11 @@
 import m from 'mithril'
 import Project from './Project'
-import { Documents } from './Documents'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
 import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'
 import { Login, Logout } from './Login'
 import { User } from './User'
-import { Magnussens } from './Magnussens'
 import { Layout } from './Components'
-import { TemplateEditor } from './TemplateEditor'
 import { Otto } from './Otto'
 // Same as the logo in Menu.js: the default import is not a URL string.
 const ICON = new URL('./assets/al-white.svg', import.meta.url).href
@@ -96,10 +93,35 @@ m.route(document.body, '/', {
       m.route.set('/', { stage: 'deliver' })
     },
   },
-  '/documents': { render: () => m(Layout, m(Documents)) },
+  // Two links. They are in the footer now, on every page, rather than behind
+  // a route of their own that dropped you out of the editor to read them.
+  '/documents': {
+    onmatch: () => {
+      m.route.set('/', { stage: 'source' })
+    },
+  },
   '/otto': Otto,
-  '/form': { render: () => m(Layout, m(Magnussens)) },
-  '/editor': { render: () => m(Layout, m(TemplateEditor)) },
+
+  // Retired. Both were routes with no stage rail and no timeline: a second
+  // interface reachable from the first and unable to get back to it, which
+  // could also reach states nothing could act on -- #!/form rendered a
+  // submittable form with no project at all, and #!/editor?project=nonexistent
+  // rendered "nonexistent logic undefined".
+  //
+  // Their content lives in the stages now: the template under Source, the
+  // form as the Render stage for projects that are driven by one. These
+  // redirect, carrying the project through, because they are the URLs the
+  // project list used and anyone has bookmarked.
+  '/form': {
+    onmatch: args => {
+      m.route.set('/', { ...args, stage: 'render' })
+    },
+  },
+  '/editor': {
+    onmatch: args => {
+      m.route.set('/', { ...args, stage: 'source' })
+    },
+  },
   '/login': { render: () => m(Layout, m(Login)) },
   '/logout': { render: () => m(Layout, m(Logout)) },
 })

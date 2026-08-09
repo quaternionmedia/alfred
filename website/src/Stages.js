@@ -3,6 +3,8 @@ import './styles/stages.scss'
 import { auth } from './Login'
 import { User } from './User'
 import { Edl } from './Video'
+import { TemplateEditor } from './TemplateEditor'
+import { Magnussens } from './Magnussens'
 
 var state = require('./Globals').state
 
@@ -302,6 +304,34 @@ const SourcePanel = {
             'project'
           ),
 
+      // A project id in the URL that names nothing is worth saying out loud.
+      // It arrives from a stale bookmark or a hand-edited link, and silently
+      // ignoring it leaves the stages looking empty for no stated reason.
+      current && Flow.projects.length && !Flow.project()
+        ? m('p.stagewarn#unknown-project', [
+            'No project with that id. ',
+            m(
+              'button.linklike',
+              { onclick: () => m.route.set('/', { stage: 'source' }) },
+              'Clear it'
+            ),
+          ])
+        : null,
+
+      // The template editor, which used to be a route of its own at #!/editor
+      // with no stage rail and no timeline -- a second interface reachable
+      // from this one and unable to get back to it. It is a property of the
+      // selected project, so it belongs beside the project you selected.
+      // No `key` here. A keyed vnode among unkeyed siblings makes mithril
+      // reject the whole fragment -- "vnodes must either all have keys or none
+      // have keys" -- and it throws during render, so this entire panel
+      // produced no DOM at all. Not a subtle degradation: no project list, no
+      // media, no warning above, and a timeline that stayed empty because the
+      // panel that populates it never rendered. The key was there to reset the
+      // editor when the selection changed, which ProjectTemplate now does by
+      // watching the id itself.
+      current ? m(ProjectTemplate) : null,
+
       m('h3', `Material${Flow.videos.length ? ` (${Flow.videos.length})` : ''}`),
       Flow.videos.length
         ? m(
@@ -318,6 +348,42 @@ const SourcePanel = {
           ),
     ])
   },
+}
+
+/** The selected project's logic and fields, collapsed until asked for.
+ *
+ * Collapsed because it is reference material: most visits to this stage are to
+ * pick a project, not to inspect one. Open, it is the whole of what #!/editor
+ * showed.
+ */
+const ProjectTemplate = () => {
+  let open = false
+  let shownFor = null
+
+  return {
+    view: () => {
+      // Collapse when the selection moves on. Carrying an open editor from one
+      // project to the next shows the new project's fields under the previous
+      // one's heading, which reads as the edit having followed you across.
+      const current = m.route.param('project')
+      if (current !== shownFor) {
+        shownFor = current
+        open = false
+      }
+
+      return m('.projecttemplate', [
+        m(
+          'button.disclosure#template-toggle',
+          {
+            onclick: () => (open = !open),
+            'aria-expanded': open ? 'true' : 'false',
+          },
+          [m('i.material-icons', open ? 'expand_more' : 'chevron_right'), 'Template']
+        ),
+        open ? m('.templatebody', m(TemplateEditor)) : null,
+      ])
+    },
+  }
 }
 
 /** One project, with everything known about it and everything you can do. */
@@ -353,11 +419,14 @@ const ProjectCard = () => ({
       // Carried over from the projects table, which was the only place these
       // lived.
       m('.projectactions', [
+        // Both actions stay inside the flow. They used to leave it for
+        // #!/editor and #!/form, which had no rail and no way back to the
+        // project you had just been looking at.
         m(
           'button.iconaction',
           {
             title: 'Edit the template for this project',
-            onclick: () => m.route.set('/editor', { project: p._id }),
+            onclick: () => m.route.set('/', { project: p._id, stage: 'source' }),
           },
           m('i.material-icons', 'edit')
         ),
@@ -365,7 +434,7 @@ const ProjectCard = () => ({
           'button.iconaction',
           {
             title: 'Create a video from this project',
-            onclick: () => m.route.set('/form', { project: p._id }),
+            onclick: () => m.route.set('/', { project: p._id, stage: 'render' }),
           },
           m('i.material-icons', 'video_call')
         ),
@@ -378,6 +447,32 @@ const ProjectCard = () => ({
 const RenderPanel = {
   view: () => {
     const project = Flow.project()
+
+    // A project drives a render one of two ways, and which one is a property
+    // of the project rather than a choice the person makes.
+    //
+    // Projects with `fields` and `logic` are form-driven: you fill in a form
+    // and the logic compiles it into clips. That lived at #!/form -- a route
+    // with no stage rail, reachable from the project list and unable to get
+    // back to it, and which rendered a submittable form even with no project
+    // at all. It is the Render stage for those projects.
+    const formDriven = project && (project.fields || []).length > 0
+    if (formDriven) {
+      return m('.stagepanel#panel-render', [
+        m('h3', 'Render from the project form'),
+        m('p.stagenote', [
+          'This project builds its clips from a form rather than from the ',
+          'timeline. ',
+          m(
+            'button.linklike',
+            { onclick: () => Flow.go('edit') },
+            'Open the timeline instead'
+          ),
+        ]),
+        m('.formhost', m(Magnussens)),
+      ])
+    }
+
     return m('.stagepanel#panel-render', [
       m('h3', 'Render'),
       // Defaults come from the project when it has an opinion, so reopening

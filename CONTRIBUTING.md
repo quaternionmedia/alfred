@@ -43,11 +43,11 @@ demo media*: both are synthesised locally with ffmpeg.
 
 ```sh
 pdm install -G test
-pdm run pytest                       # 225 backend tests
+./al pytest                          # 229 backend tests, plus black and ruff
 
 cd website && npm install
 npx playwright install chromium
-npm run e2e                          # 134 browser tests, needs ./al dev
+npm run e2e                          # 140 browser tests, needs ./al dev
 ```
 
 Two things worth knowing before you change a test:
@@ -86,7 +86,7 @@ misleading one.
 ```sh
 ./al nox -s blacken                  # Black, with -S
 ./al nox -s lint                     # Ruff
-pdm run pytest
+./al pytest                          # all three, and the suite
 python governance/qm/project-seed/ci/check_pr_base.py --base main --head <your-branch>
 ```
 

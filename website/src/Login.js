@@ -2,42 +2,68 @@ import m from 'mithril'
 import { User } from './User'
 import { success, error, message, prompt } from 'alertifyjs'
 
+/** `m.request` with the session token, a single retry on expiry, and a redraw.
+ *
+ * The wrapper exists for the retry: a 401 means the JWT expired, and the
+ * caller should not have to know that. Two things about it are load-bearing
+ * and were learned the hard way.
+ *
+ * **It redraws after the caller has stored the result.** `m.request` redraws
+ * by itself, but that happens when *mithril's* promise settles -- before the
+ * `.then` on this wrapper's promise runs. So a caller doing
+ * `auth('/project').then(p => { Flow.projects = p })` assigns one redraw too
+ * late, and the new data sits in module state with nothing on screen showing
+ * it. It looked intermittent rather than broken, because any other response
+ * arriving afterwards redrew and swept the earlier one in: the project list
+ * appeared only when `/destinations` happened to answer last. Deep links were
+ * the reliable failure -- opening `?project=<id>` directly showed an empty
+ * timeline, while clicking the same project worked, because a DOM event
+ * handler redraws on its own.
+ *
+ * The redraw is queued as a task, not a microtask, so it lands after a caller
+ * chain of any length. `m.redraw` coalesces on an animation frame, so calling
+ * it once per request costs nothing when several are in flight.
+ *
+ * **Every path settles the promise.** The retry branch used to be the only
+ * one: a response that was not a 401 -- a 500, a dropped connection, a CORS
+ * refusal -- matched no branch and returned without resolving or rejecting,
+ * so the caller waited forever. Nothing timed out and nothing was logged; the
+ * button just stayed spinning.
+ */
 export function auth(url, opts) {
-  const req = new Promise((resolve, reject) => {
-      m.request(url, {
-        headers: {
-          Authorization: User.token,
-        },
-        ...opts
-      }).then(res => {
-        // console.log('auth success')
-        resolve(res)
-        // return res
-      }).catch( e => {
-        if (e.code == 401) {
-          m.request('/auth/jwt/refresh', {
-            headers: {Authorization: User.token},
-            method: 'post'
-        }).then(token => {
-            User.login(token)
-            auth(url, opts).then(res => {
-              console.log('resolved refresh')
-              resolve(res)
-            })
-          }).catch(err => {
-            console.log('error making auth request', url, opts, err)
-            if (err.code == 401) {
-              error('not authorized', 2)
-              m.route.set('/login', {
-                redirect: m.route.get()
-              })
-            }
-            reject(err)
-          })
-        }
-      })
+  const request = () =>
+    m.request(url, {
+      headers: { Authorization: User.token },
+      ...opts,
     })
-    return req
+
+  const req = request().catch(e => {
+    if (e.code != 401) throw e
+
+    return m
+      .request('/auth/jwt/refresh', {
+        headers: { Authorization: User.token },
+        method: 'post',
+      })
+      .then(token => {
+        User.login(token)
+        return request()
+      })
+      .catch(err => {
+        // The refresh itself was rejected: the session is over, not stale.
+        // Send them to login with a way back to where they were.
+        if (err.code == 401) {
+          error('not authorized', 2)
+          m.route.set('/login', { redirect: m.route.get() })
+        }
+        throw err
+      })
+  })
+
+  // Registered on `req` before the caller chains onto it, so this handler runs
+  // first -- and defers, so the redraw itself runs after the caller's.
+  req.finally(() => setTimeout(m.redraw, 0)).catch(() => {})
+  return req
 }
 
 export const Login = () => {

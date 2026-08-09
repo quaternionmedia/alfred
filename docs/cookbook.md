@@ -347,17 +347,8 @@ so it survives a reseed.
 - **the timeline renders one element per clip**
 - **each timeline clip is named after its template**
 - **the media bin lists the templates the API offers**
-- **the editor opens without a project and asks for one**
-
-  The regression guard for this whole session's frontend work.
-
-  Opening /otto used to produce four failures per visit: a 404 for
-  /[object Object] from a broken asset import, a 401 for /videos because
-  the bin used a request helper that sends no token, a 404 for
-  /otto/templates which never existed, and a 500 for /project/undefined.
-  None of them failed a test, because none of them threw.
-
-- **the editor loads a project when given one**
+- **the old editor URL lands on the project stage**
+- **a selected project offers its template**
 
   The regression guard for this whole session's frontend work.
 
@@ -483,7 +474,7 @@ waiting for the encode.
 
   This was annotated `test.fail()` as a known defect: the header rendered
   the same links twice, once as a drawer and once as a bar, emitting
-  home-link, projects-link, renders-link, documents-link and login-link
+  home-link, projects-link, renders-link and login-link
   twice each -- and every clip repeated clipname, inpoint and outpoint, so
   a page with 17 clips carried 52 duplicates.
 
@@ -496,7 +487,7 @@ waiting for the encode.
 
   This was annotated `test.fail()` as a known defect: the header rendered
   the same links twice, once as a drawer and once as a bar, emitting
-  home-link, projects-link, renders-link, documents-link and login-link
+  home-link, projects-link, renders-link and login-link
   twice each -- and every clip repeated clipname, inpoint and outpoint, so
   a page with 17 clips carried 52 duplicates.
 
@@ -537,8 +528,21 @@ waiting for the encode.
   not visible until you opened it.
 
 - **each row offers an edit and a create-video action**
-- **the edit action routes to the template editor for that project**
-- **the create-video action routes to the form for that project**
+
+  These used to leave for #!/editor and #!/form -- routes with no stage
+  rail and no timeline, reachable from this list and unable to get back to
+  it. Both now select the project and land on the stage that holds what
+  they used to show.
+
+- **the edit action stays inside the flow**
+
+  These used to leave for #!/editor and #!/form -- routes with no stage
+  rail and no timeline, reachable from this list and unable to get back to
+  it. Both now select the project and land on the stage that holds what
+  they used to show.
+
+- **the create-video action stays inside the flow**
+- **a project id naming nothing says so and offers a way out**
 - **choosing a project opens it on the timeline**
 
   A filter rather than pagination: the list is small enough to render
@@ -806,9 +810,42 @@ spinner and `aria-busy` while their request is in flight.
 ### views
 
 - **the renders view is now the deliver stage**
-- **documents view loads with its heading**
+- **the documentation links are always to hand**
+
+  This test existed and passed while the Source stage threw on every
+  render. It walked the routes that take no parameters, and the throw was
+  in the branch that only runs once a project is selected -- so the panel
+  produced no DOM at all, and nothing here went near it. Four other specs
+  failed on the symptoms (an empty timeline, a missing disclosure, a
+  missing warning) and none named the cause.
+
+  So the walk now includes the states a parameter puts the app into: a
+  real project, and an id matching nothing.
+
 - **home view loads**
+
+  This test existed and passed while the Source stage threw on every
+  render. It walked the routes that take no parameters, and the throw was
+  in the branch that only runs once a project is selected -- so the panel
+  produced no DOM at all, and nothing here went near it. Four other specs
+  failed on the symptoms (an empty timeline, a missing disclosure, a
+  missing warning) and none named the cause.
+
+  So the walk now includes the states a parameter puts the app into: a
+  real project, and an id matching nothing.
+
 - **each view renders without an uncaught page error**
+
+  This test existed and passed while the Source stage threw on every
+  render. It walked the routes that take no parameters, and the throw was
+  in the branch that only runs once a project is selected -- so the panel
+  produced no DOM at all, and nothing here went near it. Four other specs
+  failed on the symptoms (an empty timeline, a missing disclosure, a
+  missing warning) and none named the cause.
+
+  So the walk now includes the states a parameter puts the app into: a
+  real project, and an id matching nothing.
+
 - **an unknown route does not leave a blank page**
 - **a reload keeps the session**
 - **logging out survives a reload too**

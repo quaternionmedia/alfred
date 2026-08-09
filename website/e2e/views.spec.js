@@ -26,11 +26,14 @@ test.describe('views', () => {
     await expect(authedPage.locator('#panel-deliver')).toBeVisible()
   })
 
-  test('documents view loads with its heading', async ({ authedPage }) => {
+  test('the documentation links are always to hand', async ({ authedPage }) => {
+    // #!/documents was a whole view, outside the editor, for two links. They
+    // are in the footer now, so reading them costs no navigation.
+    await authedPage.goto('/')
+    await expect(authedPage.locator('footer a.docLink')).toHaveCount(2)
+
     await authedPage.goto('/#!/documents')
-    await expect(
-      authedPage.getByRole('heading', { name: 'Documents' })
-    ).toBeVisible()
+    await expect(authedPage).toHaveURL(/stage=source/)
   })
 
   test('home view loads', async ({ page }) => {
@@ -40,15 +43,44 @@ test.describe('views', () => {
 
   test('each view renders without an uncaught page error', async ({
     authedPage,
+    request,
+    token,
   }) => {
-    const errors = watchForPageErrors(authedPage)
+    /**
+     * This test existed and passed while the Source stage threw on every
+     * render. It walked the routes that take no parameters, and the throw was
+     * in the branch that only runs once a project is selected -- so the panel
+     * produced no DOM at all, and nothing here went near it. Four other specs
+     * failed on the symptoms (an empty timeline, a missing disclosure, a
+     * missing warning) and none named the cause.
+     *
+     * So the walk now includes the states a parameter puts the app into: a
+     * real project, and an id matching nothing.
+     */
+    const projects = await (
+      await request.get('/project', { headers: { Authorization: token } })
+    ).json()
+    const selected = (projects.find(p => ((p.edl || {}).clips || []).length) ||
+      projects[0] || {})._id
 
-    for (const route of ['/#!/projects', '/#!/renders', '/#!/documents']) {
+    const routes = ['/#!/projects', '/#!/renders', '/#!/documents']
+    for (const stage of ['source', 'edit', 'render', 'deliver']) {
+      routes.push(`/#!/?stage=${stage}`)
+      if (selected) routes.push(`/#!/?stage=${stage}&project=${selected}`)
+    }
+    routes.push('/#!/?stage=source&project=nonexistent')
+
+    // Collected per route, so a failure names the one that threw rather than
+    // reporting that something, somewhere, did.
+    const failures = []
+    for (const route of routes) {
+      const errors = watchForPageErrors(authedPage)
       await authedPage.goto(route)
       await authedPage.waitForTimeout(250)
+      if (errors.length) failures.push(`${route}: ${errors[0]}`)
     }
 
-    expect(errors, `uncaught errors: ${errors.join(' | ')}`).toEqual([])
+    expect(failures, `uncaught errors:\n${failures.join('\n')}`).toEqual([])
   })
 
   test('an unknown route does not leave a blank page', async ({

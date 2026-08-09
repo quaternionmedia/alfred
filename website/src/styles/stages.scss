@@ -331,6 +331,54 @@
   }
 }
 
+// A button that reads as a link: used where the action is navigation rather
+// than a command, so it should not carry a button's weight.
+.linklike {
+  border: none;
+  background: none;
+  padding: 0;
+  min-height: 0;
+  color: #f2aa4c;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.stagenote {
+  margin: 0 0 0.6rem;
+  color: #8f8f8f;
+  font-size: 0.85rem;
+}
+
+.stagewarn {
+  margin: 0 0 0.75rem;
+  color: #d9c07a;
+  font-size: 0.85rem;
+}
+
+.disclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.25rem 0 0.5rem;
+
+  i {
+    font-size: 1.1rem;
+  }
+}
+
+.templatebody {
+  border: 1px solid #2e2e2e;
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 0.75rem;
+  max-height: 22rem;
+  overflow: auto;
+}
+
+.formhost {
+  max-width: 46rem;
+}
+
 .stageerror {
   margin: 0.5rem 0 0;
   color: #d98a8a;

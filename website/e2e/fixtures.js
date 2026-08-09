@@ -20,7 +20,7 @@ const { CREDENTIALS } = require('./credentials')
  * Note the selector is `a.loginLink`, not `#login-link`. The app renders both
  * a nav bar and a menu bar from the same component set, so five ids are
  * emitted twice each on every page: home-link, projects-link, renders-link,
- * documents-link and login-link. Duplicate ids are invalid HTML, and
+ * and login-link. Duplicate ids are invalid HTML, and
  * `#login-link` is genuinely ambiguous. `SELECTORS` below resolves each to
  * exactly one element; see e2e/README.md.
  */
@@ -28,7 +28,6 @@ const SELECTORS = {
   login: 'a.loginLink',
   projects: '.menuLinks a#projects-link',
   renders: '.menuLinks a#renders-link',
-  documents: '.menuLinks a#documents-link',
 }
 
 async function login(page, creds = CREDENTIALS) {

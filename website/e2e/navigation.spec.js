@@ -19,7 +19,7 @@ const { test, expect, SELECTORS } = require('./fixtures')
 test.describe('navigation', () => {
   test('menu exposes the primary sections', async ({ page }) => {
     await page.goto('/')
-    for (const key of ['projects', 'renders', 'documents']) {
+    for (const key of ['projects', 'renders']) {
       await expect(page.locator(SELECTORS[key])).toBeVisible()
     }
   })
@@ -57,7 +57,7 @@ test.describe('navigation', () => {
     /**
      * This was annotated `test.fail()` as a known defect: the header rendered
      * the same links twice, once as a drawer and once as a bar, emitting
-     * home-link, projects-link, renders-link, documents-link and login-link
+     * home-link, projects-link, renders-link and login-link
      * twice each -- and every clip repeated clipname, inpoint and outpoint, so
      * a page with 17 clips carried 52 duplicates.
      *

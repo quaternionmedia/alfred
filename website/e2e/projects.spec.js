@@ -97,20 +97,40 @@ test.describe('the project selector', () => {
     await expect(row.getByTitle(/create a video/i)).toBeVisible()
   })
 
-  test('the edit action routes to the template editor for that project', async ({
-    authedPage,
-  }) => {
+  test('the edit action stays inside the flow', async ({ authedPage }) => {
+    /**
+     * These used to leave for #!/editor and #!/form -- routes with no stage
+     * rail and no timeline, reachable from this list and unable to get back to
+     * it. Both now select the project and land on the stage that holds what
+     * they used to show.
+     */
     await authedPage.goto('/#!/?stage=source')
     await authedPage.locator('.projectrow').first().getByTitle(/edit the template/i).click()
-    await expect(authedPage).toHaveURL(/#!\/editor\?project=[0-9a-f]{24}/)
+
+    await expect(authedPage).toHaveURL(/project=[0-9a-f]{24}/)
+    await expect(authedPage).toHaveURL(/stage=source/)
+    await expect(authedPage.locator('.stagerail .stage')).toHaveCount(4)
   })
 
-  test('the create-video action routes to the form for that project', async ({
-    authedPage,
-  }) => {
+  test('the create-video action stays inside the flow', async ({ authedPage }) => {
     await authedPage.goto('/#!/?stage=source')
     await authedPage.locator('.projectrow').first().getByTitle(/create a video/i).click()
-    await expect(authedPage).toHaveURL(/#!\/form\?project=[0-9a-f]{24}/)
+
+    await expect(authedPage).toHaveURL(/project=[0-9a-f]{24}/)
+    await expect(authedPage).toHaveURL(/stage=render/)
+    await expect(authedPage.locator('.stagerail .stage')).toHaveCount(4)
+  })
+
+  test('a project id naming nothing says so and offers a way out', async ({
+    authedPage,
+  }) => {
+    // A stale bookmark or a hand-edited link. Silently ignoring it leaves the
+    // stages looking empty for no stated reason.
+    await authedPage.goto('/#!/?project=nonexistent&stage=source')
+    await expect(authedPage.locator('#unknown-project')).toBeVisible()
+
+    await authedPage.locator('#unknown-project button').click()
+    await expect(authedPage).not.toHaveURL(/project=nonexistent/)
   })
 
   test('choosing a project opens it on the timeline', async ({
