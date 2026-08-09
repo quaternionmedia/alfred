@@ -2,7 +2,7 @@ services:
   # TODO Development Reloader description
   website:
     ports:
-      - 8001:8001
+      - ${ALFRED_HMR_PORT:-8001}:8001
     # `yarn run dev` polls rather than watching; see website/dev-watch.js.
     #
     # @parcel/watcher subscribes to inotify, and inotify events do not cross a
@@ -24,7 +24,17 @@ services:
   # TODO API description
   api:
     ports:
-      - 8000:80
+      # Overridable, because 8000 is not ours by right.
+      #
+      # Another QM project (apothecary) also defaults to 8000, and when both
+      # are up the host port goes to whichever bound first -- so `curl
+      # localhost:8000` answered a different application entirely while this
+      # container was healthy and serving on its own network. That is not a
+      # theoretical clash; it happened here, and it made every measurement
+      # taken through that port untrustworthy.
+      #
+      #   ALFRED_PORT=8100 ./al dev
+      - ${ALFRED_PORT:-8000}:80
     volumes:
       - ./alfred/otto:/otto/
       # Mounted into a subdirectory, not over the system font directory.
@@ -106,5 +116,9 @@ services:
 
   db:
     ports:
-      - 27017:27017
+      # 27017 is the most contended port in this stack: a standalone mongod or
+      # any other project's database takes it, and the failure names the port
+      # without naming the culprit. Nothing in the app needs it published --
+      # it is here for attaching a GUI.
+      - ${ALFRED_DB_PORT:-27017}:27017
     user: '${UID}:${GID}'

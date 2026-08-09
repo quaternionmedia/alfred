@@ -94,8 +94,26 @@ Tests can also run directly: `nox -f tests/noxfile.py -s coverage`.
 
 ### Dev server notes
 
-Two things bite on a first run, neither obvious from the error:
+These bite on a first run, none obvious from the error:
 
+- **Port 8000, and this one fails silently.** 27017 below is the loud version
+  of this problem; 8000 is the quiet one, and it is worse. If something else
+  already holds 8000, Docker still starts the stack and reports it healthy —
+  but every request from your machine reaches the other application, because
+  the host port belongs to whoever bound it first. Nothing errors. It happened
+  during this project's 0.3.0 work: another QM service defaults to 8000 too,
+  and `curl localhost:8000/openapi.json` answered `Apothecary API` for a full
+  session while Alfred was up and serving correctly on its own network.
+
+  `./al dev` now refuses to start when 8000 is already answering, and names
+  the occupant from its OpenAPI title. Override rather than kill whatever has
+  it: `ALFRED_PORT=8100 ./al dev`. `ALFRED_DB_PORT` and `ALFRED_HMR_PORT` do
+  the same for the other two.
+
+  The general rule, worth more than the specific fix: **a test result is only
+  as good as your knowledge of what served it.** Before trusting a number,
+  confirm the identity of the server — `curl localhost:$PORT/openapi.json`
+  names it. See [docs/retrospective-verification-discipline.md](docs/retrospective-verification-discipline.md).
 - **Port 27017.** `dev.yml` publishes MongoDB on the host. If anything else is
   already bound there — a standalone `mongod`, another project's container —
   the stack fails with `Bind for 0.0.0.0:27017 failed: port is already

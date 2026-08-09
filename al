@@ -62,8 +62,35 @@ elif [ $1 = "b" -o $1 = "build" ]; then
 # Starts in development (optional "--build")
 elif [ $1 = "d" ] || [ $1 = "dev" ]; then
   if [ !-z ]; then shift; fi
-  echo "Alfred! running dev $1"
-  docker compose -f docker-compose.yml -f dev.yml up "$@"
+
+  # Refuse to start on a port somebody else already holds.
+  #
+  # Docker publishes the port, but if another process bound it first the host
+  # port answers *them* -- so the stack looks healthy, the container serves
+  # correctly on its own network, and every request from the host reaches a
+  # different application. That happened here: another QM project defaults to
+  # 8000 too, and `curl localhost:8000` answered "Apothecary API" for an
+  # entire session while this stack was up and fine.
+  #
+  # Failing here with the occupant named beats discovering it later, or worse,
+  # not discovering it. Override rather than kill: ALFRED_PORT=8100 ./al dev
+  ALFRED_PORT="${ALFRED_PORT:-8000}"
+  if curl -s -o /dev/null --max-time 3 "http://localhost:$ALFRED_PORT/" 2>/dev/null; then
+    echo
+    echo "  Port $ALFRED_PORT is already answering." >&2
+    echo "  Something else is bound there; this stack would look up while every" >&2
+    echo "  request from your machine reached that instead." >&2
+    echo >&2
+    echo "  It identifies itself as:" >&2
+    curl -s --max-time 3 "http://localhost:$ALFRED_PORT/openapi.json" 2>/dev/null       | head -c 300 | grep -o '"title":"[^"]*"' | head -1 | sed 's/^/    /' >&2       || echo "    (no OpenAPI document; not a FastAPI app, or not sharing one)" >&2
+    echo >&2
+    echo "  Start on another port instead:  ALFRED_PORT=8100 ./al dev" >&2
+    echo >&2
+    exit 1
+  fi
+
+  echo "Alfred! running dev $1  (http://localhost:$ALFRED_PORT)"
+  ALFRED_PORT="$ALFRED_PORT" docker compose -f docker-compose.yml -f dev.yml up "$@"
 
 # Starts in production.
 elif [ $1 = "p" -o $1 = "production" -o $1 = "prod" ]; then
@@ -201,7 +228,12 @@ elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
 
 elif [ $1 = "n" -o $1 = "nox" ]; then
   shift
-  nox -f tests/noxfile.py "$@"
+  # In the container, like every other command here. This ran `nox` on the
+  # host, which is not a documented prerequisite and is not installed by
+  # `./al init` -- so `./al nox -s lint`, which AGENTS.md and CONTRIBUTING.md
+  # both name as the pre-pull-request gate, failed with `nox: command not
+  # found` for anyone who followed the instructions.
+  docker compose -f pytest.yml run --rm pytest -f tests/noxfile.py "$@"
 
 else
   echo "Unknown command: $1"

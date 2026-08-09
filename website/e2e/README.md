@@ -13,7 +13,13 @@ npm run e2e:ui       # interactive runner
 npm run e2e:report   # last HTML report
 ```
 
-`E2E_BASE_URL` defaults to `http://localhost:8000`. `E2E_EMAIL`,
+`E2E_BASE_URL` defaults to `http://localhost:8000`. Before the first test,
+`global-setup.js` fetches `/openapi.json` from it and fails the run unless the
+title is `Alfred API` -- a published port belongs to whoever bound it first,
+and this suite has been run against a different QM service that also defaults
+to 8000, producing real measurements of the wrong program. If that guard
+fires, start Alfred elsewhere (`ALFRED_PORT=8100 ./al dev`) and point the
+suite at it. `E2E_EMAIL`,
 `E2E_PASSWORD` and `E2E_NAME` override the test account;
 `E2E_LOAD_BUDGET_MS` overrides the performance budget.
 

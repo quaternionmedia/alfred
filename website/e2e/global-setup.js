@@ -17,6 +17,38 @@ module.exports = async () => {
   const baseURL = process.env.E2E_BASE_URL || 'http://localhost:8000'
   const api = await request.newContext({ baseURL })
 
+  // Establish *what* is answering before measuring anything about it.
+  //
+  // A published port belongs to whoever bound it first, and the loser does not
+  // find out: Docker starts the stack, reports it healthy, and every request
+  // from the host reaches the other application. That is not hypothetical --
+  // this suite was run repeatedly against `Apothecary API`, a different QM
+  // service that also defaults to 8000, while Alfred was up and serving
+  // correctly on its own network. The numbers it produced were real
+  // measurements of the wrong program.
+  //
+  // One request, before the first test, turns that from a thing you discover
+  // by accident into a thing that fails immediately and says why.
+  const identity = await api.get('/openapi.json')
+  if (!identity.ok()) {
+    throw new Error(
+      `E2E setup: ${baseURL} did not serve an OpenAPI document ` +
+        `(HTTP ${identity.status()}). Is the dev stack running there?`
+    )
+  }
+  const title = ((await identity.json()).info || {}).title
+  if (title !== 'Alfred API') {
+    throw new Error(
+      `E2E setup: ${baseURL} is served by "${title}", not Alfred.
+` +
+        `Something else holds that port. Start Alfred elsewhere and point the
+` +
+        `suite at it:  ALFRED_PORT=8100 ./al dev
+` +
+        `              E2E_BASE_URL=http://localhost:8100 npm run e2e`
+    )
+  }
+
   const res = await api.post('/auth/register', {
     data: {
       email: CREDENTIALS.username,

@@ -93,16 +93,67 @@ limited way — every test result in this branch should be read as "passed
 against the stack that was answering :8000", not "passed against a known
 configuration".
 
-The remedy is cheap and is not yet done: re-run both suites against a stack
-brought up deliberately for the purpose, with its configuration asserted rather
-than assumed, and report those numbers as the ones that count.
+The remedy is cheap: re-run both suites against a stack brought up
+deliberately for the purpose, with its configuration asserted rather than
+assumed, and report those numbers as the ones that count.
+
+## The remedy, carried out
+
+It was worth doing, because the collision was real and still live.
+
+`localhost:8000` was being served by **Apothecary API** — another QM project,
+identified by fetching `/openapi.json` and reading the title, which is the
+check this document says should have happened at the start. Alfred's own
+container was healthy the whole time and answering on its own network. So the
+suspicion above was not paranoia about a hypothetical; the port had an
+occupant, and I had been measuring against it.
+
+The stack was moved to a port chosen for the purpose, its identity asserted
+(`Alfred API`, version 0.3.0), the auth bypass confirmed unset, and both
+suites re-run:
+
+| | Before | After |
+|---|---|---|
+| Backend (`./al pytest`) | 104 passed, 4 failed, 10 errors | **229 passed**, 2 skipped, 19 xfailed |
+| Browser (Playwright) | 134 passed | **140 passed** |
+| Ruff | failed on a usage error | clean |
+| Black | 18 files, tests only | 45 files, application included |
+
+The backend numbers moved that far because verifying properly surfaced four
+defects that had nothing to do with ports, and would have shipped:
+
+- `passlib` imports `pkg_resources`, which setuptools removed in v81, so every
+  module touching authentication failed to import — reported as ten unrelated
+  broken test modules.
+- The suite imported `otto` from site-packages rather than the vendored
+  submodule, testing a different copy of the engine than the image runs.
+- The vendored engine was installed without its `[render]` extra, so `gizeh`
+  was missing and every text template silently rendered to `None`.
+- The lint session ran `ruff <path>`, removed in ruff 0.5, and had been
+  failing with a usage message rather than linting. Both it and Black also ran
+  from `tests/`, so neither had ever examined `alfred/`.
+
+That is the argument for the discipline, made better than the argument I made
+for it above: I framed unverified measurement as a threat to *credibility*.
+The larger cost is that it hides defects. Four gates were broken, and a green
+number kept anyone from looking.
 
 ## For triage
 
-1. The dev stack should not publish on default ports, or `./al dev` should
-   refuse to start when something else already holds them and say what.
+1. ~~The dev stack should not publish on default ports, or `./al dev` should
+   refuse to start when something else already holds them and say what.~~
+   **Done.** Every published port is overridable (`ALFRED_PORT`,
+   `ALFRED_DB_PORT`, `ALFRED_HMR_PORT`) and `./al dev` refuses to start on an
+   occupied port, naming the occupant from its OpenAPI title.
 2. `ALFRED_DEV_SKIP_AUTH` should be impossible to leave set. Options: refuse to
    start if it has been on for more than one process lifetime, or drop it in
-   favour of a disposable stack profile.
+   favour of a disposable stack profile. **Still open.**
 3. The suites should record what they ran against. A test run that cannot
    identify its subject is the failure mode this document exists about.
+   **Still open** — done by hand here, not yet automatic. The cheap version is
+   a fixture that fetches `/openapi.json` once and fails the run if the title
+   is not Alfred's.
+4. New, and the one I would raise first: **the tool versions in
+   `tests/noxfile.py` were unpinned**, so two of these four defects were
+   upstream releases arriving on a morning nobody chose. They are pinned now,
+   but the same pattern should be looked for elsewhere.
