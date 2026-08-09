@@ -265,7 +265,6 @@
   }
 }
 
-.mediaitem,
 .renderitem {
   display: flex;
   align-items: center;
@@ -274,6 +273,50 @@
   border: 1px solid #2e2e2e;
   border-radius: 3px;
   font-size: 0.85rem;
+}
+
+// The media item is now a button rather than a label, so the border and
+// padding belong to the control -- otherwise the clickable area is the text
+// and the box around it is decoration that does nothing when pressed.
+.mediaitem {
+  display: flex;
+}
+
+.mediachoice {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid #2e2e2e;
+  border-radius: 3px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  i {
+    font-size: 1rem;
+    opacity: 0.6;
+  }
+
+  &:hover,
+  &:focus-visible {
+    border-color: #f2aa4c;
+    background: #1d1d1d;
+
+    i {
+      opacity: 1;
+    }
+  }
+}
+
+// Says what clicking does, once, above the list -- rather than relying on
+// every item's tooltip to carry it.
+.stagehint {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  opacity: 0.65;
 }
 
 .delivered {

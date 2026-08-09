@@ -1,5 +1,4 @@
 import m from 'mithril'
-import Project from './Project'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
 import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'

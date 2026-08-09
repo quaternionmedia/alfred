@@ -3,6 +3,7 @@ import './styles/stages.scss'
 import { auth } from './Login'
 import { User } from './User'
 import { Edl } from './Video'
+import { Player } from './Player'
 import { TemplateEditor } from './TemplateEditor'
 import { Magnussens } from './Magnussens'
 
@@ -221,6 +222,35 @@ export const AsyncButton = () => ({
  * run needs no downloads -- which also keeps a fresh install clear of the
  * third-party fetches the adoption record flags.
  */
+/** The file's own name, without the directory it was served from. */
+const basename = path => String(path).split('/').pop()
+
+// How long a clip is when it arrives from the media list.
+//
+// The server reports which files exist, not how long they are, and the
+// browser cannot know without fetching and decoding each one. Five seconds
+// matches the demo clips and is what the bin has always used for a dragged
+// clip; the trim tools adjust it. Worth replacing with a real duration from
+// the API, which is the only place that can cheaply know it.
+const DEFAULT_CLIP_SECONDS = 5
+
+/** Put a media file on the end of the timeline and move the playhead to it. */
+const addMedia = name => {
+  Edl.edl = Edl.edl.concat({
+    name,
+    type: 'video',
+    inpoint: 0,
+    outpoint: DEFAULT_CLIP_SECONDS,
+    duration: DEFAULT_CLIP_SECONDS,
+    description: '',
+  })
+  // Move to the clip that was just added, so the preview shows it. Adding
+  // something and having the viewer keep showing something else reads as the
+  // click not having worked.
+  Player.pause()
+  Edl.jump(Edl.startOf(Edl.edl.length - 1))
+}
+
 const Generate = (message, label, action, busyKey) =>
   m('.stageempty', [
     m('p', message),
@@ -334,12 +364,34 @@ const SourcePanel = {
 
       m('h3', `Material${Flow.videos.length ? ` (${Flow.videos.length})` : ''}`),
       Flow.videos.length
-        ? m(
-            'ul.medialist',
-            Flow.videos.map(v =>
-              m('li.mediaitem', String(v).split('/').pop())
-            )
-          )
+        ? [
+            m(
+              'p.stagehint',
+              'Choose a clip to put it on the timeline.'
+            ),
+            m(
+              'ul.medialist',
+              Flow.videos.map(v =>
+                m('li.mediaitem', [
+                  // A button, not an `<li>` with text on it. This list was
+                  // inert: it named the media on the server and offered no
+                  // way to use any of it, so the only route from "I have
+                  // footage" to "it is on the timeline" was to find the bin
+                  // below and drag -- an affordance with no visible cue,
+                  // unavailable from the keyboard, and on a different stage
+                  // from the list that told you the footage existed.
+                  m(
+                    'button.mediachoice',
+                    {
+                      title: `Add ${basename(v)} to the timeline`,
+                      onclick: () => addMedia(v),
+                    },
+                    [m('i.material-icons', 'add'), basename(v)]
+                  ),
+                ])
+              )
+            ),
+          ]
         : Generate(
             'No media on the server.',
             'Generate demo media',

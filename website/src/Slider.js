@@ -1,8 +1,8 @@
 import m from 'mithril'
 import interact from 'interactjs'
 var state = require("./Globals").state
-import Monitor from './Monitor'
 import { Video, Edl } from './Video'
+import { Player } from './Player'
 
 module.exports = {
   formatTime: (seconds) => {
@@ -45,14 +45,17 @@ module.exports = {
       const sliderWidth = event.target.offsetWidth - event.target.offsetLeft
       const value = Math.max((event.pageX - event.target.offsetLeft) / sliderWidth, 0)
       const t = (value*Edl.duration()).toFixed(2)
-      console.log('slide end. Jumping', t, value, sliderWidth, event)
-      Edl.jump(Number(t))
+      // Through the transport, so the video element follows the scrub rather
+      // than staying where it was until the next clip boundary.
+      Player.seek(Number(t))
     })
   },
   onupdate: (vnode) => {
     vnode.dom.setAttribute('data-value', Edl.time.toFixed(2))
-    let p = (Edl.time / Edl.duration())*100
-    console.log('updating slider', vnode, p)
+    // Guarded: an empty timeline has zero duration, and 0/0 wrote
+    // `padding-left: NaN%` on every redraw.
+    const total = Edl.duration()
+    const p = total > 0 ? (Edl.time / total) * 100 : 0
     vnode.dom.style.paddingLeft = `${p.toFixed(2)}%`
   },
 }

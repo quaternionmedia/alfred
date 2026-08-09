@@ -190,6 +190,75 @@ test.describe('the project selector', () => {
     await expect(authedPage.locator('.projectrow')).toHaveCount(projects.length)
   })
 
+  test('choosing material puts it on the timeline', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * # Recipe: putting footage on the timeline
+     *
+     * The Material list named every file on the server and offered no way to
+     * use any of them -- each entry was an `<li>` with text in it. The only
+     * route from "I have footage" to "it is on the timeline" was to find the
+     * bin on the editor stage and drag, an affordance with no visible cue,
+     * unreachable from the keyboard, and on a different stage from the list
+     * that told you the footage existed.
+     */
+    await request.post('/demo/media', { headers: { Authorization: token } })
+    await authedPage.goto('/#!/?stage=source')
+
+    const choice = authedPage.locator('.mediachoice').first()
+    await expect(choice).toBeVisible()
+
+    const before = await authedPage.locator('#timeline .clip').count()
+    await choice.click()
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
+  })
+
+  test('material added without a project survives the next redraw', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * The timeline reloaded its project on every redraw, and the guard meant
+     * to stop that compared a raw `undefined` against a normalised `null`. So
+     * with no project selected the comparison never matched, the branch that
+     * clears the clip list ran about sixty times a second, and anything added
+     * to the timeline was erased before it could be drawn.
+     *
+     * A count taken immediately would have passed throughout. This one waits.
+     */
+    await request.post('/demo/media', { headers: { Authorization: token } })
+    await authedPage.goto('/#!/?stage=source')
+    await authedPage.locator('.mediachoice').first().click()
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(1)
+
+    await authedPage.waitForTimeout(1200)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(1)
+  })
+
+  test('a chosen clip is what the viewer shows', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    // Adding something and having the viewer keep showing something else
+    // reads as the click not having worked.
+    await request.post('/demo/media', { headers: { Authorization: token } })
+    await authedPage.goto('/#!/?stage=source')
+    await authedPage.locator('.mediachoice').first().click()
+
+    // A blob URL, not the path: /videos needs the session token, so the
+    // element is handed an object URL fetched with it rather than a `src` the
+    // browser would request anonymously and be refused.
+    await expect(authedPage.locator('video.preview')).toHaveAttribute(
+      'src',
+      /^blob:/
+    )
+  })
+
   test('an anonymous visitor is sent to login', async ({ page }) => {
     // Assert the redirect, not the absence of rows: an unauthenticated visitor
     // never reaches the panel, so a count of zero says nothing.

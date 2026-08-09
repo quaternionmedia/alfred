@@ -1,6 +1,6 @@
 import m from 'mithril'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
-import Monitor from './Monitor'
+import { Player } from './Player'
 import { Video, Edl } from './Video'
 var state = require("./Globals").state
 import { message, success, defaults } from 'alertifyjs'
@@ -17,33 +17,66 @@ export function downloadFile(url) {
 export function PlaybackTools() {
   return {
     view(vnode) {
+      // `Player`, not `Monitor`. Every one of these reached through a module
+      // that was never mounted, so its element reference was null and the
+      // handler threw on the first click -- silently, since nothing catches a
+      // handler's exception. The play button in particular did nothing at all,
+      // which is the complaint that produced this change.
+      const empty = !Player.playable()
       return m('#PlaybackTools.tools.toolbar', {}, [
-
-        m('i.material-icons', {
-          title: 'start',
-          onclick: (vnode) => {Edl.jump(0)}
-        }, 'first_page'),
-        m('i.material-icons', {
-          title: 'back 5s',
-          onclick: (vnode) => {
-            Edl.jump(Math.max(Edl.time - 5, 0))}
-          }, 'fast_rewind'),
-          m('i.material-icons', {
-            title: 'pause',
-            onclick: Monitor.play,
-          }, Video.paused ? 'play_arrow': 'pause' ),
-          m('i.material-icons', {
+        m(
+          'i.material-icons',
+          {
+            title: 'start',
+            class: empty ? 'disabled' : '',
+            onclick: () => Player.seek(0),
+          },
+          'first_page'
+        ),
+        m(
+          'i.material-icons',
+          {
+            title: 'back 5s',
+            class: empty ? 'disabled' : '',
+            onclick: () => Player.seek(Math.max(Edl.time - 5, 0)),
+          },
+          'fast_rewind'
+        ),
+        m(
+          'i.material-icons#playpause',
+          {
+            // The title tracks the action, so a screen reader and a tooltip
+            // agree with the icon. It read "pause" in both states.
+            title: empty
+              ? 'nothing on the timeline to play'
+              : Video.paused
+                ? 'play'
+                : 'pause',
+            class: empty ? 'disabled' : '',
+            onclick: () => Player.toggle(),
+          },
+          Video.paused ? 'play_arrow' : 'pause'
+        ),
+        m(
+          'i.material-icons',
+          {
             title: 'forward 5s',
-            onclick: (vnode) => {
-              Edl.jump(Math.min(Edl.time + 5, Edl.duration()))}
-            }, 'fast_forward'),
-            m('i.material-icons', {
-              title: 'end',
-              onclick: (vnode) => {Edl.jump(Edl.duration())}
-            }, 'last_page'),
-        ]
-      )
-    }
+            class: empty ? 'disabled' : '',
+            onclick: () => Player.seek(Math.min(Edl.time + 5, Edl.duration())),
+          },
+          'fast_forward'
+        ),
+        m(
+          'i.material-icons',
+          {
+            title: 'end',
+            class: empty ? 'disabled' : '',
+            onclick: () => Player.seek(Edl.duration()),
+          },
+          'last_page'
+        ),
+      ])
+    },
   }
 }
 
@@ -51,20 +84,19 @@ export function SpeedTools() {
   return {
     view: vnode => {
       return m('.tools.toolbar', {}, [
-        m('i.material-icons', {
-          title: 'slower',
-          onclick: (vnode) => {Monitor.slower()}
-        }, 'slow_motion_video'),
-        m('i.custom', {
-          title: 'reset speed',
-          onclick: (vnode) => {Monitor.resetSpeed()}
-        }, Video.speed + 'x'),
-        m('i.material-icons', {
-          title: 'faster',
-          onclick: (vnode) => {Monitor.faster()}
-        }, 'speed'),
+        m(
+          'i.material-icons',
+          { title: 'slower', onclick: () => Player.slower() },
+          'slow_motion_video'
+        ),
+        m(
+          'i.custom#speed',
+          { title: 'reset speed', onclick: () => Player.resetSpeed() },
+          Video.speed + 'x'
+        ),
+        m('i.material-icons', { title: 'faster', onclick: () => Player.faster() }, 'speed'),
       ])
-    }
+    },
   }
 }
 

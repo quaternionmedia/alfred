@@ -6,8 +6,6 @@ import { User } from './User'
 import { Head } from './Head'
 
 import Slider from './Slider'
-import { Timeline } from './Timeline'
-import Monitor from './Monitor'
 import { PlaybackTools, SpeedTools, ProjectTools } from './Tools'
 import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'

@@ -502,6 +502,7 @@ waiting for the encode.
 ### otto editor
 
 - **<group> are present**
+- **the play control is present**
 - **timeline slider is positionable**
 
 ## performance
@@ -555,6 +556,28 @@ waiting for the encode.
   whole, and typing a name beats scrolling for one. It appears only when
   there are enough projects to be worth filtering.
 
+- **choosing material puts it on the timeline**
+
+  # Recipe: putting footage on the timeline
+
+  The Material list named every file on the server and offered no way to
+  use any of them -- each entry was an `<li>` with text in it. The only
+  route from "I have footage" to "it is on the timeline" was to find the
+  bin on the editor stage and drag, an affordance with no visible cue,
+  unreachable from the keyboard, and on a different stage from the list
+  that told you the footage existed.
+
+- **material added without a project survives the next redraw**
+
+  The timeline reloaded its project on every redraw, and the guard meant
+  to stop that compared a raw `undefined` against a normalised `null`. So
+  with no project selected the comparison never matched, the branch that
+  clears the clip list ran about sixty times a second, and anything added
+  to the timeline was erased before it could be drawn.
+
+  A count taken immediately would have passed throughout. This one waits.
+
+- **a chosen clip is what the viewer shows**
 - **an anonymous visitor is sent to login**
 
 ## recipes
@@ -784,6 +807,27 @@ instead.
   These call into `Edl.jump`, which indexes the clip list. With an empty
   or short timeline that is where an off-by-one would surface, and a
   thrown handler leaves the toolbar looking fine and doing nothing.
+
+- **play advances the playhead, and pause stops it**
+
+  # Recipe: playing the timeline
+
+  The play button had never worked. It called into a component that was
+  imported but never rendered, so the element reference it needed was
+  always null and the click threw before anything moved.
+
+  What it drives now is the timeline, not a file. That distinction is
+  load-bearing rather than pedantic: `POST /demo/project` builds its
+  timeline from template clips, so the first project anyone generates is
+  entirely stills, and a transport bound to a video element would leave
+  it inert -- on exactly the project a new user presses play on first.
+
+- **the transport says so when there is nothing to play**
+
+  Viewer, transport, editor. The arrangement used to be a stack of bars
+  with related controls apart and unrelated controls together -- aspect
+  and resolution floating above the preview, speed buried inside the
+  timeline's grid, zoom stranded below it.
 
 ### the editor layout groups its tools
 

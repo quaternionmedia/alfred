@@ -23,7 +23,11 @@ const TOOLS = [
   'dual roller',
 ]
 
-const TRANSPORT = ['start', 'back 5s', 'pause', 'forward 5s', 'end']
+// The seek controls, by title. Play is checked separately by id: its title
+// is the action it will perform, so it reads "play" when stopped and "pause"
+// while running -- and on an empty timeline it explains that there is nothing
+// to play instead.
+const TRANSPORT = ['start', 'back 5s', 'forward 5s', 'end']
 
 const SPEED = ['slower', 'reset speed', 'faster']
 
@@ -49,6 +53,10 @@ test.describe('otto editor', () => {
       }
     })
   }
+
+  test('the play control is present', async ({ authedPage }) => {
+    await expect(authedPage.locator('#playpause')).toBeVisible()
+  })
 
   test('timeline slider is positionable', async ({ authedPage }) => {
     const slider = authedPage.locator('#slider')

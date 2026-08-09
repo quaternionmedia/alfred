@@ -159,9 +159,20 @@ export function OttoTimeline() {
     // /project/undefined on every visit to the editor without a ?project=
     // parameter -- which the menu link is. The server answered 500 until it
     // was taught to answer 422; either way the request was never meaningful.
-    const projectId = m.route.param('project')
+    // Normalised before the comparison, not after.
+    //
+    // `loaded` was set to `projectId || null` while the guard compared the raw
+    // `projectId`, so with no ?project= the check was `undefined === null` --
+    // false on every pass. `onupdate` runs on every redraw, so the branch
+    // below re-ran continuously and cleared `Edl.edl` sixty times a second.
+    //
+    // The effect was that a timeline with no project selected could not be
+    // built at all: a clip added from the media list, or dragged in from the
+    // bin, was wiped by the next redraw before it could be seen. It looked
+    // like the click had done nothing.
+    const projectId = m.route.param('project') || null
     if (projectId === loaded) return
-    loaded = projectId || null
+    loaded = projectId
 
     if (!projectId) {
       Edl.edl = []

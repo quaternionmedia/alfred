@@ -177,12 +177,15 @@ test.describe('the tools pass their events', () => {
       project.edl.clips.length
     )
 
-    for (const control of ['start', 'back 5s', 'pause', 'forward 5s', 'end']) {
+    for (const control of ['start', 'back 5s', 'forward 5s', 'end']) {
       const button = authedPage.locator(`#PlaybackTools i[title="${control}"]`)
       await expect(button).toBeVisible()
       // Clicking must not throw; the playhead assertions live below.
       await button.click()
     }
+    // The play control is addressed by id, because its title is the action it
+    // will perform and therefore changes as it is used.
+    await expect(authedPage.locator('#playpause')).toBeVisible()
   })
 
   test('clicking transport controls raises no page errors', async ({
@@ -208,7 +211,71 @@ test.describe('the tools pass their events', () => {
       await authedPage.waitForTimeout(150)
     }
 
+    // Play was missing from this list, and its absence was the bug. Every one
+    // of these controls reached through a module that was never mounted, so
+    // its element reference was null and the handler threw on the first
+    // click -- but the four seek controls were rewritten to call `Edl.jump`
+    // directly and stopped throwing, leaving play as the only one still
+    // broken and the only one this loop did not press.
+    await authedPage.locator('#playpause').click()
+    await authedPage.waitForTimeout(300)
+    await authedPage.locator('#playpause').click()
+
     expect(errors, `transport controls threw: ${errors.join('; ')}`).toEqual([])
+  })
+
+  test('play advances the playhead, and pause stops it', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * # Recipe: playing the timeline
+     *
+     * The play button had never worked. It called into a component that was
+     * imported but never rendered, so the element reference it needed was
+     * always null and the click threw before anything moved.
+     *
+     * What it drives now is the timeline, not a file. That distinction is
+     * load-bearing rather than pedantic: `POST /demo/project` builds its
+     * timeline from template clips, so the first project anyone generates is
+     * entirely stills, and a transport bound to a video element would leave
+     * it inert -- on exactly the project a new user presses play on first.
+     */
+    const project = await mediaProject(request, token)
+    await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
+    await expect(authedPage.locator('#timeline .clip').first()).toBeVisible()
+
+    const elapsed = () => authedPage.locator('.timecode').innerText()
+    expect(await elapsed()).toBe('0:00.00')
+
+    await authedPage.locator('#playpause').click()
+    await expect(authedPage.locator('#playpause')).toHaveText('pause')
+
+    // Polled rather than measured after a fixed wait: the assertion is that
+    // the playhead moves, not that it reaches a particular second by a
+    // particular moment on a loaded CI machine.
+    await expect.poll(async () => (await elapsed()) !== '0:00.00').toBe(true)
+
+    await authedPage.locator('#playpause').click()
+    await expect(authedPage.locator('#playpause')).toHaveText('play_arrow')
+
+    const stopped = await elapsed()
+    await authedPage.waitForTimeout(600)
+    expect(await elapsed(), 'the playhead moved after pause').toBe(stopped)
+  })
+
+  test('the transport says so when there is nothing to play', async ({
+    authedPage,
+  }) => {
+    // An empty timeline used to offer five controls that looked available and
+    // threw when pressed. Saying why beats failing silently.
+    await authedPage.goto('/#!/?stage=edit')
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(0)
+
+    const play = authedPage.locator('#playpause')
+    await expect(play).toHaveClass(/disabled/)
+    await expect(play).toHaveAttribute('title', /nothing on the timeline/i)
   })
 })
 
