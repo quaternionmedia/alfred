@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Header
 from os import listdir, makedirs
 from os.path import join
 
-from alfred.config import VIDEO_DIR
-from ..responses import PartialFileResponse
+from fastapi import APIRouter, Header
 from starlette.responses import Response
+
+from alfred.config import VIDEO_DIR
+
+from ..responses import PartialFileResponse
 
 videoAPI = APIRouter()
 

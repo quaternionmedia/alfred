@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Body, HTTPException
-from ..utils import sendMail
+
 from alfred.config import EMAIL_SENDTO
+
+from ..utils import sendMail
 
 issueAPI = APIRouter()
 

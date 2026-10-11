@@ -1,5 +1,5 @@
 from .project import Project, ProjectUpdate, RenderSettings
-from .users import UserRead, UserCreate, UserUpdate
+from .users import UserCreate, UserRead, UserUpdate
 
 # Names, not objects.
 #

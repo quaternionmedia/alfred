@@ -20,8 +20,8 @@ from bson.errors import InvalidId
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from alfred.main import _isIdentifierParseError
 from alfred.core.utils.bucket import INVALID_ID, NOT_FOUND
+from alfred.main import _isIdentifierParseError
 
 
 class TestTheHandlerRecognisesIdentifierErrors:

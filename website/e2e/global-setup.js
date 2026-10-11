@@ -17,6 +17,38 @@ module.exports = async () => {
   const baseURL = process.env.E2E_BASE_URL || 'http://localhost:8000'
   const api = await request.newContext({ baseURL })
 
+  // Establish *what* is answering before measuring anything about it.
+  //
+  // A published port belongs to whoever bound it first, and the loser does not
+  // find out: Docker starts the stack, reports it healthy, and every request
+  // from the host reaches the other application. That is not hypothetical --
+  // this suite was run repeatedly against `Apothecary API`, a different QM
+  // service that also defaults to 8000, while Alfred was up and serving
+  // correctly on its own network. The numbers it produced were real
+  // measurements of the wrong program.
+  //
+  // One request, before the first test, turns that from a thing you discover
+  // by accident into a thing that fails immediately and says why.
+  const identity = await api.get('/openapi.json')
+  if (!identity.ok()) {
+    throw new Error(
+      `E2E setup: ${baseURL} did not serve an OpenAPI document ` +
+        `(HTTP ${identity.status()}). Is the dev stack running there?`
+    )
+  }
+  const title = ((await identity.json()).info || {}).title
+  if (title !== 'Alfred API') {
+    throw new Error(
+      `E2E setup: ${baseURL} is served by "${title}", not Alfred.
+` +
+        `Something else holds that port. Start Alfred elsewhere and point the
+` +
+        `suite at it:  ALFRED_PORT=8100 ./al dev
+` +
+        `              E2E_BASE_URL=http://localhost:8100 npm run e2e`
+    )
+  }
+
   const res = await api.post('/auth/register', {
     data: {
       email: CREDENTIALS.username,
@@ -47,6 +79,10 @@ module.exports = async () => {
   const token = await login(api)
   await ensureDemoMedia(api, token)
   await ensureMediaProject(api, token)
+  // Called here, not from inside ensureMediaProject: that function returns
+  // early when its own project already exists, so on every run after the
+  // first this never executed and the four tests depending on it skipped.
+  await ensureTimelineDemo(api, { Authorization: token })
 
   await api.dispose()
 }
@@ -127,6 +163,72 @@ async function ensureMediaProject(api, token) {
   if (created.status() !== 200) {
     throw new Error(
       `E2E setup: could not create ${MEDIA_PROJECT} (${created.status()})`
+    )
+  }
+
+}
+
+/**
+ * A project with a short, all-template timeline of three different lengths.
+ *
+ * `appearance.spec.js` has four tests that look for a project called
+ * "Timeline demo" and `test.skip` when it is absent. Nothing created it: it
+ * was a leftover in whichever database the suite happened to run against, so
+ * those four tests ran on one machine and silently skipped on another, and
+ * deleting the stray project would have retired them without a word.
+ *
+ * Templates rather than files, so it does not depend on generated media, and
+ * three distinct durations because one of those tests asserts that a longer
+ * clip is drawn wider.
+ */
+async function ensureTimelineDemo(api, headers) {
+  const TIMELINE_DEMO = 'Timeline demo'
+  const projects = await (await api.get('/project', { headers })).json()
+  const existing = projects.filter(p => p.name === TIMELINE_DEMO)
+
+  // Same de-duplication as above: parallel workers must find exactly one.
+  for (const extra of existing.slice(1)) {
+    await api.delete(`/project/${extra._id}`, { headers })
+  }
+  if (existing.length) return
+
+  const created = await api.post('/project', {
+    headers,
+    data: {
+      name: TIMELINE_DEMO,
+      logic: {},
+      fields: [],
+      edl: {
+        clips: [
+          {
+            type: 'template',
+            name: 'makeColor',
+            duration: 3.0,
+            start: 0.0,
+            data: { color: '#f2aa4c' },
+          },
+          {
+            type: 'template',
+            name: 'makeColor',
+            duration: 4.0,
+            start: 3.0,
+            data: { color: '#101820' },
+          },
+          {
+            type: 'template',
+            name: 'makeColor',
+            duration: 2.0,
+            start: 7.0,
+            data: { color: '#7bbf7b' },
+          },
+        ],
+        duration: 9.0,
+      },
+    },
+  })
+  if (created.status() !== 200) {
+    throw new Error(
+      `E2E setup: could not create ${TIMELINE_DEMO} (${created.status()})`
     )
   }
 }

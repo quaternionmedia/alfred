@@ -1,7 +1,6 @@
 import m from 'mithril'
 import { Sortable } from 'sortablejs'
 import { VideoClip, Template } from './OttoTimeline'
-import { Timeline } from './Timeline'
 import { Edl } from './Video'
 import { auth } from './Login'
 import { User } from './User'
@@ -69,7 +68,6 @@ var Bin = {
           console.log('moved media!', e)
           var clip = e.item.attributes
           e.item.attributes.pos = e.newIndex
-          // Timeline.updateEdl()
           // Edl.edl.splice(e.newIndex, 0, [
           var edl = Edl.edl.slice(0, e.newIndex)
           if (clip.type.value == 'template') {
@@ -94,7 +92,6 @@ var Bin = {
               Edl.current++
             }
           e.item.remove()
-          // Timeline.loadEdl(edl)
           Edl.edl = edl
           m.redraw()
         }

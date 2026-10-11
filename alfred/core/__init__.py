@@ -1,6 +1,3 @@
-from . import models
-from . import responses
-from . import routes
-from . import utils
+from . import models, responses, routes, utils
 
 __all__ = [models, responses, routes, utils]

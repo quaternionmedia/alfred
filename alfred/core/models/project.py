@@ -1,7 +1,8 @@
-from typing import Optional, List
+from typing import List, Optional
+
 from beanie import Document
-from pydantic import BaseModel
 from otto.models import Edl
+from pydantic import BaseModel
 
 
 class RenderSettings(BaseModel):

@@ -1,36 +1,38 @@
-from fastapi import FastAPI, Depends
+from subprocess import run as bash
+
+from beanie import init_beanie
+from fastapi import Depends, FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 from starlette.staticfiles import StaticFiles
-from beanie import init_beanie
 
-from subprocess import run as bash
-
-from alfred.core.routes import authAPI
-from alfred.core.routes import videoAPI
-from alfred.core.routes import issueAPI
-from alfred.core.routes import adminAPI
-from alfred.core.routes import fontAPI
-from alfred.core.routes import ProjectAPI
-from alfred.core.routes import RenderAPI
-from alfred.core.routes import previewAPI
-from alfred.core.routes import templateAPI
-from alfred.core.routes import demoAPI
-
-# from otto.main import app as ottoApi
-from alfred.core.utils import get_db
+from alfred import docs
+from alfred.config import DATA_DIR, DEV_SKIP_AUTH, DEV_USER_EMAIL, STATIC_DIR
+from alfred.core.models.users import UserRead, UserUpdate
+from alfred.core.routes import (
+    ProjectAPI,
+    RenderAPI,
+    adminAPI,
+    authAPI,
+    demoAPI,
+    fontAPI,
+    issueAPI,
+    previewAPI,
+    templateAPI,
+    videoAPI,
+)
 
 # from alfred.core.utils.db import deOid
 from alfred.core.routes.users import (
-    fastapi_users,
-    current_active_user,
     current_active_superuser,
+    current_active_user,
+    fastapi_users,
 )
-from alfred.core.models.users import UserRead, UserUpdate
+
+# from otto.main import app as ottoApi
+from alfred.core.utils import get_db
 from alfred.core.utils.db import User
-from alfred import docs
-from alfred.config import DATA_DIR, STATIC_DIR, DEV_SKIP_AUTH, DEV_USER_EMAIL
 
 app = FastAPI(
     title=docs.title,
@@ -155,7 +157,25 @@ if DEV_SKIP_AUTH:
 
     @app.get('/users/me', response_model=UserRead, tags=['users'])
     async def dev_users_me(user: User = Depends(get_dev_user)):
-        return user
+        # Built explicitly rather than returned as a document.
+        #
+        # Returning the Beanie document worked while UserRead.id was optional
+        # and serialised as null. Once id became a required string -- the fix
+        # for /users/me handing back `{}` -- FastAPI could not find it on the
+        # document by field name and answered 500 with "field required". The
+        # bypass then failed at exactly the endpoint the SPA probes to decide
+        # whether it is logged in, so the app sat on the login screen with
+        # every other route wide open.
+        return UserRead(
+            id=str(user.id),
+            email=user.email,
+            is_active=user.is_active,
+            is_superuser=user.is_superuser,
+            is_verified=user.is_verified,
+            first_name=user.first_name,
+            birthdate=getattr(user, 'birthdate', None),
+            address=getattr(user, 'address', None),
+        )
 
 
 app.include_router(

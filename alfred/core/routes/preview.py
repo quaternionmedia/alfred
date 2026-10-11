@@ -1,14 +1,40 @@
+from os import makedirs
+from os.path import join
+from uuid import uuid4
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
-from ..models.render import Render
-from otto.models import Edl, Clip, TemplateData
-from otto.render import generateEdl
 from otto.getdata import timestr
-from os.path import join
+from otto.models import Clip, Edl, TemplateData
+from otto.render import generateEdl
 
+from alfred.config import DATA_DIR
+
+from ..models.render import Render
 from .templates import TEMPLATE_NAMES
 
 previewAPI = APIRouter()
+
+
+def frame_path():
+    """A path no concurrent request will also choose.
+
+    Both preview routes wrote to `data/<timestr>.jpg`, and `timestr()` is
+    second-resolution -- so two previews in the same second produced the same
+    filename and one overwrote the other's frame before it was served. The
+    editor previews on every playhead move, so concurrent previews are the
+    normal case rather than an edge one, and the symptom is a preview showing
+    somebody else's frame.
+
+    Found by asking whether the same request twice returns the same bytes. It
+    did not: 2049 against 1588.
+
+    The timestamp stays for legibility when looking at the directory; the
+    random suffix is what makes it unique.
+    """
+    makedirs(DATA_DIR, exist_ok=True)
+    return join(DATA_DIR, f'{timestr()}-{uuid4().hex[:8]}.jpg')
+
 
 # Query parameters that describe the frame rather than the template itself.
 _FRAME_PARAMS = frozenset({'width', 'height', 't'})
@@ -27,7 +53,7 @@ async def previewFrame(t: float, render: Render):
     video = generateEdl(
         Edl(clips=render.edl.clips), moviesize=(render.width, render.height)
     )
-    frame_name = join('data', timestr() + '.jpg')
+    frame_name = frame_path()
     print(f'saving frame {t} as: {frame_name}', video)
     video.save_frame(frame_name, t=t, withmask=False)
     return frame_name
@@ -76,8 +102,27 @@ async def previewTemplate(
         duration=max(t, 0) + 1,
         data=TemplateData(**data),
     )
-    video = generateEdl(Edl(clips=[clip]), moviesize=(width, height))
 
-    frame_name = join('data', timestr() + '.jpg')
-    video.save_frame(frame_name, t=t, withmask=False)
+    # A template that cannot render with the data it was given is a 422, not a
+    # 500.
+    #
+    # otto's templates catch their own exceptions and return None, so a
+    # missing field does not raise here -- it produces a clip with nothing in
+    # it, and the failure surfaces further along when there is no frame to
+    # save. `GET /preview/template/title` with no `text` answered 500, which
+    # says the server is broken when the truth is that the request was
+    # incomplete. The editor showed a blank frame either way.
+    try:
+        video = generateEdl(Edl(clips=[clip]), moviesize=(width, height))
+        frame_name = frame_path()
+        video.save_frame(frame_name, t=t, withmask=False)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f'{name} could not be rendered from the data supplied. '
+                'Templates that take text need it; check the fields on the clip.'
+            ),
+        ) from exc
+
     return FileResponse(frame_name, media_type='image/jpeg')

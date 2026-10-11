@@ -182,6 +182,7 @@ def test_seed_startup_awaits_the_count_and_imports_absolutely():
     condition.
     """
     import inspect
+
     from alfred import main
 
     source = inspect.getsource(main.seedDb)

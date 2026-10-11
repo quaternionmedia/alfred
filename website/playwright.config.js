@@ -12,7 +12,20 @@ module.exports = defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 2 : undefined,
+  // Capped locally, not just in CI.
+  //
+  // `undefined` means one worker per core -- eight here -- and the dev stack
+  // is a single uvicorn process running with `--reload`. Under eight workers
+  // it intermittently drops connections, surfacing as `socket hang up` on
+  // POST /auth/jwt/login in whichever test was unlucky: about one full-suite
+  // run in four before the token fixture became worker-scoped, and roughly one
+  // in six after. It reads as a flaky application and is the suite outrunning
+  // a development server.
+  //
+  // Four is enough to keep the suite around a minute. The containerised run
+  // (`./al test`, test_e2e.yml) starts uvicorn without --reload and does not
+  // have this problem; the cap costs it little.
+  workers: process.env.CI ? 2 : 4,
 
   reporter: process.env.CI
     ? [['list'], ['html', { open: 'never' }], ['github']]
@@ -34,14 +47,42 @@ module.exports = defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
-      // Performance budgets are timing-sensitive and belong in a run someone
-      // chose to start, not in the gate on every pull request.
-      grepInvert: /@perf/,
+      // Two kinds of test belong in a run someone chose to start rather than
+      // in the gate on every pull request: performance budgets, which are
+      // timing-sensitive, and the recipe walkthroughs, which pause between
+      // steps so a person watching the recording can follow. The recipes spec
+      // claimed to be excluded here before this line existed to exclude it,
+      // and ran in the gate paying for its own pauses.
+      grepInvert: /@perf|@recipe/,
     },
     {
       name: 'perf',
       use: { ...devices['Desktop Chrome'] },
       grep: /@perf/,
+    },
+    {
+      // Records the recipes as video, for the cookbook.
+      //
+      // The docs, the tests and the recipes are one object here: the prose in
+      // docs/cookbook.md is generated from these specs, and this project makes
+      // the moving pictures the same way. A demonstration recorded from a test
+      // cannot drift from the behaviour, because it *is* the behaviour -- and
+      // if the recipe breaks, there is no video rather than a stale one.
+      //
+      // Opt-in, and slower: it runs single-worker so the recording is not
+      // competing for the machine, and only over tests tagged @recipe.
+      name: 'docs',
+      use: {
+        ...devices['Desktop Chrome'],
+        video: { mode: 'on', size: { width: 1280, height: 720 } },
+        // A steady viewport: a recording that reflows mid-take is not much of
+        // a demonstration.
+        viewport: { width: 1280, height: 720 },
+      },
+      grep: /@recipe/,
+      fullyParallel: false,
+      workers: 1,
+      retries: 0,
     },
   ],
 })

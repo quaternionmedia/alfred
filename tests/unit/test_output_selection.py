@@ -14,7 +14,6 @@ unsanitised name from the API a problem downstream.
 """
 
 import pytest
-
 from otto.models import Clip, Edl, TemplateData
 from otto.render import renderMultitrack
 

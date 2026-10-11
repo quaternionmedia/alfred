@@ -1,16 +1,10 @@
 import m from 'mithril'
-import Project from './Project'
-import { Projects } from './Projects'
-import { Documents } from './Documents'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
 import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'
 import { Login, Logout } from './Login'
 import { User } from './User'
-import { Renders } from './Renders'
-import { Magnussens } from './Magnussens'
 import { Layout } from './Components'
-import { TemplateEditor } from './TemplateEditor'
 import { Otto } from './Otto'
 // Same as the logo in Menu.js: the default import is not a URL string.
 const ICON = new URL('./assets/al-white.svg', import.meta.url).href
@@ -63,9 +57,11 @@ console.log('sup!')
 //
 // Only probe for the bypass if there is no session to restore; with one, the
 // probe is a wasted request that would report devMode for an ordinary login.
-if (!User.restore()) {
-  User.detectDevMode()
-}
+// Restore a session, or find out the server has auth disabled, and only then
+// decide whether this visitor has to log in. Both resolve asynchronously, so
+// the guard waits for whichever ran -- redirecting before they answer would
+// bounce somebody who is in fact logged in.
+
 
 m.route(document.body, '/', {
   // The timeline is the entry point.
@@ -76,12 +72,71 @@ m.route(document.body, '/', {
   // from images.squarespace-cdn.com -- which AGENTS.md forbids and the
   // adoption record lists as an open governance gap.
   '/': Otto,
-  '/projects': { render: () => m(Layout, m(Projects)) },
-  '/renders': { render: () => m(Layout, m(Renders)) },
-  '/documents': { render: () => m(Layout, m(Documents)) },
+  // Migrated into the stage flow.
+  //
+  // Both of these listed data the flow also lists, fetched separately and
+  // rendered differently -- two project lists and two render lists, each with
+  // its own state, neither telling the other when anything changed. The flow's
+  // versions carry what these did and more, so these redirect rather than
+  // linger as a second way to see the same thing.
+  //
+  // Kept as redirects rather than deleted: they are the URLs the menu used,
+  // that anyone has bookmarked, and that older docs name.
+  '/projects': {
+    onmatch: () => {
+      m.route.set('/', { stage: 'source' })
+    },
+  },
+  '/renders': {
+    onmatch: () => {
+      m.route.set('/', { stage: 'deliver' })
+    },
+  },
+  // Two links. They are in the footer now, on every page, rather than behind
+  // a route of their own that dropped you out of the editor to read them.
+  '/documents': {
+    onmatch: () => {
+      m.route.set('/', { stage: 'source' })
+    },
+  },
   '/otto': Otto,
-  '/form': { render: () => m(Layout, m(Magnussens)) },
-  '/editor': { render: () => m(Layout, m(TemplateEditor)) },
+
+  // Retired. Both were routes with no stage rail and no timeline: a second
+  // interface reachable from the first and unable to get back to it, which
+  // could also reach states nothing could act on -- #!/form rendered a
+  // submittable form with no project at all, and #!/editor?project=nonexistent
+  // rendered "nonexistent logic undefined".
+  //
+  // Their content lives in the stages now: the template under Source, the
+  // form as the Render stage for projects that are driven by one. These
+  // redirect, carrying the project through, because they are the URLs the
+  // project list used and anyone has bookmarked.
+  '/form': {
+    onmatch: args => {
+      m.route.set('/', { ...args, stage: 'render' })
+    },
+  },
+  '/editor': {
+    onmatch: args => {
+      m.route.set('/', { ...args, stage: 'source' })
+    },
+  },
   '/login': { render: () => m(Layout, m(Login)) },
   '/logout': { render: () => m(Layout, m(Logout)) },
 })
+
+// Session restore and the guard run *after* the router is mounted.
+//
+// Placed above `m.route(...)` these raced it: for a deep link the redirect
+// fired during routing and worked, and for `/` the promise resolved before the
+// router existed, so `m.route.set` had nothing to set and an anonymous visitor
+// sat on the editor shell. Routing first, then decide.
+// `restore` resolves false when there is nothing stored, or when what was
+// stored no longer works; only then is the dev-mode probe worth making.
+Promise.resolve(User.restore())
+  .then(restored => (restored ? true : User.detectDevMode()))
+  .catch(() => false)
+  .then(() => {
+    User.booted = true
+    User.requireSession()
+  })

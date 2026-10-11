@@ -1,10 +1,12 @@
-from pdfrw import PdfReader, PdfWriter, PageMerge
-from io import BytesIO
-from reportlab.pdfgen import canvas
-from ..utils.db import get_sync_db
-from bson.objectid import ObjectId
-from math import ceil
 from datetime import datetime
+from io import BytesIO
+from math import ceil
+
+from bson.objectid import ObjectId
+from pdfrw import PageMerge, PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+
+from ..utils.db import get_sync_db
 
 left = 55
 top = 557

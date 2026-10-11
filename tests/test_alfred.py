@@ -4,8 +4,9 @@ These need no database: they exercise the ASGI app's routing table and the
 static mount, not any handler that touches storage.
 """
 
-from alfred.main import app
 from fastapi.testclient import TestClient
+
+from alfred.main import app
 
 client = TestClient(app)
 

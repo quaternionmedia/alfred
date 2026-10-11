@@ -12,7 +12,6 @@ if not environ.get('STATIC_DIR'):
 import shutil  # noqa: E402
 
 import pytest  # noqa: E402
-
 from otto.models import Clip, Edl, TemplateData  # noqa: E402
 
 # --- environment markers --------------------------------------------------

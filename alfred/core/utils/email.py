@@ -1,15 +1,20 @@
-from smtplib import SMTP
 from email.message import EmailMessage
+from mimetypes import guess_type
+from smtplib import SMTP
+
 from alfred.config import (
+    EMAIL_PASSWORD,
     EMAIL_PORT,
     EMAIL_SERVER,
     EMAIL_USERNAME,
-    EMAIL_PASSWORD,
 )
-from mimetypes import guess_type
 
 
-def sendMail(recepients, subject, message, attachments=[]):
+def sendMail(recepients, subject, message, attachments=None):
+    # `attachments=None`, not `[]`. A list literal in a signature is created
+    # once at import and shared by every call that omits the argument, so
+    # anything appended to it leaks into the next mail sent.
+    attachments = attachments or []
     try:
         msg = EmailMessage()
         msg.set_content(message)

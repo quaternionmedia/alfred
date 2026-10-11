@@ -20,9 +20,8 @@ one. `otto` stays the thing that knows how to draw them.
 import inspect
 
 from fastapi import APIRouter
-from pydantic import BaseModel
-
 from otto import templates as otto_templates
+from pydantic import BaseModel
 
 templateAPI = APIRouter()
 

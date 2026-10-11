@@ -1,8 +1,9 @@
+from datetime import datetime
 from typing import Optional
+
+from beanie import PydanticObjectId
 from fastapi_users import schemas
 from pydantic import validator
-from beanie import PydanticObjectId
-from datetime import datetime
 
 
 class UserRead(schemas.BaseUser[PydanticObjectId]):

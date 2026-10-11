@@ -1,7 +1,6 @@
 import m from 'mithril'
 import interact from 'interactjs'
 import { Video } from './Video'
-var Timeline = require('./Timeline').Timeline
 var state = require("./Globals").state
 
 // position will be between 0 and 1

@@ -1,5 +1,6 @@
 import m from 'mithril'
 import { Video, Edl } from './Video'
+import { Player } from './Player'
 import { User } from './User'
 var state = require("./Globals").state
 
@@ -32,6 +33,7 @@ export function ImagePreview() {
 export function AuthedImage() {
   let objectUrl = null
   let lastRequested = null
+  let problem = null
 
   const release = () => {
     if (objectUrl) {
@@ -47,16 +49,41 @@ export function AuthedImage() {
       url,
       headers: { Authorization: User.token },
       responseType: 'blob',
-      extract: xhr => xhr.response,
+      extract: xhr => {
+        if (xhr.status >= 400) {
+          // The body is JSON even though the request asked for a blob, so it
+          // is read as text and the server's own explanation is kept.
+          const err = new Error(xhr.responseText)
+          err.status = xhr.status
+          throw err
+        }
+        return xhr.response
+      },
     })
       .then(blob => {
         release()
+        problem = null
         objectUrl = URL.createObjectURL(blob)
         m.redraw()
       })
-      .catch(() => {
-        // A template that cannot render is not worth a broken-image icon on
-        // every redraw; leave the previous frame up.
+      .catch(e => {
+        // Say why, rather than leaving the last good frame up.
+        //
+        // This swallowed every failure on the grounds that a broken-image
+        // icon per redraw is worse than nothing -- which is true, and left a
+        // template that cannot render looking identical to one that simply
+        // had not loaded yet. The server now answers 422 with the reason a
+        // template refused, and that reason is worth more on screen than a
+        // stale frame.
+        let detail = ''
+        try {
+          detail = JSON.parse(e.message).detail || ''
+        } catch (_) {
+          detail = ''
+        }
+        problem = detail || 'This template could not be rendered.'
+        release()
+        m.redraw()
       })
   }
 
@@ -67,60 +94,55 @@ export function AuthedImage() {
     view: vnode =>
       objectUrl
         ? m('img.preview', { id: vnode.attrs.id, src: objectUrl })
-        : m('.preview.loading'),
+        : problem
+          ? m('.preview.unrenderable', { id: vnode.attrs.id }, [
+              m('i.material-icons', 'report_problem'),
+              m('span', problem),
+            ])
+          : m('.preview.loading'),
   }
 }
 export function VideoPreview() {
   return {
-    onbeforeupdate: (vnode, old) => {
-      return Video.paused
-    },
-    oncreate: (vnode) => {
-      document.addEventListener('keydown', e => {
-        switch (e.code) {
-          case 'Space':
-            e.preventDefault()
-            if (Video.paused) {
-              vnode.dom.play()
-              Video.paused = false
-              vnode.dom.addEventListener('timeupdate', (e) => {
-                Video.time(e.target.currentTime)
-                Edl.time(Video.time + Edl.durations(Edl.edl.slice(0,Edl.current)))
-                m.redraw()
-              })
-            } else {
-              vnode.dom.pause()
-              Video.paused = true
-            }
-            m.redraw()
-            break
-          }
-        })
-      vnode.dom.addEventListener('loadeddata', (event) => {
-        if (!Video.paused && vnode.dom.paused) {
-          console.log('fixing paused video by playing')
-          vnode.dom.play()
-        }
-        if (Video.time() < Edl.edl[Edl.current]['inpoint']) {
-          console.log('jumping to inpoint')
-          vnode.dom.currentTime = Video.time()
-        }
+    // No `onbeforeupdate` guard. There was one returning `Video.paused`, to
+    // stop redraws resetting `src` and `currentTime` mid-playback -- but the
+    // view no longer writes `currentTime` at all, and freezing the component
+    // while playing means crossing from one clip to the next never updates
+    // `src`, so playback stays on the first file for the whole timeline.
+
+    // Registering the element is the whole point of this component as far as
+    // the transport is concerned: it is the only `<video>` the app owns, and
+    // the transport had no way to reach it.
+    oncreate: vnode => {
+      Player.attach(vnode.dom)
+      vnode.dom.addEventListener('loadeddata', () => {
+        // The source arrives well after the element does -- it is fetched with
+        // the session token and handed over as an object URL -- so the
+        // playhead has usually moved on by the time there is anything to show.
+        Player.syncElement(true)
+        if (Player.playing) Player.resume()
+      })
+      // The element pausing itself (buffering exhausted, source replaced) must
+      // not leave the toolbar showing a pause icon over a stopped video.
+      vnode.dom.addEventListener('ended', () => {
+        if (Player.playing) Player.pause()
       })
     },
-    view: (vnode) => {
+
+    onremove: vnode => Player.detach(vnode.dom),
+
+    view: vnode => {
       return m('video.preview', {
         ...vnode.attrs,
-        // `src` comes from AuthedSource below, never straight from the clip.
+        // `src` comes from authedSource below, never straight from the clip.
         src: authedSource(vnode.attrs.src),
-        currentTime: Video.time(),
-        // state: Video.paused ? vnode.dom.pause() : vnode.dom.play(),
         style: {
           width: '100%',
           height: '100%',
-          'object-fit': 'contain'
-        }
+          'object-fit': 'contain',
+        },
       })
-    }
+    },
   }
 }
 
@@ -160,50 +182,79 @@ export function authedSource(path) {
 }
 
 
-export var Preview = ( () => {
+export var Preview = () => {
+  // One handler, removed on unmount.
+  //
+  // These were added to `document` in `oncreate` with no matching `onremove`,
+  // so navigating away and back left the previous one attached and a single
+  // arrow press seeked twice, then three times. They also called `Edl.time()`
+  // -- `Edl.time` is a number -- so each one threw before it could do
+  // anything, which is the only reason the duplication never showed.
+  let onkeydown = null
+
   return {
-    oncreate: (vnode) => {
-      document.addEventListener('keydown', e => {
+    oncreate: () => {
+      onkeydown = e => {
+        // Not while typing: these keys belong to the field that has focus.
+        const tag = (document.activeElement || {}).tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return
+        if ((document.activeElement || {}).isContentEditable) return
+
         switch (e.code) {
-          case 'ArrowLeft':
-            console.log('left!', e)
+          case 'Space':
             e.preventDefault()
-            Edl.jump(Math.max(Edl.time() - 5, 0))
+            Player.toggle()
+            break
+          case 'ArrowLeft':
+            e.preventDefault()
+            Player.seek(Math.max(Edl.time - 5, 0))
             break
           case 'ArrowRight':
             e.preventDefault()
-            Edl.jump(Math.min(Edl.time() + 5, Edl.duration()))
+            Player.seek(Math.min(Edl.time + 5, Edl.duration()))
+            break
+          case 'Home':
+            e.preventDefault()
+            Player.seek(0)
+            break
+          case 'End':
+            e.preventDefault()
+            Player.seek(Edl.duration())
             break
         }
-    })},
-    onupdate: (vnode) => {
-
-    },
-    view: (vnode) => {
-      let clip = Edl.edl[Edl.current]
-      if (clip) {
-        if (clip.type == 'template') {
-          // `preview/template/...`, not `otto/template/...`. The latter has
-          // never been a route on this server, so previewing a template clip
-          // 404'd every time; the endpoint now lives under the preview router
-          // and validates the name against the template allowlist.
-          //
-          // The `bkg/` background-image that used to wrap this is gone for the
-          // same reason -- no such route ever existed -- and it contributed
-          // nothing but a second 404 per redraw.
-          return m('.bkg#preview', {}, [
-            m(AuthedImage, {
-              id: 'preview',
-              src: `preview/template/${encodeURIComponent(clip['name'])}?${urlfy(clip.data)}&width=${state.width()}&height=${state.height()}&t=${Video.time()}`,
-            }),
-          ])
-        } else {
-            return m(VideoPreview, {
-              id: 'preview',
-              src: clip.name
-            })
-        }
       }
-    }
+      document.addEventListener('keydown', onkeydown)
+    },
+
+    onremove: () => {
+      if (onkeydown) document.removeEventListener('keydown', onkeydown)
+      onkeydown = null
+    },
+
+    view: () => {
+      const clip = Edl.edl[Edl.current]
+      if (!clip) {
+        return m('.preview.empty#preview', 'Nothing on the timeline yet.')
+      }
+      if (clip.type == 'template') {
+        // `preview/template/...`, not `otto/template/...`. The latter has
+        // never been a route on this server, so previewing a template clip
+        // 404'd every time; the endpoint now lives under the preview router
+        // and validates the name against the template allowlist.
+        return m('.bkg#preview', {}, [
+          m(AuthedImage, {
+            id: 'preview',
+            src: `preview/template/${encodeURIComponent(clip['name'])}?${urlfy(
+              clip.data
+            )}&width=${state.width()}&height=${state.height()}&t=${Video.time()}`,
+          }),
+        ])
+      }
+      // Deliberately unkeyed. This branch alternates with two unkeyed ones
+      // above, and mithril refuses a fragment whose children are only
+      // partly keyed -- it throws during render and takes the whole subtree
+      // with it, which is a failure this codebase has already paid for once.
+      return m(VideoPreview, { id: 'preview', src: clip.name })
+    },
   }
-})
+}

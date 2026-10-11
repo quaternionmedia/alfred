@@ -5,9 +5,9 @@ from email.utils import formatdate
 from mimetypes import guess_type
 
 from starlette.background import BackgroundTask
-from starlette.types import Receive, Scope, Send
 from starlette.requests import Request
 from starlette.responses import Response
+from starlette.types import Receive, Scope, Send
 
 try:
     import aiofiles
@@ -79,8 +79,8 @@ class PartialFileResponse(Response):
             try:
                 stat_result = await aio_stat(self.path)
                 self.set_stat_headers(stat_result)
-            except FileNotFoundError:
-                raise RuntimeError(f"File at path {self.path} does not exist.")
+            except FileNotFoundError as exc:
+                raise RuntimeError(f"File at path {self.path} does not exist.") from exc
             else:
                 mode = stat_result.st_mode
                 if not stat.S_ISREG(mode):

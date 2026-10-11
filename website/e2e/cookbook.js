@@ -113,6 +113,19 @@ function parseSpec(file) {
   }
 }
 
+const RECIPE_DIR = path.join(E2E_DIR, '..', '..', 'docs', 'recipes')
+
+/** The recording for a recipe title, if `./al recipes` has produced one. */
+function videoFor(title) {
+  const slug = title
+    .replace(/^recipe:\s*/i, '')
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()
+  const file = `${slug}.webm`
+  return fs.existsSync(path.join(RECIPE_DIR, file)) ? `recipes/${file}` : null
+}
+
 function render(specs) {
   const out = []
   out.push('# Cookbook')
@@ -151,6 +164,13 @@ function render(specs) {
         continue
       }
       out.push(`- **${entry.title}**`)
+      // A recipe with a recording links to it. The video is produced by the
+      // same test, so a broken recipe has no video rather than a stale one --
+      // which is why this checks the file exists rather than assuming it.
+      const video = videoFor(entry.title)
+      if (video) {
+        out.push('', `  [▶ watch](${video})`, '')
+      }
       // A describe block and the test that follows it can pick up the same
       // preceding comment, which printed the paragraph twice.
       if (entry.note && entry.note !== lastGroupNote) {

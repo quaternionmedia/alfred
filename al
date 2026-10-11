@@ -12,6 +12,7 @@ USAGE:
 COMMANDS:
 b | build
 cookbook
+recipes
 d | dev
 docker | dock
 flower
@@ -61,8 +62,47 @@ elif [ $1 = "b" -o $1 = "build" ]; then
 # Starts in development (optional "--build")
 elif [ $1 = "d" ] || [ $1 = "dev" ]; then
   if [ !-z ]; then shift; fi
-  echo "Alfred! running dev $1"
-  docker compose -f docker-compose.yml -f dev.yml up "$@"
+
+  # Refuse to start on a port somebody else already holds.
+  #
+  # Docker publishes the port, but if another process bound it first the host
+  # port answers *them* -- so the stack looks healthy, the container serves
+  # correctly on its own network, and every request from the host reaches a
+  # different application. That happened here: another QM project defaults to
+  # 8000 too, and `curl localhost:8000` answered "Apothecary API" for an
+  # entire session while this stack was up and fine.
+  #
+  # Failing here with the occupant named beats discovering it later, or worse,
+  # not discovering it. Override rather than kill: ALFRED_PORT=8100 ./al dev
+  ALFRED_PORT="${ALFRED_PORT:-8000}"
+  if curl -s -o /dev/null --max-time 3 "http://localhost:$ALFRED_PORT/" 2>/dev/null; then
+    # First match, not last: an OpenAPI document has a `title` per schema as
+    # well as the one in `info`, and a greedy pattern finds the wrong one.
+    occupant=$(curl -s --max-time 3 "http://localhost:$ALFRED_PORT/openapi.json" 2>/dev/null       | head -c 400 | grep -o '"title":"[^"]*"' | head -1 | cut -d'"' -f4)
+    # Suggest a port that is actually free, rather than naming the taken one.
+    alternate=$((ALFRED_PORT + 100))
+    echo >&2
+    if [ "$occupant" = "Alfred API" ]; then
+      echo "  Alfred is already running on port $ALFRED_PORT." >&2
+      echo >&2
+      echo "  Stop it first:                  ./al stop" >&2
+      echo "  or start a second stack:        ALFRED_PORT=$alternate ./al dev" >&2
+    else
+      echo "  Port $ALFRED_PORT is already answering, and not as Alfred." >&2
+      echo "  Starting here would look fine and be wrong: the container would" >&2
+      echo "  serve correctly on its own network while every request from your" >&2
+      echo "  machine reached whatever holds the port." >&2
+      echo >&2
+      echo "  It identifies itself as:  ${occupant:-(no OpenAPI document)}" >&2
+      echo >&2
+      echo "  Start elsewhere instead:  ALFRED_PORT=$alternate ./al dev" >&2
+    fi
+    echo >&2
+    exit 1
+  fi
+
+  echo "Alfred! running dev $1  (http://localhost:$ALFRED_PORT)"
+  ALFRED_PORT="$ALFRED_PORT" docker compose -f docker-compose.yml -f dev.yml up "$@"
 
 # Starts in production.
 elif [ $1 = "p" -o $1 = "production" -o $1 = "prod" ]; then
@@ -95,6 +135,14 @@ elif [ $1 = "i" -o $1 = "install" ]; then
     # make install
     docker compose -f docker-compose.yml run website yarn add "$@"
 
+elif [ $1 = "recipes" ]; then
+  shift
+  # Record the @recipe walkthroughs as video and put them where the cookbook
+  # links them. Needs a running dev stack; the recordings are what the docs
+  # show, and a recipe that fails leaves no video rather than a stale one.
+  cd website &&     npx playwright test --project=docs --reporter=json > recipe-report.json &&     node e2e/collect-recipe-videos.js &&     node e2e/cookbook.js
+  cd ..
+
 elif [ $1 = "cookbook" ]; then
   shift
   # Regenerate docs/cookbook.md from the end-to-end specs. The tests are the
@@ -111,6 +159,11 @@ elif [ $1 = "flower" ]; then
 elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
   shift
   downloadMedia
+
+# Stops the dev stack
+elif [ $1 = "stop" ]; then
+  shift
+  docker compose -f docker-compose.yml -f dev.yml down "$@"
 
 elif [ $1 = "restart" -o $1 = "r" ]; then
   shift
@@ -192,7 +245,12 @@ elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
 
 elif [ $1 = "n" -o $1 = "nox" ]; then
   shift
-  nox -f tests/noxfile.py "$@"
+  # In the container, like every other command here. This ran `nox` on the
+  # host, which is not a documented prerequisite and is not installed by
+  # `./al init` -- so `./al nox -s lint`, which AGENTS.md and CONTRIBUTING.md
+  # both name as the pre-pull-request gate, failed with `nox: command not
+  # found` for anyone who followed the instructions.
+  docker compose -f pytest.yml run --rm pytest -f tests/noxfile.py "$@"
 
 else
   echo "Unknown command: $1"

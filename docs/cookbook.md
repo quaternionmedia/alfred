@@ -8,6 +8,80 @@ database, a real render worker, and real files on disk. If a step here is
 wrong, a test is failing. That is the point -- prose describing behaviour
 goes stale silently, and a test describing behaviour goes red.
 
+## api contract
+
+Contracts the editor depends on, asserted at the HTTP level.
+
+# Recipe: what the API promises the editor
+
+The browser specs check that the editor works. These check the promises it
+is built on, where a change would break the editor without breaking any
+assertion about the DOM: which templates exist, what a preview returns, what
+a malformed request gets back, and which fields a write may touch.
+
+All of it against the running stack with real data.
+
+### the template preview
+
+`Preview.js` builds this URL for every template clip on the timeline,
+and it 404'd for years because the route it named -- `otto/template/...`
+-- had never existed on this server.
+
+Rendered past the fade-in: templates carry `fadeIn: 1`, so a frame at
+t=0 is the faded-out first frame and every template returns a
+near-identical few kilobytes. Asserting a real picture means asking for
+one after the fade.
+
+- **renders a real image for every advertised template**
+- **refuses a name that is not an advertised template**
+
+  The allowlist is load-bearing, not decorative.
+
+  `generateEdl` resolves a template with `getattr(templates, clip.name)`
+  on a name from the client, and otto's module namespace holds fourteen
+  callables of which five are templates -- the rest are imports it happens
+  to carry. Without the check, `ColorClip` and `rgbToDec` are reachable by
+  name from a URL.
+
+- **previewing requires a session**
+- **the same request twice gives the same size image**
+### malformed input is answered, not crashed on
+
+The editor really does send `undefined`: its routes read a `project`
+query parameter that is not always present, and `'/project/' + undefined`
+is a string the browser will happily request. Both of these answered
+500 -- through two different exception hierarchies needing two
+different fixes, one in beanie and one in bson.
+
+- **GET <path> answers <expected>**
+### project writes touch only what they claim
+
+- **the settings route saves render settings and destination**
+
+  The guard for a defect that cost a document.
+
+  `PUT /project/{id}` goes through the crud router's update, which
+  replaces the whole record with the request body -- so a partial save
+  wrote null over `name` and `logic`. The write succeeded, because writes
+  are not validated; every subsequent read of that project answered 500,
+  because reads are. One request turned a readable project into an
+  unreadable one and nothing reported an error until the next reader
+  arrived.
+
+- **saving settings leaves the rest of the project intact**
+
+  The guard for a defect that cost a document.
+
+  `PUT /project/{id}` goes through the crud router's update, which
+  replaces the whole record with the request body -- so a partial save
+  wrote null over `name` and `logic`. The write succeeded, because writes
+  are not validated; every subsequent read of that project answered 500,
+  because reads are. One request turned a readable project into an
+  unreadable one and nothing reported an error until the next reader
+  arrived.
+
+- **the project stays readable afterwards**
+
 ## appearance
 
 Visual consistency, symmetry, and the functionality that depends on them.
@@ -273,17 +347,8 @@ so it survives a reseed.
 - **the timeline renders one element per clip**
 - **each timeline clip is named after its template**
 - **the media bin lists the templates the API offers**
-- **the editor opens without a project and asks for one**
-
-  The regression guard for this whole session's frontend work.
-
-  Opening /otto used to produce four failures per visit: a 404 for
-  /[object Object] from a broken asset import, a 401 for /videos because
-  the bin used a request helper that sends no token, a 404 for
-  /otto/templates which never existed, and a 500 for /project/undefined.
-  None of them failed a test, because none of them threw.
-
-- **the editor loads a project when given one**
+- **the old editor URL lands on the project stage**
+- **a selected project offers its template**
 
   The regression guard for this whole session's frontend work.
 
@@ -402,14 +467,15 @@ waiting for the encode.
 
 ### navigation
 
-- **menu exposes the primary sections**
-- **menu links change the route**
+- **the rail exposes every stage**
+- **the header carries no navigation of its own**
+- **choosing a stage changes the route**
 - **back and forward move between routes**
 - **serves the SPA shell at the root**
 
   This was annotated `test.fail()` as a known defect: the header rendered
   the same links twice, once as a drawer and once as a bar, emitting
-  home-link, projects-link, renders-link, documents-link and login-link
+  home-link, projects-link, renders-link and login-link
   twice each -- and every clip repeated clipname, inpoint and outpoint, so
   a page with 17 clips carried 52 duplicates.
 
@@ -422,7 +488,7 @@ waiting for the encode.
 
   This was annotated `test.fail()` as a known defect: the header rendered
   the same links twice, once as a drawer and once as a bar, emitting
-  home-link, projects-link, renders-link, documents-link and login-link
+  home-link, projects-link, renders-link and login-link
   twice each -- and every clip repeated clipname, inpoint and outpoint, so
   a page with 17 clips carried 52 duplicates.
 
@@ -437,6 +503,8 @@ waiting for the encode.
 ### otto editor
 
 - **<group> are present**
+- **action buttons are present**
+- **the play control is present**
 - **timeline slider is positionable**
 
 ## performance
@@ -447,15 +515,118 @@ waiting for the encode.
 
 ## projects
 
-### projects
+### the project selector
 
-- **renders the projects list for an authenticated user**
-- **table header names the three columns**
+- **the old projects URL redirects into the flow**
 - **one row per project, named as the API names them**
+- **each row shows what is on the project, not just its name**
+
+  The table showed a name and two icons. Whether a project had anything on
+  its timeline — the thing that decides if opening it is worthwhile — was
+  not visible until you opened it.
+
 - **each row offers an edit and a create-video action**
-- **the edit action routes to the template editor for that project**
-- **the create-video action routes to the form for that project**
-- **an anonymous visitor is sent to login, not to the project list**
+
+  These used to leave for #!/editor and #!/form -- routes with no stage
+  rail and no timeline, reachable from this list and unable to get back to
+  it. Both now select the project and land on the stage that holds what
+  they used to show.
+
+- **the edit action stays inside the flow**
+
+  These used to leave for #!/editor and #!/form -- routes with no stage
+  rail and no timeline, reachable from this list and unable to get back to
+  it. Both now select the project and land on the stage that holds what
+  they used to show.
+
+- **the create-video action stays inside the flow**
+- **a project id naming nothing says so and offers a way out**
+- **choosing a project opens it on the timeline**
+
+  A filter rather than pagination: the list is small enough to render
+  whole, and typing a name beats scrolling for one. It appears only when
+  there are enough projects to be worth filtering.
+
+- **the filter narrows the list without losing anything**
+
+  A filter rather than pagination: the list is small enough to render
+  whole, and typing a name beats scrolling for one. It appears only when
+  there are enough projects to be worth filtering.
+
+- **choosing material puts it on the timeline**
+
+  # Recipe: putting footage on the timeline
+
+  The Material list named every file on the server and offered no way to
+  use any of them -- each entry was an `<li>` with text in it. The only
+  route from "I have footage" to "it is on the timeline" was to find the
+  bin on the editor stage and drag, an affordance with no visible cue,
+  unreachable from the keyboard, and on a different stage from the list
+  that told you the footage existed.
+
+- **material added without a project survives the next redraw**
+
+  The timeline reloaded its project on every redraw, and the guard meant
+  to stop that compared a raw `undefined` against a normalised `null`. So
+  with no project selected the comparison never matched, the branch that
+  clears the clip list ran about sixty times a second, and anything added
+  to the timeline was erased before it could be drawn.
+
+  A count taken immediately would have passed throughout. This one waits.
+
+- **a chosen clip is what the viewer shows**
+- **an anonymous visitor is sent to login**
+
+## recipes
+
+The recipes, written to be watched.
+
+# Recipes
+
+These are tagged `@recipe` and are the source of both halves of the
+documentation: `docs/cookbook.md` is generated from their titles and
+comments, and `./al recipes` records them as video through the `docs`
+Playwright project. A demonstration made this way cannot drift from the
+behaviour, because it is the behaviour -- and when a recipe breaks there is
+no video rather than a misleading one.
+
+They are deliberately unhurried. Every other spec asserts as fast as it can;
+these pause between steps so a person watching can follow, which is the one
+place in this suite where a `waitForTimeout` is the point rather than a
+smell.
+
+Excluded from the `chromium` project, so the gate on every pull request does
+not pay for the pauses.
+
+### @recipe walkthroughs
+
+The editor is the first thing the app shows. Three regions, in the order
+you work: the **viewer** with the output settings beside it, the
+**transport** that moves the playhead, and the **editor** where the
+timeline sits with its tools and the media bin beneath.
+
+- **recipe: open the editor and look around**
+- **recipe: generate a demo from an empty install**
+
+  A first run needs no downloads. The Source stage offers to generate both
+  a project and its media, synthesised locally with ffmpeg's test sources.
+
+- **recipe: choose a project and edit its timeline**
+
+  Choosing a project on the Source stage loads its timeline. The clips are
+  laid out left to right, and each one is as wide as it is long.
+
+- **recipe: pick a tool and move the playhead**
+
+  The tools that change clips sit beside the timeline; the ones that move
+  the playhead sit above it, in the transport.
+
+- **recipe: render the timeline and deliver the result**
+
+  The Render stage turns the timeline into a video; the Deliver stage
+  sends it somewhere. Delivery is local by default, so this works on a
+  machine with no cloud account.
+
 
 ## render pipeline
 
@@ -497,11 +668,109 @@ assertion that says nothing.
 
 ## renders
 
-### renders
+### the render list
 
-- **renders view loads for an authenticated user**
+Status and progress lived only in the retired table, and they are what
+tells you whether a render can be delivered at all. A row without them
+makes the Deliver button a guess.
+
+- **the old renders URL redirects into the flow**
 - **render list is available from the API**
 - **refuses renders to an anonymous caller**
+- **each row shows the state of its render**
+- **an unfinished render cannot be delivered**
+
+  There is no file to send until the worker has finished, and a button
+  that fails is worse than one that explains itself. The row disables it
+  and says why in the title.
+
+  Asserted as a rule over one DOM snapshot, not by picking an unfinished
+  render from the API and then looking for its row. That version raced
+  the worker: other specs queue renders, so a render chosen as unfinished
+  could complete between the API read and the assertion, and the test
+  failed for having been right a moment earlier.
+
+- **a delivered render says where it went**
+
+## session
+
+The session lifecycle: refresh, logout, and what a token is worth.
+
+# Recipe: staying logged in, and stopping
+
+The editor keeps a JWT in sessionStorage and sends it as a bearer token. When
+a request comes back 401 the app tries `/auth/jwt/refresh` before giving up
+and redirecting to the login screen -- so refresh is the only mechanism that
+keeps anybody logged in past a token's lifetime, and it is worth testing at
+the HTTP level rather than only through the UI.
+
+These are deliberately API-level. The browser path is covered in
+views.spec.js ("a reload keeps the session"); what is checked here is the
+contract the browser depends on.
+
+### token refresh
+
+This answered 500 for every caller.
+
+The route called `auth_backend.get_login_response(...)`, which has not
+existed on fastapi-users' AuthenticationBackend for several major
+versions -- it carries `login` and `logout` and nothing else. So the one
+path that exists to keep somebody logged in was the one path that could
+not work, and a session reaching its expiry failed with a server error
+rather than renewing.
+
+- **a valid token can be exchanged for a new one**
+- **the refreshed token actually authenticates**
+- **refresh refuses an anonymous caller**
+
+  Pinned as a property, not filed as a defect.
+
+  These are stateless JWTs with no server-side revocation list, so logging
+  out clears the browser's copy and cannot invalidate a token somebody
+  already holds. That is how the mechanism works and it is a real
+  consequence: a leaked token stays valid until it expires, and "log out
+  everywhere" is not something this design can offer.
+
+  If revocation is ever added this test goes red, which is the moment to
+  decide deliberately rather than discover it.
+
+- **refresh refuses a malformed token**
+
+  Pinned as a property, not filed as a defect.
+
+  These are stateless JWTs with no server-side revocation list, so logging
+  out clears the browser's copy and cannot invalidate a token somebody
+  already holds. That is how the mechanism works and it is a real
+  consequence: a leaked token stays valid until it expires, and "log out
+  everywhere" is not something this design can offer.
+
+  If revocation is ever added this test goes red, which is the moment to
+  decide deliberately rather than discover it.
+
+### logout
+
+Pinned as a property, not filed as a defect.
+
+These are stateless JWTs with no server-side revocation list, so logging
+out clears the browser's copy and cannot invalidate a token somebody
+already holds. That is how the mechanism works and it is a real
+consequence: a leaked token stays valid until it expires, and "log out
+everywhere" is not something this design can offer.
+
+If revocation is ever added this test goes red, which is the moment to
+decide deliberately rather than discover it.
+
+- **logout succeeds for an authenticated caller**
+- **a bearer token still works after logout**
+### what a token gets you
+
+The e2e user is not a superuser, so the admin router must refuse it.
+A 200 here would mean any registered account can reach the admin
+surface, which is the kind of thing that is only noticed deliberately.
+
+- **every gated route refuses an anonymous caller**
+- **a token from one login works across every gated route**
+- **the admin surface needs more than an ordinary session**
 
 ## tools
 
@@ -542,6 +811,44 @@ instead.
   or short timeline that is where an off-by-one would surface, and a
   thrown handler leaves the toolbar looking fine and doing nothing.
 
+- **play advances the playhead, and pause stops it**
+
+  # Recipe: playing the timeline
+
+  The play button had never worked. It called into a component that was
+  imported but never rendered, so the element reference it needed was
+  always null and the click threw before anything moved.
+
+  What it drives now is the timeline, not a file. That distinction is
+  load-bearing rather than pedantic: `POST /demo/project` builds its
+  timeline from template clips, so the first project anyone generates is
+  entirely stills, and a transport bound to a video element would leave
+  it inert -- on exactly the project a new user presses play on first.
+
+- **the transport says so when there is nothing to play**
+### the project actions
+
+# Recipe: saving a timeline
+
+The save button posted to `/edl`, which is not a route on this server
+and never has been, with a bare `m.request` that would not have carried
+a token if it were. The rejection was handled nowhere, so the button
+reported nothing. Timelines could not be saved at all.
+
+The name assertion is the point of the second half. The obvious way to
+write a timeline back is `PUT /project/{id}`, which replaces the whole
+document -- a partial body arrives with `logic` unset, `logic` is
+required, and every later GET of that project answers 500. This checks
+that saving clips did not take the name with it.
+
+- **saving a timeline persists it, and keeps the rest of the project**
+- **the actions say why they are unavailable**
+
+  Viewer, transport, editor. The arrangement used to be a stack of bars
+  with related controls apart and unrelated controls together -- aspect
+  and resolution floating above the preview, speed buried inside the
+  timeline's grid, zoom stranded below it.
+
 ### the editor layout groups its tools
 
 Viewer, transport, editor. The arrangement used to be a stack of bars
@@ -566,10 +873,43 @@ spinner and `aria-busy` while their request is in flight.
 
 ### views
 
-- **renders view loads with its heading**
-- **documents view loads with its heading**
+- **the renders view is now the deliver stage**
+- **the documentation links are always to hand**
+
+  This test existed and passed while the Source stage threw on every
+  render. It walked the routes that take no parameters, and the throw was
+  in the branch that only runs once a project is selected -- so the panel
+  produced no DOM at all, and nothing here went near it. Four other specs
+  failed on the symptoms (an empty timeline, a missing disclosure, a
+  missing warning) and none named the cause.
+
+  So the walk now includes the states a parameter puts the app into: a
+  real project, and an id matching nothing.
+
 - **home view loads**
+
+  This test existed and passed while the Source stage threw on every
+  render. It walked the routes that take no parameters, and the throw was
+  in the branch that only runs once a project is selected -- so the panel
+  produced no DOM at all, and nothing here went near it. Four other specs
+  failed on the symptoms (an empty timeline, a missing disclosure, a
+  missing warning) and none named the cause.
+
+  So the walk now includes the states a parameter puts the app into: a
+  real project, and an id matching nothing.
+
 - **each view renders without an uncaught page error**
+
+  This test existed and passed while the Source stage threw on every
+  render. It walked the routes that take no parameters, and the throw was
+  in the branch that only runs once a project is selected -- so the panel
+  produced no DOM at all, and nothing here went near it. Four other specs
+  failed on the symptoms (an empty timeline, a missing disclosure, a
+  missing warning) and none named the cause.
+
+  So the walk now includes the states a parameter puts the app into: a
+  real project, and an id matching nothing.
+
 - **an unknown route does not leave a blank page**
 - **a reload keeps the session**
 - **logging out survives a reload too**

@@ -100,3 +100,14 @@ build/
 
 # Data
 data/
+# Playwright JSON report, an intermediate for the recipe video collector.
+website/recipe-report.json
+
+# Recipe recordings. `./al recipes` produces these locally for watching and
+# for cutting a polished version from; the repository carries lightweight
+# stubs instead, so generated multi-megabyte binaries do not accumulate in
+# history.
+docs/recipes/*.webm
+
+# Test-render output moved aside during review prep; regenerable, never shipped.
+videos-test-output/

@@ -177,12 +177,15 @@ test.describe('the tools pass their events', () => {
       project.edl.clips.length
     )
 
-    for (const control of ['start', 'back 5s', 'pause', 'forward 5s', 'end']) {
+    for (const control of ['start', 'back 5s', 'forward 5s', 'end']) {
       const button = authedPage.locator(`#PlaybackTools i[title="${control}"]`)
       await expect(button).toBeVisible()
       // Clicking must not throw; the playhead assertions live below.
       await button.click()
     }
+    // The play control is addressed by id, because its title is the action it
+    // will perform and therefore changes as it is used.
+    await expect(authedPage.locator('#playpause')).toBeVisible()
   })
 
   test('clicking transport controls raises no page errors', async ({
@@ -203,12 +206,174 @@ test.describe('the tools pass their events', () => {
     await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
     await expect(authedPage.locator('#timeline .clip').first()).toBeVisible()
 
-    for (const control of ['start', 'forward 5s', 'back 5s', 'end']) {
-      await authedPage.locator(`#PlaybackTools i[title="${control}"]`).click()
+    // Every control the toolbar actually has, asked of the toolbar.
+    //
+    // This looped a written list -- `['start', 'forward 5s', 'back 5s',
+    // 'end']` -- against a toolbar of five. The omitted one was play, and
+    // play was the only one still broken: all five had reached through a
+    // module that was never mounted, and the four seek controls had since
+    // been rewritten to call `Edl.jump` directly. So the suite reported the
+    // transport as raising no errors, about a transport whose most-used
+    // control threw on every click.
+    //
+    // Deriving the list means a sixth control is covered the day it is added
+    // rather than the day somebody remembers to add it here.
+    const controls = authedPage.locator('#PlaybackTools i')
+    const count = await controls.count()
+    expect(count, 'the transport has no controls to press').toBeGreaterThan(0)
+
+    for (let i = 0; i < count; i++) {
+      await controls.nth(i).click()
       await authedPage.waitForTimeout(150)
     }
 
+    // Pressed twice, because play and pause are one control in two states and
+    // only one of them is reachable per press.
+    await authedPage.locator('#playpause').click()
+    await authedPage.waitForTimeout(200)
+
     expect(errors, `transport controls threw: ${errors.join('; ')}`).toEqual([])
+  })
+
+  test('play advances the playhead, and pause stops it', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * # Recipe: playing the timeline
+     *
+     * The play button had never worked. It called into a component that was
+     * imported but never rendered, so the element reference it needed was
+     * always null and the click threw before anything moved.
+     *
+     * What it drives now is the timeline, not a file. That distinction is
+     * load-bearing rather than pedantic: `POST /demo/project` builds its
+     * timeline from template clips, so the first project anyone generates is
+     * entirely stills, and a transport bound to a video element would leave
+     * it inert -- on exactly the project a new user presses play on first.
+     */
+    const project = await mediaProject(request, token)
+    await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
+    await expect(authedPage.locator('#timeline .clip').first()).toBeVisible()
+
+    const elapsed = () => authedPage.locator('.timecode').innerText()
+    expect(await elapsed()).toBe('0:00.00')
+
+    await authedPage.locator('#playpause').click()
+    await expect(authedPage.locator('#playpause')).toHaveText('pause')
+
+    // Polled rather than measured after a fixed wait: the assertion is that
+    // the playhead moves, not that it reaches a particular second by a
+    // particular moment on a loaded CI machine.
+    await expect.poll(async () => (await elapsed()) !== '0:00.00').toBe(true)
+
+    await authedPage.locator('#playpause').click()
+    await expect(authedPage.locator('#playpause')).toHaveText('play_arrow')
+
+    const stopped = await elapsed()
+    await authedPage.waitForTimeout(600)
+    expect(await elapsed(), 'the playhead moved after pause').toBe(stopped)
+  })
+
+  test('the transport says so when there is nothing to play', async ({
+    authedPage,
+  }) => {
+    // An empty timeline used to offer five controls that looked available and
+    // threw when pressed. Saying why beats failing silently.
+    await authedPage.goto('/#!/?stage=edit')
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(0)
+
+    const play = authedPage.locator('#playpause')
+    await expect(play).toHaveClass(/disabled/)
+    await expect(play).toHaveAttribute('title', /nothing on the timeline/i)
+  })
+})
+
+test.describe('the project actions', () => {
+  test('saving a timeline persists it, and keeps the rest of the project', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * # Recipe: saving a timeline
+     *
+     * The save button posted to `/edl`, which is not a route on this server
+     * and never has been, with a bare `m.request` that would not have carried
+     * a token if it were. The rejection was handled nowhere, so the button
+     * reported nothing. Timelines could not be saved at all.
+     *
+     * The name assertion is the point of the second half. The obvious way to
+     * write a timeline back is `PUT /project/{id}`, which replaces the whole
+     * document -- a partial body arrives with `logic` unset, `logic` is
+     * required, and every later GET of that project answers 500. This checks
+     * that saving clips did not take the name with it.
+     */
+    await request.post('/demo/media', { headers: { Authorization: token } })
+
+    // Its own project, created here and used by nobody else.
+    //
+    // The first version of this test saved into whichever shared project had
+    // clips, which meant it permanently added one every run: the fixtures
+    // grew, a spec asserting clips sit on one row started failing on the
+    // width, and a render of that project began pulling in a file this test
+    // had put there. A test that writes to shared state has to bring its own.
+    const created = await request.post('/project', {
+      headers: { Authorization: token },
+      data: {
+        name: `save test ${test.info().workerIndex}-${test.info().repeatEachIndex}`,
+        logic: {},
+        edl: { clips: [] },
+      },
+    })
+    expect(created.status(), await created.text()).toBeLessThan(400)
+    const project = await created.json()
+    const before = 0
+
+    await authedPage.goto(`/#!/?stage=source&project=${project._id}`)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(before)
+
+    await authedPage.locator('.mediachoice').first().click()
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
+
+    await authedPage.locator('#save-timeline').click()
+
+    await expect
+      .poll(async () => {
+        const saved = await (
+          await request.get(`/project/${project._id}`, {
+            headers: { Authorization: token },
+          })
+        ).json()
+        return ((saved.edl || {}).clips || []).length
+      })
+      .toBe(before + 1)
+
+    const saved = await (
+      await request.get(`/project/${project._id}`, {
+        headers: { Authorization: token },
+      })
+    ).json()
+    expect(saved.name, 'saving the timeline overwrote the project name').toBe(
+      project.name
+    )
+
+    await authedPage.reload()
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
+  })
+
+  test('the actions say why they are unavailable', async ({ authedPage }) => {
+    // Both were always enabled and always clickable, whether or not there was
+    // a project to act on or a clip to act with.
+    await authedPage.goto('/#!/?stage=edit')
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(0)
+
+    for (const id of ['#save-timeline', '#render-timeline']) {
+      const button = authedPage.locator(id)
+      await expect(button).toHaveClass(/disabled/)
+      await expect(button).toHaveAttribute('title', /select a project|nothing on the timeline/i)
+    }
   })
 })
 

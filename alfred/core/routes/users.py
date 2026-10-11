@@ -1,18 +1,18 @@
 from typing import Optional
 
+from beanie import PydanticObjectId
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, FastAPIUsers
-from fastapi_users.db import BeanieUserDatabase, ObjectIDIDMixin
 from fastapi_users.authentication import (
     AuthenticationBackend,
     BearerTransport,
     JWTStrategy,
 )
-from beanie import PydanticObjectId
+from fastapi_users.db import BeanieUserDatabase, ObjectIDIDMixin
 
-from ..utils.db import get_user_db, User
+from alfred.config import DEV_SKIP_AUTH, DEV_USER_EMAIL, SECRET_KEY
 
-from alfred.config import SECRET_KEY, DEV_SKIP_AUTH, DEV_USER_EMAIL
+from ..utils.db import User, get_user_db
 
 
 class UserManager(

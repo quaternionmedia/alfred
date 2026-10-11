@@ -10,6 +10,8 @@ The local destination is exercised with real files on disk, because the thing
 worth testing about a file transport is that the bytes arrive.
 """
 
+from dataclasses import FrozenInstanceError
+
 import pytest
 
 from alfred.core.utils.destinations import (
@@ -145,5 +147,9 @@ class TestTheDeliveryRecord:
     def test_it_is_immutable(self):
         """A delivery is a record of something that happened."""
         delivery = Delivery(destination='local', location='/x')
-        with pytest.raises(Exception):
+        # Not bare `Exception`: that passes if the assignment fails for any
+        # reason at all -- including a typo in the attribute name, which would
+        # make this test pass while proving nothing. `Delivery` is a frozen
+        # dataclass, so the specific refusal is FrozenInstanceError.
+        with pytest.raises(FrozenInstanceError):
             delivery.location = '/y'

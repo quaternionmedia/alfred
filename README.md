@@ -46,8 +46,9 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | Command | What it does |
 |---|---|
 | `./al init` | Install website dependencies |
-| `./al dev` | Run the dev stack; app on http://localhost:8000 |
+| `./al dev` | Run the dev stack; app on http://localhost:8000 (`ALFRED_PORT` to move it) |
 | `./al dev --build` | Rebuild images first |
+| `./al stop` | Stop the dev stack |
 | `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
 | `./al pytest` | API test suite, in Docker |
 | `./al test` | End-to-end suite (Playwright), in Docker |
@@ -59,8 +60,13 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al cookbook` | Regenerate `docs/cookbook.md` from the e2e specs |
 | `./al install <pkg>` | Add a website dependency |
 
-`./al dev` publishes MongoDB on 27017. If something already holds that port
-the stack will not start — see the dev-server notes in [AGENTS.md](AGENTS.md).
+`./al dev` publishes on 8000, 8001 and 27017. If something already holds one,
+override it rather than fighting for it — `ALFRED_PORT=8100 ./al dev`, and
+`ALFRED_DB_PORT` / `ALFRED_HMR_PORT` for the others. `./al dev` refuses to
+start on an occupied port and names what has it, because the failure this
+prevents is silent: the host port answers whoever bound it first, so the stack
+comes up healthy while every request from your machine reaches somebody else's
+application. See the dev-server notes in [AGENTS.md](AGENTS.md).
 
 ## First run
 
@@ -103,6 +109,12 @@ Built with [mkdocs](https://www.mkdocs.org/):
 ```sh
 ./al docs                         # serves on :4000
 ```
+
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the workflow, what CI checks, and the
+two rules that are easy to break by accident: everything arrives as a pull
+request, and contributor fields name humans.
 
 ## Versioning
 

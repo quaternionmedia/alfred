@@ -12,7 +12,6 @@ absent. Everything above the marked class is environment-free.
 """
 
 import pytest
-
 from otto import templates
 
 from alfred.core.routes.templates import TEMPLATE_NAMES

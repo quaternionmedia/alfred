@@ -16,16 +16,13 @@ an API-visible behavior change and therefore a decision, recorded in
 
 import pytest
 from beanie.exceptions import CollectionWasNotInitialized
+from otto.exceptions import EmptyClipsException
+from otto.models import Clip, Edl
+from otto.models import Render as OttoRender
+from otto.render import generateEdl
 from pydantic import ValidationError
 
-from otto.models import Clip, Edl
-from otto.render import generateEdl
-from otto.exceptions import EmptyClipsException
-
-from otto.models import Render as OttoRender
-
 from alfred.core.models.render import Render as RenderDoc
-
 from tests.conftest import clip_dict, edl_dict, render_dict
 
 # --- a realistic editing session ------------------------------------------

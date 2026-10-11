@@ -8,7 +8,6 @@ No network and no filesystem: `otto.getdata.head`, `download_url` and
 
 import numpy as np
 import pytest
-
 from otto import getdata
 from otto.exceptions import EdlException
 from otto.models import Clip, Edl, TemplateData
@@ -101,7 +100,12 @@ def test_rejected_downloads_should_raise(
     monkeypatch.setattr(getdata.path, 'isfile', lambda _: False)
     fake_head(**response)
 
-    with pytest.raises(Exception):
+    # `match`, not a bare `Exception`. otto raises undifferentiated
+    # `Exception` for every refusal, so there is no type to name here -- but
+    # matching the message still distinguishes "the download was refused" from
+    # "this test called something that does not exist", which bare Exception
+    # does not. Narrowing the type is otto's change to make, not this one's.
+    with pytest.raises(Exception, match='not allowed|too large|no content_type'):
         getdata.download('https://example.test/bad')
 
 

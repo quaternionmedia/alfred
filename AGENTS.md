@@ -81,8 +81,9 @@ arguments prints the full command list.
 
 | Command | What it does |
 |---|---|
-| `./al dev` | Run the dev stack; app on http://localhost:8000 |
+| `./al dev` | Run the dev stack; app on http://localhost:8000 (`ALFRED_PORT` to move it) |
 | `./al dev --build` | Rebuild images first |
+| `./al stop` | Stop the dev stack |
 | `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
 | `./al pytest` | Run the API test suite in Docker |
 | `./al nox -s lint` | Ruff |
@@ -94,8 +95,26 @@ Tests can also run directly: `nox -f tests/noxfile.py -s coverage`.
 
 ### Dev server notes
 
-Two things bite on a first run, neither obvious from the error:
+These bite on a first run, none obvious from the error:
 
+- **Port 8000, and this one fails silently.** 27017 below is the loud version
+  of this problem; 8000 is the quiet one, and it is worse. If something else
+  already holds 8000, Docker still starts the stack and reports it healthy —
+  but every request from your machine reaches the other application, because
+  the host port belongs to whoever bound it first. Nothing errors. It happened
+  during this project's 0.3.0 work: another QM service defaults to 8000 too,
+  and `curl localhost:8000/openapi.json` answered `Apothecary API` for a full
+  session while Alfred was up and serving correctly on its own network.
+
+  `./al dev` now refuses to start when 8000 is already answering, and names
+  the occupant from its OpenAPI title. Override rather than kill whatever has
+  it: `ALFRED_PORT=8100 ./al dev`. `ALFRED_DB_PORT` and `ALFRED_HMR_PORT` do
+  the same for the other two.
+
+  The general rule, worth more than the specific fix: **a test result is only
+  as good as your knowledge of what served it.** Before trusting a number,
+  confirm the identity of the server — `curl localhost:$PORT/openapi.json`
+  names it. See [docs/retrospective-verification-discipline.md](docs/retrospective-verification-discipline.md).
 - **Port 27017.** `dev.yml` publishes MongoDB on the host. If anything else is
   already bound there — a standalone `mongod`, another project's container —
   the stack fails with `Bind for 0.0.0.0:27017 failed: port is already
@@ -118,10 +137,27 @@ Two things bite on a first run, neither obvious from the error:
   `docker compose up --renew-anon-volumes`) or the container keeps the
   previous install.
 
-`./al dev` runs with `--reload`, so edits under `alfred/` restart the API. That
-also means a test run writing into the repo can restart the server mid-request
-— `test_e2e.yml` overrides the command to disable reload for exactly that
-reason.
+- **`--reload` does not see your edits on Windows or macOS.** `./al dev` runs
+  uvicorn with `--reload`, which watches with inotify — and inotify events do
+  not cross a Docker bind mount from a non-Linux host. This is the same
+  limitation that costs the frontend its HMR, but the frontend has a polling
+  watcher and the API does not, so the API silently keeps running the code it
+  loaded at startup.
+
+  The symptom is a fix that does not take effect, and the tell is a traceback
+  whose frame shows a line number with **no source line** beside it — Python
+  cannot map the frame because the file changed under the loaded module. Run
+  `docker compose -f docker-compose.yml -f dev.yml restart api` after editing
+  anything under `alfred/`.
+
+  A syntax error is worse: the container reports `Up` while crash-looping, and
+  every request answers connection-refused rather than 500. `docker logs
+  alfred-api-1` names it immediately; nothing else does.
+
+`./al dev` runs with `--reload`, so on a Linux host edits under `alfred/`
+restart the API. That also means a test run writing into the repo can restart
+the server mid-request — `test_e2e.yml` overrides the command to disable
+reload for exactly that reason.
 
 ## Conventions
 

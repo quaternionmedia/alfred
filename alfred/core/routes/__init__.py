@@ -1,13 +1,13 @@
 from .admin import adminAPI
 from .auth import auth as authAPI
-from .issue import issueAPI
+from .demo import demoAPI
 from .fonts import fontAPI
-from .video import videoAPI
+from .issue import issueAPI
+from .preview import previewAPI
 from .project import ProjectAPI
 from .render import RenderAPI
-from .preview import previewAPI
 from .templates import templateAPI
-from .demo import demoAPI
+from .video import videoAPI
 
 __all__ = [
     adminAPI,

@@ -1,11 +1,11 @@
 import m from "mithril"
 import './styles/editor.scss'
 import { Menu } from './Menu'
+import { Footer } from './Footer'
+import { User } from './User'
 import { Head } from './Head'
 
 import Slider from './Slider'
-import { Timeline } from './Timeline'
-import Monitor from './Monitor'
 import { PlaybackTools, SpeedTools, ProjectTools } from './Tools'
 import { OttoTimeline } from './OttoTimeline'
 import { Preview } from './Preview'
@@ -18,6 +18,12 @@ import { Scale } from './Scale'
 import { StageRail, StagePanel, Flow } from './Stages'
 
 export var Otto = {
+  // Re-checked on every mount, not only at boot.
+  //
+  // A single check after boot covered whichever route happened to resolve
+  // first and left the others open -- an anonymous visitor reached #!/otto and
+  // stayed. This runs on each mount and does nothing until boot has answered.
+  oninit: () => User.requireSession(),
   view: (vnode) => {
     /**
      * The timeline is the subject; everything else adorns it.
@@ -63,6 +69,10 @@ export var Otto = {
         m('.editorsurface', [m(OttoTimeline), m(Bin)]),
         m('.editoractions', [m(ProjectTools)]),
       ]),
+
+      // The editor is the whole app now, so it carries the footer -- which is
+      // where the documentation links live since #!/documents was retired.
+      m(Footer),
     ]
   },
 }

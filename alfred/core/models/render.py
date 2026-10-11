@@ -1,7 +1,7 @@
-from typing import Optional, List
-from beanie import Document
+from typing import List, Optional
+
+from beanie import Document, PydanticObjectId
 from otto.models import Edl
-from beanie import PydanticObjectId
 
 
 class Render(Document):

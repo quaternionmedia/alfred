@@ -88,16 +88,15 @@ test.describe('timeline editor', () => {
       .toBe(templates.length)
   })
 
-  test('the editor opens without a project and asks for one', async ({
-    authedPage,
-  }) => {
-    // The menu links here with no ?project=, which used to render the headings
-    // over two empty viewers -- "logic undefined fields undefined".
+  test('the old editor URL lands on the project stage', async ({ authedPage }) => {
+    // #!/editor was a route with no stage rail and no timeline. Its content is
+    // a property of a project, so it lives beside the project you selected.
     await authedPage.goto('/#!/editor')
-    await expect(authedPage.getByText(/choose a project/i)).toBeVisible()
+    await expect(authedPage).toHaveURL(/stage=source/)
+    await expect(authedPage.locator('.stagerail .stage')).toHaveCount(4)
   })
 
-  test('the editor loads a project when given one', async ({
+  test('a selected project offers its template', async ({
     authedPage,
     request,
     token,
@@ -105,9 +104,16 @@ test.describe('timeline editor', () => {
     const demo = await demoProject(request, token)
     test.skip(!demo, 'demo project not seeded in this environment')
 
-    await authedPage.goto(`/#!/editor?project=${demo._id}`)
-    await expect(authedPage.getByText('logic')).toBeVisible()
-    await expect(authedPage.getByText(/choose a project/i)).toHaveCount(0)
+    await authedPage.goto(`/#!/?project=${demo._id}&stage=source`)
+    const toggle = authedPage.locator('#template-toggle')
+    await expect(toggle).toBeVisible()
+
+    // Collapsed by default: most visits here are to pick a project, not to
+    // inspect one.
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    await toggle.click()
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(authedPage.locator('.templatebody')).toBeVisible()
   })
 
   test('opening the editor makes no failing requests', async ({

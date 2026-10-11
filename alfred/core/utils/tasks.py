@@ -1,11 +1,14 @@
-from celery import Celery, Task
-from otto.render import renderMultitrack
-from otto.models import Edl
 from os.path import join
-from alfred.config import VIDEO_DIR
+
+from celery import Celery, Task
+from otto.models import Edl
+from otto.render import renderMultitrack
+
 from alfred import config
-from .logger import DbLogger
+from alfred.config import VIDEO_DIR
+
 from .bucket import upload
+from .logger import DbLogger
 
 renderer = Celery(
     'renderer',

@@ -21,7 +21,19 @@ dependencies = [
     "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate",
     "ujson>=5.7.0",
     "pillow==9.5.0",
-    "setuptools>=75.3.4",
+    # Capped, not merely floored, and the cap is the load-bearing half.
+    #
+    # `passlib.pwd` imports `pkg_resources` at module scope, and setuptools
+    # removed `pkg_resources` in 81. So on a clean install every module that
+    # touches authentication raises ImportError -- which presented as ten
+    # unrelated test modules failing to collect, naming neither passlib nor
+    # setuptools.
+    #
+    # This buys time; it does not fix anything. passlib's last release was
+    # 2020 and it is not coming back. The exit is fastapi-users >= 13, which
+    # replaced passlib with pwdlib -- a dependency bump with an auth migration
+    # attached, which is its own change and not this one.
+    "setuptools>=75.3.4,<81",
 ]
 requires-python = ">=3.8.1,<4.0"
 readme = "README.md"
@@ -48,6 +60,9 @@ test = [
     "pytest-timeout>=2.1.0",
     "httpx>=0.24.0",
     "pyyaml>=6.0",
+    # See the cap on setuptools in the runtime dependencies above; the test
+    # environment installs its own copy and needs the same bound.
+    "setuptools>=75.3.4,<81",
 ]
 render = [
     "al-otto[render]>=0.2.2",
@@ -68,3 +83,50 @@ markers = [
 # passes, so fixing the defect turns the suite red and prompts removing the
 # marker. Make that the default so a non-strict xfail has to be deliberate.
 xfail_strict = true
+
+[tool.black]
+skip-string-normalization = true
+# Pinned, or black infers a target from the syntax it sees and then warns that
+# the running interpreter cannot verify its own output.
+target-version = ['py311']
+# `force-exclude`, not `exclude`: plain `exclude` is ignored for paths given
+# explicitly on the command line, and these are submodules with their own
+# repositories and their own formatting gates.
+force-exclude = '(alfred/otto|governance|website|tests/\.nox)'
+
+[tool.ruff]
+# Explicit, because the absence of this block was not "ruff defaults" -- the
+# lint session resolved to a very wide implicit rule set and reported 157
+# findings across app and tests, most of them stylistic (62 asked for
+# `from __future__ import annotations` in a project that requires 3.11). A
+# gate nobody can act on is one everybody learns to ignore, and this one was
+# additionally failing on a usage error, so its output was never read at all.
+#
+# This set is the ruff defaults plus import sorting and bugbear: rules that
+# catch mistakes rather than express preferences. Formatting belongs to Black
+# (`-S`), which runs in its own session and is the authority on layout.
+target-version = 'py311'
+extend-exclude = ['alfred/otto', 'governance', 'website', 'tests/.nox']
+
+[tool.ruff.lint]
+select = ['E4', 'E7', 'E9', 'F', 'I', 'B']
+
+[tool.ruff.lint.per-file-ignores]
+# The env vars have to be set before the app imports read them, so these
+# imports sit below assignments deliberately.
+'tests/conftest.py' = ['E402']
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI declares dependencies as default arguments -- `db=Depends(get_db)`
+# is the documented spelling, and evaluating it once at import is the intended
+# behaviour, not the bug B008 describes.
+extend-immutable-calls = [
+    'fastapi.Depends',
+    'fastapi.Query',
+    'fastapi.Path',
+    'fastapi.Body',
+    'fastapi.File',
+    'fastapi.Form',
+    'fastapi.Header',
+    'fastapi.Cookie',
+]

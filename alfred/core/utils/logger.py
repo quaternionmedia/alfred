@@ -1,4 +1,5 @@
 from proglog import ProgressBarLogger
+
 from .db import get_sync_db
 
 # using sync db until we can write an async logger
