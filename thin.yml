@@ -1,0 +1,26 @@
+# A dev stack with the renderer left out.
+#
+# `renderer` is the Celery worker, and it is the expensive half of this stack:
+# it carries moviepy, ImageMagick, ffmpeg and a font set, and it is the only
+# service that needs any of them. Nothing in the editor requires it to be
+# running -- projects load, media lists, clips go on the timeline, previews
+# render through the API, and the UI is entirely reviewable without it.
+#
+# What does not work without it: queueing a render produces a job nobody
+# collects, so it sits in the queue and never reaches RENDERED. The Deliver
+# stage will show it as queued indefinitely. That is the whole trade.
+#
+# Compose with the others, after them so this wins:
+#
+#   ALFRED_PORT=8100 docker compose \
+#     -f docker-compose.yml -f dev.yml -f thin.yml up -d
+#
+# `./al thin` does exactly that.
+
+services:
+  # `scale: 0` rather than deleting the service, so the definition stays in
+  # dev.yml as the single source of truth and this file only changes whether
+  # it runs. Removing a service from a compose file it is defined in is not
+  # something the merge supports; refusing to start it is.
+  renderer:
+    scale: 0
