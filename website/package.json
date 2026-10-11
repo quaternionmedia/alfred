@@ -11,11 +11,12 @@
   "license": "MIT",
   "scripts": {
     "build": "parcel build src/index.html",
-    "dev": "parcel watch src/index.html --hmr-port=8001",
+    "dev": "node dev-watch.js",
     "e2e": "playwright test --project=chromium",
     "e2e:ui": "playwright test --project=chromium --ui",
     "e2e:perf": "playwright test --project=perf",
-    "e2e:report": "playwright show-report"
+    "e2e:report": "playwright show-report",
+    "dev:hmr": "parcel watch src/index.html --hmr-port=8001"
   },
   "dependencies": {
     "alertifyjs": "^1.13.1",

@@ -1,7 +1,11 @@
 import m, { render } from 'mithril'
 import { message } from 'alertifyjs'
 import { User } from './User'
-import LOGO from './assets/alWhite.png'
+// `import LOGO from './assets/alWhite.png'` yielded an object here, not a URL,
+// so the logo rendered as src="[object Object]" on every page and the browser
+// fetched /[object%20Object] -- eleven 404s per session in the API log. This is
+// the idiom Parcel 2 documents for ESM, and it resolves to a string.
+const LOGO = new URL('./assets/alWhite.png', import.meta.url).href
 import './styles/menu.scss'
 
 export function Menu() {

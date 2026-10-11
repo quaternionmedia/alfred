@@ -85,7 +85,17 @@ export function Template() {
           html: this.html,
           // Returns the updated HTML code
           oncreate: html => {
-            this.html = `${JSON.stringify(vnode.attrs.data['text']).slice(1, -1)}`
+            // The same Template component renders both timeline clips and bin
+            // entries, and only timeline clips carry `data`. Bin entries come
+            // from /templates and describe a template rather than an instance
+            // of one, so this threw "Cannot read properties of undefined
+            // (reading 'text')" on every render of the bin.
+            //
+            // Falling back to the template's name gives a bin entry a sensible
+            // label instead of an exception.
+            const data = vnode.attrs.data || {}
+            const label = data['text'] !== undefined ? data['text'] : vnode.attrs.name
+            this.html = `${JSON.stringify(label === undefined ? '' : label).slice(1, -1)}`
             m.redraw()
           },
           onchange: html => {
@@ -137,13 +147,36 @@ export function VideoClip() {
 export function OttoTimeline() {
   return {
     oninit: (vnode) => {
-      auth(`/project/${m.route.param('project')}`, {}).then(e => {
-        console.log('got otto', e)
-        Edl.edl = e.edl
+      // Only ask for a project when there is one to ask for. Unguarded, this
+      // interpolated `undefined` into the path and requested
+      // /project/undefined on every visit to the editor without a ?project=
+      // parameter -- which the menu link is. The server answered 500 until it
+      // was taught to answer 422; either way the request was never meaningful.
+      const projectId = m.route.param('project')
+      if (!projectId) {
+        Edl.edl = []
         Edl.current = 0
         Edl.time = 0
         Edl.update()
-      })
+        return
+      }
+      auth(`/project/${projectId}`, {})
+        .then(e => {
+          // `e.edl` is the API's Edl document, {clips, duration}. This module's
+          // `Edl.edl` is the flat clips array -- it is indexed, mapped, sliced
+          // and reduced everywhere below. Assigning the document straight in
+          // gave `Edl.edl.map is not a function` on every render, which is why
+          // the timeline stayed empty even once projects had clips.
+          //
+          // Same word, two shapes. Worth remembering when reading either side.
+          Edl.edl = (e.edl && e.edl.clips) || []
+          Edl.current = 0
+          Edl.time = 0
+          Edl.update()
+        })
+        .catch(err => {
+          console.error('could not load the project timeline', err)
+        })
     },
     oncreate: (vnode) => {
       new Sortable(vnode.dom, {

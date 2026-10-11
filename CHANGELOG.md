@@ -40,6 +40,40 @@ behavior rather than only the developer experience.
   ships ImageMagick 7. Both fixed; `setuptools` is an explicit dependency
   because three installed packages import `pkg_resources` at runtime without
   declaring it.
+- **No fonts in the API image, so no template could draw text.** `dev.yml`
+  mounted `./alfred/otto/fonts` over `/usr/share/fonts/truetype/`, and that
+  host directory is empty -- so the mount replaced the image's eight fonts
+  with nothing. fontconfig reported 0 fonts, ImageMagick reported 0, and
+  `TextClip` failed, which otto catches and turns into a `None` return.
+  `generateEdl` reports that as "A clip did not get made properly", naming
+  neither fonts nor ImageMagick. Five of the six templates are TextClip. The
+  mount is now a subdirectory, so project fonts are additive, and the image
+  installs `fonts-urw-base35` because moviepy defaults to `Courier`, which the
+  base does not ship.
+- **The logo was broken on every page.** `import LOGO from './assets/...png'`
+  yielded an object rather than a URL, so the img src was literally
+  `[object Object]` and the browser requested `/[object%20Object]` -- eleven
+  404s per session in the API log. The favicon had the same fault in dark
+  mode. Both now use `new URL(..., import.meta.url)`.
+- **The media bin never loaded videos.** `Bin.js` used `m.request` rather than
+  the `auth` helper, so `/videos` was called with no Authorization header and
+  answered 401 on every open. The rejection was unhandled, so the bin simply
+  rendered nothing.
+- **`/project/undefined` and `/render/undefined` returned 500.** The editor
+  really does send that -- its routes read a `project` query parameter that is
+  not always present. The two failed through different exception hierarchies
+  and needed separate fixes; both now answer 422, and the frontend no longer
+  makes the request at all.
+- **`/users/me` returned an unusable id** -- `{}` under real authentication,
+  `null` under the dev bypass, while the stored user had a real ObjectId in
+  both cases. Three things were wrong in sequence. Subscripting the generic
+  base left `UserRead.id` typed `typing.Any`. Typing it correctly exposed the
+  next: FastAPI serialises through `jsonable_encoder`, which has no rule for a
+  `bson.ObjectId` subclass and falls back to `vars(value)` -- and an
+  ObjectId's `vars()` is `{}`. Adding `json_encoders` to Config fixed the
+  model in isolation and changed nothing on the route, because FastAPI clones
+  a response model into a fresh class and the clone does not carry Config. The
+  fix is a pre-validator, which belongs to the field and survives the cloning.
 - **The dev stack's website container took its dependencies from the host.**
   `docker-compose.yml` mounts `./website` over `/app`, and the image shipped no
   `node_modules` at all, so every dependency the container used came from
@@ -86,6 +120,31 @@ behavior rather than only the developer experience.
 - **Governance**: the QM constitution vendored at `governance/qm`, `AGENTS.md`
   with tool pointers as real symlinks, the ADR lint, and a report-only license
   workflow covering all three runtime paths.
+- **The timeline editor works.** It never had data to open: `OttoTimeline`
+  reads `project.edl` and the `Project` model had no `edl` field, so the value
+  was always undefined. `Project.edl` is now an optional `Edl` -- the same type
+  `Render` already uses -- and a "Timeline demo" project is seeded with three
+  template clips that need no media files on disk.
+- **`GET /templates`.** The editor's media bin has always requested a template
+  list on init and no such route existed, so the bin was permanently empty and
+  the 404 went unremarked because the rejection was unhandled. Backed by an
+  explicit allowlist rather than `dir(otto.templates)`: the module namespace
+  holds fourteen callables of which six are templates, the rest being imports
+  it happens to carry.
+- **`GET /preview/template/{name}`.** Renders one template to a frame, so the
+  editor can show what a template clip looks like. `Preview.js` has built this
+  URL since before it existed. The name is validated against the allowlist --
+  which matters, because `generateEdl` resolves templates with
+  `getattr(templates, clip.name)` on a client-supplied name.
+- **The session survives a reload.** The JWT lived in a module-level object,
+  so refreshing any page logged you out. It is kept in `sessionStorage` now
+  and restored before routing, so no guarded view flashes the login screen
+  first. sessionStorage rather than localStorage: it is scoped to one tab and
+  cleared when the tab closes, and the token already passed through
+  localStorage momentarily for cross-tab sharing, so this adds no new class of
+  exposure. Expired tokens are discarded on restore rather than presented,
+  since a UI that renders as logged in and then 401s on every request is worse
+  than one that asks you to log in.
 - **A development auth bypass.** `ALFRED_DEV_SKIP_AUTH=1 ./al dev` serves
   every request as a fixed superuser and lets the SPA skip its login screen.
   Off unless explicitly set; refuses to start alongside `ALFRED_PRODUCTION`;
@@ -117,7 +176,7 @@ and in `tests/README.md`. The largest: MongoDB is SSPL-licensed and fills
 three roles at once; object storage is reached through a vendor SDK rather
 than a protocol seam; the frontend loads a font and two images from third-party
 CDNs; and `renderMultitrack` ignores its own `fps` argument, so a caller asking
-for 60 silently gets 30. `/users/me` never returns a usable `id`: it
-serialises as `{}` under real authentication and as `null` under the dev
-bypass, though the stored user has a real ObjectId either way -- a `UserRead`
-serialisation defect, found while building the bypass and predating it.
+for 60 silently gets 30. And `final` is
+advertised by no allowlist: it requires `address`, `website` and `phone`, and
+`TemplateData` -- the only shape a clip's `data` can take -- models none of
+them, so it cannot be driven through this API at all.

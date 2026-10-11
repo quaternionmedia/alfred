@@ -6,6 +6,7 @@ from .video import videoAPI
 from .project import ProjectAPI
 from .render import RenderAPI
 from .preview import previewAPI
+from .templates import templateAPI
 
 __all__ = [
     adminAPI,
@@ -16,4 +17,5 @@ __all__ = [
     ProjectAPI,
     RenderAPI,
     previewAPI,
+    templateAPI,
 ]

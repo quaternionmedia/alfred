@@ -61,14 +61,40 @@ test.describe('views', () => {
     expect(text.trim().length).toBeGreaterThan(0)
   })
 
-  test('a reload ends the session', async ({ authedPage }) => {
-    // Not a defect to fix here, a property to pin. The app holds its JWT in a
-    // module-level object (src/User.js), so nothing survives a reload. Anyone
-    // who later moves auth into storage should see this test change.
+  test('a reload keeps the session', async ({ authedPage }) => {
+    // This test previously asserted the opposite, and said so: the app held
+    // its JWT in a module-level object, so a reload logged you out, and the
+    // note read "anyone who later moves auth into storage should see this test
+    // change". This is that change. The token is now kept in sessionStorage
+    // and restored before routing.
     await expect(authedPage.locator(SELECTORS.login)).toHaveText(/logout/i)
 
     await authedPage.reload()
 
+    await expect(authedPage.locator(SELECTORS.login)).toHaveText(/logout/i)
+  })
+
+  test('logging out survives a reload too', async ({ authedPage }) => {
+    // The other half, and the one worth having: a stored token that outlived
+    // logout would be a session nobody could end.
+    await authedPage.goto('/#!/logout')
     await expect(authedPage.locator(SELECTORS.login)).toHaveText(/login/i)
+
+    await authedPage.reload()
+
+    await expect(authedPage.locator(SELECTORS.login)).toHaveText(/login/i)
+  })
+
+  test('a session does not leak into a fresh browser context', async ({
+    browser,
+  }) => {
+    // sessionStorage is per-tab, so a new context starts logged out. Worth
+    // pinning: switching to localStorage to "fix" something would silently
+    // widen the token's lifetime and this is what would notice.
+    const context = await browser.newContext()
+    const page = await context.newPage()
+    await page.goto('/')
+    await expect(page.locator(SELECTORS.login)).toHaveText(/login/i)
+    await context.close()
   })
 })

@@ -13,7 +13,8 @@ import { Magnussens } from './Magnussens'
 import { Layout } from './Components'
 import { TemplateEditor } from './TemplateEditor'
 import { Otto } from './Otto'
-import ICON from './assets/al-white.svg'
+// Same as the logo in Menu.js: the default import is not a URL string.
+const ICON = new URL('./assets/al-white.svg', import.meta.url).href
 
 var state = require('./Globals').state
 
@@ -27,7 +28,7 @@ if (
   window.matchMedia('(prefers-color-scheme: dark)').matches
 ) {
   // swap favicon if in dark mode
-  let favicon = (document.getElementById('favicon').href = ICON)
+  document.getElementById('favicon').href = ICON
 }
 
 window.addEventListener('storage', event => {
@@ -56,10 +57,16 @@ window.localStorage.removeItem('REQUESTING_SHARED_CREDENTIALS')
 
 console.log('sup!')
 
-// Ask the server whether auth is disabled before routing. Routing first would
-// let a guarded view redirect to /login in the moment before the answer comes
-// back, which is the flicker this is meant to remove.
-User.detectDevMode()
+// Restore a stored session, then ask the server whether auth is disabled --
+// both before routing. Routing first would let a guarded view redirect to
+// /login in the moment before either answer arrives, which is the flicker this
+// is meant to remove.
+//
+// Only probe for the bypass if there is no session to restore; with one, the
+// probe is a wasted request that would report devMode for an ordinary login.
+if (!User.restore()) {
+  User.detectDevMode()
+}
 
 m.route(document.body, '/', {
   '/': { render: () => m(Layout, m(Home)) },

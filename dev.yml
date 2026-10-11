@@ -3,6 +3,22 @@ services:
   website:
     ports:
       - 8001:8001
+    # `yarn run dev` polls rather than watching; see website/dev-watch.js.
+    #
+    # @parcel/watcher subscribes to inotify, and inotify events do not cross a
+    # Docker Desktop bind mount from a Windows or macOS host. The container
+    # sees the edited file -- content and mtime both update -- but is never
+    # told it changed, so `parcel watch` sat idle and dist/ went stale
+    # silently. Every frontend edit needed a container restart.
+    #
+    # Parcel's own polling backend is not an option: `--watch-backend
+    # brute-force` aborts on startup (SIGABRT), and watchman is not installed.
+    # PARCEL_WATCHER_BACKEND looks like the obvious env var and parcel never
+    # reads it.
+    #
+    # The trade is that there is no HMR -- dist/ is current within a second,
+    # but the browser will not refresh itself. `yarn run dev:hmr` restores the
+    # original behaviour on a Linux host, where the events do arrive.
     command: yarn run dev
 
   # TODO API description
@@ -11,7 +27,21 @@ services:
       - 8000:80
     volumes:
       - ./alfred/otto:/otto/
-      - ./alfred/otto/fonts:/usr/share/fonts/truetype/
+      # Mounted into a subdirectory, not over the system font directory.
+      #
+      # As `/usr/share/fonts/truetype/` this replaced the image's fonts with
+      # the host's -- and alfred/otto/fonts is empty, so the container ended
+      # up with no fonts at all. fontconfig reported 0, ImageMagick reported
+      # 0, and every text template silently returned None: `title`, `textBox`,
+      # `bullets`, `initial` and `final` are all TextClip, so five of the six
+      # templates could not render. generateEdl turned that into "A clip did
+      # not get made properly", which names neither fonts nor ImageMagick.
+      #
+      # A subdirectory is additive: project fonts appear alongside the image's
+      # eight rather than instead of them. Same shape as the node_modules
+      # mount in docker-compose.yml -- a bind mount over a populated path
+      # takes the host's version of it, empty or not.
+      - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
     environment:
       # Passed through from the host, empty unless you ask for it:
       #   ALFRED_DEV_SKIP_AUTH=1 ./al dev
@@ -31,7 +61,21 @@ services:
       - alfred_isolated
     volumes:
       - ./alfred/:/app/alfred/
-      - ./alfred/otto/fonts:/usr/share/fonts/truetype/
+      # Mounted into a subdirectory, not over the system font directory.
+      #
+      # As `/usr/share/fonts/truetype/` this replaced the image's fonts with
+      # the host's -- and alfred/otto/fonts is empty, so the container ended
+      # up with no fonts at all. fontconfig reported 0, ImageMagick reported
+      # 0, and every text template silently returned None: `title`, `textBox`,
+      # `bullets`, `initial` and `final` are all TextClip, so five of the six
+      # templates could not render. generateEdl turned that into "A clip did
+      # not get made properly", which names neither fonts nor ImageMagick.
+      #
+      # A subdirectory is additive: project fonts appear alongside the image's
+      # eight rather than instead of them. Same shape as the node_modules
+      # mount in docker-compose.yml -- a bind mount over a populated path
+      # takes the host's version of it, empty or not.
+      - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
       - ./cred.json:/cred.json
     depends_on:
       - 'db'

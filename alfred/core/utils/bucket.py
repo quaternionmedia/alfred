@@ -7,6 +7,7 @@ from .db import get_sync_db
 from bson import ObjectId
 
 NOT_FOUND = HTTPException(status_code=404, detail="Item not found")
+INVALID_ID = HTTPException(status_code=422, detail="Not a valid identifier")
 
 
 def get_bucket(bucket=BUCKET_NAME):
@@ -29,6 +30,15 @@ def generate_signed_url(renderId, minutes=15):
     Note that this method requires a service account key file.
     """
     db = get_sync_db()
+    # `ObjectId(renderId)` raises bson's InvalidId on anything unparseable,
+    # and nothing caught it, so `GET /render/undefined` answered 500 -- a
+    # request the editor really does make, because its routes read a `project`
+    # query parameter that is not always present. bson's error is not a
+    # pydantic one, so the identifier handler in main.py does not see it;
+    # this route needs its own guard, answering the same 422 that the project
+    # routes now give for the same mistake.
+    if not ObjectId.is_valid(renderId):
+        raise INVALID_ID
     res = db.Render.find_one({'_id': ObjectId(renderId)})
     if not res:
         raise NOT_FOUND
