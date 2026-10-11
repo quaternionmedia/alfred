@@ -1,6 +1,5 @@
 import m from 'mithril'
 import Project from './Project'
-import { Home } from './Home'
 import { Projects } from './Projects'
 import { Documents } from './Documents'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
@@ -69,7 +68,14 @@ if (!User.restore()) {
 }
 
 m.route(document.body, '/', {
-  '/': { render: () => m(Layout, m(Home)) },
+  // The timeline is the entry point.
+  //
+  // `/` used to render a marketing homepage: four screenshots and a Hitchcock
+  // quote, so the first thing the app showed was a description of itself
+  // rather than the thing it does. It is gone, and with it four images loaded
+  // from images.squarespace-cdn.com -- which AGENTS.md forbids and the
+  // adoption record lists as an open governance gap.
+  '/': Otto,
   '/projects': { render: () => m(Layout, m(Projects)) },
   '/renders': { render: () => m(Layout, m(Renders)) },
   '/documents': { render: () => m(Layout, m(Documents)) },

@@ -1,6 +1,22 @@
 from typing import Optional, List
 from beanie import Document
+from pydantic import BaseModel
 from otto.models import Edl
+
+
+class RenderSettings(BaseModel):
+    """What a project renders at, when nobody says otherwise.
+
+    Separate from `Render` deliberately. A Render is one job with a result;
+    this is the project's standing preference, and conflating them would mean
+    a project could not describe how it should be rendered until it had been
+    rendered once.
+    """
+
+    width: Optional[int] = 1920
+    height: Optional[int] = 1080
+    fps: Optional[float] = 30.0
+    quality: Optional[str]
 
 
 class Project(Document):
@@ -19,6 +35,16 @@ class Project(Document):
     # this follows what the render side established rather than inventing a
     # second shape for the same document.
     edl: Optional[Edl]
+    # What the render and deliver stages should default to for this project.
+    #
+    # This is what makes the flow reusable rather than a wizard re-run from
+    # scratch: reopening a project brings back the size it renders at and where
+    # its output goes, so "the weekly promo" is a thing you pick, not a set of
+    # fields you retype. Both optional -- a project that has never been
+    # rendered has no opinion yet, and the stages fall back to their own
+    # defaults.
+    render_settings: Optional[RenderSettings]
+    destination: Optional[str]
 
     class Config:
         title = 'Alfred Project'
@@ -28,3 +54,5 @@ class ProjectUpdate(Project):
     logic: Optional[dict]
     fields: Optional[List]
     edl: Optional[Edl]
+    render_settings: Optional[RenderSettings]
+    destination: Optional[str]

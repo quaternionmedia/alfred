@@ -135,9 +135,9 @@ export function VideoClip() {
   return {
     view: (vnode) => {
       return m(Clip, vnode.attrs, [
-        m('p#clipname.clipname', vnode.attrs.name),
-        m('p#inpoint.inpoint', vnode.attrs.inpoint),
-        m('p#outpoint.outpoint', vnode.attrs.outpoint),
+        m('p.clipname', vnode.attrs.name),
+        m('p.inpoint', vnode.attrs.inpoint),
+        m('p.outpoint', vnode.attrs.outpoint),
       ])
     }
   }
@@ -145,22 +145,32 @@ export function VideoClip() {
 
 
 export function OttoTimeline() {
-  return {
-    oninit: (vnode) => {
-      // Only ask for a project when there is one to ask for. Unguarded, this
-      // interpolated `undefined` into the path and requested
-      // /project/undefined on every visit to the editor without a ?project=
-      // parameter -- which the menu link is. The server answered 500 until it
-      // was taught to answer 422; either way the request was never meaningful.
-      const projectId = m.route.param('project')
-      if (!projectId) {
-        Edl.edl = []
-        Edl.current = 0
-        Edl.time = 0
-        Edl.update()
-        return
-      }
-      auth(`/project/${projectId}`, {})
+  // Which project's clips are currently loaded, so a changed ?project= is
+  // noticed. `oninit` alone was not enough: the timeline is mounted at `/`
+  // now, so picking a project on the Source stage is a same-document
+  // navigation that changes the parameter without remounting anything.
+  // Loading only on init meant the first project opened was the only one that
+  // ever appeared.
+  let loaded = null
+
+  const open = () => {
+    // Only ask for a project when there is one to ask for. Unguarded, this
+    // interpolated `undefined` into the path and requested
+    // /project/undefined on every visit to the editor without a ?project=
+    // parameter -- which the menu link is. The server answered 500 until it
+    // was taught to answer 422; either way the request was never meaningful.
+    const projectId = m.route.param('project')
+    if (projectId === loaded) return
+    loaded = projectId || null
+
+    if (!projectId) {
+      Edl.edl = []
+      Edl.current = 0
+      Edl.time = 0
+      Edl.update()
+      return
+    }
+    auth(`/project/${projectId}`, {})
         .then(e => {
           // `e.edl` is the API's Edl document, {clips, duration}. This module's
           // `Edl.edl` is the flat clips array -- it is indexed, mapped, sliced
@@ -175,9 +185,15 @@ export function OttoTimeline() {
           Edl.update()
         })
         .catch(err => {
+          // Let the next attempt retry rather than pinning a failed id.
+          loaded = null
           console.error('could not load the project timeline', err)
         })
-    },
+  }
+
+  return {
+    oninit: open,
+    onupdate: open,
     oncreate: (vnode) => {
       new Sortable(vnode.dom, {
         multiDrag: true,

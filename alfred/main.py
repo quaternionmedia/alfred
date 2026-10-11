@@ -16,6 +16,7 @@ from alfred.core.routes import ProjectAPI
 from alfred.core.routes import RenderAPI
 from alfred.core.routes import previewAPI
 from alfred.core.routes import templateAPI
+from alfred.core.routes import demoAPI
 
 # from otto.main import app as ottoApi
 from alfred.core.utils import get_db
@@ -177,6 +178,7 @@ app.include_router(fontAPI, dependencies=[Depends(current_active_user)], tags=['
 app.include_router(
     templateAPI, dependencies=[Depends(current_active_user)], tags=['template']
 )
+app.include_router(demoAPI, dependencies=[Depends(current_active_user)], tags=['demo'])
 app.include_router(
     videoAPI, dependencies=[Depends(current_active_user)], tags=['video']
 )

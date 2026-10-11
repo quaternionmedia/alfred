@@ -50,6 +50,10 @@ behavior rather than only the developer experience.
   mount is now a subdirectory, so project fonts are additive, and the image
   installs `fonts-urw-base35` because moviepy defaults to `Courier`, which the
   base does not ship.
+- **`alfred.core.models.__all__` held classes rather than names**, so
+  `from alfred.core.models import *` raised TypeError. The identical defect
+  was fixed in `alfred.core.utils` earlier in this release; it was in two
+  modules and the test written for the first did not cover the second.
 - **The logo was broken on every page.** `import LOGO from './assets/...png'`
   yielded an object rather than a URL, so the img src was literally
   `[object Object]` and the browser requested `/[object%20Object]` -- eleven
@@ -105,6 +109,13 @@ behavior rather than only the developer experience.
 - `test_login_fail` posted to `/auth/login`, which has never been a route, and
   asserted the 405 that the catch-all SPA mount returns for any non-GET. It
   tested nothing about authentication and has been replaced.
+- **The video routes named one directory two ways** -- a relative `videos`
+  in one route and `/app/videos` in the next -- and listing a missing
+  directory answered 500. Both read `VIDEO_DIR`, which is created if absent.
+- **The browser suite dropped connections under its own load.** Each of eight
+  parallel workers logged in for every test against one `uvicorn --reload`
+  process, which surfaced as `socket hang up` on `POST /auth/jwt/login` in
+  whichever test was logging in. The token fixture is worker-scoped.
 
 ### Added
 
@@ -145,6 +156,54 @@ behavior rather than only the developer experience.
   exposure. Expired tokens are discarded on restore rather than presented,
   since a UI that renders as logged in and then 401s on every request is worse
   than one that asks you to log in.
+- **The timeline is the entry point.** `/` rendered a marketing homepage --
+  four screenshots and a Hitchcock quote -- so the first thing the app showed
+  was a description of itself rather than the thing it does. It is gone, and
+  with it four images loaded from `images.squarespace-cdn.com`, which
+  `AGENTS.md` forbids and the adoption record lists as an open gap.
+- **The render pipeline produces a video.** It could not before: the renderer
+  container had no `videos/` mount, so every encode died on "Error opening
+  output videos/....mp4: No such file or directory" -- recorded as a failed
+  render and nowhere else. The path is now absolute and configured
+  (`VIDEO_DIR`), which is what the delivery endpoint reads too; it had been
+  looking in `DATA_DIR` and would have reported every render missing.
+- **A render is marked `RENDERED` when the encode finishes.** The task ran the
+  encode and the cloud upload inside one `try`, so a missing credentials file
+  marked a perfectly good video as a failed render -- which on a checkout
+  without GCS credentials is every render. `status` is also modelled on
+  `Render` now; the logger had always written it and the API had always dropped
+  it, so a caller could watch progress reach 100 and still not know whether the
+  render succeeded.
+- **Render filenames include the render's id.** Everything else in the name can
+  repeat, so two renders of the same project in the same second produced the
+  same filename and the second silently overwrote the first's output. Three
+  concurrent renders in the e2e suite collided on exactly that, shared one
+  file, and each reported success.
+- **`aria-selected` carries a value.** Mithril rendered the boolean as a bare
+  `aria-selected=""`, the HTML boolean form, which conveys no state to a screen
+  reader at all.
+- **`PUT /project/{id}/settings`.** A project remembers the size it renders at
+  and where its output goes, which is what makes the flow reusable rather than
+  a wizard re-run from scratch. A separate route from the project's own PUT:
+  the crud router's update replaces the whole document, so a partial body
+  writes null over every field it omits. That is not theoretical -- doing it
+  wiped a project's `name` and `logic`, and every subsequent `GET` of that
+  project answered 500, because writes are not validated and reads are. The
+  settings route names the two fields it may write and touches nothing else.
+- **A four-stage flow, as one view.** Source, Edit, Render and Deliver are
+  stages of the timeline page rather than separate routes, so the thing being
+  worked on stays on screen while its settings are adjusted. The stage lives in
+  the URL, so a reload or a shared link lands where the person left off. A
+  saved project carries what each stage needs, which is what makes the flow
+  reusable rather than a wizard you re-run from scratch.
+- **A destination seam, with local delivery.** `POST /render/{id}/deliver`
+  sends a finished render somewhere and records where it went.
+  `LocalDestination` is implemented fully; the existing Google Cloud Storage
+  path becomes `BucketDestination` behind the same interface. Local is the
+  default, so a server with no cloud account can still get a video back -- the
+  README calls this "a video editor that works even without a server", and
+  until now the only finished-render path went to a Google bucket. This begins
+  paying down the vendor-SDK gap the adoption record flags.
 - **A development auth bypass.** `ALFRED_DEV_SKIP_AUTH=1 ./al dev` serves
   every request as a fixed superuser and lets the SPA skip its login screen.
   Off unless explicitly set; refuses to start alongside `ALFRED_PRODUCTION`;
@@ -152,6 +211,21 @@ behavior rather than only the developer experience.
   and the account it uses stores an unusable password hash, so it cannot be
   logged into once the flag is off. Prints an unmissable banner every boot.
   Documented in `docs/dev-auth.md`. Auth proper is the next phase.
+- **Demo media and a demo project, generated rather than downloaded.** Both
+  empty states of the Source stage offer to generate. `POST /demo/media`
+  synthesises three clips from ffmpeg's own test sources and skips any that
+  exist; `POST /demo/project` creates a template-only project with an upsert,
+  so pressing it twice makes one project. Nothing is fetched from a third
+  party.
+- **`docs/cookbook.md` is generated from the end-to-end specs** by
+  `website/e2e/cookbook.js`, and `tests/unit/test_cookbook.py` fails when the
+  committed page differs from what regenerating it produces.
+- **Governance current with `project/alfred`.** `governance/qm` moves to the
+  project branch's propagated head, which brings the seed's
+  `submodule-check.yml`, `reuse-lint.yml` in the reporting mode its header
+  prescribes, and the current `adr-lint.yml`, which runs the ADR lint from
+  the submodule. `docs/retrospective-0.3.0.md` hands this release to
+  governance triage.
 - `CHANGELOG.md`, and dev-server notes in `AGENTS.md` for the two things that
   bite on a first run.
 

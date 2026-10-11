@@ -48,7 +48,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al init` | Install website dependencies |
 | `./al dev` | Run the dev stack; app on http://localhost:8000 |
 | `./al dev --build` | Rebuild images first |
-| `./al demo` | Download demo media into `videos/` |
+| `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
 | `./al pytest` | API test suite, in Docker |
 | `./al test` | End-to-end suite (Playwright), in Docker |
 | `./al nox -s lint` | Ruff |
@@ -56,10 +56,19 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al docs` | Serve the docs locally on :4000 |
 | `./al prod` | Production stack; expects a running traefik |
 | `./al flower` | Celery monitoring on :5555; needs the dev stack for its broker |
+| `./al cookbook` | Regenerate `docs/cookbook.md` from the e2e specs |
 | `./al install <pkg>` | Add a website dependency |
 
 `./al dev` publishes MongoDB on 27017. If something already holds that port
 the stack will not start — see the dev-server notes in [AGENTS.md](AGENTS.md).
+
+## First run
+
+There is nothing to download. Open the app, go to the **Source** stage, and
+press *Generate a demo project* and *Generate demo media* — both are
+synthesised locally with ffmpeg, so a first run needs no network access. `./al
+demo` still fetches the original sample footage from a cloud bucket if you want
+it.
 
 To work without logging in, `ALFRED_DEV_SKIP_AUTH=1 ./al dev` serves every
 request as a fixed superuser and skips the login screen. It refuses to start
@@ -81,6 +90,11 @@ npm run e2e                       # end-to-end, against a running ./al dev
 Strategy and known gaps: [tests/README.md](tests/README.md) for the backend,
 [website/e2e/README.md](website/e2e/README.md) for the browser suite. Both
 list what is *not* covered, deliberately.
+
+The end-to-end suite is also the cookbook: [docs/cookbook.md](docs/cookbook.md)
+is generated from it by `./al cookbook`, so every recipe in the documentation
+is a test that runs. Prose describing behaviour goes stale silently; a test
+describing behaviour goes red.
 
 ## Documentation
 

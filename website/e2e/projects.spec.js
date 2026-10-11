@@ -49,7 +49,24 @@ test.describe('projects', () => {
 
     await authedPage.goto('/#!/projects')
     const rows = authedPage.locator('table.projTable tr')
-    await expect(rows).toHaveCount(projects.length)
+
+    // Polled against a fresh count rather than the one read above.
+    //
+    // Other specs create projects while this runs -- the tools spec builds one
+    // with demo footage -- so a count captured before the page loaded is stale
+    // by the time the DOM is measured. Comparing against the current list
+    // converges instead of racing.
+    await expect
+      .poll(
+        async () => {
+          const current = await request.get('/project', {
+            headers: { Authorization: token },
+          })
+          return (await current.json()).length === (await rows.count())
+        },
+        { message: 'row count never matched the project list' }
+      )
+      .toBe(true)
 
     // Exact cell text, not `hasText`. The seed carries both "Magnussens" and
     // "Magnussens 2021_2", and hasText matches substrings -- so the shorter

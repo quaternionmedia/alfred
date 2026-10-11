@@ -110,6 +110,8 @@ export function VideoPreview() {
     view: (vnode) => {
       return m('video.preview', {
         ...vnode.attrs,
+        // `src` comes from AuthedSource below, never straight from the clip.
+        src: authedSource(vnode.attrs.src),
         currentTime: Video.time(),
         // state: Video.paused ? vnode.dom.pause() : vnode.dom.play(),
         style: {
@@ -120,6 +122,41 @@ export function VideoPreview() {
       })
     }
   }
+}
+
+// Media the browser cannot fetch on its own.
+//
+// A selected video clip rendered `<video src="videos/x.mp4">`, and /videos
+// requires a session -- so the element requested the file with no
+// Authorization header, got 401, and showed nothing. Selecting media in the
+// bin appeared to do nothing at all.
+//
+// Same fix as AuthedImage: fetch with the token and hand the element an object
+// URL. Fine for the demo clips, which are seconds long; a long edit would want
+// range requests, and this loads the whole file before playing. That is the
+// trade recorded here rather than discovered later.
+const objectUrls = new Map()
+
+export function authedSource(path) {
+  if (!path) return undefined
+  if (objectUrls.has(path)) return objectUrls.get(path)
+
+  // Mark it pending so a redraw storm does not start a fetch per frame.
+  objectUrls.set(path, undefined)
+  m.request({
+    url: path.startsWith('/') ? path : `/${path}`,
+    headers: { Authorization: User.token },
+    responseType: 'blob',
+    extract: xhr => xhr.response,
+  })
+    .then(blob => {
+      objectUrls.set(path, URL.createObjectURL(blob))
+      m.redraw()
+    })
+    .catch(() => {
+      objectUrls.delete(path)
+    })
+  return undefined
 }
 
 

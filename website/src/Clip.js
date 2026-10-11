@@ -199,9 +199,9 @@ export default class Clip {
         width: (this.outpoint - this.inpoint)*state.scale(),
       },
     }, [
-      m('p#clipname.clipname', this.filename.split('/').pop()),
-      m('p#inpoint[]', this.inpoint.toFixed(2)),
-      m('p#outpoint[]', this.outpoint.toFixed(2)),
+      m('p.clipname', this.filename.split('/').pop()),
+      m('p.inpoint', this.inpoint.toFixed(2)),
+      m('p.outpoint', this.outpoint.toFixed(2)),
       m('p#description[contenteditable=true]', {
         oncreate: (v) => {
           let t = document.getElementById('timeline')

@@ -54,17 +54,12 @@ header {
 }
 
 //----------------------------  Nav Container  -----------------------------------
-.navContainer {
-  height: 100%;
-  width: 0;
-  z-index: 10;
-  position: fixed;
-  left: 0;
-  padding-top: 70px;
-  overflow-x: hidden;
-  transition: 0.2s;
-  background-color: var(--grey4);
-}
+// There is one list of links now, not two.
+//
+// The header used to render a drawer copy and a bar copy of the same
+// destinations, which duplicated every element id in the page. Whether the one
+// list lays out as a row or slides in as a drawer is decided here, by width,
+// rather than by rendering it twice.
 
 .navbutton {
   cursor: pointer;
@@ -79,28 +74,33 @@ header {
   font-size: 45px;
 }
 
-.navLink {
-  text-decoration: none;
-  display: block;
-  color: var(--grey6);
-  font-size: 28px;
-  padding: 10px 15px 10px 20px; //top, right, bottom, left
-}
-
-.navLink:visited {
-  color: var(--grey6);
-}
-
-.navLink:hover {
-  background-color: var(--grey6);
-  color: var(--grey0);
-}
-
 //----------------------------  Window Resize  -----------------------------------
 @media only screen and (max-width: 1026px) {
+  // Below this width the list becomes the drawer: hidden until the menu button
+  // sets `.open` on the header, then a full-height panel over the editor.
   .menuLinks {
-    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0;
+    padding-top: 70px;
+    overflow-x: hidden;
+    transition: width 0.2s;
+    background-color: var(--grey4);
+    z-index: 10;
   }
+
+  header.open .menuLinks {
+    width: 250px;
+  }
+
+  header.open .menuLinks > * {
+    display: block;
+    font-size: 28px;
+    padding: 10px 15px 10px 20px;
+  }
+
   .navbutton {
     display: inline-flex;
   }

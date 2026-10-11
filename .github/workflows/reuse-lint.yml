@@ -1,0 +1,60 @@
+name: REUSE lint
+
+# SEED FILE: copy verbatim into a forking project's .github/workflows/.
+#
+# The outbound-licensing record's enforcement clause. Checks that every file
+# carries copyright and licence information, that every licence referenced has
+# its text in LICENSES/, and that no licence text sits there unused.
+#
+# Self-contained, like submodule-check.yml and unlike adr-lint.yml: `reuse` is
+# a published tool, so there is nothing project-specific to run from the
+# governance submodule.
+#
+# Deliberately runtime-shape independent. It works identically for a corpus of
+# prose, a Python service, a single-file HTML deliverable and a hardware
+# repository -- which is what the open-license record's SBOM path cannot do,
+# and the gap the qmetronome onramp retrospective named.
+#
+# Start in reporting mode. A repository that has not had its licensing pass
+# will fail this immediately and usefully; make it blocking once it is green,
+# and say in the project's adoption record which date that happened.
+# To report without blocking, add:  continue-on-error: true  to the lint step.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  reuse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install REUSE
+        run: python -m pip install reuse
+
+      - name: reuse lint
+        # Reporting mode, as this seed file's own header prescribes for a
+        # repository that has not had its licensing pass.
+        #
+        # Measured on 2026-08-08 against release/0.3.0: 0 of 206 files carry
+        # copyright or licence information, and there is no LICENSES/
+        # directory. Blocking on that would stop every pull request in this
+        # repository on a gap none of them introduced, so the check reports it
+        # instead until the pass is done.
+        #
+        # Remove this line to make the gate blocking, and record the date in
+        # the adoption record when you do.
+        continue-on-error: true
+        # Invoked as a module rather than the console script: the entry point
+        # is not on PATH in every environment, which makes a local run of this
+        # workflow fail where CI passes -- or the reverse, which is worse.
+        run: python -m reuse lint

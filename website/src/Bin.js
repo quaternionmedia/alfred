@@ -4,12 +4,27 @@ import { VideoClip, Template } from './OttoTimeline'
 import { Timeline } from './Timeline'
 import { Edl } from './Video'
 import { auth } from './Login'
+import { User } from './User'
 
 
 var Bin = {
   videos: [],
   templates: [],
-  oninit: (vnode) => {
+  loaded: false,
+
+  // Fetch once a session exists, and not before.
+  //
+  // Two reasons this is not just `oninit`. The timeline is mounted at `/` now,
+  // so an anonymous visitor lands on it -- and these calls each answered 401
+  // and each raised an alertify "not authorized" toast, so the login page
+  // arrived wearing two error notices it had not earned. And a restored
+  // session resolves asynchronously, so `oninit` can run before `loggedIn` is
+  // true; loading only there left the bin permanently empty for anyone who
+  // arrived by reload rather than by logging in.
+  fill: () => {
+    if (Bin.loaded || !User.loggedIn) return
+    Bin.loaded = true
+
     // `m.request` here, not `auth`, meant no Authorization header on a route
     // that requires one -- so /videos answered 401 every time and the media
     // bin was permanently empty. Nothing surfaced it: the rejection was never
@@ -17,19 +32,26 @@ var Bin = {
     auth('/videos')
       .then(e => {
         Bin.videos = e
+        m.redraw()
       })
       .catch(e => {
+        Bin.loaded = false
         console.error('could not load videos for the bin', e)
       })
 
     auth('/templates')
       .then(e => {
         Bin.templates = e
+        m.redraw()
       })
       .catch(e => {
+        Bin.loaded = false
         console.error('could not load templates for the bin', e)
       })
   },
+
+  oninit: () => Bin.fill(),
+  onupdate: () => Bin.fill(),
   oncreate: vnode => {
     new Sortable(vnode.dom, {
       group: {

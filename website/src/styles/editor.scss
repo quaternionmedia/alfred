@@ -1,0 +1,150 @@
+// Layout for the three editor regions.
+//
+// The timeline is the subject of this page and everything else adorns it, so
+// the editor region gets the space and the other two stay compact. Related
+// controls are grouped into one element each, which is what makes the
+// arrangement legible and what the appearance tests assert alignment against.
+
+$gutter: 0.75rem;
+$rule: 1px solid #2e2e2e;
+
+.viewer,
+.transport,
+.editor {
+  // One shared inline padding, so every region starts on the same left edge.
+  // They were separate bars with separate padding, which is most of why the
+  // page read as stacked fragments rather than one interface.
+  padding: 0 $gutter;
+}
+
+// ---- viewer: what you are looking at, and at what size -------------------
+
+.viewer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: $gutter;
+  padding-top: $gutter;
+
+  #head,
+  .head {
+    flex: 1 1 24rem;
+    min-width: 0;
+  }
+
+  // Output settings sit beside the picture rather than above it: they describe
+  // the thing being previewed, and floating them over the top implied they
+  // acted on the timeline.
+  .viewersettings {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+  }
+}
+
+// ---- transport: everything that moves the playhead -----------------------
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: $gutter;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+  border-bottom: $rule;
+
+  // The slider takes the room left over, so the playhead is the widest control
+  // on the row -- it is the one being dragged.
+  #slider,
+  .slider {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .transportcontrols {
+    display: flex;
+    align-items: center;
+    gap: $gutter;
+    flex: 0 0 auto;
+  }
+}
+
+// ---- editor: the timeline, and the tools that act on it ------------------
+
+.editor {
+  display: grid;
+  // tools | surface | actions. The middle column takes everything left over,
+  // which is what makes the timeline the largest thing on the page.
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: $gutter;
+  align-items: start;
+  padding-top: $gutter;
+  padding-bottom: $gutter;
+}
+
+.editortools,
+.editoractions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  position: sticky;
+  top: 0;
+}
+
+.editorsurface {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: $gutter;
+
+  // The bin sits directly under the timeline it feeds, which is the direction
+  // clips are dragged.
+  #bin {
+    margin: 0;
+  }
+}
+
+// Tool groups read as groups: a hairline box rather than icons adrift.
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: $rule;
+  border-radius: 4px;
+  background: #161616;
+
+  &.toolcol {
+    flex-direction: column;
+  }
+
+  i {
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 3px;
+    line-height: 1;
+
+    &:hover {
+      background: #262626;
+    }
+  }
+}
+
+@media only screen and (max-width: 820px) {
+  // Below tablet width three columns do not fit, so the tools move above and
+  // below the surface rather than shrinking it.
+  .editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .editortools,
+  .editoractions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    position: static;
+  }
+
+  .tools.toolcol {
+    flex-direction: row;
+  }
+}
