@@ -1,0 +1,40 @@
+name: ADR lint
+
+# SEED FILE: copy verbatim into a forking project's .github/workflows/
+# (see adr/README.md's "CI enforcement" section). Generalized from the first
+# working instance of this lint, in the qmetronome project, where it ran
+# clean in CI before this file existed as a reusable seed.
+#
+# Enforces the decision-record-discipline record's squash rule: a
+# pre-ratification ADR (adr/DRAFT-*.md) is rewritten in place as
+# understanding changes and must never narrate its own revision history.
+#
+# Assumes the branch-per-project ADR model: this project's own adr/
+# directory lives inside the governance/qm submodule, on this project's
+# dedicated branch - not in this repo's own working tree. If a project ever
+# keeps adr/ locally instead, change the glob below to adr/DRAFT-*.md.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  adr-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: ADR draft vocabulary lint
+        run: |
+          offending=$(grep -lEi "previously|originally|earlier draft|re-review|renumber|retroactive|supersedes the .* (stance|finding)|\bcorrected\b" governance/qm/adr/DRAFT-*.md 2>/dev/null || true)
+          if [ -n "$offending" ]; then
+            echo "Pre-ratification ADRs must be squashed, not narrate their own revision history - found banned vocabulary in:"
+            echo "$offending"
+            exit 1
+          fi

@@ -1,0 +1,168 @@
+name: 📜 License report
+
+# Report-only. This workflow never fails a build.
+#
+# The org open-license record requires a machine-readable license report along
+# the path matching a project's runtime shape. Alfred has three such paths at
+# once -- a Python package, an npm frontend, and a container image -- so all
+# three are reported here rather than picking one.
+#
+# WHAT WOULD MAKE THIS A GATE, rather than a report:
+#
+#   1. An encoded allowlist of accepted license identifiers, and a
+#      normalization step ahead of it. License metadata is not clean enough to
+#      compare raw: this project's 84 Python packages declare roughly six
+#      distinct licenses using more than twenty different spellings, and at
+#      least one npm dependency declares its license only in the deprecated
+#      `licenses` array, where a reader of the modern `license` field sees
+#      null. A gate that compares unnormalized strings fails honest packages
+#      and passes unreadable ones.
+#   2. Coverage of the runtime path, not just the dependency manifests. The
+#      manifest scans below come back clean while the deployed stack runs a
+#      database image under a source-available license and pulls frontend
+#      assets from third-party CDNs. Neither appears in any manifest. A gate
+#      wired only to these scans would report full compliance for a stack that
+#      does not have it -- the exact failure the org record calls compliance
+#      theater. Closing this means an SBOM per built image plus an explicit,
+#      reviewed inventory of hosted services and externally-loaded assets.
+#   3. A decision on license compatibility, which is a separate question from
+#      per-component compliance. Every component here can be individually
+#      compliant while the combination is not distributable as declared.
+#
+# Those are prerequisites, not a schedule. Sequencing them is a human
+# decision recorded in governance/qm/adr/, not a property of this file.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: 🐍 Python dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📰 Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: 📲 Setup PDM
+        uses: pdm-project/setup-pdm@v3
+        with:
+          python-version: '3.11'
+
+      - name: 🚚 Install production dependencies
+        run: pdm install --prod --no-editable
+
+      - name: 📜 Report
+        run: |
+          mkdir -p license-reports
+          pdm list --fields name,version,licenses --csv \
+            > license-reports/python-licenses.csv
+          {
+            echo '## Python dependency licenses'
+            echo
+            echo "Packages: $(( $(wc -l < license-reports/python-licenses.csv) - 1 ))"
+            echo
+            echo '### Distinct declared license strings'
+            echo
+            echo '```'
+            tail -n +2 license-reports/python-licenses.csv \
+              | sed 's/^[^,]*,[^,]*,//' | tr -d '"' | sort | uniq -c | sort -rn
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 🛫 Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-licenses
+          path: license-reports/
+
+  npm:
+    name: 📦 Frontend dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📰 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 🚚 Install dependencies
+        working-directory: website
+        run: npm install --omit=dev --no-audit --no-fund
+
+      - name: 📜 Report
+        working-directory: website
+        run: |
+          mkdir -p ../license-reports
+          npx --yes license-checker --production --csv \
+            > ../license-reports/npm-licenses.csv
+          {
+            echo '## Frontend dependency licenses'
+            echo
+            echo '`license-checker` is used rather than a direct read of the'
+            echo '`license` field, because it also resolves the deprecated'
+            echo '`licenses` array that at least one direct dependency here'
+            echo 'still uses.'
+            echo
+            echo '### Distinct declared license strings'
+            echo
+            echo '```'
+            tail -n +2 ../license-reports/npm-licenses.csv \
+              | awk -F'","' '{print $2}' | tr -d '"' | sort | uniq -c | sort -rn
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: 🛫 Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-licenses
+          path: license-reports/
+
+  image:
+    name: 🐳 Image SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📰 Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: 🔨 Build image
+        id: build
+        continue-on-error: true
+        run: docker build -t alfred-sbom-target:ci .
+
+      - name: 📜 Generate SBOM
+        if: steps.build.outcome == 'success'
+        uses: anchore/sbom-action@v0
+        with:
+          image: alfred-sbom-target:ci
+          artifact-name: image-sbom.spdx.json
+          output-file: image-sbom.spdx.json
+
+      - name: 📝 Summary
+        run: |
+          {
+            echo '## Image SBOM'
+            echo
+            if [ '${{ steps.build.outcome }}' = 'success' ]; then
+              echo 'Image built; SBOM generated and uploaded as an artifact.'
+            else
+              echo 'Image build did not succeed, so no SBOM was produced for'
+              echo 'it. This step is report-only and does not fail the run.'
+            fi
+            echo
+            echo 'An SBOM of the application image does not cover the other'
+            echo 'images the deployed stack runs, nor any hosted service it'
+            echo 'depends on. Those are tracked in `governance/qm/adr/`, not'
+            echo 'here, because no scanner can discover them from this repo.'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,13 @@
+// SEED FILE: part of project-seed/ide/, copied recursively onto the
+// project root (see README.md's "Forking a new project", step 5). This is
+// the canonical copy -- the qm corpus's own root .vscode/settings.json is a
+// symlink back to this file, not an independent copy.
+// Pins governance-discovery behavior explicitly rather than relying on
+// whatever VS Code's shipped defaults happen to be in a given release.
+{
+  "chat.useAgentsMdFile": true,
+  "chat.useClaudeMdFile": true,
+  "chat.instructionsFilesLocations": {
+    ".github/instructions": true
+  }
+}
