@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   e2e:
     image: mcr.microsoft.com/playwright:v1.62.1-noble

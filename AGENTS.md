@@ -80,6 +80,27 @@ arguments prints the full command list.
 
 Tests can also run directly: `nox -f tests/noxfile.py -s coverage`.
 
+### Dev server notes
+
+Two things bite on a first run, neither obvious from the error:
+
+- **Port 27017.** `dev.yml` publishes MongoDB on the host. If anything else is
+  already bound there — a standalone `mongod`, another project's container —
+  the stack fails with `Bind for 0.0.0.0:27017 failed: port is already
+  allocated`, and the message names the port but not the culprit. Find it with
+  `docker ps`, or run with an override that remaps or drops the publish.
+  Nothing in the app needs 27017 exposed on the host; it is published for
+  attaching a GUI, and not publishing it is the better default.
+- **`UID`/`GID`.** `dev.yml` sets the db container's user from `${UID}:${GID}`.
+  Neither is exported by default in most shells, and `UID` is read-only in
+  bash, so compose warns and substitutes blanks. Harmless on Docker Desktop;
+  export both if the db container fails to start on a Linux host.
+
+`./al dev` runs with `--reload`, so edits under `alfred/` restart the API. That
+also means a test run writing into the repo can restart the server mid-request
+— `test_e2e.yml` overrides the command to disable reload for exactly that
+reason.
+
 ## Conventions
 
 - **Formatting is Black with `-S`** (single quotes preserved). CI enforces

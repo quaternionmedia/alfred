@@ -11,7 +11,6 @@ USAGE:
 
 COMMANDS:
 b | build
-bats
 d | dev
 docker | dock
 dump
@@ -173,10 +172,6 @@ elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
 elif [ $1 = "n" -o $1 = "nox" ]; then
   shift
   nox -f tests/noxfile.py "$@"
-
-elif [ $1 = "bats" -o $1 = "bat" ]; then
-  shift
-  docker compose -f test_bats.yml up --build --exit-code-from bats "$@"
 
 else
   echo "Unknown command: $1"
