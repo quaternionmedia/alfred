@@ -9,9 +9,60 @@ from os import environ
 if not environ.get('STATIC_DIR'):
     environ['STATIC_DIR'] = 'tests/dist'
 
+import shutil  # noqa: E402
+
 import pytest  # noqa: E402
 
 from otto.models import Clip, Edl, TemplateData  # noqa: E402
+
+# --- environment markers --------------------------------------------------
+#
+# Registering a marker in pyproject.toml only names it; nothing acts on it.
+# Without this hook a needs_docker test on a machine with no docker binary
+# raises FileNotFoundError from subprocess, which reads as a broken test suite
+# rather than an absent tool. `./al pytest` runs in a container that has no
+# Docker CLI, so that is not a hypothetical.
+#
+# Skip on absence, never on failure: if the tool is present and the test fails,
+# that is a real result and must stay red.
+
+
+def _has_docker():
+    return shutil.which('docker') is not None
+
+
+def _has_ffmpeg():
+    """Resolve ffmpeg the way the code under test does, not via PATH.
+
+    A PATH check is wrong here and quietly costs coverage: moviepy encodes
+    through imageio_ffmpeg's bundled binary, so the real encode test passes on
+    machines with no ffmpeg on PATH at all -- this one included. Probing PATH
+    skipped a test that was passing, which is worse than the error it was
+    meant to prevent, because a skip looks like a pass.
+    """
+    if shutil.which('ffmpeg'):
+        return True
+    try:
+        import imageio_ffmpeg
+
+        return bool(imageio_ffmpeg.get_ffmpeg_exe())
+    except Exception:
+        return False
+
+
+_EXTERNAL_TOOLS = {
+    'needs_docker': (_has_docker, 'no docker binary available'),
+    'needs_ffmpeg': (_has_ffmpeg, 'no ffmpeg available to moviepy'),
+}
+
+
+def pytest_collection_modifyitems(config, items):
+    available = {marker: probe() for marker, (probe, _) in _EXTERNAL_TOOLS.items()}
+    for item in items:
+        for marker, (_, reason) in _EXTERNAL_TOOLS.items():
+            if marker in item.keywords and not available[marker]:
+                item.add_marker(pytest.mark.skip(reason=reason))
+
 
 # --- builders -------------------------------------------------------------
 #
@@ -124,7 +175,11 @@ def recorded_encode(monkeypatch):
     calls = []
 
     def _write_videofile(self, filename, **kwargs):
-        calls.append({'filename': filename, **kwargs})
+        # `size` comes off the clip, not the kwargs: the requested resolution
+        # is baked into the composite rather than passed to the encoder, so
+        # without capturing it here nothing can assert that moviesize survived
+        # the trip from renderMultitrack into the clip graph.
+        calls.append({'filename': filename, 'size': tuple(self.size), **kwargs})
 
     monkeypatch.setattr(
         'moviepy.video.VideoClip.VideoClip.write_videofile',

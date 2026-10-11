@@ -12,6 +12,14 @@ services:
     volumes:
       - ./alfred/otto:/otto/
       - ./alfred/otto/fonts:/usr/share/fonts/truetype/
+    environment:
+      # Passed through from the host, empty unless you ask for it:
+      #   ALFRED_DEV_SKIP_AUTH=1 ./al dev
+      # Serves every request as a fixed superuser and skips the login screen.
+      # config.py refuses to start if this is combined with ALFRED_PRODUCTION.
+      # Only in dev.yml -- production.yml has no such passthrough, so there is
+      # no environment variable a production stack will even look at.
+      - ALFRED_DEV_SKIP_AUTH=${ALFRED_DEV_SKIP_AUTH:-}
 
   renderer:
     build:

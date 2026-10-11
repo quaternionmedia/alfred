@@ -56,6 +56,11 @@ window.localStorage.removeItem('REQUESTING_SHARED_CREDENTIALS')
 
 console.log('sup!')
 
+// Ask the server whether auth is disabled before routing. Routing first would
+// let a guarded view redirect to /login in the moment before the answer comes
+// back, which is the flicker this is meant to remove.
+User.detectDevMode()
+
 m.route(document.body, '/', {
   '/': { render: () => m(Layout, m(Home)) },
   '/projects': { render: () => m(Layout, m(Projects)) },

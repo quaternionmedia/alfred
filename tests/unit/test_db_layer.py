@@ -136,13 +136,22 @@ def test_count_documents_must_be_awaited_to_be_meaningful():
 
     async def check():
         pending = dblayer.get_db().Project.count_documents({})
-        # Truthy without ever contacting the server, which is precisely why
-        # the unawaited call read as "there are documents".
-        truthy = bool(pending) and not (not pending)
+        # Two separate claims. Previously this asserted
+        # `bool(pending) and not (not pending)` -- `X and X`, true of any
+        # object that defines neither __bool__ nor __len__, so it tested a
+        # property of Python rather than of the DB layer and could not fail.
+        #
+        # What actually matters is that the unawaited call is not a count, yet
+        # is truthy: that combination is what made `if not count: seed()` a
+        # branch that never ran.
+        is_not_a_count = not isinstance(pending, int)
+        is_truthy = bool(pending)
         pending.cancel()
-        return truthy
+        return is_not_a_count, is_truthy
 
-    assert asyncio.run(check())
+    not_a_count, truthy = asyncio.run(check())
+    assert not_a_count, 'count_documents returned an int without being awaited'
+    assert truthy, 'the unawaited call was falsy, so `if not count` would fire'
 
 
 def test_seed_startup_awaits_the_count_and_imports_absolutely():

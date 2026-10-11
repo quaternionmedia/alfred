@@ -55,11 +55,16 @@ test.describe('otto editor', () => {
     await expect(slider).toBeVisible()
 
     // The Cypress version wrote an inline style onto the element and asserted
-    // nothing, which tested that the DOM accepts a style attribute. This
-    // asserts the value actually landed on the element.
+    // nothing, which tested that the DOM accepts a style attribute.
+    //
+    // The first attempt here asserted toHaveCSS('right', /.+/), which was no
+    // better: .slider is statically positioned, so computed `right` is the
+    // string "auto" beforehand and /.+/ matches that too. It passed with the
+    // evaluate() below deleted entirely. Assert the exact value.
+    await expect(slider).toHaveCSS('right', 'auto')
     await slider.evaluate(el => {
       el.style.right = '80%'
     })
-    await expect(slider).toHaveCSS('right', /.+/)
+    await expect(slider).toHaveCSS('right', '80%')
   })
 })

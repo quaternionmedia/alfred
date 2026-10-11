@@ -5,14 +5,21 @@ Scope: the backend and the render engine. Browser coverage lives in
 
 ## Status
 
-Phase 0 and IS-1 through IS-4 are implemented: **78 passed, 19 xfailed, in
-about 3 seconds.** IS-5 (render queueing, needs a database) is not started.
+Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
+stack's own configuration: **117 passed, 19 xfailed, in about 6 seconds.**
+IS-5 (render queueing, needs a database) is not started.
 
 ```sh
-pdm run pytest                                          # everything
-pdm run pytest -m "not needs_ffmpeg and not needs_db"    # no external tools
-pdm run pytest -m needs_ffmpeg                           # the real encode
+pdm run pytest                                       # everything
+pdm run pytest -m "not needs_ffmpeg and not needs_db and not needs_docker"
+pdm run pytest -m needs_ffmpeg                       # the real encode
+pdm run pytest -m needs_docker                       # builds a container
 ```
+
+The marked tiers skip themselves when the tool they need is absent, so the
+bare `pdm run pytest` above is safe anywhere -- `conftest.py` probes for the
+binary and skips on absence, never on failure. The explicit `-m` forms are for
+when you want to be sure what ran.
 
 The `needs_ffmpeg` encode is left in the default run, which deviates from the
 plan's "default is the fast tier". It earns it: `imageio_ffmpeg` ships its own
@@ -75,16 +82,23 @@ tests/
     test_config_validity.py
     test_input_selection.py
     test_output_selection.py
+    test_db_layer.py     the DB helpers, without a database
+    test_stack_config.py compose files and Dockerfiles
   pipeline/            needs ffmpeg, no DB, no network
     test_render_pipeline.py
-  integration/         needs a running MongoDB
-    test_render_queue.py
 ```
 
+`integration/` (IS-5, needs a running MongoDB) is planned, not written.
+
 Markers, registered in `pyproject.toml` under `[tool.pytest.ini_options]`:
-`needs_ffmpeg`, `needs_db`. The default run is the fast tier; CI adds the
-others once Phase 0 lands. `pdm run pytest -m "not needs_ffmpeg and not
-needs_db"` must pass on a bare checkout.
+`needs_ffmpeg`, `needs_db`, `needs_docker`. `conftest.py` skips a marked test
+when its tool is unavailable, so a bare `pdm run pytest` passes on any
+checkout.
+
+`needs_ffmpeg` resolves through `imageio_ffmpeg`'s bundled binary, not just
+PATH. Probing PATH alone silently skipped the real-encode test on a machine
+where it had been passing -- a skip reads like a pass, which makes it a worse
+failure than the error it was meant to avoid.
 
 ## Recording defects rather than working around them
 

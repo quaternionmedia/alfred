@@ -55,10 +55,16 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al nox -s blacken` | Black (`-S`) |
 | `./al docs` | Serve the docs locally on :4000 |
 | `./al prod` | Production stack; expects a running traefik |
+| `./al flower` | Celery monitoring on :5555; needs the dev stack for its broker |
 | `./al install <pkg>` | Add a website dependency |
 
 `./al dev` publishes MongoDB on 27017. If something already holds that port
 the stack will not start — see the dev-server notes in [AGENTS.md](AGENTS.md).
+
+To work without logging in, `ALFRED_DEV_SKIP_AUTH=1 ./al dev` serves every
+request as a fixed superuser and skips the login screen. It refuses to start
+alongside `ALFRED_PRODUCTION` and prints a banner on every boot — see
+[docs/dev-auth.md](docs/dev-auth.md).
 
 ## Tests
 

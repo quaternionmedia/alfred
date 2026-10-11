@@ -47,6 +47,7 @@ test = [
     "pytest-xdist >= 3.2.1",
     "pytest-timeout>=2.1.0",
     "httpx>=0.24.0",
+    "pyyaml>=6.0",
 ]
 render = [
     "al-otto[render]>=0.2.2",
@@ -60,6 +61,7 @@ testpaths = ["tests"]
 markers = [
     "needs_ffmpeg: requires a working ffmpeg binary; actually encodes video",
     "needs_db: requires a running MongoDB",
+    "needs_docker: requires a working Docker daemon; builds or runs containers",
 ]
 # xfail(strict=True) is used to pin defects: the marked test fails if it ever
 # passes, so fixing the defect turns the suite red and prompts removing the
