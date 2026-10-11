@@ -142,8 +142,21 @@ inherited gap, not a regression from the conversion.
    This is the most complex UI in the product and its behavior is untested.
 5. **Video delivery.** `GET /videos/{video}` serves partial content with
    range headers; `alfred/core/responses/partial.py` implements the 206 path
-   by hand. Untested, including the path-traversal exposure noted in the
-   project's records.
+   by hand, and none of it is tested. Two specific gaps: the handler joins
+   the path parameter onto `/app/videos` with no containment check, and any
+   filename that does not exist raises through as an unhandled 500 rather
+   than a 404.
+
+   The containment gap is **not currently exploitable**, and the reason is
+   worth writing down because it is not the application's doing. Starlette
+   decodes the request path before routing, and `{video}` matches `[^/]+`, so
+   any encoding that would introduce a separator stops matching the route and
+   falls through to the SPA mount. Verified against a running instance with
+   single- and double-encoded separators, UTF-8 overlong sequences,
+   backslashes and a null byte: every one either 404s without reaching the
+   handler or 500s on a literal filename inside `/app/videos`. Declaring the
+   route `{video:path}` would remove that accidental protection and make it a
+   live traversal immediately, which is what a test here should pin.
 6. **Authorization boundaries.** Admin (`POST /invoice`) and superuser
    routes are never called, as either an admin or a normal user. Nothing
    verifies a normal user is refused.

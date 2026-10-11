@@ -21,6 +21,7 @@ dependencies = [
     "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate",
     "ujson>=5.7.0",
     "pillow==9.5.0",
+    "setuptools>=75.3.4",
 ]
 requires-python = ">=3.8.1,<4.0"
 readme = "README.md"
@@ -56,3 +57,11 @@ version = { source = "file", path = "alfred/_version.py" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "needs_ffmpeg: requires a working ffmpeg binary; actually encodes video",
+    "needs_db: requires a running MongoDB",
+]
+# xfail(strict=True) is used to pin defects: the marked test fails if it ever
+# passes, so fixing the defect turns the suite red and prompts removing the
+# marker. Make that the default so a non-strict xfail has to be deliberate.
+xfail_strict = true
