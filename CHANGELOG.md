@@ -274,6 +274,10 @@ behavior rather than only the developer experience.
   does, and controls that cannot act name the missing precondition.
 - `CONTRIBUTING.md` and a pull request template. `./al nox` runs in the
   container.
+- **`./al thin`**: the dev stack without the renderer, the Celery worker that
+  carries moviepy, ImageMagick, ffmpeg and a font set. `thin.yml` composes
+  after `docker-compose.yml` and `dev.yml` and leaves it out; a queued render
+  waits and never reaches `RENDERED`.
 - `CHANGELOG.md`, and dev-server notes in `AGENTS.md` for the two things that
   bite on a first run.
 
