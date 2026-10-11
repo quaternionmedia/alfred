@@ -109,6 +109,13 @@ behavior rather than only the developer experience.
 - `test_login_fail` posted to `/auth/login`, which has never been a route, and
   asserted the 405 that the catch-all SPA mount returns for any non-GET. It
   tested nothing about authentication and has been replaced.
+- **The video routes named one directory two ways** -- a relative `videos`
+  in one route and `/app/videos` in the next -- and listing a missing
+  directory answered 500. Both read `VIDEO_DIR`, which is created if absent.
+- **The browser suite dropped connections under its own load.** Each of eight
+  parallel workers logged in for every test against one `uvicorn --reload`
+  process, which surfaced as `socket hang up` on `POST /auth/jwt/login` in
+  whichever test was logging in. The token fixture is worker-scoped.
 
 ### Added
 
@@ -204,6 +211,21 @@ behavior rather than only the developer experience.
   and the account it uses stores an unusable password hash, so it cannot be
   logged into once the flag is off. Prints an unmissable banner every boot.
   Documented in `docs/dev-auth.md`. Auth proper is the next phase.
+- **Demo media and a demo project, generated rather than downloaded.** Both
+  empty states of the Source stage offer to generate. `POST /demo/media`
+  synthesises three clips from ffmpeg's own test sources and skips any that
+  exist; `POST /demo/project` creates a template-only project with an upsert,
+  so pressing it twice makes one project. Nothing is fetched from a third
+  party.
+- **`docs/cookbook.md` is generated from the end-to-end specs** by
+  `website/e2e/cookbook.js`, and `tests/unit/test_cookbook.py` fails when the
+  committed page differs from what regenerating it produces.
+- **Governance current with `project/alfred`.** `governance/qm` moves to the
+  project branch's propagated head, which brings the seed's
+  `submodule-check.yml`, `reuse-lint.yml` in the reporting mode its header
+  prescribes, and the current `adr-lint.yml`, which runs the ADR lint from
+  the submodule. `docs/retrospective-0.3.0.md` hands this release to
+  governance triage.
 - `CHANGELOG.md`, and dev-server notes in `AGENTS.md` for the two things that
   bite on a first run.
 
