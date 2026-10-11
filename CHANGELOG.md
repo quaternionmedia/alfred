@@ -116,6 +116,42 @@ behavior rather than only the developer experience.
   parallel workers logged in for every test against one `uvicorn --reload`
   process, which surfaced as `socket hang up` on `POST /auth/jwt/login` in
   whichever test was logging in. The token fixture is worker-scoped.
+- **`/auth/jwt/refresh` answered 500 for every caller.** It called a method
+  fastapi-users no longer has, so the one path that keeps a session alive
+  could not work. Refresh and logout are covered.
+- **Concurrent template previews overwrote each other's frames**, written to
+  `data/<timestr>.jpg` at one-second resolution. Frames get unique names.
+- **The stage panels stayed empty after a reload**: the flow loaded before the
+  session was restored and never retried. It retries, and the Source stage
+  re-reads on entry.
+- **Logging in returned to the login form** when the redirect parameter was
+  empty or absent. It lands on the application.
+- **The Source stage could render nothing at all.** A keyed vnode among
+  unkeyed siblings made mithril reject the fragment during render.
+  `views.spec.js` walks every stage with a project selected, and with an id
+  that matches nothing.
+- **A request failing with anything but 401 never settled**, so a 500 left a
+  button spinning; and a deep link redrew before its data was stored.
+- **Play, pause and the speed controls never worked.** The transport called
+  into a `Monitor` that was never mounted. Playback drives the timeline, so a
+  project of template stills plays.
+- **Nothing could be added to a timeline without a project.** A guard compared
+  `undefined` with `null` and cleared the clip list on every redraw.
+- **Trim resized clips it was not dragging, Save had never saved, and Render
+  posted the wrong shape.** `PUT /project/{id}/timeline` writes the clips and
+  nothing else; Render sends `{edl: {clips: [...]}}` with its token.
+- **A template missing a field answered 500.** `GET /preview/template/{name}`
+  answers 422 with the reason, and the viewer prints it.
+- **The lint and format gates checked nothing.** `ruff -v .` is a usage error
+  on current ruff, and both sessions ran from `tests/`, so `alfred/` was never
+  read. Both gates run over the application at pinned versions with an
+  explicit rule set, and what they surfaced is fixed, among it a mutable
+  default that carried one mail's attachments into the next.
+- **Every module touching authentication failed to import** under setuptools
+  81, which removed the `pkg_resources` that `passlib` imports. setuptools is
+  capped below 81 until fastapi-users moves to pwdlib.
+- **A local browser run against the dev stack is capped at four workers**, so
+  the single reloading server is not driven past what it serves.
 
 ### Added
 
@@ -226,6 +262,18 @@ behavior rather than only the developer experience.
   prescribes, and the current `adr-lint.yml`, which runs the ADR lint from
   the submodule. `docs/retrospective-0.3.0.md` hands this release to
   governance triage.
+- **`./al dev` says which server owns its port.** Every published port is
+  overridable (`ALFRED_PORT`, `ALFRED_DB_PORT`, `ALFRED_HMR_PORT`). `./al dev`
+  refuses to start on a port that already answers and names the occupant by
+  its OpenAPI title, recognising its own stack; the browser suite refuses to
+  run against anything but Alfred.
+- **Recipe recordings.** A `docs` Playwright project records the tests tagged
+  `@recipe`; `docs/recipes/` carries an SVG stub per recipe, and
+  `./al recipes` regenerates the recordings.
+- **Material entries add to the timeline**, as buttons that say what clicking
+  does, and controls that cannot act name the missing precondition.
+- `CONTRIBUTING.md` and a pull request template. `./al nox` runs in the
+  container.
 - `CHANGELOG.md`, and dev-server notes in `AGENTS.md` for the two things that
   bite on a first run.
 
@@ -242,6 +290,10 @@ behavior rather than only the developer experience.
   the string was in the sources and never reached the bundle.
 - The obsolete `version:` key from every compose file, which warned on every
   invocation.
+- The standalone routes `#!/editor`, `#!/form`, `#!/documents`,
+  `#!/projects` and `#!/renders`, retired into the four-stage flow; their URLs
+  redirect. The header's PROJECTS and RENDERS links, which duplicated the
+  stage rail.
 
 ### Known, unresolved
 
