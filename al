@@ -160,6 +160,13 @@ elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
   shift
   downloadMedia
 
+# Starts development without the renderer
+elif [ $1 = "thin" ]; then
+  shift
+  ALFRED_PORT="${ALFRED_PORT:-8000}"
+  echo "Alfred! thin dev stack, no renderer  (http://localhost:$ALFRED_PORT)"
+  ALFRED_PORT="$ALFRED_PORT" docker compose     -f docker-compose.yml -f dev.yml -f thin.yml up "$@"
+
 # Stops the dev stack
 elif [ $1 = "stop" ]; then
   shift
