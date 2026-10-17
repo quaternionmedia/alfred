@@ -1,7 +1,7 @@
 [submodule "alfred/otto"]
 	path = alfred/otto
 	url = https://github.com/quaternionmedia/otto.git
-	branch = master
+	branch = main
 [submodule "governance/qm"]
 	path = governance/qm
 	url = https://github.com/quaternionmedia/qm.git

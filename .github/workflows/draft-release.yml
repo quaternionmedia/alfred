@@ -6,9 +6,12 @@ jobs:
   release:
     name: 📝 Draft Release
     runs-on: ubuntu-latest
+    # Creating a release, even a draft, writes to the repository.
+    permissions:
+      contents: write
     steps:
       - name: 📰 Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - name: 🥌 Set milestone name
         run: echo MILESTONE_NAME=$(jq --raw-output .milestone.title $GITHUB_EVENT_PATH) >> $GITHUB_ENV
@@ -20,7 +23,7 @@ jobs:
         run: echo TAG_NAME=${MILESTONE_NAME%% *} >> $GITHUB_ENV
 
       - name: 📦 Generate Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3
         with:
           name: ${{ env.MILESTONE_NAME }}
           tag_name: ${{ env.TAG_NAME }}
