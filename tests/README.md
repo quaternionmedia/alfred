@@ -6,10 +6,11 @@ Scope: the backend and the render engine. Browser coverage lives in
 ## Status
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
-stack's own configuration: **255 tests -- 234 passed, 2 skipped, 19 xfailed**
-in the `./al pytest` container, measured on feat/thin-dev-stack (cb410a6).
-The two skips need a Docker CLI, which that container does not have; where
-ImageMagick cannot draw text, six more skip. The database tier IS-5 needs
+stack's own configuration: **709 tests -- 699 passed, 2 skipped, 8 xfailed**
+in the `./al pytest` container, measured on integrate/review-fixes (f0e8cb3)
+with its `db` service up, so the database tier ran too. The two skips need a
+Docker CLI, which that container does not have; where ImageMagick cannot draw
+text, six more skip. The database tier IS-5 needs
 exists (`integration/`, marked `needs_db`, against the `db` service
 `pytest.yml` provides); its render-queueing tests are not written yet.
 

@@ -1,5 +1,123 @@
 # Changelog
 
+## Unreleased — review fixes
+
+Fixes from a review of alfred and otto, landed as five parallel branches and
+integrated on `integrate/review-fixes`: the render pipeline, auth and
+ownership, the editor, CI and operations, and the engine (otto pinned at
+a387666, `fix/engine-contract`). Read **Security** and **Changed** before
+deploying: several requests that used to be accepted are now refused, and a
+production stack needs its own signing key.
+
+### Security
+
+- **Media names are confined to the library.** A video, image or audio clip
+  names `videos/<file>` as `GET /videos` lists it, or an http(s) URL whose
+  host is in `ALFRED_REMOTE_MEDIA_HOSTS` (empty by default). Absolute paths,
+  `..`, backslashes and other schemes are a 422 before anything is stored or
+  queued; the worker re-checks. It used to open `/etc/hostname` when asked.
+- **Clients can no longer pass ffmpeg options.** `ffmpeg_params` and `bitrate`
+  are refused; encoding comes from server presets, `quality` = `draft` |
+  `standard` | `high` (default `standard`).
+- **Output files are named by render id**, not built from the client's project
+  and description.
+- **Render jobs travel as JSON, not pickle.** Pickled jobs still queued at
+  upgrade are refused by the worker and must be queued again.
+- **Renders and projects belong to their creator.** Another account gets 404;
+  superusers see everything; records from before ownership are superuser-only.
+  `DELETE /render` and `DELETE /project` are gone, `PUT /render/{id}` edits
+  labels only, and an issue can be reported only about a render you may see.
+- **Registration is closed under `ALFRED_PRODUCTION`** unless
+  `ALFRED_ALLOW_REGISTRATION` opens it; a closed server answers 403 with a
+  reason the register button shows.
+- **Production signs tokens with its own key.** `production.yml` and
+  `./al prod` require an exported `ALFRED_SECRET_KEY` rather than inheriting
+  the committed development stub; a missing or short key is announced at boot.
+- **Production keeps MongoDB private** and serves without `--reload`. The dev
+  stack listens on 127.0.0.1 unless `ALFRED_BIND` widens it, and warns when that
+  is combined with the auth bypass.
+- **Deliveries and template previews are out of the public `/data` mount**, and
+  finished renders are no longer listed in the shared media library.
+  Password-reset and verification tokens stay out of production logs.
+
+### Changed
+
+- **The engine is otto a387666.** Renders come out at the requested size, with
+  media fitted inside it and centred; `outpoint` trims; `fps` is honoured; a
+  clip's own `fadeIn`/`fadeOut` are its only fades and `0` means none;
+  `opacity: 0` is invisible; audio clips are mixed into the sound instead of
+  crashing the render. A clip the engine cannot render is refused with a
+  message naming it -- a 422 from the preview, the render's `error` otherwise.
+- **The editor renders what it plays.** Every clip goes out with an explicit
+  `start` and without fades nobody chose, so three 5-second clips render as 15
+  seconds of hard cuts rather than all three overlapping for 5 seconds and
+  then 10 seconds of black.
+- **`POST /render` refuses an `fps` outside 1–120 and a frame outside
+  16–7680**, with a 422.
+- **Renders are written to `ALFRED_RENDER_DIR`** (default `videos/renders`) and
+  local deliveries to `ALFRED_DELIVERY_DIR` (default `deliveries`, never inside
+  DATA_DIR). Point `ALFRED_RENDER_DIR` at the library to make renders reusable
+  as media again.
+- **Seeds and demos have owners.** `ALFRED_SEED_OWNER` names it; in development
+  it is the dev user. Each account gets its own demo project.
+
+### Fixed
+
+- **Library video clips render.** The worker resolved `videos/x.mp4` against
+  its own working directory, which held no videos; it resolves against
+  VIDEO_DIR, and the Celery task is registered once.
+- **Files over 4 MB are served whole**, a Range request gets exactly its range,
+  and a missing file is a 404 rather than a 500.
+- **The toolbar Render button renders the project at its size**; it sent query
+  parameters the API ignored.
+- **A clip added while a project is loading stays on the timeline**, and Save
+  saves it.
+- **Templates can be added from the bin and the Source stage** and dragged onto
+  the timeline, and template clips show their own text, not "Hello, world".
+- **Sessions no longer end an hour after login**, logout calls the real route,
+  and a login redirect returns to the stage and project it came from.
+- **Template backgrounds are drawn in their colour** instead of black,
+  textBox's background is drawn at all, and the demo text is readable.
+- **Bucket delivery** signs the object it uploaded, and `DELETE /project/{id}`
+  no longer answers 500 after deleting.
+- **Trim and seek work by touch**; the page has a doctype and can be zoomed on
+  a phone.
+- **`./al` reports its real version**, and `seed`, `reseed`, `dump` and
+  `restore` work; seeding assigns the same owner as startup.
+
+### Added
+
+- **`GET /render/{id}/status`** (state, progress and failure reason) and
+  **`GET /render/{id}/download`** (Range support, named attachment). The
+  Render and Deliver stages follow a render live and offer a Download button.
+- **A settings editor for template clips** -- text, duration and colours --
+  that shows the server's reason when a setting cannot render. `GET
+  /templates` describes otto's registry; `final` is still not offered.
+- **A cut tool**, and S to split at the playhead. Slip, slide and dual roller
+  say they are not available yet.
+- **A MongoDB-backed API test tier** (`tests/integration`, `needs_db`) on a `db`
+  service in `pytest.yml`.
+- **The browser suite runs in CI** on a stack `test_e2e.yml` builds from a
+  clean checkout -- site, api, render worker and database. `./al test` runs the
+  same thing, and no longer rewrites `website/yarn.lock`.
+- **A `LICENSE` file** stating the MIT licence the package metadata declares.
+
+### CI and release
+
+- **CI tests on Python 3.11, against the vendored engine and the lockfile.**
+  This needs quaternionmedia/.github's `fix/ruff-check-and-python-input`
+  (`ruff check`, a `python_version` input, and `submodules` and
+  `requirements` inputs for the pytest workflow) merged first.
+- **Publishing needs a `v*` tag that names the version** in
+  `alfred/_version.py`, and the backend suite passing at that commit. Every
+  workflow runs on actions that target Node 24.
+
+### Measured
+
+`./al pytest` on f0e8cb3: 699 passed, 2 skipped, 8 xfailed (the 11 defect pins
+the engine fixed are ordinary tests now). `./al test`: 212 passed, 1 skipped,
+including the `@slow` specs, which encode on the new engine.
+
 ## 0.3.0 — breaking
 
 The release that made the project buildable, testable and governed. Nothing
