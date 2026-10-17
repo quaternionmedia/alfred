@@ -439,7 +439,12 @@ class RenderAPI(MotorCRUDRouter):
 
             chosen = destination or render.destination
             try:
-                delivery = get_destination(chosen).deliver(source)
+                # Off the event loop: a delivery copies or uploads the whole
+                # file, and done inline it stalled every other request until
+                # it finished.
+                delivery = await run_in_threadpool(
+                    get_destination(chosen).deliver, source
+                )
             except DeliveryError as exc:
                 # 502, not 500: the render is fine and the request was valid.
                 # Something downstream would not take it, and that is worth

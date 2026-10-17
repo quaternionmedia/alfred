@@ -83,10 +83,10 @@ def renderRemote(
             raise ValueError(f'refusing to write a render to {filename!r}')
         # Media names resolved here, against VIDEO_DIR, rather than handed to
         # the engine as sent. The engine opens a relative name against the
-        # worker's working directory, which is not where the library is, and
-        # an absolute one wherever it points. The api has already refused
-        # anything outside the library; checking again here covers EDLs that
-        # were stored before that check existed and are re-queued now.
+        # worker's working directory -- /app/alfred, with no `videos/` in it,
+        # until this change -- and an absolute one wherever it points. The api
+        # has already refused anything outside the library; checking again
+        # here covers EDLs stored before that check existed and re-queued now.
         timeline = resolve_edl(Edl.parse_obj(edl))
         # Into RENDER_DIR, not the media library: written beside the media, a
         # render was listed by `GET /videos` and served by `/videos/{file}` to
