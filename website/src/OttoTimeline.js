@@ -1,6 +1,5 @@
 import m from 'mithril'
 import Sortable, { MultiDrag } from 'sortablejs'
-import { ContentEditable } from 'mithril-contenteditable'
 
 // Sortable.mount(new MultiDrag());
 var state = require("./Globals").state
@@ -107,62 +106,34 @@ export function Clip() {
 }
 
 
+/** What a template clip says on the timeline: its text, else its template. */
+export const templateLabel = clip => {
+  const text = clip && clip.data && clip.data.text
+  return text ? String(text) : (clip && clip.name) || 'template'
+}
+
 export function Template() {
   return {
-    view: (vnode) => {
-      return m(Clip, {
+    view: vnode =>
+      m(
+        Clip,
+        {
           class: 'template',
+          title: `${vnode.attrs.name}: ${templateLabel(vnode.attrs)}`,
           ...vnode.attrs,
-        }, [
-        m(ContentEditable, {
-          style: {margin: '5px'},
-          // Original HTML input
-          html: this.html,
-          // Returns the updated HTML code
-          oncreate: html => {
-            // The same Template component renders both timeline clips and bin
-            // entries, and only timeline clips carry `data`. Bin entries come
-            // from /templates and describe a template rather than an instance
-            // of one, so this threw "Cannot read properties of undefined
-            // (reading 'text')" on every render of the bin.
-            //
-            // Falling back to the template's name gives a bin entry a sensible
-            // label instead of an exception.
-            const data = vnode.attrs.data || {}
-            const label = data['text'] !== undefined ? data['text'] : vnode.attrs.name
-            this.html = `${JSON.stringify(label === undefined ? '' : label).slice(1, -1)}`
-            m.redraw()
-          },
-          onchange: html => {
-            this.html = html
-
-          },
-          // Example to prevent the user from entering commas
-          onkeydown: e => {
-            switch (e.key) {
-              case 'Enter': e.preventDefault()
-              e.stopPropagation()
-              console.log('enter')
-              Edl.update()
-              case 'ArrowLeft': e.stopPropagation()
-              case 'ArrowRight': e.stopPropagation()
-            }
-            Edl.edl[vnode.attrs.i].data['text'] = this.html
-          },
-
-          // Replace the base tag, if needed
-          tagName: 'div',
-          // By default, &amp; etc are replaced by their normal counterpart when losing focus.
-          // cleanupHtml: false,
-          // By default, don't allow the user to enter newlines
-          // preventNewline: false,
-          // By default, select all text when the element receives focus
-          // selectAllOnFocus: false,
-          // By default, when pasting text, remove all HTML and keep the plain text.
-          // pasteAsPlainText: false,
-        }),
-      ])
-    }
+        },
+        [
+          // A label, not an editor. This was a mithril-contenteditable
+          // instance, and the version installed (0.1.4) renders two hard-coded
+          // "<i>Hello, world</i>" divs before the editable one -- so every
+          // template clip read "Hello, world Hello, world" followed by its
+          // text, and editing it wrote a stale copy of the text on the next
+          // keystroke. The template's settings, text included, are edited
+          // beside the preview now (TemplateParams.js), where there is room to
+          // show why a setting will not render.
+          m('p.clipname', templateLabel(vnode.attrs)),
+        ]
+      ),
   }
 }
 
@@ -275,7 +246,10 @@ export function OttoTimeline() {
     oncreate: (vnode) => {
       new Sortable(vnode.dom, {
         multiDrag: true,
-        group: 'clip',
+        // Accepts drops from the bin. A bare `'clip'` accepts only its own
+        // group, and the bin is `'media'`, so Sortable refused every drag
+        // from the bin before the drop handler could see it.
+        group: { name: 'clip', put: ['media'] },
         selectedClass: "selected",
         swapThreshold: 0.50,
         animation: 150,

@@ -337,6 +337,13 @@
   }
 }
 
+// Still offered, and said to be on the way out, as otto's own docstrings do.
+.templatelist .deprecated {
+  margin-left: 0.3rem;
+  font-size: 0.7rem;
+  color: #8f8f8f;
+}
+
 // Confirms an addition landed. The timeline can be below the fold, so the
 // result of a successful click is not always visible from the control that
 // caused it.

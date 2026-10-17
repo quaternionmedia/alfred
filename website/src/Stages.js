@@ -3,13 +3,14 @@ import './styles/stages.scss'
 import { auth } from './Login'
 import { User } from './User'
 import { Edl } from './Video'
-import { Player } from './Player'
 import { TemplateEditor } from './TemplateEditor'
 import { Magnussens } from './Magnussens'
 import { queueRender, renderSize, timelineRender } from './RenderRequest'
 import { RenderStatus, isSettled, renderState } from './RenderStatus'
 import { blobProblem, downloadRender } from './Download'
 import { requestProblem } from './Problem'
+import { addClip, templateClip, videoClip } from './Clips'
+import Bin from './Bin'
 
 /**
  * The four stages of the flow, as one view.
@@ -326,43 +327,27 @@ export const AsyncButton = () => ({
 /** The file's own name, without the directory it was served from. */
 const basename = path => String(path).split('/').pop()
 
-// How long a clip is when it arrives from the media list.
-//
-// The server reports which files exist, not how long they are, and the
-// browser cannot know without fetching and decoding each one. Five seconds
-// matches the demo clips and is what the bin has always used for a dragged
-// clip; the trim tools adjust it. Worth replacing with a real duration from
-// the API, which is the only place that can cheaply know it.
-const DEFAULT_CLIP_SECONDS = 5
-
-/** Put a media file on the end of the timeline and move the playhead to it. */
-const addMedia = name => {
-  Edl.edl = Edl.edl.concat({
-    name,
-    type: 'video',
-    inpoint: 0,
-    outpoint: DEFAULT_CLIP_SECONDS,
-    duration: DEFAULT_CLIP_SECONDS,
-    description: '',
-  })
-  // Move to the clip that was just added, so the preview shows it. Adding
-  // something and having the viewer keep showing something else reads as the
-  // click not having worked.
-  Player.pause()
-  Edl.jump(Edl.startOf(Edl.edl.length - 1))
+/** Put a clip on the end of the timeline, and say that it landed. */
+const add = (clip, label, kind) => {
+  const at = addClip(clip)
 
   // Say it landed, and where.
   //
   // The timeline is below the fold on a short window, so the only evidence of
   // a successful click could be off screen -- which is indistinguishable from
   // the click having done nothing, and was reported as exactly that.
-  Flow.added = { name: basename(name), at: Edl.edl.length }
-  clearTimeout(addMedia.timer)
-  addMedia.timer = setTimeout(() => {
+  Flow.added = { name: label, at: at + 1, kind }
+  clearTimeout(add.timer)
+  add.timer = setTimeout(() => {
     Flow.added = null
     m.redraw()
   }, 4000)
 }
+
+const addMedia = name => add(videoClip(name), basename(name), 'media')
+
+const addTemplate = template =>
+  add(templateClip(template), `${template.name} template`, 'template')
 
 const Generate = (message, label, action, busyKey) =>
   m('.stageempty', [
@@ -482,7 +467,7 @@ const SourcePanel = {
               'p.stagehint',
               'Choose a clip to put it on the timeline.'
             ),
-            Flow.added
+            Flow.added && Flow.added.kind === 'media'
               ? m('p.stageconfirm#media-added', [
                   m('i.material-icons', 'check'),
                   `${Flow.added.name} added — clip ${Flow.added.at} on the timeline`,
@@ -517,6 +502,45 @@ const SourcePanel = {
             () => auth('/demo/media', { method: 'POST' }),
             'media'
           ),
+
+      // Templates are material too: a title card or a colour field is made,
+      // not uploaded. They were reachable only by dragging from the bin,
+      // which never worked -- the timeline refused drops from it, and the
+      // drop handler threw on the template's shape when one was let through.
+      Bin.templates.length
+        ? [
+            m('h3', `Templates (${Bin.templates.length})`),
+            Flow.added && Flow.added.kind === 'template'
+              ? m('p.stageconfirm#template-added', [
+                  m('i.material-icons', 'check'),
+                  `${Flow.added.name} added — clip ${Flow.added.at} on the timeline`,
+                ])
+              : null,
+            m(
+              'ul.medialist.templatelist',
+              Bin.templates.map(t =>
+                m(
+                  'li.mediaitem',
+                  m(
+                    'button.mediachoice.templatechoice',
+                    {
+                      'data-template': t.name,
+                      title: t.description
+                        ? `Add a ${t.name} clip — ${t.description.replace(/\*/g, '')}`
+                        : `Add a ${t.name} clip to the timeline`,
+                      onclick: () => addTemplate(t),
+                    },
+                    [
+                      m('i.material-icons', 'add'),
+                      t.name,
+                      t.deprecated ? m('span.deprecated', 'deprecated') : null,
+                    ]
+                  )
+                )
+              )
+            ),
+          ]
+        : null,
     ])
   },
 }
