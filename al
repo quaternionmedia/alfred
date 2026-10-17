@@ -48,6 +48,30 @@ downloadMedia() {
   cd ..
 }
 
+# Say so when the dev stack is about to be reachable from other machines with
+# its authentication switched off.
+#
+# dev.yml publishes on loopback unless ALFRED_BIND says otherwise, and
+# ALFRED_BIND=0.0.0.0 is the documented way to try the app from a phone. With
+# ALFRED_DEV_SKIP_AUTH on as well, every request is served as a superuser, so
+# the combination hands the app to anyone on the network. A warning rather
+# than a refusal: on a network you trust it may be exactly what you want.
+warnIfExposed() {
+  case "${ALFRED_BIND:-127.0.0.1}" in
+    127.0.0.1 | localhost | ::1) return ;;
+  esac
+  skip=$(printf '%s' "${ALFRED_DEV_SKIP_AUTH:-}" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+  case "$skip" in
+    1 | true | yes | on)
+      echo >&2
+      echo "  ALFRED_BIND=$ALFRED_BIND publishes the dev stack beyond this machine," >&2
+      echo "  and ALFRED_DEV_SKIP_AUTH is on: anyone who can reach it is served" >&2
+      echo "  as a superuser. Use one or the other unless you trust the network." >&2
+      echo >&2
+      ;;
+  esac
+}
+
 if [ -z $1 ]; then
   echo "$HELP"
 
@@ -101,6 +125,7 @@ elif [ $1 = "d" ] || [ $1 = "dev" ]; then
     exit 1
   fi
 
+  warnIfExposed
   echo "Alfred! running dev $1  (http://localhost:$ALFRED_PORT)"
   ALFRED_PORT="$ALFRED_PORT" docker compose -f docker-compose.yml -f dev.yml up "$@"
 
@@ -164,6 +189,7 @@ elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
 elif [ $1 = "thin" ]; then
   shift
   ALFRED_PORT="${ALFRED_PORT:-8000}"
+  warnIfExposed
   echo "Alfred! thin dev stack, no renderer  (http://localhost:$ALFRED_PORT)"
   ALFRED_PORT="$ALFRED_PORT" docker compose     -f docker-compose.yml -f dev.yml -f thin.yml up "$@"
 

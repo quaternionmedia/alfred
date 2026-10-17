@@ -115,13 +115,23 @@ These bite on a first run, none obvious from the error:
   as good as your knowledge of what served it.** Before trusting a number,
   confirm the identity of the server — `curl localhost:$PORT/openapi.json`
   names it. See [docs/retrospective-verification-discipline.md](docs/retrospective-verification-discipline.md).
-- **Port 27017.** `dev.yml` publishes MongoDB on the host. If anything else is
-  already bound there — a standalone `mongod`, another project's container —
-  the stack fails with `Bind for 0.0.0.0:27017 failed: port is already
-  allocated`, and the message names the port but not the culprit. Find it with
-  `docker ps`, or run with an override that remaps or drops the publish.
+- **Port 27017.** `dev.yml` publishes MongoDB on the host's loopback. If
+  anything else is already bound there — a standalone `mongod`, another
+  project's container — the stack fails with `Bind for 127.0.0.1:27017
+  failed: port is already allocated`, and the message names the port but not
+  the culprit. Find it with `docker ps`, or move it with `ALFRED_DB_PORT`.
   Nothing in the app needs 27017 exposed on the host; it is published for
-  attaching a GUI, and not publishing it is the better default.
+  attaching a GUI.
+- **Loopback only, unless you ask.** `dev.yml` publishes the api, the HMR port
+  and the database on `127.0.0.1`, so the dev stack is reachable from this
+  machine and nowhere else. That matters more than it looks: with
+  `ALFRED_DEV_SKIP_AUTH=1`, every request the stack answers is served as a
+  superuser, and on every interface that meant anyone on the network. To try
+  the app from a phone on the same network, opt in for that run:
+  `ALFRED_BIND=0.0.0.0 ./al dev`, then browse to this machine's LAN address.
+  Do it with the auth bypass off, or on a network you trust — `./al dev`
+  warns when both are set. The database ignores `ALFRED_BIND` and stays on
+  loopback; `ALFRED_DB_BIND` moves it, for someone who means to.
 - **`UID`/`GID`.** `dev.yml` sets the db container's user from `${UID}:${GID}`.
   Neither is exported by default in most shells, and `UID` is read-only in
   bash, so compose warns and substitutes blanks. Harmless on Docker Desktop;

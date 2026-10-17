@@ -60,13 +60,19 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al cookbook` | Regenerate `docs/cookbook.md` from the e2e specs |
 | `./al install <pkg>` | Add a website dependency |
 
-`./al dev` publishes on 8000, 8001 and 27017. If something already holds one,
-override it rather than fighting for it — `ALFRED_PORT=8100 ./al dev`, and
-`ALFRED_DB_PORT` / `ALFRED_HMR_PORT` for the others. `./al dev` refuses to
-start on an occupied port and names what has it, because the failure this
-prevents is silent: the host port answers whoever bound it first, so the stack
-comes up healthy while every request from your machine reaches somebody else's
-application. See the dev-server notes in [AGENTS.md](AGENTS.md).
+`./al dev` publishes on 8000, 8001 and 27017, on `127.0.0.1` only. If
+something already holds one, override it rather than fighting for it —
+`ALFRED_PORT=8100 ./al dev`, and `ALFRED_DB_PORT` / `ALFRED_HMR_PORT` for the
+others. `./al dev` refuses to start on an occupied port and names what has it,
+because the failure this prevents is silent: the host port answers whoever
+bound it first, so the stack comes up healthy while every request from your
+machine reaches somebody else's application.
+
+To try the app from a phone on the same network, `ALFRED_BIND=0.0.0.0 ./al
+dev` publishes it on every interface for that run. Loopback is the default
+because the dev stack trusts its callers: with `ALFRED_DEV_SKIP_AUTH=1`,
+anyone who can reach it is a superuser. The database stays on loopback either
+way. See the dev-server notes in [AGENTS.md](AGENTS.md).
 
 ## First run
 
