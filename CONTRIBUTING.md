@@ -113,13 +113,13 @@ QM projects hit the cryptic version first, which is why the check exists.
 
 | Workflow | What it does |
 |---|---|
-| `CI.yml` | Black, Ruff, and the backend suite |
+| `CI.yml` | Black, Ruff, the backend suite, and the browser suite through `playwright.yml` |
+| `playwright.yml` | the browser suite, against the stack `test_e2e.yml` builds — the same run as `./al test` |
 | `submodule-check.yml` | every submodule pin is reachable on its own remote |
 | `adr-lint.yml` | decision-record discipline, run from the governance submodule |
 | `reuse-lint.yml` | copyright and licence headers — **reporting only** |
-| `playwright.yml` | the browser suite — currently not called by `CI.yml` |
 
-Two of those need saying plainly rather than leaving to be discovered:
+One of those needs saying plainly rather than leaving to be discovered:
 
 **REUSE is not blocking yet.** As of 2026-08-08, 0 of 206 files carry
 copyright or licence information and there is no `LICENSES/` directory.
@@ -127,10 +127,10 @@ Blocking on that would stop every pull request on a gap none of them
 introduced. Removing the `continue-on-error` line is the moment that changes,
 and the adoption record should record the date when it does.
 
-**The browser suite does not run in CI.** `CI.yml`'s `integration_tests` job is
-commented out. The comment explains why — the application image would not
-build — which is no longer true. Re-enabling it is a decision somebody should
-make deliberately.
+The browser suite needs nothing running beforehand: `test_e2e.yml` builds the
+site and starts the api, a render worker and a database from the checkout, so
+the `@slow` specs that wait on a real encode run in CI too, and `./al test`
+reproduces a CI failure with nothing else set up.
 
 ## Where decisions live
 

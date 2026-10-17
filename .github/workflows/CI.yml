@@ -16,11 +16,9 @@ jobs:
     name: 🖤 Black
     uses: quaternionmedia/.github/.github/workflows/black.yml@main
 
-  # Integration tests are wired but not yet gating. They cannot pass today:
-  # the application image does not build (see the Dockerfile notes in
-  # governance/qm/adr/), so there is nothing for the suite to run against.
-  # Enable this job once the image builds; the suite itself is ready.
-  #
-  # integration_tests:
-  #   name: 🔏 Integration tests
-  #   uses: ./.github/workflows/playwright.yml
+  # The browser suite, against a stack test_e2e.yml builds from the checkout:
+  # the site, the api, a render worker and the database. Project-local rather
+  # than an org workflow because the stack it builds is this project's own.
+  integration_tests:
+    name: 🔏 Integration tests
+    uses: ./.github/workflows/playwright.yml

@@ -270,7 +270,9 @@ elif [ $1 = "docker" -o $1 = "dock" ]; then
 
 elif [ $1 = "t" -o $1 = "test" -o $1 = "e2e" ]; then
   shift
-  docker compose -f test_e2e.yml up --exit-code-from e2e "$@"
+  # --build, as CI runs it, so a local run tests this checkout's images rather
+  # than whichever ones an earlier run left behind.
+  docker compose -f test_e2e.yml up --build --exit-code-from e2e "$@"
 
 elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   shift
