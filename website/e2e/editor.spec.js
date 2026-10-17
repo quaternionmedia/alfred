@@ -10,7 +10,7 @@
  * so it survives a reseed.
  */
 
-const { test, expect } = require('./fixtures')
+const { test, expect, MEDIA_PROJECT } = require('./fixtures')
 
 const DEMO = 'Timeline demo'
 
@@ -114,6 +114,64 @@ test.describe('timeline editor', () => {
     await toggle.click()
     await expect(toggle).toHaveAttribute('aria-expanded', 'true')
     await expect(authedPage.locator('.templatebody')).toBeVisible()
+  })
+
+  test('a clip added while the project is loading is kept', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * The project's clips arrive asynchronously, and the response used to
+     * replace the whole timeline -- so a clip added before it landed vanished
+     * when it did, and Save then found nothing to save. That was the save
+     * test in tools.spec.js failing on most runs. The response is held back
+     * here so the order is certain rather than lucky.
+     */
+    const project = (
+      await (await request.get('/project', { headers: { Authorization: token } })).json()
+    ).find(p => p.name === MEDIA_PROJECT)
+    expect(project).toBeTruthy()
+
+    let release
+    const held = new Promise(resolve => (release = resolve))
+    await authedPage.route(
+      url => url.pathname === `/project/${project._id}`,
+      async route => {
+        await held
+        await route.fallback()
+      }
+    )
+
+    await authedPage.goto(`/#!/?project=${project._id}&stage=source`)
+    await authedPage.locator('.mediachoice').first().click()
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(1)
+
+    release()
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(
+      project.edl.clips.length + 1
+    )
+    // The project's clips first, then the addition.
+    const names = await authedPage
+      .locator('#timeline .clip')
+      .evaluateAll(nodes => nodes.map(n => n.getAttribute('name')))
+    expect(names.slice(0, -1)).toEqual(project.edl.clips.map(c => c.name))
+  })
+
+  test('a project that does not exist is asked for once, not in a loop', async ({
+    authedPage,
+  }) => {
+    // A failed load forgot the id, the answer redrew, the redraw asked again:
+    // an unknown id in the URL was requested for as long as the page was open.
+    const missing = 'deadbeefdeadbeefdeadbeef'
+    let asked = 0
+    authedPage.on('request', req => {
+      if (new URL(req.url()).pathname === `/project/${missing}`) asked++
+    })
+
+    await authedPage.goto(`/#!/?project=${missing}&stage=edit`)
+    await authedPage.waitForTimeout(2500)
+    expect(asked).toBe(1)
   })
 
   test('opening the editor makes no failing requests', async ({

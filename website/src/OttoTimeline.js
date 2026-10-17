@@ -187,6 +187,10 @@ export function OttoTimeline() {
   // Loading only on init meant the first project opened was the only one that
   // ever appeared.
   let loaded = null
+  // Which load is the latest. A project id is not enough to tell: opening A,
+  // then B, then A again leaves two requests for A in flight, and both used to
+  // pass the check -- the second appending A's clips after the first's.
+  let ticket = 0
 
   const open = () => {
     // Only ask for a project when there is one to ask for. Unguarded, this
@@ -208,41 +212,62 @@ export function OttoTimeline() {
     const projectId = m.route.param('project') || null
     if (projectId === loaded) return
     loaded = projectId
+    const mine = ++ticket
 
-    if (!projectId) {
-      Edl.edl = []
-      Edl.current = 0
-      Edl.time = 0
-      Edl.update()
-      return
-    }
-    // Remember which request this is, so a slow one cannot overwrite newer
-    // state when it finally lands. Without this, selecting a project and
-    // adding material before the fetch returned discarded the addition: the
-    // response assigns the whole clip list, and it assigned the version from
-    // before the click.
-    const pending = projectId
-    auth(`/project/${projectId}`, {})
-        .then(e => {
-          if (pending !== loaded) return
-          // `e.edl` is the API's Edl document, {clips, duration}. This module's
-          // `Edl.edl` is the flat clips array -- it is indexed, mapped, sliced
-          // and reduced everywhere below. Assigning the document straight in
-          // gave `Edl.edl.map is not a function` on every render, which is why
-          // the timeline stayed empty even once projects had clips.
-          //
-          // Same word, two shapes. Worth remembering when reading either side.
-          Edl.edl = (e.edl && e.edl.clips) || []
-          Edl.current = 0
-          Edl.time = 0
-          Edl.update()
-        })
-        .catch(err => {
-          // Let the next attempt retry rather than pinning a failed id.
-          loaded = null
-          console.error('could not load the project timeline', err)
-        })
+    // Empty now, not when the response lands. The previous project's clips
+    // are not this one's, and leaving them up while the request is in flight
+    // made anything added meanwhile land on the wrong timeline. Not
+    // `Edl.update()`: this runs inside a render (oninit, onupdate), where
+    // mithril refuses a synchronous redraw.
+    Edl.edl = []
+    Edl.current = 0
+    Edl.time = 0
+    m.redraw()
+
+    if (projectId) fetchClips(projectId, mine, 0)
   }
+
+  const fetchClips = (projectId, mine, attempt) =>
+    auth(`/project/${projectId}`, {})
+      .then(e => {
+        // A newer load has started since; it owns the timeline now.
+        if (mine !== ticket) return
+        // `e.edl` is the API's Edl document, {clips, duration}. This module's
+        // `Edl.edl` is the flat clips array -- it is indexed, mapped, sliced
+        // and reduced everywhere below. Assigning the document straight in
+        // gave `Edl.edl.map is not a function` on every render, which is why
+        // the timeline stayed empty even once projects had clips.
+        //
+        // Same word, two shapes. Worth remembering when reading either side.
+        //
+        // Anything on the timeline now was added while this request was in
+        // flight, to this project, so it goes after the project's clips.
+        // Assigning the response outright discarded it: choose a project,
+        // add a clip before the fetch returned, and the clip vanished when it
+        // did -- then Save, finding nothing on the timeline, saved nothing.
+        // That was the save test failing on most runs.
+        Edl.edl = ((e.edl && e.edl.clips) || []).concat(Edl.edl)
+        Edl.current = 0
+        Edl.time = 0
+        Edl.update()
+      })
+      .catch(err => {
+        if (mine !== ticket) return
+        console.error('could not load the project timeline', err)
+        // Try again a few times if the failure might pass, without clearing
+        // anything added meanwhile.
+        //
+        // This used to forget the id instead, so the next redraw asked again
+        // -- and every answer redraws, so a project that does not exist was
+        // requested in a tight loop for as long as the page stayed open.
+        // Missing (404), malformed (422) or unauthorised (401, which auth()
+        // has already handled) will not change by asking again.
+        const code = err && err.code
+        if (code === 401 || code === 404 || code === 422 || attempt >= 3) return
+        setTimeout(() => {
+          if (mine === ticket) fetchClips(projectId, mine, attempt + 1)
+        }, 2000 * (attempt + 1))
+      })
 
   return {
     oninit: open,
