@@ -89,7 +89,33 @@ DEV_SKIP_AUTH = resolve_dev_skip_auth(environ)
 # the second: `.invalid` is the RFC's own "guaranteed not to resolve" TLD, but
 # pydantic's validator rejects reserved TLDs outright. RFC 2606 also reserves
 # the second-level domains example.com/net/org, which do validate.
-DEV_USER_EMAIL = environ.get('ALFRED_DEV_USER_EMAIL', 'dev@example.com')
+DEFAULT_DEV_USER_EMAIL = 'dev@example.com'
+DEV_USER_EMAIL = environ.get('ALFRED_DEV_USER_EMAIL', DEFAULT_DEV_USER_EMAIL)
+
+
+def resolve_seed_owner(env):
+    """Who owns the projects seeded into an empty database at startup.
+
+    Every project has an owner now, and the seeded ones are created by the
+    server rather than by anybody, so somebody has to be named.
+
+    ALFRED_SEED_OWNER names an account outright. Unset, development seeds
+    belong to the dev user -- the account ALFRED_DEV_SKIP_AUTH acts as -- so
+    the bypass opens onto the same projects it always did, and would keep
+    them even if that account stopped being a superuser. In production they
+    get no owner, which makes them superuser-only: a production server
+    should not hand its demo projects to an account named in a development
+    default.
+    """
+    explicit = env.get('ALFRED_SEED_OWNER')
+    if _given(explicit):
+        return explicit.strip()
+    if env.get('ALFRED_PRODUCTION'):
+        return None
+    return env.get('ALFRED_DEV_USER_EMAIL', DEFAULT_DEV_USER_EMAIL)
+
+
+SEED_OWNER = resolve_seed_owner(environ)
 
 DATA_DIR = environ.get('DATA_DIR', 'data')
 # Where finished renders are written, and therefore where anything wanting to

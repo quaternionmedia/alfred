@@ -166,3 +166,37 @@ def make_account(api, users, fresh_email, log_in, _password_hash):
         return Account(email=email, token=log_in(email), superuser=superuser)
 
     return make
+
+
+@pytest.fixture
+def make_project(api):
+    """`make_project(account, name=None, **fields)`: create one through the API."""
+
+    def make(account, name=None, **fields):
+        body = {'name': name or f'project {uuid.uuid4().hex[:8]}', 'logic': {}}
+        body.update(fields)
+        res = api.post('/project', json=body, headers=account.headers)
+        assert res.status_code == 200, res.text
+        return res.json()
+
+    return make
+
+
+@pytest.fixture
+def projects(db):
+    """The projects collection, under whatever name beanie gave it."""
+    from alfred.core.models import Project
+
+    return db[Project.get_motor_collection().name]
+
+
+@pytest.fixture
+def legacy_project(projects):
+    """A project stored before ownership existed: no `owner` field at all.
+
+    Inserted directly, because no API path can create one any more -- which
+    is the point.
+    """
+    document = {'name': f'legacy {uuid.uuid4().hex[:8]}', 'logic': {}, 'fields': []}
+    inserted = projects.insert_one(document)
+    return {'_id': str(inserted.inserted_id), 'name': document['name']}

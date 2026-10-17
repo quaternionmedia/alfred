@@ -8,7 +8,13 @@ from pydantic import ValidationError as PydanticValidationError
 from starlette.staticfiles import StaticFiles
 
 from alfred import docs
-from alfred.config import DATA_DIR, DEV_SKIP_AUTH, DEV_USER_EMAIL, STATIC_DIR
+from alfred.config import (
+    DATA_DIR,
+    DEV_SKIP_AUTH,
+    DEV_USER_EMAIL,
+    SEED_OWNER,
+    STATIC_DIR,
+)
 from alfred.core.models.users import UserRead, UserUpdate
 from alfred.core.routes import (
     ProjectAPI,
@@ -74,9 +80,11 @@ async def seedDb():
     # never fired and this block never ran. The import was also `from seed`,
     # which only resolves with alfred/ as the working directory.
     if await db.Project.count_documents({}) == 0:
-        from alfred.seed import seed
+        from alfred.seed import owned_by, seed
 
-        await db.Project.insert_many(seed)
+        # Owned like any other project. In development that is the dev user,
+        # so ALFRED_DEV_SKIP_AUTH still opens onto them; see SEED_OWNER.
+        await db.Project.insert_many(owned_by(SEED_OWNER, seed))
 
 
 @app.on_event('startup')

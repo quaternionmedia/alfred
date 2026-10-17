@@ -188,8 +188,9 @@ def test_seed_startup_awaits_the_count_and_imports_absolutely():
     source = inspect.getsource(main.seedDb)
 
     assert 'await db.Project.count_documents' in source
-    assert 'from alfred.seed import seed' in source
-    assert 'from seed import seed' not in source
+    # Absolute, whatever it imports: the hook also needs `owned_by` now.
+    assert 'from alfred.seed import' in source
+    assert 'from seed import' not in source
 
 
 def test_seed_payload_is_importable_and_shaped_like_projects():
