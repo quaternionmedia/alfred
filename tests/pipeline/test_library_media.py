@@ -80,6 +80,7 @@ def worker(tmp_path, monkeypatch):
     library = tmp_path / 'videos'
     library.mkdir()
     monkeypatch.setattr(config, 'VIDEO_DIR', str(library))
+    monkeypatch.setattr(config, 'RENDER_DIR', str(library / 'renders'))
 
     elsewhere = tmp_path / 'alfred'
     elsewhere.mkdir()
@@ -127,11 +128,16 @@ def test_a_library_clip_renders_to_a_playable_file(worker):
     )
 
     assert 'rendered' in worker.events, f'the task did not finish: {worker.events}'
-    out = worker.library / OUTPUT
+    out = worker.library / 'renders' / OUTPUT
     assert out.is_file() and out.stat().st_size > 0
     with VideoFileClip(str(out)) as produced:
         assert tuple(produced.size) == (160, 120)
         assert produced.duration == pytest.approx(1.0, abs=0.2)
+
+    # Written to RENDER_DIR, so not offered back as library media.
+    from alfred.core.utils.media import library_files
+
+    assert library_files(str(worker.library)) == ['bars.mp4']
 
 
 @pytest.mark.parametrize(

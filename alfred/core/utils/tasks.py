@@ -1,3 +1,4 @@
+from os import makedirs
 from os.path import join
 
 from celery import Celery, Task
@@ -87,10 +88,14 @@ def renderRemote(
         # anything outside the library; checking again here covers EDLs that
         # were stored before that check existed and are re-queued now.
         timeline = resolve_edl(Edl.parse_obj(edl))
+        # Into RENDER_DIR, not the media library: written beside the media, a
+        # render was listed by `GET /videos` and served by `/videos/{file}` to
+        # anyone signed in.
+        makedirs(config.RENDER_DIR, exist_ok=True)
         renderMultitrack(
             edl=timeline,
             audio=audio,
-            filename=join(config.VIDEO_DIR, filename),
+            filename=join(config.RENDER_DIR, filename),
             logger=log,
             moviesize=tuple(moviesize),
             fps=fps,
@@ -114,7 +119,7 @@ def renderRemote(
     # the absent ./cred.json as a directory, and the upload dies with
     # IsADirectoryError long after the video is safely on disk.
     try:
-        upload(filename, directory=config.VIDEO_DIR)
+        upload(filename, directory=config.RENDER_DIR)
     except Exception as e:
         print('render succeeded but the automatic upload did not', renderId, e)
         return

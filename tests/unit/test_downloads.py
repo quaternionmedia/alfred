@@ -40,8 +40,16 @@ def library(tmp_path, monkeypatch):
     root = tmp_path / 'videos'
     root.mkdir()
     monkeypatch.setattr(config, 'VIDEO_DIR', str(root))
+    (root / 'renders').mkdir()
+    monkeypatch.setattr(config, 'RENDER_DIR', str(root / 'renders'))
     monkeypatch.setattr(video, 'VIDEO_DIR', str(root))
     return root
+
+
+@pytest.fixture
+def renders(library):
+    """Where the worker writes finished renders (RENDER_DIR)."""
+    return library / 'renders'
 
 
 @pytest.fixture
@@ -116,21 +124,21 @@ class TestWholeAndPartialFiles:
         assert res.status_code == 416
 
 
-def stored(store, library, **fields):
+def stored(store, renders, **fields):
     """A render in the store, with its output file written if it finished."""
     render = make_render(**fields)
     render.filename = render.filename or f'{render.id}.mp4'
     store.renders[render.id] = render
     if render.status in ('RENDERED', 'UPLOADED'):
-        (library / render.filename).write_bytes(b'\x00\x00\x00\x18ftypmp42' * 1000)
+        (renders / render.filename).write_bytes(b'\x00\x00\x00\x18ftypmp42' * 1000)
     return render
 
 
 class TestTheDownloadRoute:
-    def test_a_finished_render_downloads_as_an_attachment(self, api, library):
+    def test_a_finished_render_downloads_as_an_attachment(self, api, renders):
         client, store = api
         render = stored(
-            store, library, status='RENDERED', display_name='Car-advert-64x48'
+            store, renders, status='RENDERED', display_name='Car-advert-64x48'
         )
         res = client.get(f'/render/{render.id}/download')
         assert res.status_code == 200
@@ -138,11 +146,11 @@ class TestTheDownloadRoute:
         assert res.headers['content-disposition'] == (
             'attachment; filename="Car-advert-64x48.mp4"'
         )
-        assert res.content == (library / render.filename).read_bytes()
+        assert res.content == (renders / render.filename).read_bytes()
 
-    def test_it_supports_ranges(self, api, library):
+    def test_it_supports_ranges(self, api, renders):
         client, store = api
-        render = stored(store, library, status='UPLOADED')
+        render = stored(store, renders, status='UPLOADED')
         res = client.get(
             f'/render/{render.id}/download', headers={'Range': 'bytes=0-9'}
         )
@@ -150,18 +158,18 @@ class TestTheDownloadRoute:
         assert len(res.content) == 10
         assert res.headers['content-range'].startswith('bytes 0-9/')
 
-    def test_a_render_without_a_display_name_gets_one(self, api, library):
+    def test_a_render_without_a_display_name_gets_one(self, api, renders):
         """Renders stored before display names existed."""
         client, store = api
         render = stored(
-            store, library, status='RENDERED', project='Old project', display_name=None
+            store, renders, status='RENDERED', project='Old project', display_name=None
         )
         res = client.get(f'/render/{render.id}/download')
         assert 'filename="Old-project-64x48.mp4"' in res.headers['content-disposition']
 
-    def test_a_stored_display_name_is_sanitised_again(self, api, library):
+    def test_a_stored_display_name_is_sanitised_again(self, api, renders):
         client, store = api
-        render = stored(store, library, status='RENDERED', display_name='../x"; y')
+        render = stored(store, renders, status='RENDERED', display_name='../x"; y')
         disposition = client.get(f'/render/{render.id}/download').headers[
             'content-disposition'
         ]
@@ -170,37 +178,61 @@ class TestTheDownloadRoute:
     @pytest.mark.parametrize(
         'status,progress', [(None, None), (None, 40), ('failed', 0)]
     )
-    def test_an_unfinished_render_is_a_409(self, api, library, status, progress):
+    def test_an_unfinished_render_is_a_409(self, api, renders, status, progress):
         """Mid-render the file exists and is not yet a video."""
         client, store = api
-        render = stored(store, library, status=status, progress=progress)
-        (library / render.filename).write_bytes(b'partial')
+        render = stored(store, renders, status=status, progress=progress)
+        (renders / render.filename).write_bytes(b'partial')
         assert client.get(f'/render/{render.id}/download').status_code == 409
 
-    def test_a_finished_render_whose_file_is_gone_is_a_409(self, api, library):
+    def test_a_finished_render_whose_file_is_gone_is_a_409(self, api, renders):
         client, store = api
-        render = stored(store, library, status='RENDERED')
-        (library / render.filename).unlink()
+        render = stored(store, renders, status='RENDERED')
+        (renders / render.filename).unlink()
         assert client.get(f'/render/{render.id}/download').status_code == 409
 
     def test_a_stored_name_outside_the_output_directory_finds_nothing(
-        self, api, library, tmp_path
+        self, api, renders, tmp_path
     ):
         """Old renders' names came from the request, `../` and all."""
         client, store = api
         (tmp_path / 'secret.mp4').write_bytes(b'not yours')
-        render = stored(store, library, status='RENDERED', filename='../secret.mp4')
+        render = stored(store, renders, status='RENDERED', filename='../secret.mp4')
         assert client.get(f'/render/{render.id}/download').status_code == 409
 
-    def test_someone_else_s_render_is_a_404(self, api, library):
+    def test_a_render_finished_before_the_render_directory_still_downloads(
+        self, api, library
+    ):
+        """Finished renders used to be written into the media library itself,
+        under their old composite names."""
         client, store = api
-        render = stored(store, library, status='RENDERED')
+        render = make_render(
+            status='RENDERED', filename='demo_320x180_1.0s_20260101-000000_x.mp4'
+        )
+        store.renders[render.id] = render
+        (library / render.filename).write_bytes(b'an old render')
+        res = client.get(f'/render/{render.id}/download')
+        assert res.status_code == 200
+        assert res.content == b'an old render'
+
+    def test_renders_are_not_part_of_the_media_library(self, api, renders):
+        """Written beside the media, every user's renders were listed to
+        everyone, and served to anyone who asked by name."""
+        client, store = api
+        render = stored(store, renders, status='RENDERED')
+        assert client.get('/videos').json() == []
+        assert client.get(f'/videos/{render.filename}').status_code == 404
+        assert client.get('/videos/renders').status_code == 404
+
+    def test_someone_else_s_render_is_a_404(self, api, renders):
+        client, store = api
+        render = stored(store, renders, status='RENDERED')
         as_user(app, STRANGER)
         assert client.get(f'/render/{render.id}/download').status_code == 404
 
-    def test_a_superuser_can_download_any_render(self, api, library):
+    def test_a_superuser_can_download_any_render(self, api, renders):
         client, store = api
-        render = stored(store, library, status='RENDERED')
+        render = stored(store, renders, status='RENDERED')
         as_user(app, ADMIN)
         assert client.get(f'/render/{render.id}/download').status_code == 200
 

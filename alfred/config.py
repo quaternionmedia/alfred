@@ -1,4 +1,5 @@
 from os import environ
+from os.path import join
 
 PRODUCTION = environ.get('ALFRED_PRODUCTION')
 
@@ -58,12 +59,26 @@ DEV_SKIP_AUTH = resolve_dev_skip_auth(environ)
 DEV_USER_EMAIL = environ.get('ALFRED_DEV_USER_EMAIL', 'dev@example.com')
 
 DATA_DIR = environ.get('DATA_DIR', 'data')
-# Where finished renders are written, and therefore where anything wanting to
-# read one has to look. It was a bare 'videos' literal inside the Celery task,
-# so nothing else could agree with it without repeating the string -- and the
+# The media library: what `GET /videos` lists and clips name as
+# `videos/<file>`. It was a bare 'videos' literal inside the Celery task, so
+# nothing else could agree with it without repeating the string -- and the
 # delivery endpoint duly looked in DATA_DIR instead and found nothing.
 VIDEO_DIR = environ.get('VIDEO_DIR', 'videos')
 STATIC_DIR = environ.get('STATIC_DIR', 'dist')
+
+# Where the worker writes finished renders, and the download route reads them.
+# Inside the media library by default, so the ./videos mount the api and the
+# worker already share covers it -- but in a subdirectory, which neither
+# `GET /videos` nor `GET /videos/{file}` reaches into. Renders used to be
+# written beside the media, so every user's output was listed to everyone
+# signed in and served to anyone who asked for it by name.
+RENDER_DIR = environ.get('ALFRED_RENDER_DIR', join(VIDEO_DIR, 'renders'))
+
+# Where the `local` destination copies a delivered render. Deliberately not
+# under DATA_DIR: that directory is served by an unauthenticated static mount,
+# so a local delivery was a public link to somebody's video. A delivered
+# render's `link` is the authenticated download route instead.
+DELIVERY_DIR = environ.get('ALFRED_DELIVERY_DIR', 'deliveries')
 
 
 def parse_hosts(value):

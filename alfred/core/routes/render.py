@@ -6,7 +6,6 @@ from fastapi import Depends, HTTPException
 from fastapi_crudrouter import MotorCRUDRouter
 from pydantic import BaseModel
 
-from alfred import config
 from alfred.config import DB_NAME, DB_URL
 
 from ..models import UserRead as User
@@ -22,7 +21,12 @@ from ..models.render import (
 from ..responses import PartialFileResponse
 from ..utils.bucket import INVALID_ID, NOT_FOUND, generate_signed_url
 from ..utils.db import get_client
-from ..utils.destinations import DeliveryError, get_destination
+from ..utils.destinations import (
+    Delivery,
+    DeliveryError,
+    LocalDestination,
+    get_destination,
+)
 from ..utils.encoding import QUALITIES, UnknownQuality, preset_for
 from ..utils.media import RefusedEdl, check_edl, output_path
 from ..utils.tasks import renderRemote
@@ -187,10 +191,15 @@ def finished_output(render: Render) -> str:
     """
     if render_state(render.status, render.progress) != 'rendered':
         raise NO_OUTPUT
-    path = output_path(render.filename, config.VIDEO_DIR)
+    path = output_path(render.filename)
     if path is None:
         raise NO_OUTPUT
     return path
+
+
+def download_path(render: Render) -> str:
+    """The route a render's owner downloads it from."""
+    return f'/render/{render.id}/download'
 
 
 def download_name(render: Render) -> str:
@@ -436,6 +445,15 @@ class RenderAPI(MotorCRUDRouter):
                 # retrying, which a 500 does not suggest.
                 raise HTTPException(status_code=502, detail=str(exc)) from exc
 
+            # A local delivery's location is a path on the server, which is
+            # of no use to the caller -- and the copy used to sit under the
+            # public /data mount, so the path doubled as anyone's link to it.
+            # What its owner can use is the download route, so that is the
+            # link recorded and returned.
+            if delivery.destination == LocalDestination.name:
+                delivery = Delivery(
+                    destination=delivery.destination, location=download_path(render)
+                )
             await store.update(
                 render.id,
                 {'destination': delivery.destination, 'link': delivery.location},

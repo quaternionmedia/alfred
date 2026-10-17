@@ -1,12 +1,14 @@
+import os
 from os import makedirs
 from os.path import join
+from tempfile import mkstemp
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
-from otto.getdata import timestr
 from otto.models import Clip, Edl, TemplateData
 from otto.render import generateEdl
+from starlette.background import BackgroundTask
 
 from alfred.config import DATA_DIR
 
@@ -31,11 +33,30 @@ def frame_path():
     Found by asking whether the same request twice returns the same bytes. It
     did not: 2049 against 1588.
 
-    The timestamp stays for legibility when looking at the directory; the
-    random suffix is what makes it unique.
+    And a name nobody can guess, because the name is all that stands between
+    a frame and anyone who asks for it: DATA_DIR is served by an
+    unauthenticated static mount, which is how the form flow's preview shows
+    the frame in an `<img>`. It was a second-resolution timestamp and eight
+    hex digits -- every frame made in a given second was one of four billion
+    names. A random UUID alone is 122 bits.
     """
     makedirs(DATA_DIR, exist_ok=True)
-    return join(DATA_DIR, f'{timestr()}-{uuid4().hex[:8]}.jpg')
+    return join(DATA_DIR, f'{uuid4().hex}.jpg')
+
+
+def private_frame_path():
+    """A temporary file outside every served directory, for a frame that is
+    returned in the response itself and not needed afterwards."""
+    handle, path = mkstemp(prefix='alfred-frame-', suffix='.jpg')
+    os.close(handle)
+    return path
+
+
+def remove_quietly(path):
+    try:
+        os.remove(path)
+    except OSError:
+        pass
 
 
 # Query parameters that describe the frame rather than the template itself.
@@ -122,11 +143,16 @@ async def previewTemplate(
     # save. `GET /preview/template/title` with no `text` answered 500, which
     # says the server is broken when the truth is that the request was
     # incomplete. The editor showed a blank frame either way.
+    # Written privately and deleted once sent. This route returns the image
+    # itself, so nothing needs the file afterwards -- and it was written under
+    # DATA_DIR, which the unauthenticated /data mount serves, and kept there
+    # for good: every frame anyone previewed stayed public.
+    frame_name = private_frame_path()
     try:
         video = generateEdl(Edl(clips=[clip]), moviesize=(width, height))
-        frame_name = frame_path()
         video.save_frame(frame_name, t=t, withmask=False)
     except Exception as exc:
+        remove_quietly(frame_name)
         raise HTTPException(
             status_code=422,
             detail=(
@@ -135,4 +161,8 @@ async def previewTemplate(
             ),
         ) from exc
 
-    return FileResponse(frame_name, media_type='image/jpeg')
+    return FileResponse(
+        frame_name,
+        media_type='image/jpeg',
+        background=BackgroundTask(remove_quietly, frame_name),
+    )
