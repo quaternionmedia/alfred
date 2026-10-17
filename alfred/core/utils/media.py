@@ -45,9 +45,9 @@ LIBRARY_PREFIX = 'videos/'
 # Clip types whose `name` is media to open, as opposed to a template to call.
 MEDIA_CLIP_TYPES = frozenset({'video', 'image', 'audio'})
 
-# Every clip type the engine renders. Anything else is refused before it gets
-# there: at the pinned engine an unknown type is either an UnboundLocalError
-# or, after a valid clip, a silent copy of the previous clip's picture.
+# Every clip type the engine renders. Anything else is refused here, when the
+# request arrives; the engine refuses it too, but only once a worker has the
+# job, after the render has been stored and queued.
 CLIP_TYPES = frozenset({'template'}) | MEDIA_CLIP_TYPES
 
 # What the library offers: files a video, image or audio clip can open.

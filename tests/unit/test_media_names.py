@@ -270,8 +270,9 @@ class TestOnlyMediaIsLibraryMedia:
     @pytest.mark.parametrize(
         'name',
         [
-            # otto muxes a render's sound from a temporary beside the output
-            '6ad3cdc433bc85ee116c7577.mp4.audio.m4a',
+            # otto muxes a render's sound from a temporary beside the output,
+            # named as test_output_selection.py shows the engine naming it
+            '6ad3cdc433bc85ee116c7577.audio.m4a',
             'clip.audio.m4a',
             # moviepy's own temporaries
             'clipTEMP_MPY_wvf_snd.mp4',

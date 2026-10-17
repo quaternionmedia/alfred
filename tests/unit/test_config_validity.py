@@ -16,7 +16,7 @@ an API-visible behavior change and therefore a decision, recorded in
 
 import pytest
 from beanie.exceptions import CollectionWasNotInitialized
-from otto.exceptions import EmptyClipsException
+from otto.exceptions import EdlException, EmptyClipsException
 from otto.models import Clip, Edl
 from otto.models import Render as OttoRender
 from otto.render import generateEdl
@@ -247,6 +247,31 @@ def test_empty_edl_is_only_rejected_at_render_time():
     """
     with pytest.raises(EmptyClipsException):
         generateEdl(Edl(clips=[]))
+
+
+@pytest.mark.parametrize(
+    'overrides,field',
+    [
+        (dict(inpoint=5.0, outpoint=1.0), 'outpoint'),
+        (dict(inpoint=-3.0), 'inpoint'),
+        (dict(duration=-5.0, outpoint=None), 'duration'),
+        (dict(opacity=4.2), 'opacity'),
+        (dict(resize=0.0), 'resize'),
+    ],
+    ids=['inverted-in-out', 'negative-inpoint', 'duration', 'opacity', 'resize'],
+)
+def test_what_the_model_accepts_the_engine_refuses_at_render_time(overrides, field):
+    """The invariants above have the empty EDL's shape now.
+
+    Accepted at the API boundary, then refused by the engine, which names the
+    clip and the field -- where it used to render nonsense or crash somewhere
+    unrelated. A template clip, so nothing is fetched whatever order the
+    engine checks things in.
+    """
+    template = dict(type='template', name='makeColor', data={'color': '#000000'})
+    clip = Clip.parse_obj(clip_dict(**template, **overrides))
+    with pytest.raises(EdlException, match=rf"clip 0 \('makeColor'\): .*{field}"):
+        generateEdl(Edl(clips=[clip]), moviesize=(64, 48))
 
 
 @pytest.mark.xfail(reason='an empty clip list should be rejected at validation')
