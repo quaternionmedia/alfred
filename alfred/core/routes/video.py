@@ -1,12 +1,11 @@
-from os import listdir, makedirs
-from os.path import join
+from os import makedirs
 
-from fastapi import APIRouter, Header
-from starlette.responses import Response
+from fastapi import APIRouter, HTTPException
 
 from alfred.config import VIDEO_DIR
 
 from ..responses import PartialFileResponse
+from ..utils.media import LIBRARY_PREFIX, library_file, library_files
 
 videoAPI = APIRouter()
 
@@ -14,27 +13,41 @@ videoAPI = APIRouter()
 @videoAPI.get('/videos')
 async def getVideos():
     """# videos
-    Get a list of all videos available locally on this instance"""
+    Get a list of all videos available locally on this instance.
+
+    Each entry is a media name a clip can use as it is: `videos/<file>`.
+    """
     # VIDEO_DIR rather than a bare 'videos' literal, and created if absent.
     # This listed a path relative to the working directory while the route
     # below hardcoded /app/videos -- two ways of naming one directory, in one
     # file, and `listdir` on a missing directory is a 500 rather than an empty
     # list, so a fresh install could not ask what media it had.
+    #
+    # Files only, and only names a render accepts back. This listed every
+    # directory entry, so a subdirectory showed up as media no clip could use.
+    # What is listed here and what POST /render accepts are now one rule.
     makedirs(VIDEO_DIR, exist_ok=True)
-    return [join('videos', f) for f in sorted(listdir(VIDEO_DIR))]
+    return [LIBRARY_PREFIX + name for name in library_files(VIDEO_DIR)]
 
 
 @videoAPI.get(
     '/videos/{video}',
     responses={
-        206: {'content': {'video/mp4': {}}, 'description': 'partial video response'}
+        206: {'content': {'video/mp4': {}}, 'description': 'the requested range'},
+        404: {'description': 'no such file in the media library'},
     },
 )
-async def buffer(video: str, response: Response, bits: int = Header(0)):
+async def buffer(video: str):
     """# video
     Get a specific video by filename.
 
-    Returns an `HTTP 206 Partial Content` response,
-    allowing the client to jump to a specific potion of a large video file.
+    The whole file when there is no `Range` header, and `206 Partial Content`
+    for the requested range when there is one, so a player can seek.
     """
-    return PartialFileResponse(join(VIDEO_DIR, video))
+    # Contained and existing, or 404. A name that did not exist was a 500, and
+    # the path parameter was joined onto the media directory with no
+    # containment check -- safe only because `{video}` cannot match a `/`.
+    path = library_file(video, VIDEO_DIR)
+    if path is None:
+        raise HTTPException(status_code=404, detail='No such file in the media library')
+    return PartialFileResponse(path)

@@ -11,6 +11,8 @@ from otto.render import generateEdl
 from alfred.config import DATA_DIR
 
 from ..models.render import Render
+from ..utils.media import RefusedEdl, resolve_edl
+from .render import refuse_unrenderable
 from .templates import TEMPLATE_NAMES
 
 previewAPI = APIRouter()
@@ -48,11 +50,19 @@ async def previewFrame(t: float, render: Render):
      Returns the name of a file on this server when available, or a relevant error
     """
     print('previewing', render.edl, 'at frame', t)
+    # The same checks as a render (C4 and the template allowlist), then the
+    # same resolution the worker does. Previewing opened clip names against
+    # the api's working directory, which happens to hold `videos/` -- so a
+    # clip previewed fine and then failed to render -- and opened absolute
+    # paths and fetched URLs exactly as sent.
+    refuse_unrenderable(render.edl)
+    try:
+        timeline = resolve_edl(Edl(clips=render.edl.clips))
+    except RefusedEdl as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     # TODO: reduce clips to active clips
     # active = [c for c in render.edl.clips if t >= (c.start or 0) + (c.offset or 0)]
-    video = generateEdl(
-        Edl(clips=render.edl.clips), moviesize=(render.width, render.height)
-    )
+    video = generateEdl(timeline, moviesize=(render.width, render.height))
     frame_name = frame_path()
     print(f'saving frame {t} as: {frame_name}', video)
     video.save_frame(frame_name, t=t, withmask=False)

@@ -64,13 +64,23 @@ services:
       # file the worker actually produced rather than guessing from its own
       # working directory.
       - VIDEO_DIR=/app/videos
+      # Same passthrough as the renderer's: hosts a clip may name remote media
+      # on, empty unless you ask for it.
+      - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
 
   renderer:
     build:
       context: .
       dockerfile: ./Dockerfile
     image: alfred_worker
-    entrypoint: celery -A alfred.core.utils.tasks:renderer --workdir /app/alfred -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
+    # No `--workdir`: the image's own WORKDIR, /app, is the right one. The
+    # worker was started in /app/alfred only so that a stale `core.utils.tasks`
+    # entry in the Celery app's `include` would import -- and from there every
+    # library clip (`videos/x.mp4`) resolved to /app/alfred/videos, which does
+    # not exist, so no render with a media clip could succeed. The include is
+    # fixed and the worker resolves media against VIDEO_DIR itself now, so the
+    # working directory no longer decides what a clip name means.
+    entrypoint: celery -A alfred.core.utils.tasks:renderer -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
     networks:
       - alfred_isolated
     volumes:
@@ -107,12 +117,17 @@ services:
       - DB_NAME=alfred
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
       # Absolute, because a relative path here depends on a working directory
-      # nobody sets deliberately. Celery is started with `--workdir
+      # nobody sets deliberately. Celery was started with `--workdir
       # /app/alfred`, so a bare `videos/` resolved to /app/alfred/videos --
       # which does not exist -- while the mount is at /app/videos. Every render
       # died on "Error opening output videos/....mp4: No such file or
       # directory", recorded as a failed render and nowhere else.
       - VIDEO_DIR=/app/videos
+      # Hosts a clip may name remote media on; empty unless you ask for it:
+      #   ALFRED_REMOTE_MEDIA_HOSTS=storage.googleapis.com ./al dev
+      # The worker refuses any other URL rather than downloading it. The api
+      # reads the same setting and refuses first.
+      - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
 
   db:
     ports:

@@ -65,6 +65,26 @@ DATA_DIR = environ.get('DATA_DIR', 'data')
 VIDEO_DIR = environ.get('VIDEO_DIR', 'videos')
 STATIC_DIR = environ.get('STATIC_DIR', 'dist')
 
+
+def parse_hosts(value):
+    """A comma-separated host list, normalised for comparison.
+
+    Lowercased and stripped, empty entries dropped. A frozenset so the
+    setting cannot be mutated by whatever imports it.
+    """
+    return frozenset(
+        host.strip().lower() for host in (value or '').split(',') if host.strip()
+    )
+
+
+# Hosts a clip may name as remote media (`https://<host>/...`). Empty unless
+# configured, so by default only the media library can be rendered.
+#
+# The engine downloads any http(s) URL a clip names, from the worker and from
+# the api when previewing, so without a list this is a request to anywhere
+# those processes can reach -- including addresses on their own network.
+REMOTE_MEDIA_HOSTS = parse_hosts(environ.get('ALFRED_REMOTE_MEDIA_HOSTS', ''))
+
 DB_URL = environ.get('DB_URL')
 DB_NAME = environ.get('DB_NAME', 'db')
 

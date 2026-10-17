@@ -5,19 +5,24 @@ from otto.models import Edl
 from otto.render import renderMultitrack
 
 from alfred import config
-from alfred.config import VIDEO_DIR
 
 from .bucket import upload
 from .logger import DbLogger
+from .media import resolve_edl
 
 renderer = Celery(
     'renderer',
     backend=config.CELERY_BACKEND,
     broker=config.CELERY_BROKER,
-    include=[
-        'alfred.core.utils',
-        'core.utils.tasks',
-    ],
+    # The module that defines the tasks, by its package name.
+    #
+    # This also listed 'core.utils.tasks', which only imports with alfred/ as
+    # the working directory -- the reason the worker was started with
+    # `--workdir /app/alfred`. Importing the same file under a second name
+    # registered every task twice (`core.utils.tasks.renderRemote` beside the
+    # real one), and the working directory it forced is what made a library
+    # path like `videos/x.mp4` resolve to /app/alfred/videos, where nothing is.
+    include=['alfred.core.utils.tasks'],
 )
 
 renderer.config_from_object(config.CeleryConfig)
@@ -44,10 +49,17 @@ def renderRemote(
 ):
     try:
         self.log = DbLogger(self, renderId)
+        # Media names resolved here, against VIDEO_DIR, rather than handed to
+        # the engine as sent. The engine opens a relative name against the
+        # worker's working directory, which is not where the library is, and
+        # an absolute one wherever it points. The api has already refused
+        # anything outside the library; checking again here covers EDLs that
+        # were stored before that check existed and are re-queued now.
+        timeline = resolve_edl(edl if isinstance(edl, Edl) else Edl.parse_obj(edl))
         renderMultitrack(
-            edl=edl,
+            edl=timeline,
             audio=audio,
-            filename=join(VIDEO_DIR, filename),
+            filename=join(config.VIDEO_DIR, filename),
             logger=self.log,
             moviesize=moviesize,
             fps=fps,
@@ -72,7 +84,7 @@ def renderRemote(
     # the absent ./cred.json as a directory, and the upload dies with
     # IsADirectoryError long after the video is safely on disk.
     try:
-        upload(filename, directory=VIDEO_DIR)
+        upload(filename, directory=config.VIDEO_DIR)
     except Exception as e:
         print('render succeeded but the automatic upload did not', renderId, e)
         return

@@ -13,8 +13,29 @@ from ..models.render import Render, RenderUpdate
 from ..utils.bucket import INVALID_ID, NOT_FOUND, generate_signed_url
 from ..utils.db import get_client
 from ..utils.destinations import DeliveryError, get_destination
+from ..utils.media import RefusedEdl, check_edl
 from ..utils.tasks import renderRemote
+from .templates import TEMPLATE_NAMES
 from .users import current_active_superuser, current_active_user
+
+
+def refuse_unrenderable(edl):
+    """422 for an EDL the engine should not be handed; nothing otherwise.
+
+    Before anything is stored or queued, so a refused request leaves no trace:
+    no render document, no job, no failed render to explain later. The
+    detail names the clip and the reason (see `utils.media`).
+
+    Covers the media contract (C4) -- library paths and allowed URLs only --
+    and the template allowlist, which until now only the single-template
+    preview checked. Everything else reached `getattr(otto.templates, name)`
+    with a name from the request, and otto's template namespace holds helpers
+    such as `rgbToDec` beside the templates.
+    """
+    try:
+        check_edl(edl, TEMPLATE_NAMES)
+    except RefusedEdl as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 class RenderAPI(MotorCRUDRouter):
@@ -48,6 +69,7 @@ class RenderAPI(MotorCRUDRouter):
         async def queueRender(
             render: Render, user: User = Depends(current_active_user)
         ):
+            refuse_unrenderable(render.edl)
             render.username = user.email
             # TODO: rework to async logic
             result = await self.schema.insert_one(render)
@@ -83,6 +105,9 @@ class RenderAPI(MotorCRUDRouter):
         ):
             render = await self.schema.find_one({'_id': ObjectId(id)})
             print('rerendering!', id, render)
+            # A stored EDL is checked like a new one: it may predate the media
+            # contract, and re-queueing it must not reopen what that closed.
+            refuse_unrenderable(render.edl)
             renderRemote.delay(
                 edl=render.edl,
                 renderId=ObjectId(id),
