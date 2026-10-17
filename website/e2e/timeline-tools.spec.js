@@ -158,3 +158,121 @@ test.describe('by touch', () => {
     expect(await seconds(authedPage)).toBe(0)
   })
 })
+
+test.describe('cut', () => {
+  /**
+   * # Recipe: cutting a clip in two
+   *
+   * Choose the scissors and press a clip where it should split: the playhead
+   * goes there and the clip becomes two. Or put the playhead anywhere and
+   * press S. Either half can then be trimmed, moved or deleted on its own.
+   */
+
+  test('a media clip becomes two windows onto its file that meet', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const project = await openMediaProject(authedPage, request, token)
+    const sent = await captureRenders(authedPage)
+    const [media, rest] = project.edl.clips
+    expect(media.type).toBe('video')
+
+    await authedPage.locator('#TTools [data-tool="cut"]').click()
+    const clip = authedPage.locator('#timeline .clip').first()
+    const box = await clip.boundingBox()
+    await clip.click({ position: { x: box.width * 0.4, y: box.height / 2 } })
+
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)
+    const edl = await sentTimeline(authedPage, sent)
+    const [first, second, third] = edl.clips
+    const at = media.duration * 0.4
+
+    expect(first.name).toBe(media.name)
+    expect(first.inpoint).toBe(media.inpoint)
+    expect(first.duration).toBeCloseTo(at, 1)
+    expect(first.outpoint).toBeCloseTo(media.inpoint + first.duration, 3)
+
+    expect(second.name).toBe(media.name)
+    // The second half starts in the file where the first ends...
+    expect(second.inpoint).toBeCloseTo(first.outpoint, 3)
+    // ...and ends where the original did.
+    expect(second.outpoint).toBeCloseTo(media.inpoint + media.duration, 3)
+    expect(first.duration + second.duration).toBeCloseTo(media.duration, 3)
+
+    // On the timeline they are back to back, and nothing after them moved.
+    expect(second.start).toBeCloseTo(first.duration, 3)
+    expect(third.name).toBe(rest.name)
+    expect(third.start).toBeCloseTo(media.duration, 3)
+    expect(edl.duration).toBeCloseTo(media.duration + rest.duration, 3)
+
+    // The playhead is at the cut.
+    await expect.poll(() => seconds(authedPage)).toBeCloseTo(at, 1)
+  })
+
+  test('a template clip becomes two of the same template, edited separately', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const sent = await captureRenders(authedPage)
+    await authedPage.goto('/#!/?stage=edit')
+    await authedPage.locator('#bin .binclip[data-bin-name="title"] .binadd').click()
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(1)
+
+    await authedPage.locator('#TTools [data-tool="cut"]').click()
+    const clip = authedPage.locator('#timeline .clip').first()
+    const box = await clip.boundingBox()
+    await clip.click({ position: { x: box.width / 2, y: box.height / 2 } })
+    await expect(authedPage.locator('#timeline .clip.template[name="title"]')).toHaveCount(2)
+
+    // The playhead is on the second half, so that is the one the settings
+    // beside the viewer belong to. Changing it leaves the first alone.
+    await expect(authedPage.locator('#template-params h4')).toContainText('clip 2')
+    await authedPage.locator('#param-text').fill('Second half')
+    await expect(authedPage.locator('#timeline .clip').nth(1)).toHaveText('Second half')
+    await expect(authedPage.locator('#timeline .clip').first()).toHaveText('Your text here')
+
+    await authedPage.locator('#stage-render').click()
+    await authedPage.locator('#queue-render').click()
+    await expect.poll(() => sent.length).toBe(1)
+    const [a, b] = sent[0].edl.clips
+    expect(a).toMatchObject({ name: 'title', start: 0, data: { text: 'Your text here' } })
+    expect(b).toMatchObject({ name: 'title', data: { text: 'Second half' } })
+    expect(a.duration).toBeCloseTo(2.5, 1)
+    expect(b.start).toBeCloseTo(a.duration, 3)
+    expect(a.duration + b.duration).toBeCloseTo(5, 3)
+    // A template is drawn fresh for its length; it has no in-point to move.
+    expect(b).not.toHaveProperty('inpoint')
+  })
+
+  test('S splits the clip under the playhead, whatever the tool', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    await openMediaProject(authedPage, request, token)
+    // The time tool: put the playhead half way through the first clip.
+    const clip = authedPage.locator('#timeline .clip').first()
+    const box = await clip.boundingBox()
+    await clip.click({ position: { x: box.width / 2, y: box.height / 2 } })
+    await expect.poll(() => seconds(authedPage)).toBeGreaterThan(0)
+
+    await authedPage.keyboard.press('s')
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)
+  })
+
+  test('a cut at the very edge of a clip says why it did nothing', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const project = await openMediaProject(authedPage, request, token)
+    // At 0 the playhead is at the start of the first clip: nothing to cut.
+    await authedPage.keyboard.press('s')
+    await expect(
+      authedPage.locator('.ajs-message').filter({ hasText: /too close/i }).first()
+    ).toBeVisible()
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(project.edl.clips.length)
+  })
+})

@@ -13,15 +13,11 @@ const { test, expect } = require('./fixtures')
  * every other button, so it is addressed by title here. The other two are
  * dropped; they identified no nameable control.
  */
-const TOOLS = [
-  'time selector',
-  'trim',
-  'move',
-  'cut',
-  'slip',
-  'slide',
-  'dual roller',
-]
+// The timeline tools, by `data-tool` rather than by title: a tool's title is
+// its tooltip, and the tooltip is where it explains itself -- the cut tool
+// says how to use it, and the tools not built yet say that.
+const TOOLS = ['time', 'trim', 'move', 'cut']
+const NOT_YET = ['slip', 'slide', 'dual roller']
 
 // The seek controls, by title. Play is checked separately by id: its title
 // is the action it will perform, so it reads "play" when stopped and "pause"
@@ -41,8 +37,43 @@ test.describe('otto editor', () => {
     await authedPage.goto('/#!/otto')
   })
 
+  test('edit tools are present', async ({ authedPage }) => {
+    for (const tool of TOOLS) {
+      const control = authedPage.locator(`#TTools [data-tool="${tool}"]`)
+      await expect(control, `missing tool: ${tool}`).toBeVisible()
+      await expect(control).not.toHaveClass(/disabled/)
+    }
+  })
+
+  test('tools that are not built yet say so, and do not pretend', async ({
+    authedPage,
+  }) => {
+    /**
+     * Slip, slide and dual roller could be chosen -- they lit up like the
+     * others -- and then did nothing to any clip. They are visibly disabled
+     * now, with a title saying why, and choosing one says so too.
+     */
+    const active = () =>
+      authedPage
+        .locator('#TTools [aria-pressed="true"]')
+        .evaluateAll(nodes => nodes.map(n => n.dataset.tool))
+
+    for (const tool of NOT_YET) {
+      const control = authedPage.locator(`#TTools [data-tool="${tool}"]`)
+      await expect(control).toBeVisible()
+      await expect(control).toHaveClass(/disabled/)
+      await expect(control).toHaveAttribute('aria-disabled', 'true')
+      await expect(control).toHaveAttribute('title', /not yet/i)
+
+      await control.click()
+      expect(await active(), `choosing ${tool} changed the tool`).toEqual(['time'])
+      await expect(
+        authedPage.locator('.ajs-message').filter({ hasText: /not available yet/i }).first()
+      ).toBeVisible()
+    }
+  })
+
   for (const [group, titles] of Object.entries({
-    'edit tools': TOOLS,
     'transport controls': TRANSPORT,
     'speed controls': SPEED,
   })) {

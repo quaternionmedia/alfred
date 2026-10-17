@@ -7,6 +7,7 @@ import { Video, Edl, array_move } from './Video'
 import { Preview } from './Preview'
 import { Player } from './Player'
 import { auth } from './Login'
+import { cutAtPlayhead } from './TimelineTools'
 
 // How far a press may wander and still count as a tap. Past this it is a drag
 // -- on a touch screen, usually the start of scrolling the timeline -- and
@@ -92,8 +93,8 @@ export function Clip() {
             startStyle: element.style.width,
           }
           capture(e.pointerId)
-        } else if (tool === 'time') {
-          gesture = { kind: 'tap', id: e.pointerId, x: e.clientX, y: e.clientY }
+        } else if (tool === 'time' || tool === 'cut') {
+          gesture = { kind: 'tap', tool, id: e.pointerId, x: e.clientX, y: e.clientY }
         }
       })
 
@@ -113,6 +114,7 @@ export function Clip() {
       element.addEventListener('pointerup', e => {
         if (!gesture || e.pointerId !== gesture.id) return
         if (gesture.kind === 'trim') return finishTrim(true)
+        const tool = gesture.tool
         gesture = null
         // Where along the clip, from the clip's own box. `offsetX` is
         // relative to whichever child was under the pointer -- the name, the
@@ -124,6 +126,9 @@ export function Clip() {
         // `Edl.time` directly moved the playhead marker and left the
         // preview showing whatever it had been showing.
         Player.seek(at)
+        // The cut tool is a razor: the playhead goes where you pressed, and
+        // the clip under it splits there.
+        if (tool === 'cut') cutAtPlayhead()
       })
 
       // The browser took the pointer back (it is scrolling, or the clip went

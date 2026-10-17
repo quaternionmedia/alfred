@@ -2,6 +2,7 @@ import m from 'mithril'
 import { Video, Edl } from './Video'
 import { Player } from './Player'
 import { authBlob, blobProblem } from './Download'
+import { cutAtPlayhead } from './TimelineTools'
 var state = require("./Globals").state
 
 const urlfy = obj => Object
@@ -253,6 +254,12 @@ export var Preview = () => {
           case 'End':
             e.preventDefault()
             Player.seek(Edl.duration())
+            break
+          // Split at the playhead, whichever tool is chosen.
+          case 'KeyS':
+            if (e.ctrlKey || e.metaKey || e.altKey) break
+            e.preventDefault()
+            cutAtPlayhead()
             break
         }
       }
