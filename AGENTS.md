@@ -53,12 +53,13 @@ what was actually verified.
 
 ## What Alfred is
 
-A video editor that runs without a server dependency, built as a **small
-control plane** (`alfred/`) orchestrating a **render engine** (`otto`, a
-separate public QM package consumed as `al-otto` and vendored at
-`alfred/otto`). The seam owns auth, project and render lifecycle state,
-and orchestration; it does not own video handling. Keep it that way — see
-the control-plane record in `governance/qm/adr/`.
+A browser video editor whose previews and renders are all made server-side,
+by a self-hosted stack built as a **small control plane** (`alfred/`)
+orchestrating a **render engine** (`otto`, a separate public QM package
+consumed as `al-otto` and vendored at `alfred/otto`). The seam owns auth,
+project and render lifecycle state, and orchestration; it does not own video
+handling. Keep it that way — see the control-plane record in
+`governance/qm/adr/`.
 
 - `alfred/core/routes/` — API surface (FastAPI routers)
 - `alfred/core/models/` — Beanie/Pydantic documents
@@ -69,7 +70,7 @@ the control-plane record in `governance/qm/adr/`.
 ## Clone and setup
 
 ```sh
-git clone --recurse-submodules git@github.com:quaternionmedia/alfred.git
+git clone --recurse-submodules https://github.com/quaternionmedia/alfred.git
 git submodule update --init --recursive   # if cloned without --recurse-submodules
 ./al init                                 # install website dependencies
 ```

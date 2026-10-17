@@ -156,10 +156,10 @@ behavior rather than only the developer experience.
 ### Added
 
 - **Backend test suite**: config validity, input selection, output selection,
-  the render pipeline, and the DB layer. 95 tests plus 19 strict `xfail`s that
-  pin known defects, so fixing one turns the suite red rather than passing
-  silently. Includes one real 320×240 encode — the only test that proves the
-  product does what it exists to do.
+  the render pipeline, and the DB layer. 236 tests plus 19 strict `xfail`s
+  that pin known defects, so fixing one turns the suite red rather than
+  passing silently. Includes one real 320×240 encode — the only test that
+  proves the product does what it exists to do.
 - **Playwright end-to-end suite** replacing Cypress, with an authenticated
   fixture that actually asserts the login took effect. The Cypress helper did
   not, and nothing registered the test user, so every "logged in" test had been
@@ -236,9 +236,8 @@ behavior rather than only the developer experience.
   sends a finished render somewhere and records where it went.
   `LocalDestination` is implemented fully; the existing Google Cloud Storage
   path becomes `BucketDestination` behind the same interface. Local is the
-  default, so a server with no cloud account can still get a video back -- the
-  README calls this "a video editor that works even without a server", and
-  until now the only finished-render path went to a Google bucket. This begins
+  default, so a server with no cloud account can still get a video back; until
+  now the only finished-render path went to a Google bucket. This begins
   paying down the vendor-SDK gap the adoption record flags.
 - **A development auth bypass.** `ALFRED_DEV_SKIP_AUTH=1 ./al dev` serves
   every request as a fixed superuser and lets the SPA skip its login screen.
@@ -268,8 +267,10 @@ behavior rather than only the developer experience.
   its OpenAPI title, recognising its own stack; the browser suite refuses to
   run against anything but Alfred.
 - **Recipe recordings.** A `docs` Playwright project records the tests tagged
-  `@recipe`; `docs/recipes/` carries an SVG stub per recipe, and
-  `./al recipes` regenerates the recordings.
+  `@recipe`, and `./al recipes` regenerates the recordings. They stay local
+  (`docs/recipes/*.webm` is gitignored); the collector writes an SVG stub per
+  passing recipe into `docs/recipes/` to be committed in their place, and none
+  is committed yet.
 - **Material entries add to the timeline**, as buttons that say what clicking
   does, and controls that cannot act name the missing precondition.
 - `CONTRIBUTING.md` and a pull request template. `./al nox` runs in the

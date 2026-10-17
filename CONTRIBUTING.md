@@ -25,7 +25,7 @@ The person who ran the tool is the contributor of record.
 ## Getting a working copy
 
 ```sh
-git clone --recurse-submodules git@github.com:quaternionmedia/alfred.git
+git clone --recurse-submodules https://github.com/quaternionmedia/alfred.git
 cd alfred
 ./al init          # builds the website image, which carries its dependencies
 ./al dev           # the stack, on http://localhost:8000
@@ -42,15 +42,21 @@ demo media*: both are synthesised locally with ffmpeg.
 ## Running the tests
 
 ```sh
-pdm install -G test
-./al pytest                          # 229 backend tests, plus black and ruff
+./al pytest                          # the backend suite, plus black and ruff
+./al test                            # the browser suite, on a stack it builds
 
-cd website && npm install
+pdm install -G test                  # or on the host: the backend suite,
+pdm run pytest
+cd website && yarn install           # and the browser suite, against ./al dev
 npx playwright install chromium
-npm run e2e                          # 140 browser tests, needs ./al dev
+yarn e2e
 ```
 
-Two things worth knowing before you change a test:
+The backend suite's current tally is kept in [tests/README.md](tests/README.md)
+rather than here, where a count goes stale with the next test anyone writes;
+Playwright prints the browser suite's own at the end of every run.
+
+Three things worth knowing before you change a test:
 
 - **Marked tiers skip themselves when their tool is absent** — `needs_docker`,
   `needs_ffmpeg`, `needs_imagemagick`. `conftest.py` probes for the capability
@@ -59,19 +65,23 @@ Two things worth knowing before you change a test:
 - **The recipe walkthroughs are not in that run.** They pause between steps so
   the recordings are watchable, and are tagged `@recipe` and excluded. `./al
   recipes` runs them.
-- **19 defects are pinned as strict `xfail`.** Fixing one turns the suite red
-  as `XPASS(strict)`, which is the prompt to remove the marker. That is
+- **Known defects are pinned as strict `xfail`.** Fixing one turns the suite
+  red as `XPASS(strict)`, which is the prompt to remove the marker. That is
   working as intended, not a broken test.
 
 ## The docs are generated from the tests
 
-`docs/cookbook.md` and the recordings in `docs/recipes/` are both produced from
-the end-to-end suite:
+`docs/cookbook.md` is generated from the end-to-end suite, and the `@recipe`
+walkthroughs in it are what the recordings capture:
 
 ```sh
 ./al cookbook      # regenerate the prose from the specs
 ./al recipes       # record the @recipe walkthroughs as video, then regenerate
 ```
+
+The recordings stay on your machine: `docs/recipes/*.webm` is gitignored. The
+collector also writes an SVG stub per passing recipe into `docs/recipes/`,
+meant to be committed in their place; none has been yet.
 
 So **do not edit `docs/cookbook.md` by hand** — change the tests and
 regenerate. `tests/unit/test_cookbook.py` fails if the committed file drifts

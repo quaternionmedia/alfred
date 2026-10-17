@@ -4,8 +4,10 @@
 >
 > ~ Alfred Hitchcock
 
-Alfred is a video editor that works even without a server, designed for quick
-editing from anywhere, including mobile devices.
+Alfred is a video editor that runs in the browser, designed for quick editing
+from anywhere, including mobile devices. The browser edits the timeline; every
+preview and every render is made by an Alfred server, which you run yourself,
+with cloud storage optional.
 
 Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 
@@ -25,7 +27,7 @@ governance gaps.
 ## Clone
 
 ```sh
-git clone --recurse-submodules git@github.com:quaternionmedia/alfred.git
+git clone --recurse-submodules https://github.com/quaternionmedia/alfred.git
 cd alfred
 ./al init          # install website dependencies
 ```
@@ -90,14 +92,21 @@ alongside `ALFRED_PRODUCTION` and prints a banner on every boot — see
 ## Tests
 
 ```sh
-pdm install                       # Python deps
+./al pytest                       # API suite, plus black and ruff, in Docker
+./al test                         # browser suite, in Docker, on a stack it builds
+
+pdm install -G test               # or on the host: Python deps and test extras
 pdm run pytest                    # unit + pipeline suite
 pdm run pytest -m "not needs_ffmpeg and not needs_db"   # no external tools
 
-cd website && npm install
+cd website && yarn install        # yarn: website/yarn.lock is the lockfile
 npx playwright install chromium
-npm run e2e                       # end-to-end, against a running ./al dev
+yarn e2e                          # end-to-end, against a running ./al dev
 ```
+
+On the host, `pdm install` takes `al-otto` from PyPI. `pip install -e
+alfred/otto --no-deps` in that environment makes the suite test the vendored
+engine the image runs, which `tests/unit/test_stack_config.py` checks.
 
 Strategy and known gaps: [tests/README.md](tests/README.md) for the backend,
 [website/e2e/README.md](website/e2e/README.md) for the browser suite. Both

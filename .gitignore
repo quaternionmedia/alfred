@@ -104,9 +104,10 @@ data/
 website/recipe-report.json
 
 # Recipe recordings. `./al recipes` produces these locally for watching and
-# for cutting a polished version from; the repository carries lightweight
-# stubs instead, so generated multi-megabyte binaries do not accumulate in
-# history.
+# for cutting a polished version from; they are not committed, so generated
+# multi-megabyte binaries do not accumulate in history. The collector also
+# writes an SVG stub per passing recipe beside them, meant to be committed in
+# their place; none is yet.
 docs/recipes/*.webm
 
 # Test-render output moved aside during review prep; regenerable, never shipped.
