@@ -9,26 +9,32 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # mike pushes the built site to gh-pages, so this job writes to the
+    # repository; nothing else here needs to.
+    permissions:
+      contents: write
     steps:
       - name: 📰 Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: 🐍 Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v7
         with:
-          python-version: 3.x
+          python-version: '3.11'
 
       - name: 🚧 Install dependencies
         run: pip install mkdocs-material mkdocs-git-revision-date-localized-plugin mike
 
+      # Plain git config in place of oleksiyrudenko/gha-git-credentials, whose
+      # v2.1 declares node12. Of what it did, only the identity mattered: the
+      # push authenticates with the token the checkout above leaves in place.
+      # Same name and email as the action set.
       - name: 🤖 Configure git user
-        uses: oleksiyrudenko/gha-git-credentials@v2.1
-        with:
-          global: true
-          name: qm-bot
-          token: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config --global user.name qm-bot
+          git config --global user.email github-action@users.noreply.github.com
 
       - name: 🧵 Set version string
         run: echo VERSION_TITLE=$(mike list | grep latest) >> $GITHUB_ENV
