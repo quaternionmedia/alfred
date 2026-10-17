@@ -184,3 +184,63 @@ test.describe('the render request places every clip', () => {
       .toEqual([{ render_settings: { width: 320, height: 180 } }])
   })
 })
+
+test.describe('the toolbar Render button', () => {
+  test('sends the Render stage request, in the body', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * It sent `?project=&width=&height=` and a body of bare clips. The route
+     * reads only the body, so every render from this button came out at the
+     * 1920x1080 default with no project -- and with no starts, stacked.
+     */
+    const project = await projectNamed(request, token, MEDIA_PROJECT)
+    const saved = project.render_settings || {}
+    const width = saved.width || 1920
+    const height = saved.height || 1080
+    const sent = await captureRenders(authedPage)
+    await authedPage.route(
+      url => url.pathname === `/project/${project._id}/settings`,
+      route => route.fulfill({ json: project })
+    )
+
+    await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(
+      project.edl.clips.length
+    )
+    const button = authedPage.locator('#render-timeline')
+    // The button has no fields, so its title says what it will render at.
+    await expect(button).toHaveAttribute('title', `Render this timeline at ${width}×${height}`)
+    await button.click()
+
+    await expect(authedPage).toHaveURL(/stage=deliver/)
+    await expect(authedPage).toHaveURL(new RegExp(`project=${project._id}`))
+    expect(sent).toHaveLength(1)
+    const toolbar = sent[0]
+    expect([...toolbar.url.searchParams.keys()], 'settings in the query string').toEqual([])
+    expect(toolbar.body).toMatchObject({
+      name: project.name,
+      project: project.name,
+      project_id: project._id,
+      width,
+      height,
+    })
+    let at = 0
+    expect(starts(toolbar.body)).toEqual(
+      project.edl.clips.map(c => {
+        const start = at
+        at += c.duration
+        return start
+      })
+    )
+    expect(toolbar.body.duration).toBe(at)
+
+    // And it is the same request the Render stage sends for this timeline.
+    await authedPage.locator('#stage-render').click()
+    await authedPage.locator('#queue-render').click()
+    await expect.poll(() => sent.length).toBe(2)
+    expect(sent[1].body).toEqual(toolbar.body)
+  })
+})

@@ -3,9 +3,11 @@ import '../node_modules/material-design-icons-iconfont/dist/material-design-icon
 import { Player } from './Player'
 import { Video, Edl } from './Video'
 import { auth } from './Login'
-var state = require("./Globals").state
 import { message, success, error, defaults } from 'alertifyjs'
 import { Resolution, Aspect } from './Resolution'
+import { queueRender, renderSize, timelineRender } from './RenderRequest'
+import { requestProblem } from './Problem'
+import { Flow } from './Stages'
 
 export function downloadFile(url) {
   var a = document.createElement("a")
@@ -109,6 +111,10 @@ export function ProjectTools() {
     view: () => {
       const project = m.route.param('project')
       const clips = Edl.edl.length
+      // The size the Render stage would offer for this project, so the two
+      // ways of rendering agree -- and the title says what it will be, since
+      // this button has no fields of its own to show it.
+      const size = renderSize(Flow.project())
 
       // Why each action is unavailable, or null when it is available. Saying
       // which of two preconditions is missing is the difference between a
@@ -162,29 +168,39 @@ export function ProjectTools() {
         m(
           'i.material-icons#render-timeline',
           {
-            title: cannotRender || 'Render this timeline',
+            title: cannotRender || `Render this timeline at ${size.width}×${size.height}`,
             class: cannotRender ? 'disabled' : '',
             onclick: () => {
               if (cannotRender || rendering) return
               rendering = true
-              auth('/render', {
-                method: 'POST',
-                params: {
-                  project,
-                  width: state.width(),
-                  height: state.height(),
-                },
-                body: { edl: { clips: Edl.edl } },
-              })
+              // The Render stage's request, built by the same function.
+              //
+              // This sent the project and size as query parameters, which
+              // `POST /render` never reads -- it takes the body -- so every
+              // render from this button came out at the 1920x1080 default with
+              // no project, and its clips without starts, stacked at second 0.
+              queueRender(
+                timelineRender({
+                  project: Flow.project(),
+                  projectId: project,
+                  ...size,
+                })
+              )
                 .then(() => {
                   rendering = false
                   message('Added to the render queue', 5)
+                  // Already on Deliver means no remount to reload the list.
+                  Flow.loadRenders()
                   // Into the flow, not to the retired `/renders` route.
                   m.route.set('/', { stage: 'deliver', project })
                 })
-                .catch(() => {
+                .catch(e => {
                   rendering = false
-                  error('Could not queue the render', 4)
+                  const why = requestProblem(e)
+                  error(
+                    why ? `Could not queue the render: ${why}` : 'Could not queue the render',
+                    6
+                  )
                   m.redraw()
                 })
             },
