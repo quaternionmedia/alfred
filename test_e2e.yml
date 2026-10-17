@@ -142,16 +142,16 @@ services:
   # something to do it. Without one a queued render never leaves `queued`,
   # and those specs could only time out.
   #
-  # The same image and command as dev.yml's renderer. --workdir stays while
-  # the Celery app's `include` still names `core.utils.tasks`, which imports
-  # only from /app/alfred; with VIDEO_DIR absolute, the working directory
-  # decides nothing else.
+  # The same image and command as dev.yml's renderer, without `--workdir`:
+  # the Celery app's `include` names `alfred.core.utils.tasks` and the worker
+  # resolves library clips against VIDEO_DIR, so the working directory decides
+  # nothing.
   renderer:
     build:
       context: .
       dockerfile: ./Dockerfile
     image: alfred_worker
-    entrypoint: celery -A alfred.core.utils.tasks:renderer --workdir /app/alfred -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
+    entrypoint: celery -A alfred.core.utils.tasks:renderer -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
     depends_on:
       - db
     volumes:
