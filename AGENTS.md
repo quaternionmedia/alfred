@@ -89,7 +89,7 @@ arguments prints the full command list.
 | `./al nox -s lint` | Ruff |
 | `./al nox -s blacken` | Black (`-S`, single quotes) |
 | `./al docs` | Serve mkdocs locally on :4000 |
-| `./al prod` | Production stack (expects a running traefik) |
+| `./al prod` | Production stack (expects a running traefik and the production `ALFRED_SECRET_KEY` exported) |
 
 Tests can also run directly: `nox -f tests/noxfile.py -s coverage`.
 

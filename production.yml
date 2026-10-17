@@ -34,6 +34,14 @@ services:
       - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
     environment:
       - ALFRED_PRODUCTION=true
+      # The key that signs every session token, from the deploying shell and
+      # nowhere else. docker-compose.yml loads ALFRED_SECRET_KEY from
+      # .secret_key, a development stub committed to this public repository,
+      # and production inherited it -- so unless the server's copy had been
+      # replaced, anyone could read the key and mint a token for any user.
+      # This entry overrides that file, and compose refuses to start the
+      # stack without it.
+      - ALFRED_SECRET_KEY=${ALFRED_SECRET_KEY:?production signs tokens with its own key; export ALFRED_SECRET_KEY before ./al prod}
       # The directory the renderer writes to, named the same way on both, so
       # delivery reads the file the worker produced.
       - VIDEO_DIR=/app/videos

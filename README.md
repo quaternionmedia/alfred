@@ -55,7 +55,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al nox -s lint` | Ruff |
 | `./al nox -s blacken` | Black (`-S`) |
 | `./al docs` | Serve the docs locally on :4000 |
-| `./al prod` | Production stack; expects a running traefik |
+| `./al prod` | Production stack; expects a running traefik and the production `ALFRED_SECRET_KEY` exported |
 | `./al flower` | Celery monitoring on :5555; needs the dev stack for its broker |
 | `./al cookbook` | Regenerate `docs/cookbook.md` from the e2e specs |
 | `./al install <pkg>` | Add a website dependency |

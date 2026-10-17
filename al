@@ -135,6 +135,14 @@ elif [ $1 = "d" ] || [ $1 = "dev" ]; then
 # Starts in production.
 elif [ $1 = "p" -o $1 = "production" -o $1 = "prod" ]; then
   shift
+  # Before anything stops: production.yml refuses to start without the
+  # production signing key, and this takes the running stack down first, so
+  # a missing key found at `up` would leave production down.
+  if [ -z "${ALFRED_SECRET_KEY:-}" ]; then
+    echo "ALFRED_SECRET_KEY is not set. Production signs session tokens with its" >&2
+    echo "own key; export it, then run ./al prod again. Nothing was stopped." >&2
+    exit 1
+  fi
   echo "Alfred! running production $1"
   docker compose down && \
   docker run --rm -it -v ${PWD}:/docs -v ${PWD}/alfred/site/:/site/ --user $(id -u):$(id -g) squidfunk/mkdocs-material build -d /site/ && \
