@@ -9,8 +9,23 @@ from alfred.config import BUCKET_NAME, DEFAULT_CHUNK_SIZE
 
 from .db import get_sync_db
 
+# The canonical answers, for comparing against. Raise `fresh(...)` copies of
+# them, not these instances themselves -- see `fresh`.
 NOT_FOUND = HTTPException(status_code=404, detail="Item not found")
 INVALID_ID = HTTPException(status_code=422, detail="Not a valid identifier")
+
+
+def fresh(exc: HTTPException) -> HTTPException:
+    """A new exception with `exc`'s status and detail, to raise in its place.
+
+    Raising one shared instance over and over appends each raise's traceback
+    to the one it already carries, so every 404 and 422 answered this way kept
+    its request's frames -- and everything they referenced -- alive for the
+    life of the process. A copy per raise leaves nothing behind.
+    """
+    return HTTPException(
+        status_code=exc.status_code, detail=exc.detail, headers=exc.headers
+    )
 
 
 def get_bucket(bucket=BUCKET_NAME):
@@ -22,15 +37,31 @@ def get_bucket(bucket=BUCKET_NAME):
 
 
 def upload(filename, directory=None):
-    """Upload file to cloud directory"""
+    """Upload `directory/filename` as the object named `filename`."""
     blob = get_bucket().blob(filename, chunk_size=DEFAULT_CHUNK_SIZE)
     blob.upload_from_filename(join(directory, filename) if directory else filename)
 
 
-def generate_signed_url(renderId, minutes=15):
-    """Generates a v4 signed URL for downloading a blob.
+def signed_url(blob_name, minutes=15):
+    """A v4 signed URL, valid for `minutes`, to download one object.
 
-    Note that this method requires a service account key file.
+    By object name -- a render's `filename`, which is what `upload` names the
+    object. Needs a service account key file.
+    """
+    blob = get_bucket().blob(blob_name)
+    return blob.generate_signed_url(
+        version="v4",
+        expiration=timedelta(minutes=minutes),
+        # Allow GET requests using this URL.
+        method="GET",
+    )
+
+
+def generate_signed_url(renderId, minutes=15):
+    """A signed URL for a render's object in the bucket, by render id.
+
+    Looks the render up to find its object name. Callers that already hold
+    the render use `signed_url` with its filename instead.
     """
     db = get_sync_db()
     # `ObjectId(renderId)` raises bson's InvalidId on anything unparseable,
@@ -41,16 +72,8 @@ def generate_signed_url(renderId, minutes=15):
     # this route needs its own guard, answering the same 422 that the project
     # routes now give for the same mistake.
     if not ObjectId.is_valid(renderId):
-        raise INVALID_ID
+        raise fresh(INVALID_ID)
     res = db.Render.find_one({'_id': ObjectId(renderId)})
     if not res:
-        raise NOT_FOUND
-    print('generating url', res)
-    blob = get_bucket().blob(res['filename'])
-    return blob.generate_signed_url(
-        version="v4",
-        # This URL is valid for 15 minutes
-        expiration=timedelta(minutes=minutes),
-        # Allow GET requests using this URL.
-        method="GET",
-    )
+        raise fresh(NOT_FOUND)
+    return signed_url(res['filename'], minutes=minutes)

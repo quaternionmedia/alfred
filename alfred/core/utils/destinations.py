@@ -22,7 +22,7 @@ from pathlib import Path
 from shutil import copyfile
 from typing import Protocol
 
-from alfred.config import DATA_DIR
+from alfred import config
 
 
 class DeliveryError(Exception):
@@ -64,25 +64,43 @@ class Destination(Protocol):
         ...
 
 
+def _inside(path, directory) -> bool:
+    """Whether `path` is `directory` or somewhere beneath it."""
+    path, directory = Path(path).resolve(), Path(directory).resolve()
+    return path == directory or directory in path.parents
+
+
 class LocalDestination:
-    """Keep the render on this machine, under DATA_DIR.
+    """Keep the render on this machine, under DELIVERY_DIR.
 
     The useful default for development and for anyone running Alfred without a
     cloud account, which is the deployment the README describes -- "a video
     editor that works even without a server". Until now the only finished-render
     path went to a Google bucket, so that claim did not extend to getting your
     video back.
+
+    Not under DATA_DIR, where this used to copy to: that directory is served
+    by an unauthenticated static mount at /data, so every local delivery was
+    a public URL for somebody's video. The video comes back to its owner
+    through the download route instead.
     """
 
     name = 'local'
 
     def __init__(self, root=None):
-        self.root = Path(root or DATA_DIR) / 'renders'
+        self.root = Path(root or config.DELIVERY_DIR)
 
     def deliver(self, filename: str) -> Delivery:
         source = Path(filename)
         if not source.is_file():
             raise DeliveryError(f'no such render: {filename}')
+        if _inside(self.root, config.DATA_DIR):
+            # Refused rather than written: a delivery there is published to
+            # anyone, which no setting should be able to do by accident.
+            raise DeliveryError(
+                'the delivery directory is inside DATA_DIR, which is served '
+                'publicly; set ALFRED_DELIVERY_DIR somewhere else'
+            )
         self.root.mkdir(parents=True, exist_ok=True)
         target = self.root / source.name
         # copy, not move: the renderer may still be holding the file, and a
@@ -103,13 +121,23 @@ class BucketDestination:
     name = 'bucket'
 
     def deliver(self, filename: str) -> Delivery:
-        from .bucket import generate_signed_url, upload
+        """Upload the file as an object named for it, and sign a link to it.
 
+        This uploaded the object under the full server path and then asked
+        `generate_signed_url` -- which takes a render *id* -- to sign that
+        path, so it answered 422 "Not a valid identifier" after every
+        successful upload. The object is named by the file's own name, as the
+        worker's automatic upload names it, and signed by that name.
+        """
+        from .bucket import signed_url, upload
+
+        source = Path(filename)
         try:
-            upload(filename)
+            upload(source.name, directory=str(source.parent))
+            location = signed_url(source.name)
         except Exception as exc:  # noqa: BLE001 - vendor SDK raises broadly
             raise DeliveryError(f'upload failed: {exc}') from exc
-        return Delivery(destination=self.name, location=generate_signed_url(filename))
+        return Delivery(destination=self.name, location=location)
 
 
 DESTINATIONS = {

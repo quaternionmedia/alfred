@@ -676,18 +676,52 @@ timeline sits with its tools and the media bin beneath.
   machine with no cloud account.
 
 
+## render api
+
+What a render request may ask for, and whose renders a caller can reach.
+
+# Recipe: the render API's promises
+
+Asserted at the HTTP level against the running stack. None of this waits on
+an encode, so it needs no worker: every request here is refused, or answered,
+before the worker would be involved.
+
+- Media is named as `GET /videos` lists it, or by URL on an allowed host;
+  anything else is a 422 before anything is stored (contract C4).
+- Encoding comes from a named quality preset; client ffmpeg options are a
+  422 (C5).
+- `GET /render/{id}/status` answers for one render (C2).
+- A render is its owner's: another user gets 404 for it everywhere (C6).
+
+### a render request is checked before it is queued
+
+- **media named by <what> is a 422**
+- **media named as the library lists it is accepted**
+- **a template outside the allowlist is a 422**
+- **the EDL preview checks the same things**
+- **encoder options are not the client's: <JSON>**
+### a render answers for itself
+
+- **its status has exactly the contract fields**
+- **a malformed id is a 422 and a missing one a 404**
+- **none of it is open to an anonymous caller**
+### another user's render
+
+- **is not listed, and answers 404 everywhere**
+- **there is no way to delete every render at once**
+
 ## render pipeline
 
 The whole loop, with a video at the end of it.
 
 Queue a render from the browser, wait for the Celery worker to encode it with
-ffmpeg, then deliver the result and check the bytes arrived. Nothing here is
-stubbed: a real worker, a real encode, a real file.
+ffmpeg, then download and deliver the result and check the bytes arrived.
+Nothing here is stubbed: a real worker, a real encode, a real file.
 
-This is the only test in the suite that waits on an encode, so it is tagged
+This is the only spec in the suite that waits on an encode, so it is tagged
 @slow and given its own timeout. Everything is deliberately small -- 320x180,
-one second, a solid colour -- because the point is that the pipeline runs end
-to end, not that it can handle a long edit.
+one second -- because the point is that the pipeline runs end to end, not
+that it can handle a long edit.
 
 It also needs a worker. Where none is running the render never leaves
 `queued`, so the wait below reports that plainly rather than timing out on an
@@ -695,8 +729,15 @@ assertion that says nothing.
 
 ### @slow render pipeline, end to end
 
+The defect this guards: a clip dragged from the media bin is named
+`videos/<file>`, and the worker opened that against its own working
+directory, where there is no `videos/`. Every render with a media clip
+failed, and the only render test used a template, which needs no file.
+
 - **a render queued from the API becomes a real video file**
-- **the finished render can be delivered, and the bytes arrive**
+- **a clip from the media library renders**
+- **a finished render downloads, whole or in ranges**
+- **the finished render can be delivered, and the link works**
 - **delivery is recorded on the render, so it is not repeated blindly**
 
   The same loop, driven through the UI rather than the API.
