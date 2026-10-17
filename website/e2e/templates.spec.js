@@ -80,7 +80,15 @@ test.describe('adding a template', () => {
     await authedPage.locator('#queue-render').click()
     await expect.poll(() => sent.length).toBe(1)
     expect(sent[0].edl.clips).toEqual([
-      { type: 'template', name: 'title', duration: 5, data: { text: DEFAULT_TEXT }, start: 0 },
+      {
+        type: 'template',
+        name: 'title',
+        duration: 5,
+        data: { text: DEFAULT_TEXT },
+        start: 0,
+        fadeIn: 0,
+        fadeOut: 0,
+      },
     ])
     expect(errors).toEqual([])
   })

@@ -412,6 +412,14 @@ arrive at 0, 5 and 10 seconds, with a total of 15 -- not all at 0.
   timeline as it stands and never echo the stored value. Served here with
   every stored start wrong, to prove the editor ignores them.
 
+- **a clip fades only when a fade was chosen for it**
+
+  The project routes store clips through otto's model, which fills in
+  its one-second fades, so every clip of a saved project arrives with
+  `fadeIn: 1` and `fadeOut: 1` that nobody set. Those go out as 0, like
+  a clip with no fade at all; a fade of any other length was chosen,
+  and is kept. Served here with one clip of each kind.
+
 - **the size typed on the Render stage is the size requested**
 
   The size inputs were uncontrolled, and mithril writes `value` back on

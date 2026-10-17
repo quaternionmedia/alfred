@@ -53,6 +53,7 @@ async function projectNamed(request, token, name) {
 
 const starts = body => body.edl.clips.map(c => c.start)
 const durations = body => body.edl.clips.map(c => c.duration)
+const fades = body => body.edl.clips.map(c => [c.fadeIn, c.fadeOut])
 
 test.describe('the render request places every clip', () => {
   test('three clips added in the editor render end to end, not stacked', async ({
@@ -84,6 +85,13 @@ test.describe('the render request places every clip', () => {
     expect(durations(body)).toEqual([5, 5, 5])
     expect(body.edl.duration).toBe(15)
     expect(body.duration).toBe(15)
+    // Hard cuts, as the preview plays them. Left unset, otto would fade every
+    // clip in and out over a second: a dip to black at each cut.
+    expect(fades(body)).toEqual([
+      [0, 0],
+      [0, 0],
+      [0, 0],
+    ])
     // The view's bookkeeping stays in the view.
     for (const clip of body.edl.clips) expect(clip).not.toHaveProperty('i')
   })
@@ -135,6 +143,55 @@ test.describe('the render request places every clip', () => {
     expect(body.edl.duration).toBe(at)
     expect(body.project).toBe(demo.name)
     expect(body.project_id).toBe(demo._id)
+  })
+
+  test('a clip fades only when a fade was chosen for it', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * The project routes store clips through otto's model, which fills in
+     * its one-second fades, so every clip of a saved project arrives with
+     * `fadeIn: 1` and `fadeOut: 1` that nobody set. Those go out as 0, like
+     * a clip with no fade at all; a fade of any other length was chosen,
+     * and is kept. Served here with one clip of each kind.
+     */
+    const demo = await projectNamed(request, token, 'Timeline demo')
+    const [stored, chosen, bare] = demo.edl.clips
+    expect(bare, 'Timeline demo needs three clips').toBeTruthy()
+    const { fadeIn, fadeOut, ...withoutFades } = bare
+    const doctored = {
+      ...demo,
+      edl: {
+        ...demo.edl,
+        clips: [
+          { ...stored, fadeIn: 1, fadeOut: 1 },
+          { ...chosen, fadeIn: 0.5, fadeOut: 2 },
+          withoutFades,
+        ],
+      },
+    }
+    await authedPage.route(
+      url => url.pathname === `/project/${demo._id}`,
+      route =>
+        route.request().method() === 'GET'
+          ? route.fulfill({ json: doctored })
+          : route.fallback()
+    )
+    const sent = await captureRenders(authedPage)
+
+    await authedPage.goto(`/#!/?project=${demo._id}&stage=render`)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)
+    await authedPage.locator('#queue-render').click()
+    await expect(authedPage.locator('#panel-deliver')).toBeVisible()
+
+    expect(sent).toHaveLength(1)
+    expect(fades(sent[0].body)).toEqual([
+      [0, 0],
+      [0.5, 2],
+      [0, 0],
+    ])
   })
 
   test('the size typed on the Render stage is the size requested', async ({

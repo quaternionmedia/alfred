@@ -45,10 +45,41 @@ export function timelineEdl(clips) {
     // means nothing to the server.
     const { i, ...rest } = clip
     const duration = clipSeconds(clip)
-    placed.push({ ...rest, duration, start })
+    placed.push({
+      ...rest,
+      duration,
+      start,
+      fadeIn: chosenFade(clip.fadeIn),
+      fadeOut: chosenFade(clip.fadeOut),
+    })
     start += duration
   }
   return { clips: placed, duration: start }
+}
+
+// otto's default fade for a clip, in seconds -- which the API also writes
+// onto every clip it stores, whether or not anyone chose it.
+const MODEL_FADE = 1
+
+/**
+ * A clip's fade as the render should get it: none, unless one was chosen.
+ *
+ * The editor plays its timeline as hard cuts. otto fades every clip in and
+ * out over a second unless told otherwise, so clips placed end to end would
+ * render with a dip to black at every cut that the preview never showed. So
+ * a clip with no fade goes out with 0.
+ *
+ * "No fade" includes a fade of exactly otto's default. The project routes
+ * store clips through otto's model, which fills in the default, so every
+ * clip loaded from a saved project carries `fadeIn: 1` and `fadeOut: 1`
+ * that nobody set -- indistinguishable from a chosen one-second fade, and
+ * far more likely. Any other value was chosen by someone, and is kept.
+ */
+function chosenFade(value) {
+  if (value === undefined || value === null || value === '') return 0
+  const seconds = Number(value)
+  if (!Number.isFinite(seconds) || seconds === MODEL_FADE) return 0
+  return Math.max(0, seconds)
 }
 
 /**
