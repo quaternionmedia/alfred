@@ -513,7 +513,8 @@ seed = [
     #
     # Every clip here is a template, so this renders with no media files
     # present -- `./al demo` is not a prerequisite for opening it. Template
-    # names are from the allowlist in core/routes/templates.py.
+    # names are from the allowlist in core/routes/templates.py. The text is
+    # in the editor's amber because it is drawn straight onto a black frame.
     {
         "name": "Timeline demo",
         "logic": {},
@@ -525,7 +526,7 @@ seed = [
                     "name": "title",
                     "duration": 3.0,
                     "start": 0.0,
-                    "data": {"text": "Alfred", "color": "#101820"},
+                    "data": {"text": "Alfred", "color": "#f2aa4c"},
                 },
                 {
                     "type": "template",
@@ -534,7 +535,7 @@ seed = [
                     "start": 3.0,
                     "data": {
                         "text": "Drama is life with the dull bits cut out.",
-                        "color": "#101820",
+                        "color": "#f2aa4c",
                     },
                 },
                 {

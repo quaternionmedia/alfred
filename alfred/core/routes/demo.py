@@ -178,6 +178,9 @@ async def generateDemoProject(user: User = Depends(current_active_user)):
 
 
 def _demo_project_document(owner):
+    # The text is drawn straight onto the frame, which is black: in the
+    # editor's amber it shows. It was the editor's near-black, #101820, which
+    # on black is all but invisible.
     return dict(
         name=DEMO_PROJECT_NAME,
         owner=owner,
@@ -190,7 +193,7 @@ def _demo_project_document(owner):
                     'name': 'title',
                     'duration': 3.0,
                     'start': 0.0,
-                    'data': {'text': 'Alfred', 'color': '#101820'},
+                    'data': {'text': 'Alfred', 'color': '#f2aa4c'},
                 },
                 {
                     'type': 'template',
@@ -199,7 +202,7 @@ def _demo_project_document(owner):
                     'start': 3.0,
                     'data': {
                         'text': 'Drama is life with the dull bits cut out.',
-                        'color': '#101820',
+                        'color': '#f2aa4c',
                     },
                 },
                 {

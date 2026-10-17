@@ -9,12 +9,45 @@ Two things had to be true before the timeline could show anything, and both are
 pinned here -- the field exists, and something seeded uses it.
 """
 
+import pytest
+from otto.config import defaults
 from otto.models import Edl
 
 from alfred.core.models import Project
+from alfred.core.routes.demo import _demo_project_document
 from alfred.seed import seed
 
 DEMO = 'Timeline demo'
+
+
+def _contrast_on_black(colour):
+    """The WCAG contrast ratio of a '#rrggbb' colour against black."""
+    channels = [int(colour[i : i + 2], 16) / 255 for i in (1, 3, 5)]
+    r, g, b = (
+        c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in channels
+    )
+    return (0.2126 * r + 0.7152 * g + 0.0722 * b + 0.05) / 0.05
+
+
+@pytest.mark.parametrize(
+    'timeline',
+    [
+        next(p for p in seed if p.get('name') == DEMO)['edl'],
+        _demo_project_document(owner='someone@example.com')['edl'],
+    ],
+    ids=['seeded Timeline demo', 'generated Demo'],
+)
+def test_the_demo_text_shows_on_the_black_it_is_drawn_over(timeline):
+    """Nothing is behind the demos' text but the frame, which is black.
+
+    It was #101820, a contrast of about 1.2 to 1: the first thing a new user
+    rendered was a video whose words could not be read. 4.5 is WCAG's AA.
+    """
+    for clip in timeline['clips']:
+        data = clip.get('data') or {}
+        if data.get('text'):
+            colour = data.get('color') or defaults['fontcolor']
+            assert _contrast_on_black(colour) >= 4.5, f'{clip["name"]}: {colour}'
 
 
 class TestTheModelCanHoldATimeline:
