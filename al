@@ -222,29 +222,34 @@ elif [ $1 = "seed" -o $1 = "db" ]; then
   # imported `seed` and `db` as top-level modules, which they are not; seed
   # also wrote to `projects`, a collection nothing reads. They run the api
   # image's own interpreter against the modules the api uses.
+  # Owned the way startup seeding owns them (ALFRED_SEED_OWNER; in
+  # development, the dev user), so a seeded project is visible to the same
+  # account whichever path put it there.
   docker compose exec api python -c '
+from alfred.config import SEED_OWNER
 from alfred.core.utils import get_sync_db
-from alfred.seed import seed
+from alfred.seed import owned_by, seed
 
 db = get_sync_db()
 if db.Project.count_documents({}):
     print("Project already holds documents; nothing seeded. ./al reseed replaces them.")
 else:
-    db.Project.insert_many(seed)
-    print(f"seeded {len(seed)} projects")
+    db.Project.insert_many(owned_by(SEED_OWNER, seed))
+    print(f"seeded {len(seed)} projects, owner: {SEED_OWNER}")
 '
 
 elif [ $1 = "reinit" -o $1 = "reseed" ]; then
   shift
   # Drops the Project collection and seeds it again -- destructive on purpose.
   docker compose exec api python -c '
+from alfred.config import SEED_OWNER
 from alfred.core.utils import get_sync_db
-from alfred.seed import seed
+from alfred.seed import owned_by, seed
 
 db = get_sync_db()
 db.Project.drop()
-db.Project.insert_many(seed)
-print(f"dropped Project and seeded {len(seed)} projects")
+db.Project.insert_many(owned_by(SEED_OWNER, seed))
+print(f"dropped Project and seeded {len(seed)} projects, owner: {SEED_OWNER}")
 '
 
 elif [ $1 = "sh" ]; then
