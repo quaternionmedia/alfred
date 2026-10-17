@@ -10,11 +10,11 @@ import { describeDetail } from './Problem'
  * download) is given an object URL for the bytes instead.
  *
  * Built on `auth()` rather than beside it, so a protected file gets the same
- * session handling as every other request: one retry with a refreshed token
- * when the old one has expired, and the login screen when the session is over.
- * That only works if a failed request rejects with the HTTP status on `.code`,
- * which is what `auth()` reads to tell an expired session from anything else
- * -- so `extract` below throws exactly that.
+ * session handling as every other request, whatever `auth()` does about an
+ * expired session; nothing here knows about tokens. That only works if a
+ * failed request rejects with the HTTP status on `.code`, which is what
+ * `auth()` reads to tell an expired session from anything else -- so
+ * `extract` below throws exactly that.
  */
 
 /** The filename a `Content-Disposition` header proposes, or null. */
