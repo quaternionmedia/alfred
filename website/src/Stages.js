@@ -6,8 +6,8 @@ import { Edl } from './Video'
 import { Player } from './Player'
 import { TemplateEditor } from './TemplateEditor'
 import { Magnussens } from './Magnussens'
-
-var state = require('./Globals').state
+import { queueRender, renderSize, timelineRender } from './RenderRequest'
+import { requestProblem } from './Problem'
 
 /**
  * The four stages of the flow, as one view.
@@ -42,6 +42,8 @@ export const Flow = {
   destinations: [],
   busy: false,
   error: null,
+  // The Render stage's typed-but-not-yet-rendered size, for one project.
+  draft: { for: null, size: {} },
 
   project: () => Flow.projects.find(p => p._id === m.route.param('project')),
 
@@ -546,25 +548,33 @@ const RenderPanel = {
       ])
     }
 
+    // Defaults come from the project when it has an opinion, so reopening one
+    // brings back the size it renders at rather than asking again.
+    //
+    // What was typed is held here rather than left in the input. The inputs
+    // were uncontrolled, and mithril writes `value` back on every redraw -- so
+    // any redraw between typing a size and pressing the button (a list
+    // arriving, a render's progress) quietly restored the project's size, and
+    // the render went out at a size nobody chose. Typed values win until the
+    // project changes.
+    const draftFor = m.route.param('project') || ''
+    if (Flow.draft.for !== draftFor) Flow.draft = { for: draftFor, size: {} }
+    const size = { ...renderSize(project), ...Flow.draft.size }
+    const sizeInput = key => ({
+      type: 'number',
+      min: 2,
+      step: 2,
+      value: size[key],
+      oninput: e => {
+        Flow.draft.size = { ...Flow.draft.size, [key]: e.target.value }
+      },
+    })
+
     return m('.stagepanel#panel-render', [
       m('h3', 'Render'),
-      // Defaults come from the project when it has an opinion, so reopening
-      // one brings back the size it renders at rather than asking again.
       m('.renderfields', [
-        m('label', [
-          'Width',
-          m('input#render-width', {
-            type: 'number',
-            value: (project && project.render_settings && project.render_settings.width) || state.width(),
-          }),
-        ]),
-        m('label', [
-          'Height',
-          m('input#render-height', {
-            type: 'number',
-            value: (project && project.render_settings && project.render_settings.height) || state.height(),
-          }),
-        ]),
+        m('label', ['Width', m('input#render-width', sizeInput('width'))]),
+        m('label', ['Height', m('input#render-height', sizeInput('height'))]),
       ]),
       m(AsyncButton, {
         id: 'queue-render',
@@ -574,39 +584,31 @@ const RenderPanel = {
         label: 'Queue render',
         busyLabel: 'Queueing…',
         onclick: () => {
-            Flow.busy = true
-            Flow.error = null
-            auth('/render', {
-              method: 'POST',
-              body: {
-                edl: { clips: Edl.edl, duration: Edl.duration() },
-                name: project ? project.name : 'untitled',
-                project: project ? project.name : 'untitled',
-                project_id: m.route.param('project'),
-                width: Number(document.getElementById('render-width').value),
-                height: Number(document.getElementById('render-height').value),
-                duration: Edl.duration(),
-              },
+          const chosen = { width: Number(size.width), height: Number(size.height) }
+          Flow.busy = true
+          Flow.error = null
+          // The same request the toolbar's Render button sends, built in one
+          // place: every clip placed by an explicit start (see timelineEdl).
+          queueRender(
+            timelineRender({ project, projectId: m.route.param('project'), ...chosen })
+          )
+            .then(() => {
+              Flow.busy = false
+              // Remember what this project renders at. This is the whole of
+              // "reusable pipeline": the settings live on the project, so
+              // picking it again is picking the pipeline.
+              Flow.remember({ render_settings: chosen })
+              Flow.loadRenders()
+              Flow.go('deliver')
             })
-              .then(() => {
-                Flow.busy = false
-                // Remember what this project renders at. This is the whole of
-                // "reusable pipeline": the settings live on the project, so
-                // picking it again is picking the pipeline.
-                Flow.remember({
-                  render_settings: {
-                    width: Number(document.getElementById('render-width').value),
-                    height: Number(document.getElementById('render-height').value),
-                  },
-                })
-                Flow.loadRenders()
-                Flow.go('deliver')
-              })
-              .catch(e => {
-                Flow.busy = false
-                Flow.error = 'Could not queue the render'
-                m.redraw()
-              })
+            .catch(e => {
+              Flow.busy = false
+              const why = requestProblem(e)
+              Flow.error = why
+                ? `Could not queue the render: ${why}`
+                : 'Could not queue the render'
+              m.redraw()
+            })
         },
       }),
       // A timeline with no clips cannot be rendered, and saying so beats a

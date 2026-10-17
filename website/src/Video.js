@@ -12,6 +12,16 @@ export var Video = {
   speed: 1,
 }
 
+/** Seconds a clip occupies on the timeline.
+ *
+ * One rule, shared by playback and by everything sent to the server. The
+ * player lays clips end to end by this number and the render request places
+ * them by it, so if the two read a clip's length differently -- a string
+ * duration, a missing one -- the video that renders is not the one that
+ * played.
+ */
+export const clipSeconds = c => (c ? Number(c.duration) || 0 : 0)
+
 export var Edl = {
   edl: [],
   current: 0,
@@ -22,9 +32,9 @@ export var Edl = {
   // video reported progress.
   time: 0,
 
-  duration: () => Edl.edl.reduce((a, c) => a + (c ? Number(c.duration) || 0 : 0), 0),
+  duration: () => Edl.durations(Edl.edl),
 
-  durations: e => e.reduce((a, c) => a + (c ? Number(c.duration) || 0 : 0), 0),
+  durations: e => e.reduce((a, c) => a + clipSeconds(c), 0),
 
   /** Seconds of timeline before clip `i` starts. */
   startOf: i => Edl.durations(Edl.edl.slice(0, i)),
@@ -49,7 +59,7 @@ export var Edl = {
     if (!Edl.edl.length) return 0
     let acc = 0
     for (let i = 0; i < Edl.edl.length; i++) {
-      acc += Number(Edl.edl[i].duration) || 0
+      acc += clipSeconds(Edl.edl[i])
       if (t < acc) return i
     }
     return Edl.edl.length - 1
