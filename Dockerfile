@@ -43,11 +43,12 @@ RUN rm -f /etc/ImageMagick-6/policy.xml /etc/ImageMagick-7/policy.xml
 #
 # moviepy's TextClip defaults to the font named "Courier". The base ships only
 # DejaVu, so ImageMagick answered "unable to read font `Courier'", TextClip
-# raised, and otto's template functions returned None. generateEdl reports
-# that as "A clip did not get made properly" -- which names neither fonts nor
-# ImageMagick, so the symptom points nowhere near the cause. Five of the six
-# templates are TextClip (title, textBox, bullets, initial, final), so this
-# was most of the template feature.
+# raised, and otto's template functions returned None. generateEdl reported
+# that as "A clip did not get made properly" -- which named neither fonts nor
+# ImageMagick, so the symptom pointed nowhere near the cause (the engine names
+# the template and the error now). Five of the six templates are TextClip
+# (title, textBox, bullets, initial, final), so this was most of the template
+# feature.
 #
 # urw-base35 is the standard PostScript font set; ImageMagick's own
 # type-urw-base35.xml was already present in the base, describing fonts that

@@ -124,10 +124,10 @@ async def previewTemplate(
     is dropped rather than forwarded, since the editor serialises absent
     fields that way and the template expects them missing.
     """
-    # The allowlist is load-bearing here, not decorative. Without it this is
-    # `getattr(templates, name)` on a path segment -- and otto.templates holds
-    # imported callables (ColorClip, concatenate_videoclips, rgbToDec) beside
-    # its six real templates, so any of those would be reachable by name.
+    # The allowlist, not the engine's registry: the engine refuses anything
+    # that is not a template, but it also renders `final`, which this server
+    # does not offer (see routes/templates.py). A name that is not offered is
+    # a missing resource.
     if name not in TEMPLATE_NAMES:
         raise HTTPException(status_code=404, detail=f'No such template: {name}')
 
@@ -151,14 +151,12 @@ async def previewTemplate(
     )
 
     # A template that cannot render with the data it was given is a 422, not a
-    # 500.
+    # 500: the request is incomplete, the server is not broken. The engine
+    # raises for it -- `GET /preview/template/title` with no `text` is an
+    # EdlException naming the template and the missing argument. (Its
+    # templates used to swallow the error and return None, and the failure
+    # surfaced as a 500 when there was no frame to save.)
     #
-    # otto's templates catch their own exceptions and return None, so a
-    # missing field does not raise here -- it produces a clip with nothing in
-    # it, and the failure surfaces further along when there is no frame to
-    # save. `GET /preview/template/title` with no `text` answered 500, which
-    # says the server is broken when the truth is that the request was
-    # incomplete. The editor showed a blank frame either way.
     # Written privately and deleted once sent. This route returns the image
     # itself, so nothing needs the file afterwards -- and it was written under
     # DATA_DIR, which the unauthenticated /data mount serves, and kept there

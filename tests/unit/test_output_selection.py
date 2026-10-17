@@ -43,29 +43,21 @@ def test_requested_resolution_reaches_the_clip_graph(moviesize, recorded_encode)
     # then writes; the size is not passed to write_videofile separately. This
     # previously asserted only the filename -- identically in all four
     # parametrized cases -- so it would have passed with renderMultitrack
-    # ignoring its own moviesize argument, which is exactly the defect
-    # test_requested_fps_reaches_the_encoder pins for fps.
+    # ignoring its own moviesize argument, which is the defect the engine had
+    # with fps (see test_requested_fps_reaches_the_encoder).
     assert recorded_encode[0]['size'] == moviesize
 
 
-# --- frame rate: the argument is dead -------------------------------------
+# --- frame rate -----------------------------------------------------------
 
 
-def test_requested_fps_is_ignored(recorded_encode):
-    """`renderMultitrack(fps=...)` never reaches the encoder.
+def test_requested_fps_reaches_the_encoder(recorded_encode):
+    """`renderMultitrack(fps=...)` is the rate the encoder is asked for.
 
-    The signature accepts `fps` and the call site hardcodes `fps=30.0`, so
-    every render is 30fps regardless. `alfred`'s Render model exposes `fps` to
-    API callers and the worker forwards it, so this is user-visible: a caller
-    can ask for 60 and silently receive 30.
+    The call site hardcoded `fps=30.0`, so every render was 30fps whatever was
+    asked -- and alfred's Render model exposes `fps` to API callers and the
+    worker forwards it, so a caller could ask for 60 and silently get 30.
     """
-    renderMultitrack(_edl(), fps=60.0, filename='out.mp4')
-
-    assert recorded_encode[0]['fps'] == 30.0
-
-
-@pytest.mark.xfail(reason='the fps argument should reach the encoder')
-def test_requested_fps_should_be_honoured(recorded_encode):
     renderMultitrack(_edl(), fps=60.0, filename='out.mp4')
     assert recorded_encode[0]['fps'] == 60.0
 
@@ -171,3 +163,22 @@ def test_audio_encoding_is_requested_even_with_no_audio_clip(recorded_encode):
     assert call['audio_codec'] == 'aac'
     assert call['audio_fps'] == 48000
     assert call['audio_bitrate'] == '320k'
+
+
+def test_the_sound_is_encoded_beside_the_output_under_a_name_the_library_hides(
+    recorded_encode,
+):
+    """moviepy encodes a render's sound to a temporary file before muxing it.
+
+    otto writes it beside the output, as `<output>.audio.m4a`, rather than in
+    the working directory. alfred's media library refuses that name
+    (`utils.media`), so a half-written temporary in a library directory is
+    never listed or accepted as media; this keeps the two in step.
+    """
+    from alfred.core.utils.media import is_library_filename
+
+    renderMultitrack(_edl(), filename='renders/6ad3c61e21ba2c869ca8b7ef.mp4')
+
+    temporary = recorded_encode[0]['temp_audiofile']
+    assert temporary == 'renders/6ad3c61e21ba2c869ca8b7ef.audio.m4a'
+    assert not is_library_filename(temporary.rsplit('/', 1)[-1])

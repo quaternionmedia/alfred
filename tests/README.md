@@ -341,3 +341,17 @@ layer is not the same object as its predecessor, because the effects chain
 rebinds `c` at each step. It is a re-processed derivative carrying the
 previous clip's pixels — verified identical frame data — with the bad clip's
 duration. The corruption is the same; the mechanism is not object identity.
+
+## Fixed in the engine
+
+Defects 1–4 and 12–14 are fixed in otto, which this repository pins at
+`a387666`. Their pairs -- a test pinning the defect and a strict xfail for the
+fix -- became single tests of the fixed behaviour when the pin moved: an
+unknown or missing clip type, a refused download and a template name outside
+otto's registry (`otto.templates.TEMPLATES`) each raise `EdlException`
+naming the clip; `fps` reaches the encoder; `outpoint` trims; a clip's own
+`fadeIn` and `fadeOut` are its only fades. The audio clip IS-4 pinned as
+suspect is mixed into the sound and never drawn. Defect 6 stands -- the models
+still accept those configs -- but the engine now refuses each of them at
+render time with an `EdlException` naming the clip and the field, as it
+already refused defect 7's empty EDL, rather than rendering nonsense.

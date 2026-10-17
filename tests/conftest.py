@@ -165,10 +165,14 @@ def render_dict(**overrides):
 
 @pytest.fixture
 def template_clip():
-    """A clip needing no media file, so the engine can build it offline."""
+    """A clip needing no media file, so the engine can build it offline.
+
+    Named for a real template: the engine refuses any name outside its
+    registry, and this one said `color`, which is not a template.
+    """
     return Clip(
         type='template',
-        name='color',
+        name='makeColor',
         duration=1.0,
         data=TemplateData(color='#ff0000'),
     )

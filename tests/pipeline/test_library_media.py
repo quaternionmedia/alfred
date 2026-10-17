@@ -166,6 +166,56 @@ def test_the_worker_refuses_what_the_api_refuses(worker, monkeypatch, name):
 
 
 @pytest.mark.parametrize(
+    'audio',
+    ['/etc/hostname', 'videos/../../etc/hostname', 'https://example.test/x.mp3'],
+)
+def test_the_worker_refuses_a_soundtrack_the_api_would_refuse(
+    worker, monkeypatch, audio
+):
+    """The engine honours a soundtrack now -- it used to drop the argument --
+    and opens or fetches it as it would a clip's name."""
+    (worker.library / 'bars.mp4').write_bytes(b'only its name is checked')
+    called = []
+    monkeypatch.setattr(
+        worker.tasks, 'renderMultitrack', lambda **kw: called.append(kw)
+    )
+
+    worker.tasks.renderRemote.apply(
+        kwargs=dict(
+            edl=video_edl('videos/bars.mp4'),
+            filename=OUTPUT,
+            renderId=RENDER_ID,
+            audio=audio,
+        )
+    )
+
+    assert called == [], 'the engine was handed a soundtrack it should not open'
+    failures = [e for e in worker.events if isinstance(e, tuple) and e[0] == 'failed']
+    assert failures and 'soundtrack' in str(failures[0][1])
+
+
+def test_a_library_soundtrack_reaches_the_engine_resolved(worker, monkeypatch):
+    for name in ('bars.mp4', 'music.mp3'):
+        (worker.library / name).write_bytes(b'only its name is checked')
+    called = []
+    monkeypatch.setattr(
+        worker.tasks, 'renderMultitrack', lambda **kw: called.append(kw)
+    )
+
+    worker.tasks.renderRemote.apply(
+        kwargs=dict(
+            edl=video_edl('videos/bars.mp4'),
+            filename=OUTPUT,
+            renderId=RENDER_ID,
+            audio='videos/music.mp3',
+        )
+    )
+
+    (call,) = called
+    assert call['audio'] == str(worker.library / 'music.mp3')
+
+
+@pytest.mark.parametrize(
     'filename', ['../../escape.mp4', '/tmp/escape.mp4', 'name.mp4', 'x/../y.mp4']
 )
 def test_the_worker_writes_only_to_an_id_derived_name(worker, monkeypatch, filename):

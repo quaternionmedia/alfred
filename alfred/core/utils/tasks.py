@@ -11,7 +11,7 @@ from ..models.render import is_output_filename
 from .bucket import upload
 from .encoding import preset_for
 from .logger import DbLogger, failure_reason, mark_failed
-from .media import resolve_edl
+from .media import MediaNameError, check_media_name, resolve_edl
 
 renderer = Celery(
     'renderer',
@@ -88,13 +88,23 @@ def renderRemote(
         # has already refused anything outside the library; checking again
         # here covers EDLs stored before that check existed and re-queued now.
         timeline = resolve_edl(Edl.parse_obj(edl))
+        # A soundtrack is media too, held to the same rule. The engine used to
+        # drop this argument; it honours it now, opening a path or fetching a
+        # URL exactly as it would a clip's name. Nothing the api queues sets
+        # it, so this only ever refuses or resolves a job built elsewhere.
+        soundtrack = None
+        if audio is not None:
+            try:
+                soundtrack = check_media_name(audio)
+            except MediaNameError as exc:
+                raise MediaNameError(f'soundtrack: {exc}') from exc
         # Into RENDER_DIR, not the media library: written beside the media, a
         # render was listed by `GET /videos` and served by `/videos/{file}` to
         # anyone signed in.
         makedirs(config.RENDER_DIR, exist_ok=True)
         renderMultitrack(
             edl=timeline,
-            audio=audio,
+            audio=soundtrack,
             filename=join(config.RENDER_DIR, filename),
             logger=log,
             moviesize=tuple(moviesize),

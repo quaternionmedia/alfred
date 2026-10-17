@@ -6,10 +6,9 @@ No network and no filesystem: `otto.getdata.head`, `download_url` and
 `path.isfile` are all substituted.
 """
 
-import numpy as np
 import pytest
 from otto import getdata
-from otto.exceptions import EdlException
+from otto.exceptions import DownloadException, EdlException
 from otto.models import Clip, Edl, TemplateData
 from otto.render import generateEdl
 
@@ -29,6 +28,8 @@ def test_local_path_is_returned_unchanged():
         ('video/mp4', 'mp4'),
         ('image/png', 'png'),
         ('audio/mpeg', 'mp3'),
+        # Judged by its media type: a parameter does not make it another type.
+        ('video/mp4; charset=binary', 'mp4'),
     ],
 )
 def test_allowed_content_types_map_to_extensions(
@@ -66,75 +67,68 @@ def test_an_existing_file_is_not_downloaded_again(
     assert recorded_downloads == [], 'already-present file was fetched again'
 
 
-# --- download: the rejections ---------------------------------------------
+# --- download: the refusals -----------------------------------------------
 #
-# Every rejection path ends in the same bare `except Exception` that prints
-# and returns None, so a caller cannot tell "refused" from "succeeded with
-# nothing". The pinning tests record that; the xfails record what it should be.
+# Each refusal raises DownloadException, an EdlException, naming the URL and
+# the reason. They used to end in a bare `except Exception` that printed and
+# returned None, so a caller could not tell "refused" from "succeeded with
+# nothing".
 
 REJECTIONS = [
-    pytest.param({'content_type': 'text/html'}, id='html'),
-    pytest.param({'content_type': 'text/plain'}, id='text'),
-    pytest.param({'content_type': 'application/zip'}, id='not-on-allowlist'),
-    pytest.param({'content_length': str(int(2e10))}, id='too-large'),
-    pytest.param({'content_type': None}, id='no-content-type'),
+    pytest.param({'content_type': 'text/html'}, 'not allowed', id='html'),
+    pytest.param({'content_type': 'text/plain'}, 'not allowed', id='text'),
+    pytest.param(
+        {'content_type': 'application/zip'}, 'not allowed', id='not-on-allowlist'
+    ),
+    pytest.param({'content_length': str(int(2e10))}, 'too large', id='too-large'),
+    pytest.param({'content_type': None}, 'no content_type', id='no-content-type'),
+    pytest.param(
+        {'content_length': None}, 'size must be known', id='no-content-length'
+    ),
 ]
 
 
-@pytest.mark.parametrize('response', REJECTIONS)
-def test_rejected_downloads_return_none_today(
-    response, fake_head, recorded_downloads, monkeypatch
+@pytest.mark.parametrize('response,reason', REJECTIONS)
+def test_a_refused_download_raises_naming_the_url_and_the_reason(
+    response, reason, fake_head, recorded_downloads, monkeypatch
 ):
     monkeypatch.setattr(getdata.path, 'isfile', lambda _: False)
     fake_head(**response)
 
-    assert getdata.download('https://example.test/bad') is None
-    assert recorded_downloads == []
-
-
-@pytest.mark.parametrize('response', REJECTIONS)
-@pytest.mark.xfail(reason='a refused download should raise, not return None')
-def test_rejected_downloads_should_raise(
-    response, fake_head, recorded_downloads, monkeypatch
-):
-    monkeypatch.setattr(getdata.path, 'isfile', lambda _: False)
-    fake_head(**response)
-
-    # `match`, not a bare `Exception`. otto raises undifferentiated
-    # `Exception` for every refusal, so there is no type to name here -- but
-    # matching the message still distinguishes "the download was refused" from
-    # "this test called something that does not exist", which bare Exception
-    # does not. Narrowing the type is otto's change to make, not this one's.
-    with pytest.raises(Exception, match='not allowed|too large|no content_type'):
+    with pytest.raises(DownloadException, match=reason) as refused:
         getdata.download('https://example.test/bad')
 
+    assert 'https://example.test/bad' in str(refused.value)
+    assert recorded_downloads == [], 'a refused file was fetched anyway'
 
-def test_a_failed_download_hands_none_to_the_engine(
+
+def test_a_refused_download_stops_the_render_at_its_clip(
     fake_head, recorded_downloads, monkeypatch
 ):
-    """The consequence: `clip.name` becomes None and the engine gets it.
+    """The render stops at the clip, saying which clip, which URL and why.
 
-    `generateEdl` assigns `clip.name = download(clip.name)` before constructing
-    the source, so a refused download does not stop the render -- it feeds
-    None into the clip constructor and fails there instead, with an error that
-    names neither the URL nor the reason it was refused.
+    A refused download used to become the clip's file name -- None -- and the
+    render failed later in the clip constructor, naming neither the URL nor
+    the reason. The clip's `name` is also left as the caller wrote it; the
+    engine used to overwrite it with the downloaded path.
     """
     monkeypatch.setattr(getdata.path, 'isfile', lambda _: False)
     fake_head(content_type='text/html')
 
     clip = Clip(type='video', name='https://example.test/bad', duration=1)
-    with pytest.raises(Exception) as excinfo:
+    with pytest.raises(EdlException, match='not allowed') as refused:
         generateEdl(Edl(clips=[clip]), moviesize=(64, 48))
 
-    assert 'example.test' not in str(excinfo.value)
+    assert "clip 0 ('https://example.test/bad')" in str(refused.value)
+    assert clip.name == 'https://example.test/bad'
 
 
 # --- clip type dispatch ---------------------------------------------------
 #
-# `generateEdl` dispatches on clip.type through if/elif with no else, so when
-# nothing matches `c` is never assigned. The `if not c:` guard below the chain
-# was meant to catch this and cannot: the name is either unbound or left over
-# from the previous iteration.
+# `generateEdl` dispatched on clip.type through if/elif with no else, so an
+# unknown type crashed the first clip with UnboundLocalError and, on any later
+# clip, silently became a copy of the previous clip's picture. Both are
+# refused now, naming the clip.
 
 
 def _template_clip(duration=1.0, color='#ff0000'):
@@ -146,27 +140,17 @@ def _template_clip(duration=1.0, color='#ff0000'):
     )
 
 
-def test_unknown_clip_type_alone_raises_unbound_local():
-    """First clip: `c` is unbound, so the failure is an interpreter error."""
-    with pytest.raises(UnboundLocalError):
+def test_an_unknown_clip_type_is_refused_naming_the_clip():
+    with pytest.raises(EdlException, match=r"clip 0 \('x'\): unknown clip type"):
         generateEdl(Edl(clips=[Clip(type='bogus', name='x', duration=1)]))
 
 
-@pytest.mark.xfail(reason='an unknown clip type should raise EdlException')
-def test_unknown_clip_type_alone_should_raise_edl_exception():
-    with pytest.raises(EdlException):
-        generateEdl(Edl(clips=[Clip(type='bogus', name='x', duration=1)]))
+def test_an_unknown_clip_type_after_a_valid_clip_is_refused_not_duplicated():
+    """This was the most damaging case, because it was silent.
 
-
-def test_unknown_clip_type_after_a_valid_clip_silently_duplicates_it():
-    """Later clip: `c` still holds the previous clip, so nothing raises.
-
-    The bad clip becomes a second layer carrying the *previous* clip's
-    picture, re-timed to the bad clip's own duration. No exception, no log
-    line, and the rendered video contains a frame nobody asked for.
-
-    This is the most damaging behavior covered in this file, because unlike
-    the unbound case it is completely silent.
+    The bad clip became a second layer carrying the previous clip's picture,
+    retimed to its own duration: no exception, no log line, and a rendered
+    video with a frame nobody asked for.
     """
     edl = Edl(
         clips=[
@@ -174,55 +158,45 @@ def test_unknown_clip_type_after_a_valid_clip_silently_duplicates_it():
             Clip(type='bogus', name='x', duration=4.0),
         ]
     )
-
-    video = generateEdl(edl, moviesize=(64, 48))
-
-    assert len(video.clips) == 2, 'the unknown clip still produced a layer'
-    first, second = video.clips
-    assert np.array_equal(
-        first.get_frame(0), second.get_frame(0)
-    ), 'expected the stale clip to be reused'
-    assert second.duration == 4.0, 'stale picture, bad clip timing'
-
-
-@pytest.mark.xfail(reason='an unknown clip type should raise, not duplicate')
-def test_unknown_clip_type_after_a_valid_clip_should_raise():
-    edl = Edl(
-        clips=[
-            _template_clip(duration=1.0),
-            Clip(type='bogus', name='x', duration=4.0),
-        ]
-    )
-    with pytest.raises(EdlException):
+    with pytest.raises(EdlException, match=r"clip 1 \('x'\): unknown clip type"):
         generateEdl(edl, moviesize=(64, 48))
 
 
-def test_missing_clip_type_behaves_the_same_as_an_unknown_one():
-    """`type` is Optional, so omitting it reaches the same dead end."""
-    with pytest.raises(UnboundLocalError):
+def test_a_missing_clip_type_is_refused_like_an_unknown_one():
+    """`type` is Optional, so omitting it reaches the same check."""
+    with pytest.raises(EdlException, match='unknown clip type None'):
         generateEdl(Edl(clips=[Clip(name='x', duration=1)]))
 
 
 # --- template resolution --------------------------------------------------
+#
+# A template clip's name is looked up in otto's registry,
+# `otto.templates.TEMPLATES`, and nowhere else. It was
+# `getattr(templates, clip.name)`: AttributeError for an unknown name, and for
+# a known one, anything the module happens to hold.
 
 
-def test_unknown_template_name_raises_attribute_error():
-    clip = Clip(type='template', name='no_such_template', duration=1)
-    with pytest.raises(AttributeError):
+def test_an_unknown_template_name_is_refused_naming_the_clip():
+    clip = Clip(
+        type='template', name='no_such_template', duration=1, data=TemplateData()
+    )
+    with pytest.raises(
+        EdlException, match=r"clip 0 \('no_such_template'\): no template is named"
+    ):
         generateEdl(Edl(clips=[clip]), moviesize=(64, 48))
 
 
-def test_template_lookup_reaches_any_module_attribute():
-    """`getattr(templates, clip.name)` is not restricted to templates.
-
-    `otto.templates` imports helpers into its namespace, so a caller-supplied
-    name resolves to things that were never meant to be reachable as
-    templates. Pinned here so that narrowing the lookup to a registry is a
-    visible change rather than a silent one.
-    """
+@pytest.mark.parametrize(
+    'name', ['concatenate_videoclips', 'rgbToDec', 'ColorClip', 'TextClip']
+)
+def test_what_the_template_module_imports_is_not_a_template(name):
+    """Still in `otto.templates`' namespace; no longer reachable from a clip."""
     from otto import templates
 
-    for name in ('concatenate_videoclips', 'rgbToDec'):
-        assert callable(
-            getattr(templates, name, None)
-        ), f'{name} is reachable via the template lookup'
+    assert callable(getattr(templates, name, None)), (
+        f'{name} has left otto.templates, so this case no longer shows '
+        'anything -- pick a helper the module still imports'
+    )
+    clip = Clip(type='template', name=name, duration=1, data=TemplateData())
+    with pytest.raises(EdlException, match='no template is named'):
+        generateEdl(Edl(clips=[clip]), moviesize=(64, 48))

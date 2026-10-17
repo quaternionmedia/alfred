@@ -67,20 +67,22 @@ class TestPublicFrameNames:
 
 
 class TestTheEngineRefusingAClip:
-    def test_is_a_422_naming_it_not_a_500(self, client, monkeypatch):
-        """otto raises EdlException for input it cannot build (contract C8)."""
-        from otto.exceptions import EdlException
+    def test_is_a_422_naming_it_not_a_500(self, client):
+        """otto raises EdlException for input it cannot build (contract C8).
 
-        from alfred.core.routes import preview
-
-        monkeypatch.setattr(
-            preview, 'generateEdl', _raise(EdlException('clip 1: no such template'))
-        )
+        A real refusal, not a stand-in: a clip trimmed to end before it
+        starts passes alfred's own checks, which are about names, and the
+        engine refuses it, naming the clip and the field.
+        """
+        (clip,) = TEMPLATE_EDL['clips']
+        inverted = {**clip, 'inpoint': 2.0, 'outpoint': 1.0}
         res = client.post(
-            '/preview/?t=0', json={'edl': TEMPLATE_EDL, 'width': 64, 'height': 48}
+            '/preview/?t=0',
+            json={'edl': {'clips': [inverted]}, 'width': 64, 'height': 48},
         )
-        assert res.status_code == 422
-        assert 'clip 1' in res.json()['detail']
+        assert res.status_code == 422, res.text
+        detail = res.json()['detail']
+        assert "('makeColor')" in detail and 'outpoint' in detail
 
 
 class TestTheTemplatePreviewKeepsNothing:
