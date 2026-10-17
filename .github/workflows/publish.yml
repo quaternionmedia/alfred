@@ -77,9 +77,23 @@ jobs:
           print(f'{ref_name} names version {version}')
           EOF
 
+  # The backend suite at the tagged commit, exactly as CI.yml's api_tests runs
+  # it; keep the two in step. A tag claims its automated validation passed,
+  # so nothing is built until it has.
+  tests:
+    name: 🐢 API tests
+    needs: version
+    uses: quaternionmedia/.github/.github/workflows/pytest.yml@main
+    secrets: inherit
+    with:
+      python_version: '3.11'
+      submodules: recursive
+      requirements: requirements.lock
+      pip_args: '-e .[test] -e alfred/otto'
+
   build:
     name: 📦 Build package
-    needs: version
+    needs: [version, tests]
     runs-on: ubuntu-latest
     steps:
       - name: 📰 Checkout
