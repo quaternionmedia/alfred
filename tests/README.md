@@ -7,7 +7,8 @@ Scope: the backend and the render engine. Browser coverage lives in
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
 stack's own configuration: **117 passed, 19 xfailed, in about 6 seconds.**
-IS-5 (render queueing, needs a database) is not started.
+The database tier IS-5 needs exists (`integration/`, marked `needs_db`); its
+render-queueing tests are not written yet.
 
 ```sh
 pdm run pytest                                       # everything
@@ -86,9 +87,16 @@ tests/
     test_stack_config.py compose files and Dockerfiles
   pipeline/            needs ffmpeg, no DB, no network
     test_render_pipeline.py
+  integration/         needs MongoDB at DB_URL: the app in-process, real auth
+    conftest.py          the app, a per-worker database, account factories
 ```
 
-`integration/` (IS-5, needs a running MongoDB) is planned, not written.
+`integration/` runs wherever DB_URL is set -- `./al pytest` provides a
+MongoDB in `pytest.yml` -- and skips where it is not. A DB_URL that is set but
+does not answer fails the run instead of skipping it: the database was
+promised, so its absence is a fault, not a missing tool. Each xdist worker
+gets its own database (named in `conftest.py`, before the app is imported),
+dropped before and after the session.
 
 Markers, registered in `pyproject.toml` under `[tool.pytest.ini_options]`:
 `needs_ffmpeg`, `needs_db`, `needs_docker`. `conftest.py` skips a marked test
