@@ -1,5 +1,6 @@
 import { auth } from './Login'
 import { Edl, clipSeconds } from './Video'
+import { RenderStatus } from './RenderStatus'
 
 var state = require('./Globals').state
 
@@ -80,11 +81,13 @@ export function timelineRender({ project, projectId, width, height }) {
   }
 }
 
-/** Queue a render. Resolves to the new render's id. */
+/** Queue a render and follow it until it settles. Resolves to the new render's id. */
 export function queueRender(body) {
-  return auth('/render', { method: 'POST', body }).then(id =>
+  return auth('/render', { method: 'POST', body }).then(raw => {
     // The route returns the id as a JSON string; strip quotes in case a
     // proxy or an older server hands it back double-encoded.
-    String(id).replace(/"/g, '')
-  )
+    const id = String(raw).replace(/"/g, '')
+    RenderStatus.watch(id, { name: body.name })
+    return id
+  })
 }

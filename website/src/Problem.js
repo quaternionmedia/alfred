@@ -27,6 +27,18 @@ export function describeDetail(detail) {
   return String(detail)
 }
 
+/** Text made safe for alertify, whose notifications are HTML.
+ *
+ * Server explanations and render failures can carry anything an encoder
+ * printed, angle brackets included; shown raw, that is markup.
+ */
+export function escapeHtml(text) {
+  return String(text).replace(
+    /[&<>"']/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]
+  )
+}
+
 /** The explanation carried by a rejected `auth()`/`m.request` JSON request. */
 export function requestProblem(err) {
   const body = err && err.response

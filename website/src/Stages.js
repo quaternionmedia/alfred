@@ -7,6 +7,7 @@ import { Player } from './Player'
 import { TemplateEditor } from './TemplateEditor'
 import { Magnussens } from './Magnussens'
 import { queueRender, renderSize, timelineRender } from './RenderRequest'
+import { RenderStatus, isSettled, renderState } from './RenderStatus'
 import { requestProblem } from './Problem'
 
 /**
@@ -156,8 +157,90 @@ export const Flow = {
         Flow.renders = r
         m.redraw()
       })
-      .catch(() => {}),
+      .catch(() => {})
+      .then(() => LiveList.kick()),
 }
+
+// The rows the Deliver stage shows.
+const VISIBLE_RENDERS = 12
+
+// How far along each state is. A render only ever moves forward.
+const PROGRESSION = { queued: 0, rendering: 1, rendered: 2, failed: 2 }
+
+/** A render as the row should show it: the list's copy, brought up to date.
+ *
+ * Two sources answer independently -- the list, fetched now and then, and a
+ * watched render's own status, asked every second or so -- and either can be
+ * the more recent. Neither simply wins. A render only moves forward, so the
+ * further-along state and the higher progress are the newer ones, whichever
+ * source reported them.
+ */
+const current = r => {
+  const live = RenderStatus.get(r._id)
+  if (!live) return r
+  const listed = renderState(r)
+  const progress = [r.progress, live.progress].filter(p => typeof p === 'number')
+  return {
+    ...r,
+    state: PROGRESSION[live.state] >= PROGRESSION[listed] ? live.state : listed,
+    progress: progress.length ? Math.max(...progress) : null,
+    error: live.error || r.error || null,
+    filename: r.filename || live.filename || null,
+    destination: r.destination || live.destination || null,
+  }
+}
+
+/** Keeps the Deliver list moving while something on it has not finished.
+ *
+ * A render queued on this page is watched on its own (RenderStatus). This is
+ * for the rest -- one queued in another tab, by the form, or before a reload --
+ * which would otherwise show whatever state they were in when the stage
+ * opened. One list request covers all of them, backing off while nothing
+ * changes, and it stops when the stage closes or nothing is left to wait for.
+ */
+const LiveList = {
+  active: false,
+  timer: null,
+  delay: 2000,
+  seen: null,
+
+  waiting: () =>
+    Flow.renders
+      .slice(0, VISIBLE_RENDERS)
+      .filter(r => !isSettled(renderState(current(r))) && !RenderStatus.isWatching(r._id)),
+
+  /** Schedule the next refresh if the stage is open and anything is unfinished. */
+  kick: () => {
+    if (!LiveList.active || LiveList.timer) return
+    const waiting = LiveList.waiting()
+    if (!waiting.length) return
+    const seen = waiting.map(r => `${r._id}:${r.status}:${r.progress}`).join('|')
+    LiveList.delay = seen === LiveList.seen ? Math.min(LiveList.delay * 1.6, 15000) : 2000
+    LiveList.seen = seen
+    LiveList.timer = setTimeout(() => {
+      LiveList.timer = null
+      if (LiveList.active && User.loggedIn) Flow.loadRenders()
+    }, LiveList.delay)
+  },
+
+  start: () => {
+    LiveList.active = true
+    LiveList.seen = null
+  },
+
+  stop: () => {
+    LiveList.active = false
+    clearTimeout(LiveList.timer)
+    LiveList.timer = null
+  },
+}
+
+// A watched render that settles changes the list (a filename, a status), and
+// a watcher that fell back to reading the list has the whole of it in hand.
+RenderStatus.listen((type, id, payload) => {
+  if (type === 'list' && Array.isArray(payload)) Flow.renders = payload
+  if (type === 'settled') Flow.loadRenders()
+})
 
 /** The stage rail. Always visible, so the whole flow is legible at a glance. */
 export const StageRail = () => ({
@@ -631,7 +714,11 @@ const RenderPanel = {
  * depends on all of it.
  */
 const DeliverPanel = {
-  oninit: () => Flow.loadRenders(),
+  oninit: () => {
+    LiveList.start()
+    Flow.loadRenders()
+  },
+  onremove: () => LiveList.stop(),
   view: () =>
     m('.stagepanel#panel-deliver', [
       m('.panelhead', [
@@ -650,7 +737,11 @@ const DeliverPanel = {
       Flow.renders.length
         ? m(
             'ul.renderlist',
-            Flow.renders.slice(0, 12).map(r => m(RenderRow, { render: r }))
+            // Keyed, so a new render arriving at the top is a new row rather
+            // than every row below it being repainted with its neighbour.
+            Flow.renders
+              .slice(0, VISIBLE_RENDERS)
+              .map(r => m(RenderRow, { key: r._id, render: r }))
           )
         : Empty('Nothing rendered yet. Queue one from the Render stage.'),
 
@@ -658,17 +749,28 @@ const DeliverPanel = {
     ]),
 }
 
-/** One render, with its state and the one action available to it. */
+/** One render, with its state and the actions available to it. */
 const RenderRow = () => ({
   view: vnode => {
-    const r = vnode.attrs.render
-    const progress = typeof r.progress === 'number' ? Math.round(r.progress) : null
-    const done = r.status === 'RENDERED' || r.status === 'UPLOADED'
-    const failed = r.status === 'failed'
+    const r = current(vnode.attrs.render)
+    const state = renderState(r)
+    const progress =
+      typeof r.progress === 'number' ? Math.max(0, Math.min(100, Math.round(r.progress))) : null
+    const done = state === 'rendered'
+    const failed = state === 'failed'
+    const working = !done && !failed
 
-    return m('li.renderitem', { class: failed ? 'failed' : done ? 'done' : 'working' }, [
+    const label = r.project || r.name || r._id
+
+    const row = {
+      class: failed ? 'failed' : done ? 'done' : 'working',
+      'data-render': r._id,
+      'data-state': state,
+    }
+
+    return m('li.renderitem', row, [
       m('span.rendername', { title: r.filename || '' }, [
-        r.project || r.name || r._id,
+        label,
         r.description ? m('span.renderdesc', r.description) : null,
       ]),
 
@@ -676,47 +778,64 @@ const RenderRow = () => ({
         r.width && r.height ? m('span', `${r.width}×${r.height}`) : null,
         r.duration ? m('span', `${Math.round(r.duration)}s`) : null,
         // Status and progress were only in the old table, and they are what
-        // tells you whether a render can be delivered at all.
-        m('span.renderstatus', failed ? 'failed' : r.status || 'queued'),
-        !done && !failed && progress !== null
-          ? m('span.renderprogress', `${progress}%`)
+        // tells you whether a render can be delivered at all. They move now:
+        // a watched render is polled, and the stage refreshes the rest.
+        m('span.renderstatus', state),
+        working
+          ? m('progress.renderbar', {
+              max: 100,
+              // No value while queued: an indeterminate bar says "waiting"
+              // without claiming a percentage nobody has reported.
+              value: state === 'rendering' && progress !== null ? progress : undefined,
+              'aria-label': `${label} progress`,
+            })
           : null,
+        working && progress !== null ? m('span.renderprogress', `${progress}%`) : null,
       ]),
 
-      r.destination
-        ? m('span.delivered', `delivered → ${r.destination}`)
-        : m(AsyncButton, {
-            class: 'deliver',
-            busy: Flow.delivering === r._id,
-            // A render that has not finished has no file to send, and a button
-            // that fails is worse than one that explains itself.
-            disabled: !done,
-            title: done ? 'Send this render to the chosen destination' : 'Not finished yet',
-            label: 'Deliver',
-            busyLabel: 'Delivering…',
-            onclick: () => {
-              const destination = document.getElementById('destination').value
-              // Per-render, not a single flag: several rows each have a
-              // button, and one shared flag would spin all of them.
-              Flow.delivering = r._id
-              auth(`/render/${r._id}/deliver?destination=${destination}`, {
-                method: 'POST',
-              })
-                .then(() => {
-                  Flow.delivering = null
-                  Flow.remember({ destination })
-                  Flow.loadRenders()
-                })
-                .catch(() => {
-                  Flow.delivering = null
-                  Flow.error = 'Delivery failed'
-                  m.redraw()
-                })
-            },
-          }),
+      // Why it failed, where the failure is. This was nowhere in the
+      // interface; a failed render was a red word and nothing else.
+      failed && r.error ? m('span.rendererror', { title: r.error }, r.error) : null,
+
+      m('span.renderactions', [deliverAction(r, done)]),
     ])
   },
 })
+
+/** Deliver, or where it was delivered to. */
+const deliverAction = (r, done) =>
+  r.destination
+    ? m('span.delivered', `delivered → ${r.destination}`)
+    : m(AsyncButton, {
+        class: 'deliver',
+        busy: Flow.delivering === r._id,
+        // A render that has not finished has no file to send, and a button
+        // that fails is worse than one that explains itself.
+        disabled: !done,
+        title: done ? 'Send this render to the chosen destination' : 'Not finished yet',
+        label: 'Deliver',
+        busyLabel: 'Delivering…',
+        onclick: () => {
+          const destination = document.getElementById('destination').value
+          // Per-render, not a single flag: several rows each have a button,
+          // and one shared flag would spin all of them.
+          Flow.delivering = r._id
+          auth(`/render/${r._id}/deliver?destination=${destination}`, {
+            method: 'POST',
+          })
+            .then(() => {
+              Flow.delivering = null
+              Flow.remember({ destination })
+              Flow.loadRenders()
+            })
+            .catch(e => {
+              Flow.delivering = null
+              const why = requestProblem(e)
+              Flow.error = why ? `Delivery failed: ${why}` : 'Delivery failed'
+              m.redraw()
+            })
+        },
+      })
 
 /** The panel for the current stage. Edit has none -- it *is* the timeline. */
 export const StagePanel = () => ({
