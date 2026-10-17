@@ -37,7 +37,7 @@ class Renderer(Task):
 @renderer.task(bind=True, base=Renderer)
 def renderRemote(
     self,
-    edl: Edl,
+    edl: dict,
     filename: str,
     renderId: str,
     audio=None,
@@ -47,6 +47,11 @@ def renderRemote(
     ffmpeg_params=None,
     **kwargs,
 ):
+    """Render one EDL to `filename`.
+
+    Arguments arrive as JSON (contract C7): the EDL as a dict, which is parsed
+    back into an `Edl` here, the render id as a string, the size as a list.
+    """
     try:
         self.log = DbLogger(self, renderId)
         # Media names resolved here, against VIDEO_DIR, rather than handed to
@@ -55,13 +60,13 @@ def renderRemote(
         # an absolute one wherever it points. The api has already refused
         # anything outside the library; checking again here covers EDLs that
         # were stored before that check existed and are re-queued now.
-        timeline = resolve_edl(edl if isinstance(edl, Edl) else Edl.parse_obj(edl))
+        timeline = resolve_edl(Edl.parse_obj(edl))
         renderMultitrack(
             edl=timeline,
             audio=audio,
             filename=join(config.VIDEO_DIR, filename),
             logger=self.log,
-            moviesize=moviesize,
+            moviesize=tuple(moviesize),
             fps=fps,
             bitrate=bitrate,
             ffmpeg_params=ffmpeg_params,

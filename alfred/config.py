@@ -114,8 +114,20 @@ alfred.quaternion.media
 
 
 class CeleryConfig:
-    task_serializer = "pickle"
-    result_serializer = "pickle"
-    event_serializer = "json"
-    accept_content = ["application/json", "application/x-python-serialize"]
-    result_accept_content = ["application/json", "application/x-python-serialize"]
+    """JSON in both directions, and nothing else accepted (contract C7).
+
+    This was pickle, and unpickling a message runs whatever code it names.
+    The broker and the result backend are MongoDB collections, so anyone able
+    to write to that database could run code in the worker, and in the api
+    through task results. Task arguments are plain data now -- the EDL as a
+    dict, ids as strings -- and the worker rebuilds its models from them.
+
+    A task queued as pickle before this change is refused by the worker
+    rather than run; re-queue it.
+    """
+
+    task_serializer = 'json'
+    result_serializer = 'json'
+    event_serializer = 'json'
+    accept_content = ['json']
+    result_accept_content = ['json']

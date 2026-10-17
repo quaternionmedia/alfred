@@ -1,3 +1,4 @@
+from bson import ObjectId
 from proglog import ProgressBarLogger
 
 from .db import get_sync_db
@@ -6,11 +7,22 @@ from .db import get_sync_db
 db = get_sync_db()
 
 
+def as_object_id(render_id):
+    """The render's `_id` as the collection stores it.
+
+    Task arguments are JSON now (contract C7), so the id arrives as a string,
+    and a string matches no document keyed by ObjectId: progress and status
+    would be written to nothing, and the render would sit at "queued" forever
+    while the worker reported success.
+    """
+    return render_id if isinstance(render_id, ObjectId) else ObjectId(str(render_id))
+
+
 class DbLogger(ProgressBarLogger):
     def __init__(self, task, renderId):
         super().__init__()
         self.task = task
-        self.id = renderId
+        self.id = as_object_id(renderId)
 
     def callback(self, **kwargs):
         # print('task callback', kwargs)

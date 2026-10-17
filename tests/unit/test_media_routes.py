@@ -33,9 +33,10 @@ def library(tmp_path, monkeypatch):
 @pytest.fixture
 def client(monkeypatch, library):
     offline_documents(monkeypatch, Render)
-    override = as_user(app, OWNER)
+    overrides = as_user(app, OWNER)
     yield TestClient(app)
-    app.dependency_overrides.pop(override, None)
+    for dependency in overrides:
+        app.dependency_overrides.pop(dependency, None)
 
 
 def render_request(*clips):

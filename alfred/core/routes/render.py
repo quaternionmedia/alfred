@@ -1,6 +1,7 @@
 from os.path import join
 from typing import Optional
 
+from beanie import PydanticObjectId
 from bson import ObjectId
 from fastapi import Depends, HTTPException
 from fastapi_crudrouter import MotorCRUDRouter
@@ -17,6 +18,68 @@ from ..utils.media import RefusedEdl, check_edl
 from ..utils.tasks import renderRemote
 from .templates import TEMPLATE_NAMES
 from .users import current_active_superuser, current_active_user
+
+
+class RenderStore:
+    """The render collection, as the routes use it.
+
+    The routes reach MongoDB only through this, for two reasons: they can be
+    exercised without a database (a dependency override swaps in an in-memory
+    store; see tests/unit/render_harness.py), and the queries deciding what a
+    caller can reach live in one place.
+    """
+
+    async def get(self, render_id) -> Optional[Render]:
+        return await Render.get(PydanticObjectId(render_id))
+
+    async def insert(self, render: Render) -> None:
+        await render.insert()
+
+    async def update(self, render_id, fields: dict) -> None:
+        await Render.find_one({'_id': PydanticObjectId(render_id)}).update(
+            {'$set': fields}
+        )
+
+
+def get_render_store() -> RenderStore:
+    return RenderStore()
+
+
+def get_render_queue():
+    """How a render reaches the worker: Celery's `delay`.
+
+    A dependency so that a test can record what would be sent instead.
+    """
+    return renderRemote.delay
+
+
+async def load_render(store: RenderStore, item_id: str) -> Render:
+    """The render with this id: 422 if the id is malformed, 404 if absent."""
+    if not ObjectId.is_valid(item_id):
+        raise INVALID_ID
+    render = await store.get(item_id)
+    if render is None:
+        raise NOT_FOUND
+    return render
+
+
+def task_payload(render: Render, filename: str) -> dict:
+    """The worker's arguments for `render`, as plain JSON data (contract C7).
+
+    These went over the broker as pickle: a beanie document's `Edl`, an
+    `ObjectId`, a tuple. The serializer is JSON-only now, and anything it
+    cannot encode would fail at `delay()`. So the EDL goes as a dict, which
+    the worker parses back into an `Edl`, and the id as a string.
+    """
+    return dict(
+        edl=render.edl.dict(),
+        renderId=str(render.id),
+        filename=filename,
+        moviesize=[render.width, render.height],
+        fps=render.fps,
+        bitrate=render.bitrate,
+        ffmpeg_params=render.ffmpeg_params,
+    )
 
 
 def refuse_unrenderable(edl):
@@ -67,12 +130,17 @@ class RenderAPI(MotorCRUDRouter):
 
         @self.post('', *args, **kwargs)
         async def queueRender(
-            render: Render, user: User = Depends(current_active_user)
+            render: Render,
+            user: User = Depends(current_active_user),
+            store: RenderStore = Depends(get_render_store),
+            queue=Depends(get_render_queue),
         ):
             refuse_unrenderable(render.edl)
             render.username = user.email
-            # TODO: rework to async logic
-            result = await self.schema.insert_one(render)
+            # The id is chosen here rather than by the insert, so the filename
+            # that depends on it is written with the document instead of by a
+            # second update a moment later.
+            render.id = PydanticObjectId()
 
             # The render's own id goes in the filename, because everything else
             # in it can repeat. It was project, description, size, quality,
@@ -82,41 +150,27 @@ class RenderAPI(MotorCRUDRouter):
             # concurrent renders in the e2e suite collided on exactly that and
             # ended up sharing one file, each reporting success.
             ts = timestr()
-            filename = f'{render.project}{"_" + render.description if render.description else ""}_{render.width}x{render.height}{"_" + render.quality if render.quality else ""}_{render.edl.duration}s_{ts}_{result.id}.mp4'  # noqa: E501
+            filename = f'{render.project}{"_" + render.description if render.description else ""}_{render.width}x{render.height}{"_" + render.quality if render.quality else ""}_{render.edl.duration}s_{ts}_{render.id}.mp4'  # noqa: E501
             render.filename = filename
-            await self.schema.find_one({'_id': result.id}).update(
-                {'$set': {'filename': filename}}
-            )
-            print('rendering!', render, result)
-            renderRemote.delay(
-                edl=render.edl,
-                renderId=result.id,
-                filename=filename,
-                moviesize=(render.width, render.height),
-                fps=render.fps,
-                bitrate=render.bitrate,
-                ffmpeg_params=render.ffmpeg_params,
-            )
-            return str(result.id)
+            await store.insert(render)
+            queue(**task_payload(render, filename))
+            return str(render.id)
 
         @self.post('/rerender/{id}', *args, **kwargs)
         async def reQueueRender(
-            id: str, user: User = Depends(current_active_superuser)
+            id: str,
+            user: User = Depends(current_active_superuser),
+            store: RenderStore = Depends(get_render_store),
+            queue=Depends(get_render_queue),
         ):
-            render = await self.schema.find_one({'_id': ObjectId(id)})
-            print('rerendering!', id, render)
+            # A malformed id was a 500 from `ObjectId(id)`, and a missing one
+            # a 500 from reading `.edl` off None.
+            render = await load_render(store, id)
             # A stored EDL is checked like a new one: it may predate the media
             # contract, and re-queueing it must not reopen what that closed.
             refuse_unrenderable(render.edl)
-            renderRemote.delay(
-                edl=render.edl,
-                renderId=ObjectId(id),
-                filename=render.filename,
-                moviesize=(render.width, render.height),
-                fps=render.fps,
-                bitrate=render.bitrate,
-                ffmpeg_params=render.ffmpeg_params,
-            )
+            queue(**task_payload(render, render.filename))
+            return str(render.id)
 
         @self.post('/{item_id}/deliver', *args, **kwargs)
         async def deliverRender(
