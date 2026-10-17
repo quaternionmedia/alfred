@@ -74,10 +74,9 @@ class LocalDestination:
     """Keep the render on this machine, under DELIVERY_DIR.
 
     The useful default for development and for anyone running Alfred without a
-    cloud account, which is the deployment the README describes -- "a video
-    editor that works even without a server". Until now the only finished-render
-    path went to a Google bucket, so that claim did not extend to getting your
-    video back.
+    cloud account -- the README's "cloud storage optional". Until now the only
+    finished-render path went to a Google bucket, so a server without one had
+    no way to give your video back.
 
     Not under DATA_DIR, where this used to copy to: that directory is served
     by an unauthenticated static mount at /data, so every local delivery was

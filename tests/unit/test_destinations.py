@@ -128,10 +128,9 @@ class TestTheSeam:
     def test_the_default_is_local(self):
         """A server with no cloud account still has somewhere to put a render.
 
-        The README calls this "a video editor that works even without a
-        server". Until there was a local destination, the only finished-render
-        path went to a Google bucket, so that claim did not extend to getting
-        your video back.
+        The README says cloud storage is optional. Until there was a local
+        destination, the only finished-render path went to a Google bucket, so
+        a server without one had no way to give your video back.
         """
         assert DEFAULT_DESTINATION == 'local'
         assert isinstance(get_destination(), LocalDestination)

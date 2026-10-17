@@ -847,8 +847,8 @@ const RenderRow = () => ({
  *
  * Getting the video back used to mean delivering it to `local` and then
  * finding the file on the server's disk. A download needs no destination and
- * no access to the machine, which is what "works without a server" means for
- * the last step.
+ * no access to the machine, so getting the video back works the same whether
+ * or not the server has cloud storage.
  */
 const downloadAction = (r, done) =>
   m(AsyncButton, {
