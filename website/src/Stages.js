@@ -8,6 +8,7 @@ import { TemplateEditor } from './TemplateEditor'
 import { Magnussens } from './Magnussens'
 import { queueRender, renderSize, timelineRender } from './RenderRequest'
 import { RenderStatus, isSettled, renderState } from './RenderStatus'
+import { blobProblem, downloadRender } from './Download'
 import { requestProblem } from './Problem'
 
 /**
@@ -79,6 +80,7 @@ export const Flow = {
   },
 
   delivering: null,
+  downloading: null,
 
   // The most recent addition to the timeline, for the confirmation line.
   added: null,
@@ -151,14 +153,25 @@ export const Flow = {
       .catch(() => {})
   },
 
-  loadRenders: () =>
-    auth('/render')
+  // Several things reload the render list now -- the stage opening, a render
+  // queued or settling, the refresh while something is unfinished -- and
+  // responses can arrive out of order. One that was asked for before the list
+  // on screen is older than it, and must not replace it.
+  rendersAsked: 0,
+  rendersShown: 0,
+
+  loadRenders: () => {
+    const asked = ++Flow.rendersAsked
+    return auth('/render')
       .then(r => {
+        if (asked < Flow.rendersShown) return
+        Flow.rendersShown = asked
         Flow.renders = r
         m.redraw()
       })
       .catch(() => {})
-      .then(() => LiveList.kick()),
+      .then(() => LiveList.kick())
+  },
 }
 
 // The rows the Deliver stage shows.
@@ -797,10 +810,47 @@ const RenderRow = () => ({
       // interface; a failed render was a red word and nothing else.
       failed && r.error ? m('span.rendererror', { title: r.error }, r.error) : null,
 
-      m('span.renderactions', [deliverAction(r, done)]),
+      m('span.renderactions', [downloadAction(r, done), deliverAction(r, done)]),
     ])
   },
 })
+
+/** Download the file -- for every finished render, delivered or not.
+ *
+ * Getting the video back used to mean delivering it to `local` and then
+ * finding the file on the server's disk. A download needs no destination and
+ * no access to the machine, which is what "works without a server" means for
+ * the last step.
+ */
+const downloadAction = (r, done) =>
+  m(AsyncButton, {
+    class: 'download',
+    busy: Flow.downloading === r._id,
+    disabled: !done,
+    title: done ? 'Download this render' : 'Not finished yet',
+    label: 'Download',
+    busyLabel: 'Downloading…',
+    onclick: () => {
+      Flow.downloading = r._id
+      Flow.error = null
+      downloadRender(r)
+        .then(() => {
+          Flow.downloading = null
+          m.redraw()
+        })
+        .catch(err =>
+          blobProblem(err).then(why => {
+            Flow.downloading = null
+            Flow.error = why
+              ? `Could not download it: ${why}`
+              : err.code === 409
+                ? 'Could not download it: the render has no file yet'
+                : 'Could not download it'
+            m.redraw()
+          })
+        )
+    },
+  })
 
 /** Deliver, or where it was delivered to. */
 const deliverAction = (r, done) =>

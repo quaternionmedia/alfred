@@ -14,6 +14,7 @@
  * real thing end to end.
  */
 
+const fs = require('fs')
 const { test, expect, MEDIA_PROJECT } = require('./fixtures')
 
 const RENDER_ID = '0123456789abcdef01234567'
@@ -76,6 +77,19 @@ async function serveRenders(page, { list, status }) {
   )
 }
 
+/**
+ * Open `url` with every request going through the routes registered so far.
+ *
+ * The fixture has already loaded the app to log in, and the lists it asked
+ * for then may still be in flight -- a real render list landing after a
+ * served one replaces it. Reloading starts clean; the session is in
+ * sessionStorage, so it survives.
+ */
+async function openFresh(page, url) {
+  await page.goto(url)
+  await page.reload()
+}
+
 async function queueFromRenderStage(page, request, token) {
   const projects = await (
     await request.get('/project', { headers: { Authorization: token } })
@@ -88,7 +102,7 @@ async function queueFromRenderStage(page, request, token) {
     route => route.fulfill({ json: project })
   )
 
-  await page.goto(`/#!/?project=${project._id}&stage=render`)
+  await openFresh(page, `/#!/?project=${project._id}&stage=render`)
   await expect(page.locator('#timeline .clip')).toHaveCount(project.edl.clips.length)
   await page.locator('#queue-render').click()
   await expect(page.locator('#panel-deliver')).toBeVisible()
@@ -202,7 +216,7 @@ test.describe('a queued render is followed until it settles', () => {
       ]),
     })
 
-    await authedPage.goto('/#!/?stage=deliver')
+    await openFresh(authedPage, '/#!/?stage=deliver')
     const row = authedPage.locator(`.renderitem[data-render="${RENDER_ID}"]`)
     await expect(row).toHaveAttribute('data-state', 'rendering')
     await expect(row.locator('.renderprogress')).toHaveText('70%')
@@ -210,5 +224,105 @@ test.describe('a queued render is followed until it settles', () => {
     // The list served it; nothing asked the status route about a render this
     // page did not queue.
     expect(status.calls()).toBe(0)
+  })
+})
+
+test.describe('a finished render can be downloaded', () => {
+  /**
+   * # Recipe: getting the video back
+   *
+   * Every rendered render has a Download button. It fetches the file with the
+   * session -- an `<a href>` cannot carry the Authorization header -- and
+   * saves it under the name the server gives it.
+   */
+
+  /** Serve the list, and a download route that records how it was asked. */
+  async function serveDownload(page, list, answer) {
+    const asked = []
+    await page.route(
+      url => url.pathname === '/render',
+      route =>
+        route.request().method() === 'GET' ? route.fulfill({ json: list }) : route.fallback()
+    )
+    await page.route(
+      url => url.pathname === `/render/${RENDER_ID}/download`,
+      async route => {
+        asked.push(route.request().headers())
+        await route.fulfill(answer)
+      }
+    )
+    return asked
+  }
+
+  test('the file arrives under its display name, fetched with the session', async ({
+    authedPage,
+  }) => {
+    const bytes = Buffer.from('not really an mp4, but bytes all the same')
+    const asked = await serveDownload(
+      authedPage,
+      [renderDoc({ status: 'RENDERED', progress: 100 })],
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'video/mp4',
+          'Content-Disposition': 'attachment; filename="e2e watched render.mp4"',
+        },
+        body: bytes,
+      }
+    )
+
+    await openFresh(authedPage, '/#!/?stage=deliver')
+    const button = authedPage.locator(`.renderitem[data-render="${RENDER_ID}"] button.download`)
+    await expect(button).toBeEnabled()
+
+    const [download] = await Promise.all([
+      authedPage.waitForEvent('download'),
+      button.click(),
+    ])
+    expect(download.suggestedFilename()).toBe('e2e watched render.mp4')
+    expect(fs.readFileSync(await download.path())).toEqual(bytes)
+
+    expect(asked).toHaveLength(1)
+    expect(asked[0].authorization, 'downloaded without the session').toMatch(/^bearer /i)
+    await expect(button).toHaveAttribute('aria-busy', 'false')
+  })
+
+  test('a delivered render can still be downloaded', async ({ authedPage }) => {
+    await serveDownload(
+      authedPage,
+      [renderDoc({ status: 'UPLOADED', progress: 100, destination: 'local' })],
+      { status: 200, contentType: 'video/mp4', body: Buffer.from('x') }
+    )
+
+    await openFresh(authedPage, '/#!/?stage=deliver')
+    const row = authedPage.locator(`.renderitem[data-render="${RENDER_ID}"]`)
+    await expect(row.locator('.delivered')).toContainText('local')
+    await expect(row.locator('button.download')).toBeEnabled()
+  })
+
+  test('an unfinished render offers no download yet, and says why', async ({
+    authedPage,
+  }) => {
+    await serveDownload(authedPage, [renderDoc({ progress: 30 })], { status: 500 })
+
+    await openFresh(authedPage, '/#!/?stage=deliver')
+    const button = authedPage.locator(`.renderitem[data-render="${RENDER_ID}"] button.download`)
+    await expect(button).toBeDisabled()
+    await expect(button).toHaveAttribute('title', /not finished/i)
+  })
+
+  test('a refused download says why', async ({ authedPage }) => {
+    await serveDownload(authedPage, [renderDoc({ status: 'RENDERED', progress: 100 })], {
+      status: 409,
+      json: { detail: 'That render has no output file yet' },
+    })
+
+    await openFresh(authedPage, '/#!/?stage=deliver')
+    await authedPage
+      .locator(`.renderitem[data-render="${RENDER_ID}"] button.download`)
+      .click()
+    await expect(authedPage.locator('#panel-deliver .stageerror')).toHaveText(
+      'Could not download it: That render has no output file yet'
+    )
   })
 })

@@ -9,14 +9,11 @@ import { queueRender, renderSize, timelineRender } from './RenderRequest'
 import { requestProblem } from './Problem'
 import { Flow } from './Stages'
 
-export function downloadFile(url) {
-  var a = document.createElement("a")
-  document.body.appendChild(a)
-  a.style = "display: none"
-  a.href = url
-  a.click()
-  document.body.removeChild(a)
-}
+// `downloadFile(url)` lived here and was never called: an anchor pointed at a
+// protected URL cannot carry the session's Authorization header, so it could
+// not have downloaded a render if anything had used it. Download.js fetches
+// with the session and hands the browser the bytes.
+
 export function PlaybackTools() {
   return {
     view(vnode) {
