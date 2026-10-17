@@ -261,3 +261,36 @@ class TestResolution:
                 video_dir=str(library),
                 remote_hosts=(),
             )
+
+
+class TestOnlyMediaIsLibraryMedia:
+    """The library lists what a clip can open, and nothing an encoder is in
+    the middle of writing."""
+
+    @pytest.mark.parametrize(
+        'name',
+        [
+            # otto muxes a render's sound from a temporary beside the output
+            '6ad3cdc433bc85ee116c7577.mp4.audio.m4a',
+            'clip.audio.m4a',
+            # moviepy's own temporaries
+            'clipTEMP_MPY_wvf_snd.mp4',
+            # not media at all
+            'notes.txt',
+            'README',
+            'archive.zip',
+        ],
+    )
+    def test_is_neither_listed_nor_accepted(self, library, name):
+        (library / name).write_bytes(b'x')
+        assert name not in library_files(str(library))
+        with pytest.raises(MediaNameError):
+            check(LIBRARY_PREFIX + name, library)
+
+    @pytest.mark.parametrize(
+        'name', ['CLIP.MOV', 'still.png', 'music.mp3', 'song.m4a', 'title.webm']
+    )
+    def test_media_of_every_clip_type_is(self, library, name):
+        (library / name).write_bytes(b'x')
+        assert name in library_files(str(library))
+        assert check(LIBRARY_PREFIX + name, library)

@@ -31,7 +31,7 @@ that were stored before it existed and are re-queued later.
 
 import re
 from os import listdir
-from os.path import abspath, commonpath, isfile, join, realpath
+from os.path import abspath, commonpath, isfile, join, realpath, splitext
 from typing import Iterable, Optional
 from urllib.parse import urlsplit
 
@@ -49,6 +49,45 @@ MEDIA_CLIP_TYPES = frozenset({'video', 'image', 'audio'})
 # there: at the pinned engine an unknown type is either an UnboundLocalError
 # or, after a valid clip, a silent copy of the previous clip's picture.
 CLIP_TYPES = frozenset({'template'}) | MEDIA_CLIP_TYPES
+
+# What the library offers: files a video, image or audio clip can open.
+# Anything else in the directory is not media, whoever put it there.
+MEDIA_EXTENSIONS = frozenset(
+    {
+        # video
+        '.mp4',
+        '.m4v',
+        '.mov',
+        '.webm',
+        '.mkv',
+        '.avi',
+        '.mpg',
+        '.mpeg',
+        '.ogv',
+        # image
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.gif',
+        '.webp',
+        '.bmp',
+        # audio
+        '.mp3',
+        '.wav',
+        '.m4a',
+        '.aac',
+        '.ogg',
+        '.oga',
+        '.flac',
+        '.opus',
+    }
+)
+
+# Files the engine writes beside an output while it encodes, and removes after:
+# the audio track otto muxes in (`<output>.audio.m4a`), and moviepy's own
+# temporaries. Mid-render they are half-written files with media extensions;
+# listed as media, a clip could pick one up.
+_ENCODER_TEMPORARIES = re.compile(r'(\.audio\.m4a|TEMP_MPY_\w*\.\w+)$', re.IGNORECASE)
 
 _SCHEME = re.compile(r'^[A-Za-z][A-Za-z0-9+.-]*:')
 _CONTROL = re.compile(r'[\x00-\x1f\x7f]')
@@ -69,8 +108,9 @@ class MediaNameError(RefusedEdl):
 def is_library_filename(filename) -> bool:
     """Whether `filename` is a name the library can hold, list and serve.
 
-    One path segment, not hidden, no backslash, no control characters. This is
-    also what `GET /videos` lists, so anything it lists is accepted back.
+    One path segment, not hidden, no backslash, no control characters, a
+    media extension, and not an encoder's temporary file. This is also what
+    `GET /videos` lists, so anything it lists is accepted back.
     """
     return (
         isinstance(filename, str)
@@ -79,6 +119,8 @@ def is_library_filename(filename) -> bool:
         and '/' not in filename
         and '\\' not in filename
         and not _CONTROL.search(filename)
+        and splitext(filename)[1].lower() in MEDIA_EXTENSIONS
+        and not _ENCODER_TEMPORARIES.search(filename)
     )
 
 
