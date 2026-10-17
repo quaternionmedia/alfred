@@ -244,3 +244,103 @@ test.describe('the toolbar Render button', () => {
     expect(sent[1].body).toEqual(toolbar.body)
   })
 })
+
+test.describe('a form-driven project', () => {
+  /**
+   * A project with fields and logic renders from a form on the Render stage:
+   * the logic compiles the form into clips. Those clips are layered on
+   * purpose -- here a colour field from 0 and a title over it from 1s -- so
+   * they keep their own starts, and a clip with none leaves with an explicit
+   * 0 rather than relying on the renderer's default.
+   *
+   * The form also sent ffmpeg flags of its own and a quality of "web" or
+   * "TV"; the server now picks the encoding from a named preset and refuses
+   * client-supplied ffmpeg parameters, so this asserts neither is sent.
+   */
+  let project
+
+  test.beforeEach(async ({ request, token }) => {
+    const created = await request.post('/project', {
+      headers: { Authorization: token },
+      data: {
+        name: `form render ${test.info().workerIndex}-${test.info().repeatEachIndex}`,
+        fields: [
+          { type: 'Text', attrs: { name: 'headline', text: 'Headline' } },
+          { type: 'Selector', attrs: { name: 'duration', text: 'Duration' }, children: ['4'] },
+        ],
+        logic: {
+          merge: [
+            {
+              eachKey: {
+                type: 'template',
+                name: 'makeColor',
+                duration: 4,
+                data: { preserve: { color: '#101820' } },
+              },
+            },
+            {
+              eachKey: {
+                type: 'template',
+                name: 'title',
+                duration: 2,
+                start: 1,
+                data: { eachKey: { text: { var: 'headline' } } },
+              },
+            },
+          ],
+        },
+      },
+    })
+    expect(created.status(), await created.text()).toBeLessThan(400)
+    project = await created.json()
+  })
+
+  test.afterEach(async ({ request, token }) => {
+    if (project) {
+      await request.delete(`/project/${project._id}`, { headers: { Authorization: token } })
+    }
+  })
+
+  test('renders its logic layered, with a preset and no ffmpeg flags', async ({
+    authedPage,
+  }) => {
+    const sent = await captureRenders(authedPage)
+    const previews = []
+    await authedPage.route(
+      url => url.pathname === '/preview/',
+      async route => {
+        previews.push(route.request().postDataJSON())
+        await route.fulfill({ json: 'data/none.jpg' })
+      }
+    )
+
+    await authedPage.goto(`/#!/?project=${project._id}&stage=render`)
+    const form = authedPage.locator('#template_form')
+    await expect(form).toBeVisible()
+    await form.locator('input[name="headline"]').fill('Hello from the form')
+    await form.locator('select[name="quality"]').selectOption('high')
+
+    // By name: the buttons are inputs whose label mithril sets as the
+    // `value` property, which a `[value=...]` selector cannot see.
+    await form.locator('input[name="preview"]').click()
+    await expect.poll(() => previews.length).toBe(1)
+    expect(previews[0].edl.clips.map(c => c.start)).toEqual([0, 1])
+
+    await form.locator('input[name="save"]').click()
+    await expect(authedPage).toHaveURL(/stage=deliver/)
+    await expect(authedPage).toHaveURL(new RegExp(`project=${project._id}`))
+
+    expect(sent).toHaveLength(1)
+    const { body } = sent[0]
+    expect(body).not.toHaveProperty('ffmpeg_params')
+    expect(body).not.toHaveProperty('bitrate')
+    expect(body.quality).toBe('high')
+    expect(body.project_id).toBe(project._id)
+    // Layered as the logic placed them: the colour from 0 -- explicitly now
+    // -- and the title over it from 1s.
+    expect(starts(body)).toEqual([0, 1])
+    expect(body.edl.clips[1].data.text).toBe('Hello from the form')
+    expect(body.duration).toBe(4)
+    expect(body.edl.duration).toBe(4)
+  })
+})

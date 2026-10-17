@@ -11,6 +11,18 @@ import "../node_modules/mithril-range/index.css"
 import range from 'mithril-range'
 
 import { LogicEngine } from 'json-logic-engine'
+import { layeredEdl, queueRender } from './RenderRequest'
+import { escapeHtml, requestProblem } from './Problem'
+
+// Named encoding presets the server applies; the first is the default.
+const QUALITIES = ['standard', 'high', 'draft']
+
+/** The form's values, with the chosen resolution as numbers. */
+function formData() {
+  const data = Object.fromEntries(new FormData(document.getElementById('template_form')).entries())
+  const [width, height] = String(data.resolution || '1920x1080').split('x').map(Number)
+  return { ...data, width, height }
+}
 
 export function Magnussens() {
   let project
@@ -42,71 +54,71 @@ export function Magnussens() {
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
             '1920x1080', '1600x900', '1280x720',
           ]),
-          m(Selector, { name: 'quality', text: 'Quality'}, [
-            'web', 'TV'
-          ]),
+          // The server's quality presets. This offered "web" and "TV" and
+          // sent ffmpeg flags of its own for each -- the server now chooses
+          // the encoding from a named preset and refuses client-supplied
+          // ffmpeg parameters, so a render from this form would have been
+          // turned away.
+          m(Selector, { name: 'quality', text: 'Quality'}, QUALITIES),
           m(Text, { name: 'description', text: 'Desciption (optional)'}, ''),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             e.preventDefault()
+            if (!logic) return error('This project has no logic to build a video from', 4)
+            const data = formData()
             loading = true
-
-            let form = new FormData(document.getElementById('template_form'))
-            let data = Object.fromEntries(form.entries())
-            data.width = data.resolution.split('x')[0]
-            data.height = data.resolution.split('x')[1]
-            let edl = logic(data)
-            // edl.shift()
-            console.log('previewing ', edl, vnode.dom)
+            // The same placement rules as a render, so the frame previewed
+            // is a frame of the video that will be made.
             auth('/preview/', {
               method: 'post',
-              params: {
-                  t: t
-              },
+              params: { t },
               body: {
-                edl: {clips: edl},
+                edl: layeredEdl(logic(data)),
+                width: data.width,
+                height: data.height,
               },
             }).then(res => {
-              console.log('preview available at', res)
               loading = false
               preview = res
-            }).catch(e => {
-              console.log('error previewing', e)
+            }).catch(err => {
+              loading = false
+              const why = requestProblem(err)
+              error(why ? `Could not preview: ${escapeHtml(why)}` : 'Could not preview', 8)
             })
           }},),
           m(Button, { name: 'save', type: 'submit', value: 'render',
           onclick: e => {
             e.preventDefault()
-            let form = new FormData(document.getElementById('template_form'))
-            // form.forEach(f => {console.log('field', f.name, f)})
+            if (!logic) return error('This project has no logic to build a video from', 4)
+            const data = formData()
+            const edl = layeredEdl(logic(data))
+            // The form's own length, when it has one, is the video's.
+            const duration = Number(data.duration) || edl.duration
+            edl.duration = duration
             message('assembling render')
-            let data = Object.fromEntries(form.entries())
-            data.width = data.resolution.split('x')[0]
-            data.height = data.resolution.split('x')[1]
-
-            let edl = {clips: logic(data), duration: data.duration}
-            let ffmpeg_params = data.quality == 'TV' ? ['-b:v', '25M', '-maxrate', '30M', '-bufsize', '20M'] : ['-b:v', '5M', '-minrate', '1M', '-maxrate', '10M', '-bufsize', '5M']
-            console.log('saving form', e, edl, data, data, ffmpeg_params)
-            
-            let params = {
+            queueRender({
+              edl,
+              name: project.name,
               project: project.name,
               project_id: m.route.param('project'),
+              description: data.description || undefined,
               width: data.width,
               height: data.height,
               fps: 29.97,
               quality: data.quality,
-              description: data.description,
-              ffmpeg_params: ffmpeg_params,
-              edl: edl,
-              duration: data.duration ? data.duration : edl.duration,
-            }
-            auth(`/render`, {
-              method: 'post',
-              body: params
-            }).then(e => {
+              duration,
+            }).then(() => {
               success('Rendering!')
-              m.route.set('/renders')
-            }).catch(e => {
-              console.log('error rendering', e)
+              // Into the flow, with the project, where the render is
+              // followed until it finishes. This went to the retired
+              // `/renders` route, which dropped the project.
+              m.route.set('/', { stage: 'deliver', project: m.route.param('project') })
+            }).catch(err => {
+              // It failed silently: the reason went to the console.
+              const why = requestProblem(err)
+              error(
+                why ? `Could not queue the render: ${escapeHtml(why)}` : 'Could not queue the render',
+                8
+              )
             })
           },
         },),

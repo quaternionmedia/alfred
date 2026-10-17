@@ -51,6 +51,24 @@ export function timelineEdl(clips) {
   return { clips: placed, duration: start }
 }
 
+/**
+ * A layered EDL, as a form-driven project's logic builds one.
+ *
+ * Not a single-track timeline: the logic places its clips deliberately -- a
+ * background from 0, captions over it from 17.1 -- and recomputing starts
+ * end to end would undo that. So each clip keeps its own `start`, and one
+ * without a start leaves with an explicit 0, which is what a missing start
+ * already meant to the renderer, said out loud rather than left to a default.
+ * The duration is where the last clip ends.
+ */
+export function layeredEdl(clips) {
+  const placed = (clips || [])
+    .filter(Boolean)
+    .map(({ i, ...clip }) => ({ ...clip, start: Number(clip.start) || 0 }))
+  const duration = placed.reduce((end, c) => Math.max(end, c.start + clipSeconds(c)), 0)
+  return { clips: placed, duration }
+}
+
 /** What a project renders at: the size it was last rendered at, else the viewer's. */
 export function renderSize(project) {
   const saved = (project && project.render_settings) || {}
