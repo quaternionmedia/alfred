@@ -7,9 +7,9 @@ across modules is something ruff rightly reports as a redefinition.
 
 Three things stand between a route and a unit test, and each has a seam:
 
-- **Authentication.** Every render route depends on `current_active_user`
-  (and some on `current_active_superuser`); `as_user` swaps both for a fixed
-  user through FastAPI's dependency overrides.
+- **Authentication.** Every render route depends on `current_active_user`;
+  `as_user` swaps it, and `current_active_superuser` for routes elsewhere that
+  use it, for a fixed user through FastAPI's dependency overrides.
 - **Storage.** `Render` is a beanie Document, and constructing one --
   which FastAPI does to parse a request body -- calls `get_motor_collection()`,
   which raises until `init_beanie` has run against a live MongoDB.

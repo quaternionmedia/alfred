@@ -220,7 +220,8 @@ def check_media_name(
     filename = name[len(LIBRARY_PREFIX) :]
     if not is_library_filename(filename):
         raise MediaNameError(
-            f'{name!r}: library paths are one file directly inside videos/'
+            f'{name!r}: not a media file directly inside videos/ '
+            '(GET /videos lists the ones there are)'
         )
     path = library_file(filename, video_dir)
     if path is None:
