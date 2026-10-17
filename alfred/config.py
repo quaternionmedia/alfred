@@ -4,6 +4,46 @@ PRODUCTION = environ.get('ALFRED_PRODUCTION')
 
 SECRET_KEY = environ.get('ALFRED_SECRET_KEY')
 
+# HS256 keys are only as strong as they are long, and this one signs every
+# session, password-reset and verification token the server issues.
+MIN_SECRET_KEY_LENGTH = 32
+
+
+def secret_key_problem(env):
+    """What is wrong with ALFRED_SECRET_KEY for this process, or None.
+
+    Two different failures, checked in different places:
+
+    - **Missing**, anywhere. Nothing can be signed, so every login answers
+      500 -- PyJWT is handed None -- and nothing says why. That is not a
+      production-only problem: test_e2e.yml's api has no key, and its whole
+      suite failed at the first login.
+    - **Shorter than MIN_SECRET_KEY_LENGTH**, under ALFRED_PRODUCTION. Anyone
+      holding a single token can guess HS256 keys offline until the signature
+      matches, and a short key puts that within reach -- after which they can
+      mint a session for any account. Development keys are stubs and allowed
+      to be short.
+
+    Reported, not enforced: the process still boots. Whether production should
+    refuse to start instead is an open decision.
+    """
+    key = env.get('ALFRED_SECRET_KEY') or ''
+    if not key:
+        return (
+            'ALFRED_SECRET_KEY is not set, so no token can be signed: every '
+            'login will fail with a server error.'
+        )
+    if env.get('ALFRED_PRODUCTION') and len(key) < MIN_SECRET_KEY_LENGTH:
+        return (
+            f'ALFRED_SECRET_KEY is shorter than {MIN_SECRET_KEY_LENGTH} '
+            'characters. It signs every session, password-reset and '
+            'verification token, and anyone holding one of those tokens can '
+            'guess keys offline until the signature matches; a short key puts '
+            'that within reach, and with it a session for any account. Use a '
+            f'random string of at least {MIN_SECRET_KEY_LENGTH} characters.'
+        )
+    return None
+
 
 def _truthy(value):
     """Explicit opt-in only.

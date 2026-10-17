@@ -1,4 +1,6 @@
+from os import environ
 from subprocess import run as bash
+from textwrap import wrap
 
 from beanie import init_beanie
 from fastapi import Depends, FastAPI
@@ -14,6 +16,7 @@ from alfred.config import (
     DEV_USER_EMAIL,
     SEED_OWNER,
     STATIC_DIR,
+    secret_key_problem,
 )
 from alfred.core.models.users import UserRead, UserUpdate
 from alfred.core.routes import (
@@ -69,6 +72,25 @@ async def warnIfAuthIsDisabled():
             f'  Every request is served as {DEV_USER_EMAIL}, a superuser.', flush=True
         )
         print('  Local development only. Never expose this process.', flush=True)
+        print(line, flush=True)
+
+
+@app.on_event('startup')
+async def warnIfSecretKeyIsWeak():
+    """Say so, every boot, when the signing key will not do.
+
+    The same treatment as the auth bypass banner, for the same reason: a
+    process that starts successfully looks healthy, and a missing or short
+    key is invisible until a login fails -- or until somebody forges one.
+    Read from the environment at startup, the same place config.py read it.
+    """
+    problem = secret_key_problem(environ)
+    if problem:
+        line = '!' * 72
+        print(line, flush=True)
+        print('  THE TOKEN SIGNING KEY IS NOT SAFE TO USE', flush=True)
+        for text in wrap(problem, 68):
+            print(f'  {text}', flush=True)
         print(line, flush=True)
 
 
