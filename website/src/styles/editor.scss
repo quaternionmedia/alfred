@@ -146,6 +146,42 @@ $rule: 1px solid #2e2e2e;
   }
 }
 
+// ---- the timeline, under each tool ---------------------------------------
+
+// What a touch on a clip means depends on the tool. Selecting (and cutting)
+// is a tap, so a swipe is left to the browser to scroll the timeline -- a
+// phone has no other way to reach a clip off screen. Trimming and moving are
+// drags of the clip itself, so the browser must not take the gesture for a
+// scroll. (style.css sets `touch-action: none` on every clip, which made the
+// timeline unscrollable by touch under any tool.)
+#timeline {
+  &.tool-time .clip,
+  &.tool-cut .clip {
+    touch-action: pan-x pan-y;
+  }
+
+  &.tool-trim .clip,
+  &.tool-move .clip {
+    touch-action: none;
+  }
+
+  &.tool-time .clip {
+    cursor: text;
+  }
+
+  &.tool-trim .clip {
+    cursor: ew-resize;
+  }
+
+  &.tool-move .clip {
+    cursor: grab;
+  }
+
+  &.tool-cut .clip {
+    cursor: url('../assets/content-cut.svg') 12 12, crosshair;
+  }
+}
+
 // ---- the bin: what can go on the timeline --------------------------------
 
 // Entries wrap rather than shrinking to fit one row. Squeezed onto one line,

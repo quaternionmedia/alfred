@@ -8,94 +8,160 @@ import { Preview } from './Preview'
 import { Player } from './Player'
 import { auth } from './Login'
 
+// How far a press may wander and still count as a tap. Past this it is a drag
+// -- on a touch screen, usually the start of scrolling the timeline -- and
+// must not seek.
+const TAP_SLOP = 8
+
+// The shortest a trim may make a clip, in seconds.
+const SHORTEST = 0.1
+
+/**
+ * One clip on the timeline, and what the timeline tools do to it.
+ *
+ * Pointer events, not mouse events. Trim and seek listened for `mousedown`
+ * and `mousemove`, which a touch screen does not send while a finger moves --
+ * it sends touch events, and synthesises mouse events only after a tap -- so
+ * on the phones and tablets the README promises, trimming did nothing at all.
+ * Pointer events are one stream for mouse, pen and touch.
+ *
+ * A trim captures the pointer (`setPointerCapture`), so the drag keeps
+ * arriving at this clip when it leaves the clip's edge -- which is the whole
+ * gesture, since the point is to make it wider -- and the release arrives
+ * wherever it happens. That replaces listeners on `document`, which had to be
+ * added and removed by hand; when they were bound to the clip instead, every
+ * press leaked one, and clips resized without being dragged.
+ *
+ * Seeking happens on release, not on press. With the timeline scrollable by
+ * touch, a press is as likely to be the start of a scroll as a choice of
+ * position; a scroll moves the pointer (or the browser cancels it), and only a
+ * press that stays put is a tap.
+ */
 export function Clip() {
-  // Listeners for an in-progress trim, held so they can be removed again.
-  let dragging = null
+  // The gesture in progress: a trim being dragged, or a press that may be a tap.
+  let gesture = null
 
   return {
     oncreate: vnode => {
       const element = vnode.dom
 
-      element.addEventListener('mousedown', e => {
+      const capture = id => {
+        try {
+          element.setPointerCapture(id)
+        } catch (e) {
+          // An id the browser no longer considers active. The drag still
+          // works while it stays over the clip.
+        }
+      }
+
+      const finishTrim = commit => {
+        const trim = gesture
+        gesture = null
         // `vnode.attrs`, read now rather than captured at oncreate. This
         // component instance is reused for whatever clip ends up at its
         // position -- the list is unkeyed -- so a reference taken once
         // describes the clip that used to be here.
-        const attrs = vnode.attrs
+        const clip = Edl.edl[vnode.attrs.i]
+        if (!commit || !clip) {
+          element.style.width = trim.startStyle
+          return
+        }
+        const seconds = Math.max(SHORTEST, parseFloat(element.style.width) / state.scale())
+        clip.duration = Math.round(seconds * 1000) / 1000
+        // A media clip is a window onto its file: its out-point is where
+        // the window ends, so it moves with the length. Left alone it went
+        // on reporting the length the clip was added at.
+        if (clip.type !== 'template') {
+          clip.outpoint = Math.round(((Number(clip.inpoint) || 0) + clip.duration) * 1000) / 1000
+        }
+        Edl.update()
+      }
 
-        if (state.tool() == 'trim') {
+      element.addEventListener('pointerdown', e => {
+        // The primary button, or any touch or pen contact.
+        if (e.pointerType === 'mouse' && e.button !== 0) return
+        if (gesture) return
+        const tool = state.tool()
+        if (tool === 'trim') {
           e.preventDefault()
-          if (dragging) return
-
-          const startWidth = element.getBoundingClientRect().width
-          const startX = e.pageX
-
-          const resize = ev => {
-            const w = startWidth + (ev.pageX - startX)
-            if (w > 4) element.style.width = w + 'px'
+          gesture = {
+            kind: 'trim',
+            id: e.pointerId,
+            startX: e.clientX,
+            startWidth: element.getBoundingClientRect().width,
+            startStyle: element.style.width,
           }
-
-          const stop = () => {
-            document.removeEventListener('mousemove', resize)
-            document.removeEventListener('mouseup', stop)
-            dragging = null
-            const clip = Edl.edl[attrs.i]
-            if (clip) {
-              clip.duration = parseFloat(element.style.width) / state.scale()
-              Edl.update()
-            }
-          }
-
-          // On `document`, not on the clip.
-          //
-          // Both were bound to the element itself, so dragging past its edge
-          // -- which is the whole gesture, since the point is to make it
-          // wider -- stopped `mousemove` firing, and releasing the button
-          // anywhere but over the clip never reached `stopResize`. The
-          // `mousemove` handler then stayed attached for the life of the
-          // page, and every subsequent press added another.
-          //
-          // The visible result was that clips resized without being dragged:
-          // after pressing two or three of them, moving the pointer across
-          // any one resized it, and they appeared to respond in parallel.
-          dragging = { resize, stop }
-          document.addEventListener('mousemove', resize)
-          document.addEventListener('mouseup', stop)
-        } else if (state.tool() == 'time') {
-          const p = e.offsetX / e.target.offsetWidth
-          const within = p * (Number(attrs.duration) || 0)
-          // Through the transport, so the viewer follows the click. Setting
-          // `Edl.time` directly moved the playhead marker and left the
-          // preview showing whatever it had been showing.
-          Player.seek(Edl.startOf(attrs.i) + within)
+          capture(e.pointerId)
+        } else if (tool === 'time') {
+          gesture = { kind: 'tap', id: e.pointerId, x: e.clientX, y: e.clientY }
         }
       })
+
+      element.addEventListener('pointermove', e => {
+        if (!gesture || e.pointerId !== gesture.id) return
+        if (gesture.kind === 'trim') {
+          const width = gesture.startWidth + (e.clientX - gesture.startX)
+          if (width > 4) element.style.width = `${width}px`
+        } else if (
+          Math.abs(e.clientX - gesture.x) > TAP_SLOP ||
+          Math.abs(e.clientY - gesture.y) > TAP_SLOP
+        ) {
+          gesture = null
+        }
+      })
+
+      element.addEventListener('pointerup', e => {
+        if (!gesture || e.pointerId !== gesture.id) return
+        if (gesture.kind === 'trim') return finishTrim(true)
+        gesture = null
+        // Where along the clip, from the clip's own box. `offsetX` is
+        // relative to whichever child was under the pointer -- the name, the
+        // in-point -- so pressing on the label seeked to the wrong place.
+        const box = element.getBoundingClientRect()
+        const along = box.width > 0 ? Math.max(0, Math.min(1, (e.clientX - box.left) / box.width)) : 0
+        const at = Edl.startOf(vnode.attrs.i) + along * (Number(vnode.attrs.duration) || 0)
+        // Through the transport, so the viewer follows the click. Setting
+        // `Edl.time` directly moved the playhead marker and left the
+        // preview showing whatever it had been showing.
+        Player.seek(at)
+      })
+
+      // The browser took the pointer back (it is scrolling, or the clip went
+      // away mid-drag): a trim is abandoned rather than half-applied.
+      const abandon = e => {
+        if (!gesture || e.pointerId !== gesture.id) return
+        if (gesture.kind === 'trim') finishTrim(false)
+        else gesture = null
+      }
+      element.addEventListener('pointercancel', abandon)
+      element.addEventListener('lostpointercapture', abandon)
     },
 
     onremove: () => {
-      // A clip removed mid-drag would otherwise leave both handlers on the
-      // document, resizing an element that is no longer in the page.
-      if (dragging) {
-        document.removeEventListener('mousemove', dragging.resize)
-        document.removeEventListener('mouseup', dragging.stop)
-        dragging = null
-      }
+      gesture = null
     },
 
     view: vnode => {
+      const at = vnode.attrs.i
       return m(
         '.clip',
         {
+          // In pixels. A bare number is an invalid length outside quirks
+          // mode, so with a doctype every clip collapsed to its minimum.
           style: {
-            width: vnode.attrs.duration * state.scale(),
+            width: `${(Number(vnode.attrs.duration) || 0) * state.scale()}px`,
           },
           ...vnode.attrs,
         },
         [
           m('i.material-icons.progress', {
             style: {
-              display: Edl.current == vnode.attrs.i ? 'inherit' : 'none',
-              left: Video.time() * state.scale(),
+              display: Edl.current == at ? 'inherit' : 'none',
+              // How far into this clip the playhead is. This used the
+              // position in the source file, which counts from the file's
+              // start, so on a clip that starts part-way into its file the
+              // marker sat past where it should.
+              left: `${Math.max(0, Edl.time - Edl.startOf(at)) * state.scale()}px`,
             },
           }),
           ...vnode.children,
@@ -281,7 +347,12 @@ export function OttoTimeline() {
       window.scroll(0,0)
     },
     view: (vnode) => {
-      return m('#timeline.timeline', [
+      // The tool decides the cursor and what a touch on a clip means -- a
+      // scroll, or a gesture of the tool's -- so it is a class here, read by
+      // editor.scss, rather than an inline cursor the toolbar used to set on
+      // an element it looked up while rendering itself.
+      const tool = String(state.tool()).replace(/\s+/g, '-')
+      return m('#timeline.timeline', { class: `tool-${tool}` }, [
         Edl.edl.map((c, i) => {
           if (c) {
             c.i = i
