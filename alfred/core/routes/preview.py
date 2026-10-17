@@ -60,8 +60,9 @@ def remove_quietly(path):
         pass
 
 
-# Query parameters that describe the frame rather than the template itself.
-_FRAME_PARAMS = frozenset({'width', 'height', 't'})
+# Query parameters that describe the frame, or the clip around the template,
+# rather than the template's own data.
+_FRAME_PARAMS = frozenset({'width', 'height', 't', 'fadeIn', 'fadeOut'})
 
 
 @previewAPI.post('/')
@@ -104,6 +105,8 @@ async def previewTemplate(
     width: int = 1920,
     height: int = 1080,
     t: float = 0,
+    fadeIn: float = 0,
+    fadeOut: float = 0,
 ):
     """# Preview a single template
 
@@ -134,11 +137,17 @@ async def previewTemplate(
         if key not in _FRAME_PARAMS and value not in ('null', 'undefined', '')
     }
 
+    # No fades unless the request asks for them. A clip fades in over its
+    # first second by default, so a preview sampled near the start -- which is
+    # where the editor samples a template it has just placed -- came out dimmed
+    # or black, rather than showing the template as it looks on screen.
     clip = Clip(
         type='template',
         name=name,
         duration=max(t, 0) + 1,
         data=TemplateData(**data),
+        fadeIn=fadeIn,
+        fadeOut=fadeOut,
     )
 
     # A template that cannot render with the data it was given is a 422, not a

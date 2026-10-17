@@ -143,3 +143,47 @@ def _raise(exc):
         raise exc
 
     return fail
+
+
+class _FakeVideo:
+    def save_frame(self, path, t=0, withmask=False):
+        with open(path, 'wb') as handle:
+            handle.write(b'\xff\xd8not really a jpeg')
+
+
+@pytest.fixture
+def built(monkeypatch):
+    """The EDLs the template preview hands the engine."""
+    from alfred.core.routes import preview
+
+    edls = []
+
+    def generate(edl, moviesize=None, **kwargs):
+        edls.append(edl)
+        return _FakeVideo()
+
+    monkeypatch.setattr(preview, 'generateEdl', generate)
+    return edls
+
+
+class TestTheTemplatePreviewShowsTheTemplateMidClip:
+    """A clip fades in over its first second unless told otherwise, so a frame
+    sampled near the start -- where the editor samples a template it has just
+    placed -- came out dimmed or black."""
+
+    def test_no_fades_unless_asked_for(self, client, built):
+        res = client.get('/preview/template/makeColor?color=%23f2aa4c&t=0')
+        assert res.status_code == 200
+        (clip,) = built[0].clips
+        assert (clip.fadeIn, clip.fadeOut) == (0, 0)
+
+    def test_fades_asked_for_are_honoured(self, client, built):
+        client.get('/preview/template/makeColor?color=%23f2aa4c&fadeIn=0.5&fadeOut=1')
+        (clip,) = built[0].clips
+        assert (clip.fadeIn, clip.fadeOut) == (0.5, 1)
+
+    def test_fades_are_not_passed_to_the_template_as_data(self, client, built):
+        client.get('/preview/template/makeColor?color=%23f2aa4c&fadeIn=0.5')
+        (clip,) = built[0].clips
+        assert clip.data.color == '#f2aa4c'
+        assert 'fadeIn' not in clip.data.dict(exclude_none=True)
