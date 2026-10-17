@@ -23,6 +23,7 @@ from proglog import ProgressBarLogger
 from alfred import config
 
 RENDER_ID = '6ad3c61e21ba2c869ca8b7ef'
+OUTPUT = f'{RENDER_ID}.mp4'
 
 
 def make_clip(path, seconds=1, size='160x120'):
@@ -118,14 +119,15 @@ def test_a_library_clip_renders_to_a_playable_file(worker):
     worker.tasks.renderRemote.apply(
         kwargs=dict(
             edl=video_edl('videos/bars.mp4'),
-            filename='out.mp4',
+            filename=OUTPUT,
             renderId=RENDER_ID,
             moviesize=[160, 120],
+            quality='draft',
         )
     )
 
     assert 'rendered' in worker.events, f'the task did not finish: {worker.events}'
-    out = worker.library / 'out.mp4'
+    out = worker.library / OUTPUT
     assert out.is_file() and out.stat().st_size > 0
     with VideoFileClip(str(out)) as produced:
         assert tuple(produced.size) == (160, 120)
@@ -149,9 +151,33 @@ def test_the_worker_refuses_what_the_api_refuses(worker, monkeypatch, name):
     )
 
     worker.tasks.renderRemote.apply(
-        kwargs=dict(edl=video_edl(name), filename='out.mp4', renderId=RENDER_ID)
+        kwargs=dict(edl=video_edl(name), filename=OUTPUT, renderId=RENDER_ID)
     )
 
     assert called == [], 'the engine was handed a name the worker should refuse'
     failures = [e for e in worker.events if isinstance(e, tuple) and e[0] == 'failed']
     assert failures, f'the refusal was not recorded: {worker.events}'
+
+
+@pytest.mark.parametrize(
+    'filename', ['../../escape.mp4', '/tmp/escape.mp4', 'name.mp4', 'x/../y.mp4']
+)
+def test_the_worker_writes_only_to_an_id_derived_name(worker, monkeypatch, filename):
+    """A stored render's filename was built from its request and could hold `../`.
+
+    The api names output `<id>.mp4` now; the worker refuses anything else, so a
+    re-queued old render cannot write outside the output directory.
+    """
+    called = []
+    monkeypatch.setattr(
+        worker.tasks, 'renderMultitrack', lambda **kw: called.append(kw)
+    )
+
+    worker.tasks.renderRemote.apply(
+        kwargs=dict(
+            edl=video_edl('videos/bars.mp4'), filename=filename, renderId=RENDER_ID
+        )
+    )
+
+    assert called == []
+    assert any(isinstance(e, tuple) and e[0] == 'failed' for e in worker.events)

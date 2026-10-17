@@ -1,3 +1,5 @@
+import re
+import unicodedata
 from typing import List, Optional
 
 from beanie import Document, PydanticObjectId
@@ -14,7 +16,12 @@ class Render(Document):
     width: Optional[int] = 1920
     height: Optional[int] = 1080
     fps: Optional[float] = 30.0
+    # One of the encoding presets in `utils.encoding`: draft, standard, high.
     quality: Optional[str]
+    # Never accepted from a client and never used to encode (contract C5):
+    # POST /render answers 422 if either is set, and the encoder settings come
+    # from `quality`. Kept, with their old types, so that renders stored when
+    # clients did send them still load.
     bitrate: Optional[List]
     ffmpeg_params: Optional[List[str]]
     progress: Optional[float]
@@ -25,7 +32,11 @@ class Render(Document):
     status: Optional[str]
     link: Optional[str]
     username: Optional[str]
+    # The output file's name, `<id>.mp4` -- derived from the id alone, so
+    # nothing a client sends can reach the filesystem path.
     filename: Optional[str]
+    # What a download is called: readable, and sanitised to a safe file name.
+    display_name: Optional[str]
     # Where this render was sent, once it has been. `link` records the
     # resulting URL or path; this records which transport produced it, so a
     # link can be interpreted without guessing from its shape.
@@ -49,3 +60,48 @@ class RenderUpdate(Render):
     link: Optional[str]
     filename: Optional[str]
     destination: Optional[str]
+
+
+def output_filename(render_id) -> str:
+    """The file a render is written to: its id and nothing else.
+
+    It was built from the project name, the description and a timestamp, all
+    of which arrive in the request -- so a project called `../../x` became a
+    write to `/x_...mp4` from the worker. The id is the one part of a render
+    nothing outside the server chooses.
+    """
+    return f'{render_id}.mp4'
+
+
+_OUTPUT_FILENAME = re.compile(r'[0-9a-f]{24}\.mp4')
+
+
+def is_output_filename(name) -> bool:
+    """Whether `name` is one `output_filename` could have produced."""
+    return isinstance(name, str) and bool(_OUTPUT_FILENAME.fullmatch(name))
+
+
+_UNSAFE = re.compile(r'[^A-Za-z0-9._-]+')
+
+
+def safe_name(text, fallback='render', limit=80) -> str:
+    """`text` as a file name that is safe anywhere it might be saved.
+
+    ASCII letters, digits, `.`, `_` and `-` only, with runs of anything else
+    collapsed to one `-`, no leading or trailing dots or dashes (no hidden
+    files, no `..`), and at most `limit` characters. Used for the name a
+    download is saved under, which a browser writes to the user's disk.
+    """
+    text = unicodedata.normalize('NFKD', str(text or ''))
+    text = text.encode('ascii', 'ignore').decode('ascii')
+    text = _UNSAFE.sub('-', text).strip('-._')
+    text = text[:limit].rstrip('-._')
+    return text or fallback
+
+
+def display_name_for(render) -> str:
+    """A readable name for `render`'s output: project, description and size."""
+    parts = [render.project or render.name, render.description]
+    if render.width and render.height:
+        parts.append(f'{render.width}x{render.height}')
+    return safe_name('-'.join(str(part) for part in parts if part))

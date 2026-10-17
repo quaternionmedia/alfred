@@ -6,7 +6,9 @@ from otto.render import renderMultitrack
 
 from alfred import config
 
+from ..models.render import is_output_filename
 from .bucket import upload
+from .encoding import preset_for
 from .logger import DbLogger
 from .media import resolve_edl
 
@@ -43,17 +45,25 @@ def renderRemote(
     audio=None,
     moviesize=(1920, 1080),
     fps=30.0,
-    bitrate=None,
-    ffmpeg_params=None,
+    quality=None,
     **kwargs,
 ):
     """Render one EDL to `filename`.
 
     Arguments arrive as JSON (contract C7): the EDL as a dict, which is parsed
     back into an `Edl` here, the render id as a string, the size as a list.
+    Encoding comes from the named `quality` preset (C5). Any `bitrate` or
+    `ffmpeg_params` in `kwargs` -- from a job queued before presets -- is
+    ignored rather than handed to ffmpeg.
     """
     try:
         self.log = DbLogger(self, renderId)
+        # Only a name `output_filename` could have produced, so the path is
+        # always a file directly inside the output directory. Checked here as
+        # well as decided by the api, because a stored render's filename was
+        # built from its request and could hold `../`.
+        if not is_output_filename(filename):
+            raise ValueError(f'refusing to write a render to {filename!r}')
         # Media names resolved here, against VIDEO_DIR, rather than handed to
         # the engine as sent. The engine opens a relative name against the
         # worker's working directory, which is not where the library is, and
@@ -68,8 +78,7 @@ def renderRemote(
             logger=self.log,
             moviesize=tuple(moviesize),
             fps=fps,
-            bitrate=bitrate,
-            ffmpeg_params=ffmpeg_params,
+            **preset_for(quality, strict=False).encoder_args(),
         )
     except Exception as e:
         print('error executing render task', renderId, e)

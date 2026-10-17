@@ -5,15 +5,20 @@ from beanie import PydanticObjectId
 from bson import ObjectId
 from fastapi import Depends, HTTPException
 from fastapi_crudrouter import MotorCRUDRouter
-from otto.getdata import timestr
 
 from alfred.config import DB_NAME, DB_URL, VIDEO_DIR
 
 from ..models import UserRead as User
-from ..models.render import Render, RenderUpdate
+from ..models.render import (
+    Render,
+    RenderUpdate,
+    display_name_for,
+    output_filename,
+)
 from ..utils.bucket import INVALID_ID, NOT_FOUND, generate_signed_url
 from ..utils.db import get_client
 from ..utils.destinations import DeliveryError, get_destination
+from ..utils.encoding import QUALITIES, UnknownQuality, preset_for
 from ..utils.media import RefusedEdl, check_edl
 from ..utils.tasks import renderRemote
 from .templates import TEMPLATE_NAMES
@@ -63,23 +68,74 @@ async def load_render(store: RenderStore, item_id: str) -> Render:
     return render
 
 
-def task_payload(render: Render, filename: str) -> dict:
+def task_payload(render: Render) -> dict:
     """The worker's arguments for `render`, as plain JSON data (contract C7).
 
     These went over the broker as pickle: a beanie document's `Edl`, an
     `ObjectId`, a tuple. The serializer is JSON-only now, and anything it
     cannot encode would fail at `delay()`. So the EDL goes as a dict, which
     the worker parses back into an `Edl`, and the id as a string.
+
+    Encoding travels as the name of a preset (C5), never as encoder options.
     """
     return dict(
         edl=render.edl.dict(),
         renderId=str(render.id),
-        filename=filename,
-        moviesize=[render.width, render.height],
-        fps=render.fps,
-        bitrate=render.bitrate,
-        ffmpeg_params=render.ffmpeg_params,
+        filename=render.filename,
+        moviesize=[render.width or 1920, render.height or 1080],
+        fps=render.fps or 30.0,
+        quality=render.quality,
     )
+
+
+# Fields the server writes. Whatever a client sends for them on POST /render
+# is discarded: a request could otherwise arrive already "RENDERED", already
+# delivered, or attributed to somebody else.
+SERVER_OWNED = (
+    'username',
+    'filename',
+    'display_name',
+    'status',
+    'progress',
+    'link',
+    'destination',
+)
+
+# The largest frame a render may ask for, either way: 8K. Without a bound one
+# request could ask the worker for a frame of any size, and the first thing
+# the engine does is allocate it.
+MAX_DIMENSION = 7680
+
+
+def refuse_bad_request(render: Render) -> str:
+    """422 for encoder options or a size out of range; else the preset name.
+
+    `ffmpeg_params` and `bitrate` went onto ffmpeg's command line as sent
+    (C5). They are refused rather than ignored, so a client relying on them
+    finds out at once instead of getting a render encoded some other way.
+    """
+    supplied = [name for name in ('ffmpeg_params', 'bitrate') if getattr(render, name)]
+    if supplied:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f'{" and ".join(supplied)} cannot be set by a client; '
+                f'choose a quality instead: {", ".join(QUALITIES)}'
+            ),
+        )
+    for name, default in (('width', 1920), ('height', 1080)):
+        value = getattr(render, name)
+        if value is None:
+            setattr(render, name, default)
+        elif not 16 <= value <= MAX_DIMENSION:
+            raise HTTPException(
+                status_code=422,
+                detail=f'{name} must be between 16 and {MAX_DIMENSION} pixels',
+            )
+    try:
+        return preset_for(render.quality).name
+    except UnknownQuality as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 def refuse_unrenderable(edl):
@@ -135,25 +191,26 @@ class RenderAPI(MotorCRUDRouter):
             store: RenderStore = Depends(get_render_store),
             queue=Depends(get_render_queue),
         ):
+            quality = refuse_bad_request(render)
             refuse_unrenderable(render.edl)
-            render.username = user.email
+            for name in SERVER_OWNED:
+                setattr(render, name, None)
             # The id is chosen here rather than by the insert, so the filename
             # that depends on it is written with the document instead of by a
             # second update a moment later.
             render.id = PydanticObjectId()
-
-            # The render's own id goes in the filename, because everything else
-            # in it can repeat. It was project, description, size, quality,
-            # duration and a second-resolution timestamp -- so two renders of
-            # the same project in the same second produced the same filename
-            # and the second silently overwrote the first's output. Three
-            # concurrent renders in the e2e suite collided on exactly that and
-            # ended up sharing one file, each reporting success.
-            ts = timestr()
-            filename = f'{render.project}{"_" + render.description if render.description else ""}_{render.width}x{render.height}{"_" + render.quality if render.quality else ""}_{render.edl.duration}s_{ts}_{render.id}.mp4'  # noqa: E501
-            render.filename = filename
+            render.username = user.email
+            render.quality = quality
+            # The id alone names the file. It was project, description, size,
+            # quality, duration and a timestamp -- every part but the id taken
+            # from the request, so a project called `../../x` became a write to
+            # /x_...mp4 from the worker. (The id went in at all because two
+            # renders of one project in the same second shared a file.) The
+            # readable name is kept separately, sanitised, for downloads.
+            render.filename = output_filename(render.id)
+            render.display_name = display_name_for(render)
             await store.insert(render)
-            queue(**task_payload(render, filename))
+            queue(**task_payload(render))
             return str(render.id)
 
         @self.post('/rerender/{id}', *args, **kwargs)
@@ -169,7 +226,21 @@ class RenderAPI(MotorCRUDRouter):
             # A stored EDL is checked like a new one: it may predate the media
             # contract, and re-queueing it must not reopen what that closed.
             refuse_unrenderable(render.edl)
-            queue(**task_payload(render, render.filename))
+            # A render stored before this change keeps its old composite
+            # filename, which may carry anything its request did. It is
+            # re-rendered under its id instead, and an old quality name (the
+            # form flow saved `web` and `TV`) falls back to the default.
+            changes = dict(
+                filename=output_filename(render.id),
+                display_name=render.display_name or display_name_for(render),
+                quality=preset_for(render.quality, strict=False).name,
+                status=None,
+                progress=None,
+            )
+            await store.update(render.id, changes)
+            for name, value in changes.items():
+                setattr(render, name, value)
+            queue(**task_payload(render))
             return str(render.id)
 
         @self.post('/{item_id}/deliver', *args, **kwargs)
