@@ -52,15 +52,38 @@ def db():
     handle.client.drop_database(handle.name)
 
 
-@pytest.fixture(scope='session')
-def api(db):
-    """The app with its startup run, for the whole session.
+_ABSENT = object()
 
-    One `with TestClient(...)` for everything, because beanie is initialised
-    on the event loop the startup hooks run on, and motor clients cannot move
-    between loops. A client per test -- or requests made outside the context
-    -- would each get a fresh loop and fail with "attached to a different
-    loop".
+
+def _documents():
+    """Every beanie Document class this process has defined."""
+    from beanie import Document
+
+    found, pending = [], [Document]
+    while pending:
+        for cls in pending.pop().__subclasses__():
+            if cls not in found:
+                found.append(cls)
+                pending.append(cls)
+    return found
+
+
+@pytest.fixture(scope='module')
+def api(db):
+    """The app with its startup run, for one test module.
+
+    One `with TestClient(...)` per module rather than per test, because beanie
+    is initialised on the event loop the startup hooks run on, and motor
+    clients cannot move between loops: requests made outside the context get
+    a fresh loop and fail with "attached to a different loop".
+
+    Per module rather than per session, so the initialisation can be undone
+    when the module ends. `init_beanie` marks each document class initialised
+    for the life of the process, and the unit tier shares that process under
+    xdist: `test_config_validity` pins that a `Render` cannot be built without
+    a database, and once this tier had run on a worker it could -- so those
+    pins passed or failed by test order. Each class's settings are put back as
+    they were found.
 
     `checkFonts` shells out to `fc-list`, which the API image has and a bare
     Windows or macOS host may not. It is unrelated to anything tested here,
@@ -71,6 +94,9 @@ def api(db):
 
     from alfred import main
 
+    found = {
+        cls: cls.__dict__.get('_document_settings', _ABSENT) for cls in _documents()
+    }
     startup = main.app.router.on_startup
     hooks = list(startup)
     if shutil.which('fc-list') is None and main.checkFonts in startup:
@@ -80,6 +106,12 @@ def api(db):
             yield client
     finally:
         startup[:] = hooks
+        for cls in _documents():
+            before = found.get(cls, _ABSENT)
+            if before is not _ABSENT:
+                cls._document_settings = before
+            elif '_document_settings' in cls.__dict__:
+                delattr(cls, '_document_settings')
 
 
 @pytest.fixture
@@ -115,7 +147,7 @@ def log_in(api):
 
 
 @pytest.fixture
-def users(db):
+def users(api, db):
     """The users collection, under whatever name beanie gave it."""
     from alfred.core.utils.db import User
 
@@ -183,7 +215,7 @@ def make_project(api):
 
 
 @pytest.fixture
-def projects(db):
+def projects(api, db):
     """The projects collection, under whatever name beanie gave it."""
     from alfred.core.models import Project
 
