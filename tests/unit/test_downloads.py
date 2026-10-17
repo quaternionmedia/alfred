@@ -243,3 +243,17 @@ class TestTheDownloadRoute:
     def test_a_missing_render_is_a_404(self, api):
         client, _ = api
         assert client.get(f'/render/{ObjectId()}/download').status_code == 404
+
+
+def test_the_api_still_describes_itself():
+    """`/openapi.json` is how the e2e suite confirms what is serving a port.
+
+    A response class whose signature FastAPI could not read took it down with
+    a 500 -- the routes all worked, and the whole suite refused to start.
+    """
+    res = TestClient(app).get('/openapi.json')
+    assert res.status_code == 200
+    paths = res.json()['paths']
+    for path in ('/render/{item_id}/download', '/render/{item_id}/status'):
+        assert path in paths
+    assert 'delete' not in paths['/render']

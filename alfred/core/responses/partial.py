@@ -19,8 +19,11 @@ from starlette.responses import FileResponse
 class PartialFileResponse(FileResponse):
     """A whole file for a plain request; the requested bytes for a Range one."""
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    # `status_code` named, with its default, because FastAPI reads it from
+    # this signature to document a route that declares this response class --
+    # behind a bare `**kwargs` it found none, and /openapi.json answered 500.
+    def __init__(self, path, status_code: int = 200, **kwargs):
+        super().__init__(path, status_code=status_code, **kwargs)
         # Sent as stored, not gzipped on the way out. The app's GZipMiddleware
         # compresses every response whose encoding is not already declared,
         # and a browser's fetch() asks for gzip -- so each video the editor
