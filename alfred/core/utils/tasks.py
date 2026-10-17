@@ -9,7 +9,7 @@ from alfred import config
 from ..models.render import is_output_filename
 from .bucket import upload
 from .encoding import preset_for
-from .logger import DbLogger
+from .logger import DbLogger, failure_reason, mark_failed
 from .media import resolve_edl
 
 renderer = Celery(
@@ -32,8 +32,23 @@ renderer.config_from_object(config.CeleryConfig)
 
 class Renderer(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        print('failed task', self, exc, task_id, args, kwargs, einfo)
-        self.log.failed()
+        """Anything that escaped the task: record it on the job's own render.
+
+        This called `self.log.failed()`. The task object is one per worker
+        process, so `self.log` was whichever logger the *previous* job had
+        left there -- a job failing before it made its own marked some other
+        render failed -- and on a fresh process there was none, so the
+        handler raised in turn. The render to mark is the one in this job's
+        arguments.
+        """
+        print('failed task', task_id, exc)
+        render_id = (kwargs or {}).get('renderId')
+        if render_id is None:
+            return
+        try:
+            mark_failed(render_id, failure_reason(exc))
+        except Exception as e:  # noqa: BLE001 - nothing else is left to tell
+            print('could not record the failure of render', render_id, e)
 
 
 @renderer.task(bind=True, base=Renderer)
@@ -56,8 +71,9 @@ def renderRemote(
     `ffmpeg_params` in `kwargs` -- from a job queued before presets -- is
     ignored rather than handed to ffmpeg.
     """
+    # A local, not `self.log`: the task object outlives the job.
+    log = DbLogger(self, renderId)
     try:
-        self.log = DbLogger(self, renderId)
         # Only a name `output_filename` could have produced, so the path is
         # always a file directly inside the output directory. Checked here as
         # well as decided by the api, because a stored render's filename was
@@ -75,19 +91,19 @@ def renderRemote(
             edl=timeline,
             audio=audio,
             filename=join(config.VIDEO_DIR, filename),
-            logger=self.log,
+            logger=log,
             moviesize=tuple(moviesize),
             fps=fps,
             **preset_for(quality, strict=False).encoder_args(),
         )
     except Exception as e:
         print('error executing render task', renderId, e)
-        self.log.failed(filename=renderId, exc=e)
+        log.failed(exc=e)
         return
 
     # The render is finished and the file exists. Say so before attempting to
     # put it anywhere, because those are separate outcomes.
-    self.log.rendered()
+    log.rendered()
 
     # Uploading is now one destination among several, reachable explicitly via
     # POST /render/{id}/deliver. Attempt it here for the deployments that
@@ -103,4 +119,4 @@ def renderRemote(
         print('render succeeded but the automatic upload did not', renderId, e)
         return
 
-    self.log.uploaded()
+    log.uploaded()

@@ -1,9 +1,10 @@
 import re
 import unicodedata
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from beanie import Document, PydanticObjectId
 from otto.models import Edl
+from pydantic import BaseModel
 
 
 class Render(Document):
@@ -30,6 +31,10 @@ class Render(Document):
     # still have no way to tell a finished render from a failed one. That is
     # the field anything waiting on a render needs.
     status: Optional[str]
+    # Why a failed render failed, in a line, for whoever is waiting on it.
+    # Before this the reason went to the worker's log and nowhere else, so a
+    # failed render said only that it had failed.
+    error: Optional[str]
     link: Optional[str]
     username: Optional[str]
     # The output file's name, `<id>.mp4` -- derived from the id alone, so
@@ -60,6 +65,56 @@ class RenderUpdate(Render):
     link: Optional[str]
     filename: Optional[str]
     destination: Optional[str]
+
+
+RenderState = Literal['queued', 'rendering', 'rendered', 'failed']
+
+# The stored statuses that mean the output file is complete.
+FINISHED = ('RENDERED', 'UPLOADED')
+
+
+def render_state(status, progress) -> str:
+    """What a render is doing, from what the worker has stored (contract C2).
+
+    The stored values are left as they were -- `None` until the worker
+    finishes, then `RENDERED`, `UPLOADED` or `failed` -- because existing
+    clients read them. This is the one place they are interpreted, so a
+    client asks for `state` rather than re-deriving it.
+    """
+    if status == 'failed':
+        return 'failed'
+    if status in FINISHED:
+        return 'rendered'
+    if progress is not None and progress > 0:
+        return 'rendering'
+    return 'queued'
+
+
+class RenderStatus(BaseModel):
+    """`GET /render/{id}/status` (contract C2)."""
+
+    id: str
+    state: RenderState
+    status: Optional[str]
+    progress: Optional[float]
+    filename: Optional[str]
+    destination: Optional[str]
+    error: Optional[str]
+
+    @classmethod
+    def of(cls, render) -> 'RenderStatus':
+        progress = render.progress
+        if progress is not None:
+            progress = min(max(float(progress), 0.0), 100.0)
+        return cls(
+            id=str(render.id),
+            state=render_state(render.status, render.progress),
+            status=render.status,
+            progress=progress,
+            filename=render.filename,
+            destination=render.destination,
+            error=render.error,
+        )
 
 
 def output_filename(render_id) -> str:

@@ -11,6 +11,7 @@ from alfred.config import DB_NAME, DB_URL, VIDEO_DIR
 from ..models import UserRead as User
 from ..models.render import (
     Render,
+    RenderStatus,
     RenderUpdate,
     display_name_for,
     output_filename,
@@ -68,6 +69,29 @@ async def load_render(store: RenderStore, item_id: str) -> Render:
     return render
 
 
+def can_access(render: Render, user) -> bool:
+    """Whether `user` may see and act on `render` (contract C6).
+
+    Its owner -- `render.username`, the creating user's email -- or a
+    superuser. A render stored without an owner is a superuser's alone:
+    there is nobody else it can be attributed to.
+    """
+    if getattr(user, 'is_superuser', False):
+        return True
+    return render.username is not None and render.username == user.email
+
+
+async def load_owned_render(store: RenderStore, item_id: str, user) -> Render:
+    """As `load_render`, and 404 unless `user` may access it.
+
+    404 rather than 403, so a caller cannot learn which ids exist.
+    """
+    render = await load_render(store, item_id)
+    if not can_access(render, user):
+        raise NOT_FOUND
+    return render
+
+
 def task_payload(render: Render) -> dict:
     """The worker's arguments for `render`, as plain JSON data (contract C7).
 
@@ -97,6 +121,7 @@ SERVER_OWNED = (
     'display_name',
     'status',
     'progress',
+    'error',
     'link',
     'destination',
 )
@@ -236,12 +261,32 @@ class RenderAPI(MotorCRUDRouter):
                 quality=preset_for(render.quality, strict=False).name,
                 status=None,
                 progress=None,
+                error=None,
             )
             await store.update(render.id, changes)
             for name, value in changes.items():
                 setattr(render, name, value)
             queue(**task_payload(render))
             return str(render.id)
+
+        @self.get('/{item_id}/status', response_model=RenderStatus)
+        async def renderStatus(
+            item_id: str,
+            user: User = Depends(current_active_user),
+            store: RenderStore = Depends(get_render_store),
+        ):
+            """# Render status
+
+            Where a render has got to: `state` is one of `queued`,
+            `rendering`, `rendered` or `failed`, and `error` says why when it
+            is `failed`. `status` is the raw stored value, unchanged for
+            clients that already read it.
+
+            Anything waiting on a render had to fetch every render the caller
+            could see and look for its own, and could not tell why one failed.
+            """
+            render = await load_owned_render(store, item_id, user)
+            return RenderStatus.of(render)
 
         @self.post('/{item_id}/deliver', *args, **kwargs)
         async def deliverRender(
