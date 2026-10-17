@@ -276,3 +276,20 @@ test.describe('cut', () => {
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(project.edl.clips.length)
   })
 })
+
+test.describe('on a phone', () => {
+  test('the page is laid out to standard, and can be zoomed', async ({ page }) => {
+    /**
+     * There was no doctype, so every browser laid the page out in quirks
+     * mode; and the viewport carried `maximum-scale=1`, which stops a phone
+     * from zooming -- the one tool someone who needs larger controls has.
+     */
+    await page.goto('/')
+    expect(await page.evaluate(() => document.compatMode)).toBe('CSS1Compat')
+    expect(await page.evaluate(() => document.doctype && document.doctype.name)).toBe('html')
+
+    const viewport = await page.locator('meta[name="viewport"]').getAttribute('content')
+    expect(viewport).toContain('width=device-width')
+    expect(viewport).not.toMatch(/maximum-scale|user-scalable\s*=\s*(no|0)/i)
+  })
+})
