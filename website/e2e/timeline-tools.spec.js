@@ -85,6 +85,11 @@ test.describe('trim, by mouse', () => {
     request,
     token,
   }) => {
+    /**
+     * Grab a clip near its end and drag. The pointer is captured, so the
+     * drag keeps arriving at the clip after leaving its edge -- the whole
+     * gesture -- and the clips after it move along.
+     */
     const project = await openMediaProject(authedPage, request, token)
     const sent = await captureRenders(authedPage)
     const first = project.edl.clips[0]
@@ -116,6 +121,10 @@ test.describe('by touch', () => {
   test.use({ hasTouch: true })
 
   test('a finger can trim a clip', async ({ authedPage, request, token }) => {
+    /**
+     * A real touch drag, sent through the browser's input pipeline rather
+     * than as synthetic events -- the kind a phone sends.
+     */
     await openMediaProject(authedPage, request, token)
     await authedPage.locator('#TTools i[title="trim"]').click()
 
@@ -132,6 +141,10 @@ test.describe('by touch', () => {
     request,
     token,
   }) => {
+    /**
+     * With the time tool, a tap half way along the second clip puts the
+     * playhead half way through it.
+     */
     const project = await openMediaProject(authedPage, request, token)
     const [a, b] = project.edl.clips
     expect(await seconds(authedPage)).toBe(0)
@@ -147,8 +160,10 @@ test.describe('by touch', () => {
     request,
     token,
   }) => {
-    // The press that starts a scroll is not a choice of position: seeking on
-    // press would jump the playhead every time someone scrolled.
+    /**
+     * The press that starts a scroll is not a choice of position: seeking on
+     * press would jump the playhead every time someone scrolled.
+     */
     await openMediaProject(authedPage, request, token)
     const second = await authedPage.locator('#timeline .clip').nth(1).boundingBox()
     const y = second.y + second.height / 2
@@ -173,6 +188,11 @@ test.describe('cut', () => {
     request,
     token,
   }) => {
+    /**
+     * The first half keeps the clip's in-point and ends where the cut is;
+     * the second starts in the file where the first ends and finishes where
+     * the original did. Back to back they show what the original showed.
+     */
     const project = await openMediaProject(authedPage, request, token)
     const sent = await captureRenders(authedPage)
     const [media, rest] = project.edl.clips
@@ -215,6 +235,11 @@ test.describe('cut', () => {
     request,
     token,
   }) => {
+    /**
+     * A template has no in-point -- it is drawn fresh for its length -- so
+     * it becomes two clips of the same template, each with its own copy of
+     * the settings.
+     */
     const sent = await captureRenders(authedPage)
     await authedPage.goto('/#!/?stage=edit')
     await authedPage.locator('#bin .binclip[data-bin-name="title"] .binadd').click()
@@ -251,8 +276,11 @@ test.describe('cut', () => {
     request,
     token,
   }) => {
+    /**
+     * Put the playhead anywhere -- here with the time tool, half way through
+     * the first clip -- and press S.
+     */
     await openMediaProject(authedPage, request, token)
-    // The time tool: put the playhead half way through the first clip.
     const clip = authedPage.locator('#timeline .clip').first()
     const box = await clip.boundingBox()
     await clip.click({ position: { x: box.width / 2, y: box.height / 2 } })
@@ -267,8 +295,11 @@ test.describe('cut', () => {
     request,
     token,
   }) => {
+    /**
+     * At 0 the playhead is at the very start of the first clip, so a cut
+     * there would leave nothing on one side. It is refused, and says so.
+     */
     const project = await openMediaProject(authedPage, request, token)
-    // At 0 the playhead is at the start of the first clip: nothing to cut.
     await authedPage.keyboard.press('s')
     await expect(
       authedPage.locator('.ajs-message').filter({ hasText: /too close/i }).first()

@@ -51,6 +51,11 @@ test.describe('adding a template', () => {
   test('the bin adds a template as a clip with text and five seconds', async ({
     authedPage,
   }) => {
+    /**
+     * Press + on a template in the bin. It lands on the end of the timeline
+     * as five seconds of "Your text here", its settings open beside the
+     * viewer, and that is exactly what a render receives.
+     */
     const errors = watchErrors(authedPage)
     const sent = await captureRenders(authedPage)
     await authedPage.goto('/#!/?stage=edit')
@@ -81,8 +86,10 @@ test.describe('adding a template', () => {
   })
 
   test('a template that takes no text is not given any', async ({ authedPage }) => {
-    // makeColor's parameters are a colour and a position. Offering it a text
-    // field would invite an edit that changes nothing.
+    /**
+     * makeColor's parameters are a colour and a position. Offering it a
+     * text field would invite an edit that changes nothing.
+     */
     await authedPage.goto('/#!/?stage=edit')
     await binEntry(authedPage, 'makeColor').locator('.binadd').click()
 
@@ -98,6 +105,10 @@ test.describe('adding a template', () => {
     request,
     token,
   }) => {
+    /**
+     * Templates are material too, so the Source stage lists them beside the
+     * media, and says where an added one landed.
+     */
     const offered = await templates(request, token)
     await authedPage.goto('/#!/?stage=source')
 
@@ -159,6 +170,11 @@ test.describe("changing a template clip's settings", () => {
   test('text, length and colour change the clip, its frame, and its render', async ({
     authedPage,
   }) => {
+    /**
+     * Each field changes the clip itself: the label on the timeline, its
+     * width, the frame the server renders for the viewer, and the clip a
+     * render receives. A colour can be typed or picked; the swatch follows.
+     */
     const sent = await captureRenders(authedPage)
     const frames = []
     authedPage.on('request', req => {
@@ -203,8 +219,10 @@ test.describe("changing a template clip's settings", () => {
   })
 
   test('typing a duration is not interrupted halfway', async ({ authedPage }) => {
-    // The field is controlled; without a draft, "1." would be rewritten to
-    // the clip's duration before the next digit arrived.
+    /**
+     * The field is controlled; without a draft, "1." would be rewritten to
+     * the clip's duration before the next digit arrived.
+     */
     await authedPage.goto('/#!/?stage=edit')
     await binEntry(authedPage, 'title').locator('.binadd').click()
     const field = authedPage.locator('#param-duration')

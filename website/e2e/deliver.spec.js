@@ -131,6 +131,11 @@ test.describe('a queued render is followed until it settles', () => {
     request,
     token,
   }) => {
+    /**
+     * Queue from the Render stage and watch the row on Deliver: a bar and a
+     * percentage while it renders, then "rendered" with Download and Deliver
+     * enabled. Once it has settled nothing goes on asking about it.
+     */
     const status = sequence([
       { state: 'queued', status: null, progress: null },
       { state: 'rendering', status: null, progress: 40 },
@@ -161,6 +166,11 @@ test.describe('a queued render is followed until it settles', () => {
     request,
     token,
   }) => {
+    /**
+     * The reason a render failed is shown under its row and in a
+     * notification. Notifications are HTML, and a reason is whatever the
+     * encoder printed, so it is escaped: angle brackets stay text.
+     */
     const reason = 'ffmpeg exited with status 1: <b>no such filter</b>'
     await serveRenders(authedPage, {
       list: sequence([[renderDoc()]]),
