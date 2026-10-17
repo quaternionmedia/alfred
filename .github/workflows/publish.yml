@@ -1,35 +1,108 @@
 name: 🏛 Publish to PyPi
+
+# Publishes the package from a version tag, and from nothing else.
+#
+# A version tag is a claim (governance/qm/records/DRAFT-version-tags-are-claims.md),
+# and the first thing a machine can check about it is that it names the
+# version being published. This ran on any tag at all -- `alpha` included --
+# and built whatever alfred/_version.py said, so a tag and the package it
+# published could name two different versions without anything noticing.
+
 on:
   workflow_dispatch:
   push:
     tags:
-      - '*'
+      - 'v*'
+
+permissions:
+  contents: read
 
 jobs:
-  build:
-    name: 📦 Build package
+  version:
+    name: 🏷️ The tag names the version
     runs-on: ubuntu-latest
     steps:
       - name: 📰 Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
+      # Exact, not normalised: the tag is `v` followed by the version string
+      # exactly as alfred/_version.py spells it, and website/package.json,
+      # which the README says tracks that file, has to agree as well. A
+      # manual dispatch must be started from the tag, so it is held to the
+      # same rule rather than publishing from a branch.
+      - name: 🏷️ Compare the tag with alfred/_version.py
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          python3 - <<'EOF'
+          import json
+          import os
+          import re
+          import sys
+
+          ref_type, ref_name = os.environ['REF_TYPE'], os.environ['REF_NAME']
+          if ref_type != 'tag':
+              print(
+                  f'::error::Publishing runs from a version tag only; this run '
+                  f'is on the {ref_type} {ref_name!r}. Dispatch it from the tag.'
+              )
+              sys.exit(1)
+
+          source = open('alfred/_version.py', encoding='utf-8').read()
+          match = re.search(r'''__version__\s*=\s*['"]([^'"]+)['"]''', source)
+          if not match:
+              print('::error::alfred/_version.py does not assign __version__')
+              sys.exit(1)
+          version = match.group(1)
+
+          with open('website/package.json', encoding='utf-8') as f:
+              frontend = json.load(f)['version']
+
+          problems = []
+          if ref_name != f'v{version}':
+              problems.append(
+                  f'the tag is {ref_name!r} but alfred/_version.py says '
+                  f'{version!r}, so the tag should be v{version}'
+              )
+          if frontend != version:
+              problems.append(
+                  f'website/package.json says {frontend!r} where '
+                  f'alfred/_version.py says {version!r}'
+              )
+          for problem in problems:
+              print(f'::error::{problem}')
+          if problems:
+              sys.exit(1)
+          print(f'{ref_name} names version {version}')
+          EOF
+
+  build:
+    name: 📦 Build package
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📰 Checkout
+        uses: actions/checkout@v7
+
+      # The project's Python, not a floating 3.x. Nothing is installed first:
+      # `pdm build` builds in its own isolated environment, and the
+      # `pdm install --prod` this used to run could only fail the release --
+      # on the 3.14 that 3.x resolved to, reportlab<4 has no wheel and does
+      # not build.
       - name: 📲 Setup PDM
-        uses: pdm-project/setup-pdm@v3
-        id: setup-python
+        uses: pdm-project/setup-pdm@v4
         with:
-          python-version: 3.x
-
-      - name: 🚚 Install dependencies
-        run: pdm install --prod
+          python-version: '3.11'
 
       - name: 🏗️ Build package
         run: pdm build
 
       - name: 🛫 Export build files
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v7
         with:
           name: dist
-          path: dist
+          path: dist/
 
   publish:
     name: 🗞 Publish package
@@ -39,8 +112,14 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - name: 🛬 Download artifacts
-        uses: actions/download-artifact@v3
+      # By name, into dist/, which is where the publish action looks. v4 and
+      # later extract a named artifact straight into `path`, so without one
+      # the files would land in the workspace root.
+      - name: 🛬 Download build files
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
 
       - name: 🗞 Publish package
         uses: pypa/gh-action-pypi-publish@release/v1
