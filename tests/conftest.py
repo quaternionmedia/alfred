@@ -2,12 +2,39 @@
 
 `STATIC_DIR` is set before anything imports `alfred.main`, which mounts a
 StaticFiles directory at import time and raises if it is missing.
+
+`DB_NAME` is settled here for the same reason: `alfred.config` reads it once,
+at import, and every database handle in the app defaults to it.
 """
 
 from os import environ
 
 if not environ.get('STATIC_DIR'):
     environ['STATIC_DIR'] = 'tests/dist'
+
+# JWTs need a key to sign with, and nothing in pytest.yml provides one -- the
+# dev stack reads it from `.secret_key`, which the test container does not
+# load. Without it every login answers 500 (PyJWT is handed None), so no test
+# could hold a session. Test-only: nothing outside pytest ever sees it.
+if not environ.get('ALFRED_SECRET_KEY'):
+    environ['ALFRED_SECRET_KEY'] = 'test-only-signing-key-never-used-outside-pytest'
+
+# Each xdist worker gets a database of its own.
+#
+# The `needs_db` tier runs the whole app in-process against a real MongoDB, and
+# the suite runs with `-n auto`. Sharing one database, one worker's projects
+# would turn up in another's "you only see your own" assertions, and every
+# worker's startup seeding would race the others'. Only when DB_URL is set:
+# without it there is no database to share and nothing to name.
+#
+# The base is remembered in its own variable because workers inherit the
+# controller's environment -- deriving it from DB_NAME again would stack a
+# second suffix onto the controller's.
+if environ.get('DB_URL'):
+    _base = environ.setdefault(
+        'ALFRED_TEST_DB_BASE', environ.get('DB_NAME') or 'alfred'
+    )
+    environ['DB_NAME'] = f"{_base}_test_{environ.get('PYTEST_XDIST_WORKER', 'main')}"
 
 import shutil  # noqa: E402
 
@@ -65,10 +92,24 @@ def _has_imagemagick():
         return False
 
 
+def _has_db():
+    """Whether this run was given a database, not whether it answers.
+
+    Absence skips; a database that was promised and does not answer fails,
+    loudly, in the `api` fixture. pytest.yml always provides one, so a skipped
+    `needs_db` test there would be the database tier quietly not running --
+    exactly the skip-that-looks-like-a-pass this file is careful about. Never
+    falls back to localhost: a developer's own MongoDB on 27017 is not a test
+    database.
+    """
+    return bool(environ.get('DB_URL'))
+
+
 _EXTERNAL_TOOLS = {
     'needs_docker': (_has_docker, 'no docker binary available'),
     'needs_ffmpeg': (_has_ffmpeg, 'no ffmpeg available to moviepy'),
     'needs_imagemagick': (_has_imagemagick, 'ImageMagick cannot render text here'),
+    'needs_db': (_has_db, 'DB_URL is not set, so there is no MongoDB to test against'),
 }
 
 

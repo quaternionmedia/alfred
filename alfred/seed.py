@@ -768,6 +768,21 @@ seed_v1 = [
 ]
 
 
+def owned_by(owner, projects=None):
+    """Copies of the seed projects, each belonging to `owner`.
+
+    Copies, because `insert_many` writes an `_id` into every document it is
+    handed: inserting `seed` itself wrote ids into the module-level list, so
+    anything inserting it again from the same process would reuse them.
+    `owner=None` leaves the field out, which is how a project with no owner is
+    stored.
+    """
+    projects = seed if projects is None else projects
+    if owner is None:
+        return [dict(project) for project in projects]
+    return [dict(project, owner=owner) for project in projects]
+
+
 def edl1to2(edl):
     res = []
     for clip in edl:

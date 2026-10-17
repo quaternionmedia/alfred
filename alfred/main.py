@@ -1,4 +1,6 @@
+from os import environ
 from subprocess import run as bash
+from textwrap import wrap
 
 from beanie import init_beanie
 from fastapi import Depends, FastAPI
@@ -8,7 +10,14 @@ from pydantic import ValidationError as PydanticValidationError
 from starlette.staticfiles import StaticFiles
 
 from alfred import docs
-from alfred.config import DATA_DIR, DEV_SKIP_AUTH, DEV_USER_EMAIL, STATIC_DIR
+from alfred.config import (
+    DATA_DIR,
+    DEV_SKIP_AUTH,
+    DEV_USER_EMAIL,
+    SEED_OWNER,
+    STATIC_DIR,
+    secret_key_problem,
+)
 from alfred.core.models.users import UserRead, UserUpdate
 from alfred.core.routes import (
     ProjectAPI,
@@ -67,6 +76,25 @@ async def warnIfAuthIsDisabled():
 
 
 @app.on_event('startup')
+async def warnIfSecretKeyIsWeak():
+    """Say so, every boot, when the signing key will not do.
+
+    The same treatment as the auth bypass banner, for the same reason: a
+    process that starts successfully looks healthy, and a missing or short
+    key is invisible until a login fails -- or until somebody forges one.
+    Read from the environment at startup, the same place config.py read it.
+    """
+    problem = secret_key_problem(environ)
+    if problem:
+        line = '!' * 72
+        print(line, flush=True)
+        print('  THE TOKEN SIGNING KEY IS NOT SAFE TO USE', flush=True)
+        for text in wrap(problem, 68):
+            print(f'  {text}', flush=True)
+        print(line, flush=True)
+
+
+@app.on_event('startup')
 async def seedDb():
     db = get_db()
     # `count_documents` is a coroutine on a motor handle. Calling it without
@@ -74,9 +102,11 @@ async def seedDb():
     # never fired and this block never ran. The import was also `from seed`,
     # which only resolves with alfred/ as the working directory.
     if await db.Project.count_documents({}) == 0:
-        from alfred.seed import seed
+        from alfred.seed import owned_by, seed
 
-        await db.Project.insert_many(seed)
+        # Owned like any other project. In development that is the dev user,
+        # so ALFRED_DEV_SKIP_AUTH still opens onto them; see SEED_OWNER.
+        await db.Project.insert_many(owned_by(SEED_OWNER, seed))
 
 
 @app.on_event('startup')

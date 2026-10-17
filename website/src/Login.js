@@ -2,11 +2,20 @@ import m from 'mithril'
 import { User } from './User'
 import { success, error, message, prompt } from 'alertifyjs'
 
-/** `m.request` with the session token, a single retry on expiry, and a redraw.
+/** `m.request` with the session token, a way back from a 401, and a redraw.
  *
- * The wrapper exists for the retry: a 401 means the JWT expired, and the
- * caller should not have to know that. Two things about it are load-bearing
- * and were learned the hard way.
+ * A 401 means the session is over -- the token expired, or the server no
+ * longer accepts it -- and the caller should not have to know what to do
+ * about that. Three things here are load-bearing and were learned the hard
+ * way.
+ *
+ * **A 401 goes to the login screen, carrying the route.** This used to try
+ * `/auth/jwt/refresh` first. That route only accepts a token that still
+ * works, so asking it *after* a 401 could never succeed: the retry renewed
+ * nothing, ever, and every session simply ended an hour after login. Renewal
+ * now happens before expiry, while the app is in use (`User.renew`), and a 401
+ * means exactly what it says. The one retry left is for a request that raced
+ * a renewal: refused with the old token while the new one was arriving.
  *
  * **It redraws after the caller has stored the result.** `m.request` redraws
  * by itself, but that happens when *mithril's* promise settles -- before the
@@ -30,40 +39,63 @@ import { success, error, message, prompt } from 'alertifyjs'
  * so the caller waited forever. Nothing timed out and nothing was logged; the
  * button just stayed spinning.
  */
-export function auth(url, opts) {
-  const request = () =>
+export function auth(url, opts = {}) {
+  // Headers merge rather than replace: a caller adding one of its own used to
+  // drop the token along with the defaults. No header at all without a
+  // token, rather than the string "null".
+  const request = token =>
     m.request(url, {
-      headers: { Authorization: User.token },
       ...opts,
+      headers: {
+        ...(token ? { Authorization: token } : {}),
+        ...(opts.headers || {}),
+      },
     })
 
-  const req = request().catch(e => {
-    if (e.code != 401) throw e
+  const ended = e => {
+    if (e.code == 401) User.expire()
+    throw e
+  }
 
-    return m
-      .request('/auth/jwt/refresh', {
-        headers: { Authorization: User.token },
-        method: 'post',
-      })
-      .then(token => {
-        User.login(token)
-        return request()
-      })
-      .catch(err => {
-        // The refresh itself was rejected: the session is over, not stale.
-        // Send them to login with a way back to where they were.
-        if (err.code == 401) {
-          error('not authorized', 2)
-          m.route.set('/login', { redirect: m.route.get() })
-        }
-        throw err
-      })
+  const sent = User.token
+  const req = request(sent).catch(e => {
+    if (e.code != 401) throw e
+    // Renewed while this was in flight: the refusal was for the old token.
+    if (User.token && User.token != sent) return request(User.token).catch(ended)
+    return ended(e)
   })
 
   // Registered on `req` before the caller chains onto it, so this handler runs
   // first -- and defers, so the redraw itself runs after the caller's.
   req.finally(() => setTimeout(m.redraw, 0)).catch(() => {})
   return req
+}
+
+/** What to tell someone whose registration was refused.
+ *
+ * Every failure used to read "error regestering". The one that most needs
+ * saying plainly is a server that does not take registrations at all -- closed
+ * by default in production -- because nothing the person can type will fix it,
+ * and a generic error invites them to keep trying. The server's own wording is
+ * shown when it gives one, so the message cannot drift from the policy.
+ */
+export function registrationFailure(err) {
+  const detail = err && err.response && err.response.detail
+  if (err && err.code == 403) {
+    return typeof detail == 'string'
+      ? detail
+      : 'Registration is closed on this server. Ask an administrator for an account.'
+  }
+  if (detail == 'REGISTER_USER_ALREADY_EXISTS') {
+    return 'That email address already has an account. Log in instead.'
+  }
+  if (detail && detail.code == 'REGISTER_INVALID_PASSWORD') {
+    return `That password was refused: ${detail.reason}`
+  }
+  if (err && err.code == 422) {
+    return 'That does not look like an email address.'
+  }
+  return 'Registration failed. Try again, or ask an administrator.'
 }
 
 export const Login = () => {
@@ -145,7 +177,7 @@ export const Login = () => {
                     success(`${res.first_name} is now registered!`)
                   }).catch( err => {
                     console.log('error registering', err)
-                    error('error regestering')
+                    error(registrationFailure(err), 8)
                   })
                 }, () => {
                 })
@@ -159,11 +191,19 @@ export const Login = () => {
 }
 }
 
+/** The /logout route: end the session once, on arrival.
+ *
+ * This logged out from `view`, which mithril calls on every redraw: a side
+ * effect in the one function that should only draw, repeated by any redraw
+ * that landed before the route changed. Arriving is the event; drawing is not.
+ */
 export const Logout = () => {
   return {
-    view: vnode => {
+    oninit: () => {
+      const hadSession = User.loggedIn || !!User.token
       User.logout()
-      message('logged out', 3)
-    }
+      if (hadSession) message('logged out', 3)
+    },
+    view: () => null,
   }
 }
