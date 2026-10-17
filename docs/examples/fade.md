@@ -1,6 +1,6 @@
 # Fade a clip
 
-By default, clips have no fade time. Adding a `fadeIn` or `fadeOut` parameter will create a smooth transition for the specified duration in seconds.
+A clip fades in and out over one second unless it says otherwise: `fadeIn` and `fadeOut` set the length of each fade in seconds, and `0` turns a fade off. A clip's own fades are the only ones it gets -- templates add none of their own. (The editor sends `0` for both unless a fade was chosen, so its renders cut where the timeline cuts.)
 
 ## Fade In
 : fade a clip in

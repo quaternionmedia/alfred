@@ -23,10 +23,11 @@ test.describe('the template preview', () => {
      * and it 404'd for years because the route it named -- `otto/template/...`
      * -- had never existed on this server.
      *
-     * Rendered past the fade-in: templates carry `fadeIn: 1`, so a frame at
-     * t=0 is the faded-out first frame and every template returns a
-     * near-identical few kilobytes. Asserting a real picture means asking for
-     * one after the fade.
+     * Rendered at a time past where a fade would end. The preview builds its
+     * clip with no fades unless the query asks for them, so t=0 would do as
+     * well today -- but a frame from a fade is a near-identical few kilobytes
+     * for every template, and asking for one after it keeps this asserting a
+     * real picture whatever the fade defaults become.
      */
     const templates = await (
       await request.get('/templates', { headers: { Authorization: token } })
@@ -55,11 +56,12 @@ test.describe('the template preview', () => {
     /**
      * The allowlist is load-bearing, not decorative.
      *
-     * `generateEdl` resolves a template with `getattr(templates, clip.name)`
-     * on a name from the client, and otto's module namespace holds fourteen
-     * callables of which five are templates -- the rest are imports it happens
-     * to carry. Without the check, `ColorClip` and `rgbToDec` are reachable by
-     * name from a URL.
+     * otto's module namespace holds far more callables than templates --
+     * `ColorClip`, `rgbToDec` and the rest are imports it happens to carry.
+     * otto now resolves names through its own `TEMPLATES` registry, but this
+     * server's allowlist is what decides what it offers: `final` is in otto's
+     * registry and deliberately not offered here, since a clip cannot carry
+     * the address, website and phone it shows. Each of these must answer 404.
      */
     for (const name of ['ColorClip', 'rgbToDec', 'concatenate_videoclips', 'final']) {
       const res = await request.get(`/preview/template/${name}?width=320&height=180`, {
