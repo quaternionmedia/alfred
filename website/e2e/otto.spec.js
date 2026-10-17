@@ -65,7 +65,10 @@ test.describe('otto editor', () => {
       await expect(control).toHaveAttribute('aria-disabled', 'true')
       await expect(control).toHaveAttribute('title', /not yet/i)
 
-      await control.click()
+      // Forced: it is announced as disabled, so Playwright will not press it
+      // by default -- but a pointer still can, and should be told why
+      // nothing happened.
+      await control.click({ force: true })
       expect(await active(), `choosing ${tool} changed the tool`).toEqual(['time'])
       await expect(
         authedPage.locator('.ajs-message').filter({ hasText: /not available yet/i }).first()

@@ -70,6 +70,9 @@ export default class TimelineTools {
           {
             title: tool.title,
             'data-tool': tool.id,
+            // A button to assistive technology, so that pressed and disabled
+            // are announced: on a bare <i> neither attribute means anything.
+            role: 'button',
             class: tool.later ? 'disabled' : '',
             'aria-disabled': tool.later ? 'true' : undefined,
             'aria-pressed': tool.later ? undefined : state.tool() === tool.id ? 'true' : 'false',
