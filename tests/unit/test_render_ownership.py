@@ -253,3 +253,35 @@ class TestASuperuser:
         as_user(app, ADMIN)
         res = getattr(client, method)(path.format(id=render.id))
         assert res.status_code == 200, res.text
+
+
+def traceback_length(exc):
+    length, tb = 0, exc.__traceback__
+    while tb is not None:
+        length, tb = length + 1, tb.tb_next
+    return length
+
+
+class TestRefusalsLeaveNothingBehind:
+    """Re-raising one shared exception instance appends every raise's traceback
+    to it, keeping each request's frames alive for the life of the process.
+    The render routes raise a fresh copy each time."""
+
+    def test_repeated_404s_and_422s_do_not_grow_the_shared_instances(self, api):
+        from alfred.core.routes.render import NO_OUTPUT
+        from alfred.core.utils.bucket import INVALID_ID, NOT_FOUND
+
+        client, _, _ = api
+        before = [traceback_length(e) for e in (INVALID_ID, NOT_FOUND, NO_OUTPUT)]
+        for _ in range(3):
+            assert client.get('/render/undefined/status').status_code == 422
+            missing = ObjectId()
+            assert client.get(f'/render/{missing}/status').status_code == 404
+        after = [traceback_length(e) for e in (INVALID_ID, NOT_FOUND, NO_OUTPUT)]
+        assert after == before
+
+    def test_a_refusal_is_still_the_same_answer(self, api):
+        client, _, _ = api
+        assert client.get('/render/undefined/status').json() == {
+            'detail': 'Not a valid identifier'
+        }

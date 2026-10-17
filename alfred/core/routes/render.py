@@ -20,7 +20,7 @@ from ..models.render import (
     safe_name,
 )
 from ..responses import PartialFileResponse
-from ..utils.bucket import INVALID_ID, NOT_FOUND, signed_url
+from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh, signed_url
 from ..utils.db import get_client
 from ..utils.destinations import (
     Delivery,
@@ -79,10 +79,10 @@ def get_render_queue():
 async def load_render(store: RenderStore, item_id: str) -> Render:
     """The render with this id: 422 if the id is malformed, 404 if absent."""
     if not ObjectId.is_valid(item_id):
-        raise INVALID_ID
+        raise fresh(INVALID_ID)
     render = await store.get(item_id)
     if render is None:
-        raise NOT_FOUND
+        raise fresh(NOT_FOUND)
     return render
 
 
@@ -105,7 +105,7 @@ async def load_owned_render(store: RenderStore, item_id: str, user) -> Render:
     """
     render = await load_render(store, item_id)
     if not can_access(render, user):
-        raise NOT_FOUND
+        raise fresh(NOT_FOUND)
     return render
 
 
@@ -191,10 +191,10 @@ def finished_output(render: Render) -> str:
     disk that is not yet a video.
     """
     if render_state(render.status, render.progress) != 'rendered':
-        raise NO_OUTPUT
+        raise fresh(NO_OUTPUT)
     path = output_path(render.filename)
     if path is None:
-        raise NO_OUTPUT
+        raise fresh(NO_OUTPUT)
     return path
 
 

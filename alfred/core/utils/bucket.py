@@ -9,8 +9,23 @@ from alfred.config import BUCKET_NAME, DEFAULT_CHUNK_SIZE
 
 from .db import get_sync_db
 
+# The canonical answers, for comparing against. Raise `fresh(...)` copies of
+# them, not these instances themselves -- see `fresh`.
 NOT_FOUND = HTTPException(status_code=404, detail="Item not found")
 INVALID_ID = HTTPException(status_code=422, detail="Not a valid identifier")
+
+
+def fresh(exc: HTTPException) -> HTTPException:
+    """A new exception with `exc`'s status and detail, to raise in its place.
+
+    Raising one shared instance over and over appends each raise's traceback
+    to the one it already carries, so every 404 and 422 answered this way kept
+    its request's frames -- and everything they referenced -- alive for the
+    life of the process. A copy per raise leaves nothing behind.
+    """
+    return HTTPException(
+        status_code=exc.status_code, detail=exc.detail, headers=exc.headers
+    )
 
 
 def get_bucket(bucket=BUCKET_NAME):
@@ -57,8 +72,8 @@ def generate_signed_url(renderId, minutes=15):
     # this route needs its own guard, answering the same 422 that the project
     # routes now give for the same mistake.
     if not ObjectId.is_valid(renderId):
-        raise INVALID_ID
+        raise fresh(INVALID_ID)
     res = db.Render.find_one({'_id': ObjectId(renderId)})
     if not res:
-        raise NOT_FOUND
+        raise fresh(NOT_FOUND)
     return signed_url(res['filename'], minutes=minutes)
