@@ -102,6 +102,17 @@ def library_file(filename, video_dir=None) -> Optional[str]:
     return path
 
 
+def output_path(filename, video_dir=None) -> Optional[str]:
+    """Where a render's output file is, or None when there is none to serve.
+
+    The same containment as a library file: a plain name directly inside the
+    directory renders are written to, for a regular file that exists. A
+    stored name that would leave that directory -- renders stored before
+    output was named by id took theirs from the request -- finds nothing.
+    """
+    return library_file(filename, video_dir)
+
+
 def library_files(video_dir=None) -> list:
     """Every file the library offers, as bare file names, sorted."""
     root = video_dir or config.VIDEO_DIR

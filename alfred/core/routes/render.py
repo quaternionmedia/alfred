@@ -6,6 +6,7 @@ from bson import ObjectId
 from fastapi import Depends, HTTPException
 from fastapi_crudrouter import MotorCRUDRouter
 
+from alfred import config
 from alfred.config import DB_NAME, DB_URL, VIDEO_DIR
 
 from ..models import UserRead as User
@@ -15,12 +16,15 @@ from ..models.render import (
     RenderUpdate,
     display_name_for,
     output_filename,
+    render_state,
+    safe_name,
 )
+from ..responses import PartialFileResponse
 from ..utils.bucket import INVALID_ID, NOT_FOUND, generate_signed_url
 from ..utils.db import get_client
 from ..utils.destinations import DeliveryError, get_destination
 from ..utils.encoding import QUALITIES, UnknownQuality, preset_for
-from ..utils.media import RefusedEdl, check_edl
+from ..utils.media import RefusedEdl, check_edl, output_path
 from ..utils.tasks import renderRemote
 from .templates import TEMPLATE_NAMES
 from .users import current_active_superuser, current_active_user
@@ -163,6 +167,29 @@ def refuse_bad_request(render: Render) -> str:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+NO_OUTPUT = HTTPException(status_code=409, detail='That render has no output file yet')
+
+
+def finished_output(render: Render) -> str:
+    """The path of a finished render's file; 409 if there is none yet.
+
+    Finished means the worker said so, not merely that a file exists: the
+    encoder writes the output as it goes, so mid-render there is a file on
+    disk that is not yet a video.
+    """
+    if render_state(render.status, render.progress) != 'rendered':
+        raise NO_OUTPUT
+    path = output_path(render.filename, config.VIDEO_DIR)
+    if path is None:
+        raise NO_OUTPUT
+    return path
+
+
+def download_name(render: Render) -> str:
+    """What a downloaded render is saved as: its display name, `.mp4`."""
+    return f'{safe_name(render.display_name or display_name_for(render))}.mp4'
+
+
 def refuse_unrenderable(edl):
     """422 for an EDL the engine should not be handed; nothing otherwise.
 
@@ -287,6 +314,43 @@ class RenderAPI(MotorCRUDRouter):
             """
             render = await load_owned_render(store, item_id, user)
             return RenderStatus.of(render)
+
+        @self.get(
+            '/{item_id}/download',
+            response_class=PartialFileResponse,
+            responses={
+                200: {'content': {'video/mp4': {}}, 'description': 'the video'},
+                206: {'content': {'video/mp4': {}}, 'description': 'a range of it'},
+                404: {'description': 'no such render, or not yours'},
+                409: {'description': 'not rendered yet'},
+            },
+        )
+        async def downloadRender(
+            item_id: str,
+            user: User = Depends(current_active_user),
+            store: RenderStore = Depends(get_render_store),
+        ):
+            """# Download a render
+
+            The finished video, as an attachment named for its project
+            (`Content-Disposition: attachment; filename="<name>.mp4"`), with
+            HTTP Range support so a player can seek in it. 409 until the
+            render has finished.
+
+            Authenticated like every render route, so a browser cannot follow
+            a bare link to it: fetch it with the token and hand the result to
+            an object URL.
+
+            Before this there was no way to get a render back from a server
+            without a cloud bucket: a "local" delivery copied the file
+            somewhere only the server could see, or that anyone could.
+            """
+            render = await load_owned_render(store, item_id, user)
+            return PartialFileResponse(
+                finished_output(render),
+                media_type='video/mp4',
+                filename=download_name(render),
+            )
 
         @self.post('/{item_id}/deliver', *args, **kwargs)
         async def deliverRender(

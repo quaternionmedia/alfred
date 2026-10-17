@@ -1,133 +1,31 @@
-import hashlib
-import os
-import stat
-from email.utils import formatdate
-from mimetypes import guess_type
+"""A file response that honours HTTP Range requests.
 
-from starlette.background import BackgroundTask
-from starlette.requests import Request
-from starlette.responses import Response
-from starlette.types import Receive, Scope, Send
+This was a hand-written response that answered `206 Partial Content` to every
+request and stopped after 4 MB, Range header or not. A client asking for the
+whole file -- the editor's video preview fetches media into a blob -- got the
+first 4 MB, with a status claiming that was a deliberate part, and anything
+longer played truncated. A Range request was served for 4 MB from its start,
+wherever it had asked to end.
 
-try:
-    import aiofiles
-    from aiofiles.os import stat as aio_stat
-except ImportError:  # pragma: nocover
-    aiofiles = None  # type: ignore
-    aio_stat = None  # type: ignore
+Starlette's FileResponse has done this properly since 0.39: the whole file
+with 200 when no range is asked for, 206 with a correct `Content-Range` for a
+range, `multipart/byteranges` for several, 416 for a range past the end, and
+`If-Range`. So this is that, kept under the name the routes import.
+"""
 
-try:
-    import ujson
-except ImportError:  # pragma: nocover
-    ujson = None  # type: ignore
+from starlette.responses import FileResponse
 
 
-class PartialFileResponse(Response):
-    chunk_size = 4096
+class PartialFileResponse(FileResponse):
+    """A whole file for a plain request; the requested bytes for a Range one."""
 
-    def __init__(
-        self,
-        path: str,
-        status_code: int = 206,
-        headers: dict = None,
-        media_type: str = None,
-        background: BackgroundTask = None,
-        filename: str = None,
-        stat_result: os.stat_result = None,
-        method: str = None,
-    ) -> None:
-        assert aiofiles is not None, "'aiofiles' must be installed to use FileResponse"
-        self.path = path
-        self.status_code = status_code
-        self.filename = filename
-        self.send_header_only = method is not None and method.upper() == "HEAD"
-        if media_type is None:
-            media_type = guess_type(filename or path)[0] or "text/plain"
-        self.media_type = media_type
-        self.background = background
-        self.init_headers(headers)
-        if self.filename is not None:
-            content_disposition = 'attachment; filename="{}"'.format(self.filename)
-            self.headers.setdefault("content-disposition", content_disposition)
-        self.stat_result = stat_result
-        self.defaultSize = 1024 * 1024 * 4
-        # self.size = None
-        if stat_result is not None:
-            # self.size = stat_result.st_size
-            self.set_stat_headers(stat_result)
-
-    def set_stat_headers(self, stat_result: os.stat_result) -> None:
-        content_length = str(min(stat_result.st_size, self.defaultSize))
-        last_modified = formatdate(stat_result.st_mtime, usegmt=True)
-        etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
-        etag = hashlib.md5(etag_base.encode()).hexdigest()
-
-        self.headers.setdefault("content-length", content_length)
-        self.headers.setdefault("last-modified", last_modified)
-        self.headers.setdefault("etag", etag)
-        # filesize = str(stat_result.st_size)
-        # self.headers.setdefault('filesize', filesize)
-        self.headers.setdefault('accept-ranges', 'bytes')
-        self.size = stat_result.st_size
-        # print('size: ', self.size, type(self.size), self.headers)
-        self.start = 0
-        self.end = self.start + int(content_length)
-        # self.headers.setdefault('range', f"bytes {self.start}-{self.end}/{self.size}")
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if self.stat_result is None:
-            try:
-                stat_result = await aio_stat(self.path)
-                self.set_stat_headers(stat_result)
-            except FileNotFoundError as exc:
-                raise RuntimeError(f"File at path {self.path} does not exist.") from exc
-            else:
-                mode = stat_result.st_mode
-                if not stat.S_ISREG(mode):
-                    raise RuntimeError(f"File at path {self.path} is not a file.")
-        request = Request(scope, receive)
-        # print('got a bytes!', request.headers)
-        if request.headers.get('range'):
-            if request.headers['range'].startswith('bytes='):
-                self.range = request.headers['range'].split('bytes=')[1].split('-')
-                # print('processed range: ', self.range)
-                self.start = int(self.range[0])
-                self.end = min(self.start + self.defaultSize, self.size)
-                self.headers['content-range'] = (
-                    f"bytes {self.start}-{self.end - 1}/{self.size}"
-                )
-                self.headers['content-length'] = str(self.end - self.start)
-        await send(
-            {
-                "type": "http.response.start",
-                "status": self.status_code,
-                "headers": self.raw_headers,
-            }
-        )
-        if self.send_header_only:
-            await send({"type": "http.response.body"})
-        else:
-            async with aiofiles.open(self.path, mode="rb") as f:
-                r = await f.seek(0, 2)
-                s = await f.tell()
-                assert (
-                    s == self.size
-                ), f'{r}, {type(s)}, {s} is not {self.size}, {type(self.size)}!'
-                await f.seek(self.start)
-                more_body = True
-                sent = 0
-                while more_body:
-                    readSize = min(self.chunk_size, self.defaultSize - sent)
-                    sent += readSize
-                    chunk = await f.read(readSize)
-                    # more_body = len(chunk) == self.chunk_size
-                    more_body = readSize != 0
-                    await send(
-                        {
-                            "type": "http.response.body",
-                            "body": chunk,
-                            "more_body": more_body,
-                        }
-                    )
-        if self.background is not None:
-            await self.background()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Sent as stored, not gzipped on the way out. The app's GZipMiddleware
+        # compresses every response whose encoding is not already declared,
+        # and a browser's fetch() asks for gzip -- so each video the editor
+        # loaded was recompressed at level 9, gaining nothing (video is already
+        # compressed), costing the server the CPU, and dropping Content-Length,
+        # which is how a download shows its progress. Declaring the encoding
+        # is how that middleware is told to leave a response alone.
+        self.headers.setdefault('content-encoding', 'identity')
