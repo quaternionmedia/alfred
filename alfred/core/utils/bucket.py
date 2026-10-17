@@ -22,15 +22,31 @@ def get_bucket(bucket=BUCKET_NAME):
 
 
 def upload(filename, directory=None):
-    """Upload file to cloud directory"""
+    """Upload `directory/filename` as the object named `filename`."""
     blob = get_bucket().blob(filename, chunk_size=DEFAULT_CHUNK_SIZE)
     blob.upload_from_filename(join(directory, filename) if directory else filename)
 
 
-def generate_signed_url(renderId, minutes=15):
-    """Generates a v4 signed URL for downloading a blob.
+def signed_url(blob_name, minutes=15):
+    """A v4 signed URL, valid for `minutes`, to download one object.
 
-    Note that this method requires a service account key file.
+    By object name -- a render's `filename`, which is what `upload` names the
+    object. Needs a service account key file.
+    """
+    blob = get_bucket().blob(blob_name)
+    return blob.generate_signed_url(
+        version="v4",
+        expiration=timedelta(minutes=minutes),
+        # Allow GET requests using this URL.
+        method="GET",
+    )
+
+
+def generate_signed_url(renderId, minutes=15):
+    """A signed URL for a render's object in the bucket, by render id.
+
+    Looks the render up to find its object name. Callers that already hold
+    the render use `signed_url` with its filename instead.
     """
     db = get_sync_db()
     # `ObjectId(renderId)` raises bson's InvalidId on anything unparseable,
@@ -45,12 +61,4 @@ def generate_signed_url(renderId, minutes=15):
     res = db.Render.find_one({'_id': ObjectId(renderId)})
     if not res:
         raise NOT_FOUND
-    print('generating url', res)
-    blob = get_bucket().blob(res['filename'])
-    return blob.generate_signed_url(
-        version="v4",
-        # This URL is valid for 15 minutes
-        expiration=timedelta(minutes=minutes),
-        # Allow GET requests using this URL.
-        method="GET",
-    )
+    return signed_url(res['filename'], minutes=minutes)

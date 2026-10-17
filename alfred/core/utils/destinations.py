@@ -121,13 +121,23 @@ class BucketDestination:
     name = 'bucket'
 
     def deliver(self, filename: str) -> Delivery:
-        from .bucket import generate_signed_url, upload
+        """Upload the file as an object named for it, and sign a link to it.
 
+        This uploaded the object under the full server path and then asked
+        `generate_signed_url` -- which takes a render *id* -- to sign that
+        path, so it answered 422 "Not a valid identifier" after every
+        successful upload. The object is named by the file's own name, as the
+        worker's automatic upload names it, and signed by that name.
+        """
+        from .bucket import signed_url, upload
+
+        source = Path(filename)
         try:
-            upload(filename)
+            upload(source.name, directory=str(source.parent))
+            location = signed_url(source.name)
         except Exception as exc:  # noqa: BLE001 - vendor SDK raises broadly
             raise DeliveryError(f'upload failed: {exc}') from exc
-        return Delivery(destination=self.name, location=generate_signed_url(filename))
+        return Delivery(destination=self.name, location=location)
 
 
 DESTINATIONS = {

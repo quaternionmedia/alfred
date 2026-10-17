@@ -5,6 +5,7 @@ from bson import ObjectId
 from fastapi import Depends, HTTPException
 from fastapi_crudrouter import MotorCRUDRouter
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 from alfred.config import DB_NAME, DB_URL
 
@@ -19,7 +20,7 @@ from ..models.render import (
     safe_name,
 )
 from ..responses import PartialFileResponse
-from ..utils.bucket import INVALID_ID, NOT_FOUND, generate_signed_url
+from ..utils.bucket import INVALID_ID, NOT_FOUND, signed_url
 from ..utils.db import get_client
 from ..utils.destinations import (
     Delivery,
@@ -471,10 +472,21 @@ class RenderAPI(MotorCRUDRouter):
             A signed, time-limited URL for the render's copy in the cloud
             bucket. Kept for the clients that use it; it answered for any
             render to anyone signed in, and now only for the render's owner
-            or a superuser.
+            or a superuser. 502 when the bucket cannot sign one -- on a server
+            with no cloud account, always; the download route is the way to
+            get a render back there.
             """
-            await load_owned_render(store, item_id, user)
-            return generate_signed_url(item_id)
+            render = await load_owned_render(store, item_id, user)
+            try:
+                # Off the event loop: the storage client is synchronous and
+                # may go to the network for credentials.
+                return await run_in_threadpool(signed_url, render.filename)
+            except Exception as exc:  # noqa: BLE001 - vendor SDK raises broadly
+                print('could not sign a link to render', render.id, exc)
+                raise HTTPException(
+                    status_code=502,
+                    detail='No cloud link is available for this render',
+                ) from exc
 
         @self.put('/{item_id}', *args, **kwargs)
         async def relabelRender(
