@@ -126,7 +126,6 @@ test.describe('adding a template', () => {
     await authedPage.goto('/#!/?stage=edit')
     await binEntry(authedPage, 'makeColor').locator('.binadd').click()
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(1)
-    const binCount = await authedPage.locator('#bin .binclip').count()
 
     const from = await binEntry(authedPage, 'textBox').locator('.binlabel').boundingBox()
     const to = await authedPage.locator('#timeline .clip').first().boundingBox()
@@ -145,9 +144,11 @@ test.describe('adding a template', () => {
       DEFAULT_TEXT
     )
 
-    // The bin is as it was, and the entry that was dragged still works: a
-    // drag used to leave behind a copy with no event handlers.
-    await expect(authedPage.locator('#bin .binclip')).toHaveCount(binCount)
+    // The bin is as it was -- the entry back in it, once, and nothing of the
+    // bin's left in the timeline -- and the entry that was dragged still
+    // works: a drag used to leave behind a copy with no event handlers.
+    await expect(binEntry(authedPage, 'textBox')).toHaveCount(1)
+    await expect(authedPage.locator('#timeline .binclip')).toHaveCount(0)
     await binEntry(authedPage, 'textBox').locator('.binadd').click()
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)
     expect(errors).toEqual([])

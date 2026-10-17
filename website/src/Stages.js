@@ -252,7 +252,11 @@ const LiveList = {
 // A watched render that settles changes the list (a filename, a status), and
 // a watcher that fell back to reading the list has the whole of it in hand.
 RenderStatus.listen((type, id, payload) => {
-  if (type === 'list' && Array.isArray(payload)) Flow.renders = payload
+  if (type === 'list' && Array.isArray(payload)) {
+    // The newest list there is, so anything still in flight is older.
+    Flow.rendersShown = ++Flow.rendersAsked
+    Flow.renders = payload
+  }
   if (type === 'settled') Flow.loadRenders()
 })
 

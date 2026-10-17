@@ -1,7 +1,11 @@
 import m from 'mithril'
 import { Edl } from './Video'
-import { TemplatePreview } from './Preview'
+import { TemplatePreview, templatePreviewUrl } from './Preview'
 import Bin from './Bin'
+
+/** Two frame URLs for the same template and settings, at any time. */
+const sameSettings = (a, b) =>
+  Boolean(a && b) && a.replace(/&t=[^&]*$/, '') === b.replace(/&t=[^&]*$/, '')
 
 /**
  * The settings of the template clip under the playhead.
@@ -148,8 +152,11 @@ export const TemplateParams = () => {
 
           COLOURS.filter(c => takes.includes(c.key)).map(c => colourField(clip, c)),
 
-          // The server's reason, in words, where the settings are.
-          TemplatePreview.problem
+          // The server's reason, in words, where the settings are -- when it
+          // is about these settings. The verdict is on whichever frame the
+          // viewer asked for last, which may be another clip's, or these
+          // settings before the last keystroke.
+          TemplatePreview.problem && sameSettings(TemplatePreview.src, templatePreviewUrl(clip))
             ? m('p.paramproblem#param-problem', { role: 'alert' }, TemplatePreview.problem)
             : null,
         ]

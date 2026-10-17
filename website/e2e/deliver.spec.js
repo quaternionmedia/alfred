@@ -45,6 +45,22 @@ function sequence(answers) {
 }
 
 /**
+ * Answers that move on only when the test says so.
+ *
+ * For the render list, which several things read -- the stage opening, the
+ * flow loading, a refresh, a watcher -- so a count of reads says nothing about
+ * what the page has shown. The test advances it after seeing each step.
+ */
+function steps(answers) {
+  let at = 0
+  const now = () => answers[at]
+  now.advance = () => {
+    at = Math.min(at + 1, answers.length - 1)
+  }
+  return now
+}
+
+/**
  * Serve the render endpoints from canned answers.
  *
  * `list` and `status` are sequences; a status answer with `httpStatus` is sent
@@ -176,24 +192,14 @@ test.describe('a queued render is followed until it settles', () => {
      * the missing route only once.
      */
     const status = sequence([{ httpStatus: 404 }])
-    await serveRenders(authedPage, {
-      status,
-      // Every list read advances this -- the stage's own loads as well as the
-      // watcher's -- so 55% is held for several reads to stay observable.
-      list: sequence([
-        [renderDoc()],
-        [renderDoc({ progress: 55 })],
-        [renderDoc({ progress: 55 })],
-        [renderDoc({ progress: 55 })],
-        [renderDoc({ progress: 55 })],
-        [renderDoc({ status: 'RENDERED', progress: 100 })],
-      ]),
-    })
+    const list = steps([[renderDoc({ progress: 55 })], [renderDoc({ status: 'RENDERED', progress: 100 })]])
+    await serveRenders(authedPage, { status, list })
 
     const row = await queueFromRenderStage(authedPage, request, token)
 
     await expect(row).toHaveAttribute('data-state', 'rendering')
     await expect(row.locator('.renderprogress')).toHaveText('55%')
+    list.advance()
     await expect(row).toHaveAttribute('data-state', 'rendered')
     expect(status.calls()).toBe(1)
   })
@@ -207,19 +213,21 @@ test.describe('a queued render is followed until it settles', () => {
      * anything on it is unfinished.
      */
     const status = sequence([{ httpStatus: 404 }])
-    await serveRenders(authedPage, {
-      status,
-      list: sequence([
-        [renderDoc({ progress: 20 })],
-        [renderDoc({ progress: 70 })],
-        [renderDoc({ status: 'UPLOADED', progress: 100 })],
-      ]),
-    })
+    const list = steps([
+      [renderDoc({ progress: 20 })],
+      [renderDoc({ progress: 70 })],
+      [renderDoc({ status: 'UPLOADED', progress: 100 })],
+    ])
+    await serveRenders(authedPage, { status, list })
 
     await openFresh(authedPage, '/#!/?stage=deliver')
     const row = authedPage.locator(`.renderitem[data-render="${RENDER_ID}"]`)
+    await expect(row.locator('.renderprogress')).toHaveText('20%')
+    // Nothing on the page changes now except by the stage asking again.
+    list.advance()
     await expect(row).toHaveAttribute('data-state', 'rendering')
     await expect(row.locator('.renderprogress')).toHaveText('70%')
+    list.advance()
     await expect(row).toHaveAttribute('data-state', 'rendered')
     // The list served it; nothing asked the status route about a render this
     // page did not queue.
