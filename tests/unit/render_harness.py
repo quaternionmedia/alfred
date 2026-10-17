@@ -94,6 +94,12 @@ class FakeRenderStore:
     async def get(self, render_id) -> Optional[object]:
         return self.renders.get(PydanticObjectId(render_id))
 
+    async def list(self, owner, skip, limit):
+        renders = sorted(self.renders.values(), key=lambda r: r.id, reverse=True)
+        if owner is not None:
+            renders = [r for r in renders if r.username == owner]
+        return renders[skip : skip + limit]
+
     async def insert(self, render):
         self.renders[render.id] = render
 
@@ -101,6 +107,9 @@ class FakeRenderStore:
         render = self.renders[PydanticObjectId(render_id)]
         for name, value in fields.items():
             setattr(render, name, value)
+
+    async def delete(self, render):
+        del self.renders[render.id]
 
 
 TEMPLATE_EDL = {

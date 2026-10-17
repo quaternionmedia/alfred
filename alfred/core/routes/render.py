@@ -1,13 +1,13 @@
-from os.path import join
 from typing import Optional
 
 from beanie import PydanticObjectId
 from bson import ObjectId
 from fastapi import Depends, HTTPException
 from fastapi_crudrouter import MotorCRUDRouter
+from pydantic import BaseModel
 
 from alfred import config
-from alfred.config import DB_NAME, DB_URL, VIDEO_DIR
+from alfred.config import DB_NAME, DB_URL
 
 from ..models import UserRead as User
 from ..models.render import (
@@ -27,7 +27,7 @@ from ..utils.encoding import QUALITIES, UnknownQuality, preset_for
 from ..utils.media import RefusedEdl, check_edl, output_path
 from ..utils.tasks import renderRemote
 from .templates import TEMPLATE_NAMES
-from .users import current_active_superuser, current_active_user
+from .users import current_active_user
 
 
 class RenderStore:
@@ -42,6 +42,11 @@ class RenderStore:
     async def get(self, render_id) -> Optional[Render]:
         return await Render.get(PydanticObjectId(render_id))
 
+    async def list(self, owner: Optional[str], skip: int, limit: int) -> list:
+        """Newest first; only `owner`'s renders, unless `owner` is None."""
+        query = {} if owner is None else {'username': owner}
+        return await Render.find(query).sort('-_id').skip(skip).to_list(limit)
+
     async def insert(self, render: Render) -> None:
         await render.insert()
 
@@ -49,6 +54,9 @@ class RenderStore:
         await Render.find_one({'_id': PydanticObjectId(render_id)}).update(
             {'$set': fields}
         )
+
+    async def delete(self, render: Render) -> None:
+        await render.delete()
 
 
 def get_render_store() -> RenderStore:
@@ -209,6 +217,26 @@ def refuse_unrenderable(edl):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
+class RenderLabels(BaseModel):
+    """What `PUT /render/{id}` may change: the labels, and nothing else.
+
+    The crud router's update wrote the request body over the whole document
+    with no owner check. Any signed-in user could rewrite any render -- its
+    `username` (taking it, or handing it to someone else), its `status`, and
+    its `filename`, which decides what a download serves: pointed at another
+    render's file, the download route would hand over somebody else's video.
+    Everything else on a render is the server's record of what happened.
+    """
+
+    name: Optional[str]
+    project: Optional[str]
+    project_id: Optional[PydanticObjectId]
+    description: Optional[str]
+
+    class Config:
+        extra = 'forbid'
+
+
 class RenderAPI(MotorCRUDRouter):
     def __init__(
         self,
@@ -234,7 +262,26 @@ class RenderAPI(MotorCRUDRouter):
             update_schema=update_schema,
             db_url=DB_URL,
             database=DB_NAME,
+            # No `DELETE /render`. The crud router's bulk delete removed every
+            # render in the collection -- everybody's -- for any signed-in
+            # user, with no confirmation (contract C6).
+            delete_all_route=False,
         )
+
+        @self.get('', *args, **kwargs)
+        async def get_all_renders(
+            skip: Optional[int] = 0,
+            limit: Optional[int] = 100,
+            user: User = Depends(current_active_user),
+            store: RenderStore = Depends(get_render_store),
+        ):
+            """# Renders
+
+            The caller's renders, newest first; every render for a superuser.
+            This listed every user's renders to anyone signed in.
+            """
+            owner = None if user.is_superuser else user.email
+            return await store.list(owner, skip or 0, limit or 100)
 
         @self.post('', *args, **kwargs)
         async def queueRender(
@@ -268,13 +315,19 @@ class RenderAPI(MotorCRUDRouter):
         @self.post('/rerender/{id}', *args, **kwargs)
         async def reQueueRender(
             id: str,
-            user: User = Depends(current_active_superuser),
+            user: User = Depends(current_active_user),
             store: RenderStore = Depends(get_render_store),
             queue=Depends(get_render_queue),
         ):
+            """# Render again
+
+            Re-queues a stored render: its owner's or, for a superuser, any.
+            This was superuser-only and checked nothing else; an owner may now
+            retry their own render, which is no more than queueing it again.
+            """
             # A malformed id was a 500 from `ObjectId(id)`, and a missing one
             # a 500 from reading `.edl` off None.
-            render = await load_render(store, id)
+            render = await load_owned_render(store, id, user)
             # A stored EDL is checked like a new one: it may predate the media
             # contract, and re-queueing it must not reopen what that closed.
             refuse_unrenderable(render.edl)
@@ -357,52 +410,87 @@ class RenderAPI(MotorCRUDRouter):
             item_id: str,
             destination: Optional[str] = None,
             user: User = Depends(current_active_user),
+            store: RenderStore = Depends(get_render_store),
         ):
             """# Deliver a render
 
             Sends a finished render to a destination and records where it went.
 
-            The destination defaults to the project's saved one, then to
-            `local` -- so a server with no cloud account still has somewhere to
-            put a render, which the previous single path to a Google bucket did
-            not allow.
+            The destination defaults to the one this render was last sent to,
+            then to `local` -- so a server with no cloud account still has
+            somewhere to put a render, which the previous single path to a
+            Google bucket did not allow.
+
+            409 until the render has finished: the encoder writes its output
+            as it goes, and a copy taken mid-render is not a video.
             """
-            if not ObjectId.is_valid(item_id):
-                raise INVALID_ID
-            render = await self.schema.find_one({'_id': ObjectId(item_id)})
-            if render is None:
-                raise NOT_FOUND
-            if not render.filename:
-                raise HTTPException(
-                    status_code=409,
-                    detail='That render has no output file yet',
-                )
+            render = await load_owned_render(store, item_id, user)
+            source = finished_output(render)
 
             chosen = destination or render.destination
             try:
-                # VIDEO_DIR, not DATA_DIR. The Celery task writes finished
-                # renders to videos/; this looked in data/ and would have
-                # reported every render missing.
-                delivery = get_destination(chosen).deliver(
-                    join(VIDEO_DIR, render.filename)
-                )
+                delivery = get_destination(chosen).deliver(source)
             except DeliveryError as exc:
                 # 502, not 500: the render is fine and the request was valid.
                 # Something downstream would not take it, and that is worth
                 # retrying, which a 500 does not suggest.
                 raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-            render.destination = delivery.destination
-            render.link = delivery.location
-            await render.save()
+            await store.update(
+                render.id,
+                {'destination': delivery.destination, 'link': delivery.location},
+            )
             return delivery
 
         @self.get('/{item_id}', *args, **kwargs)
         async def getSignedRenderLink(
-            item_id: str, user: User = Depends(current_active_user)
+            item_id: str,
+            user: User = Depends(current_active_user),
+            store: RenderStore = Depends(get_render_store),
         ):
+            """# A cloud link to a render
+
+            A signed, time-limited URL for the render's copy in the cloud
+            bucket. Kept for the clients that use it; it answered for any
+            render to anyone signed in, and now only for the render's owner
+            or a superuser.
+            """
+            await load_owned_render(store, item_id, user)
             return generate_signed_url(item_id)
 
-        @self.get('', *args, **kwargs)
-        async def get_all_renders(skip: Optional[int] = 0, limit: Optional[int] = 100):
-            return await self.schema.find_all().skip(skip).sort('-_id').to_list(limit)
+        @self.put('/{item_id}', *args, **kwargs)
+        async def relabelRender(
+            item_id: str,
+            labels: RenderLabels,
+            user: User = Depends(current_active_user),
+            store: RenderStore = Depends(get_render_store),
+        ):
+            """# Relabel a render
+
+            Changes a render's name, project or description: its owner's, or
+            any for a superuser. Fields not sent are left as they were; any
+            other field is a 422 (see `RenderLabels`).
+            """
+            render = await load_owned_render(store, item_id, user)
+            changes = labels.dict(exclude_unset=True)
+            for name, value in changes.items():
+                setattr(render, name, value)
+            changes['display_name'] = display_name_for(render)
+            render.display_name = changes['display_name']
+            await store.update(render.id, changes)
+            return render
+
+        @self.delete('/{item_id}', *args, **kwargs)
+        async def deleteRender(
+            item_id: str,
+            user: User = Depends(current_active_user),
+            store: RenderStore = Depends(get_render_store),
+        ):
+            """# Delete a render
+
+            Its owner's, or any for a superuser. The crud router's delete
+            removed any render for anyone signed in.
+            """
+            render = await load_owned_render(store, item_id, user)
+            await store.delete(render)
+            return render
