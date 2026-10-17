@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from alfred.config import DB_NAME, DB_URL
 
 from ..models import Project, ProjectUpdate, RenderSettings
-from ..utils.bucket import INVALID_ID, NOT_FOUND
+from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
 from ..utils.db import User, get_client
 from .users import current_active_user
 
@@ -146,12 +146,14 @@ class ProjectAPI(MotorCRUDRouter):
         id" -- rather than the 404 reserved for "no project of yours".
         """
         if not ObjectId.is_valid(item_id):
-            raise INVALID_ID
+            # A copy per raise: re-raising the shared instance grows its
+            # traceback with every request (see `bucket.fresh`).
+            raise fresh(INVALID_ID)
         project = await self.schema.find_one(
             {'_id': ObjectId(item_id), **visible_to(user)}
         )
         if project is None:
-            raise NOT_FOUND
+            raise fresh(NOT_FOUND)
         return project
 
     # The generated routes, scoped to the caller. The crud router builds each
