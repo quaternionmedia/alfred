@@ -216,6 +216,14 @@ height.
 - **accepts that token for the current user**
 - **lists projects for an authenticated caller**
 - **refuses to list projects without a token**
+### project ownership
+
+Any account could read, overwrite and delete any project. Somebody
+else's project answers 404 now -- the same as one that does not exist,
+so the answer does not confirm the id is real.
+
+- **a project you create is yours**
+- **another account can neither list nor open it**
 
 ## demo
 
@@ -491,6 +499,17 @@ waiting for the encode.
   `redirect=/?stage=render` split on its second `=` and the value read
   as empty; logging in landed on `/` every time.
 
+### registering
+
+Registration is closed by default in production. Every refusal used to
+read "error regestering", which invites somebody to keep trying a thing
+nothing they type can fix. The server's own reason is shown instead.
+
+Answered here rather than by a closed server, because this suite
+registers its own user and needs registration open to do it.
+
+- **a server that does not take registrations says so**
+- **an address that already has an account says so**
 
 ## navigation
 

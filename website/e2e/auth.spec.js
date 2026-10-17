@@ -65,3 +65,78 @@ test.describe('auth API', () => {
     expect(res.status()).toBe(401)
   })
 })
+
+/**
+ * A second account, for the one thing a single account cannot show: that its
+ * projects are its own. Registered on demand, since a development stack takes
+ * registrations; 400 means it already exists, which is just as good.
+ */
+const OTHER = {
+  username: process.env.E2E_OTHER_EMAIL || 'other@mail.me',
+  password: CREDENTIALS.password,
+  name: 'other',
+}
+
+async function otherAccount(request) {
+  const res = await request.post('/auth/register', {
+    data: { email: OTHER.username, password: OTHER.password, first_name: OTHER.name },
+  })
+  expect([201, 400], await res.text()).toContain(res.status())
+  return apiLogin(request, OTHER)
+}
+
+test.describe('project ownership', () => {
+  test('a project you create is yours', async ({ request, token }) => {
+    const res = await request.post('/project', {
+      headers: { Authorization: token },
+      data: { name: `owned ${test.info().workerIndex}`, logic: {} },
+    })
+    const project = await res.json()
+    try {
+      expect(project.owner).toBe(CREDENTIALS.username)
+    } finally {
+      await request.delete(`/project/${project._id}`, {
+        headers: { Authorization: token },
+      })
+    }
+  })
+
+  test('another account can neither list nor open it', async ({ request, token }) => {
+    /**
+     * Any account could read, overwrite and delete any project. Somebody
+     * else's project answers 404 now -- the same as one that does not exist,
+     * so the answer does not confirm the id is real.
+     */
+    const other = await otherAccount(request)
+    const project = await (
+      await request.post('/project', {
+        headers: { Authorization: token },
+        data: { name: `private ${test.info().workerIndex}`, logic: {} },
+      })
+    ).json()
+
+    try {
+      const theirs = await (
+        await request.get('/project', { headers: { Authorization: other } })
+      ).json()
+      expect(theirs.map(p => p._id)).not.toContain(project._id)
+
+      for (const [method, path] of [
+        ['get', `/project/${project._id}`],
+        ['delete', `/project/${project._id}`],
+      ]) {
+        const res = await request[method](path, { headers: { Authorization: other } })
+        expect(res.status(), `${method} ${path}`).toBe(404)
+      }
+
+      const still = await request.get(`/project/${project._id}`, {
+        headers: { Authorization: token },
+      })
+      expect(still.status(), 'the other account removed it').toBe(200)
+    } finally {
+      await request.delete(`/project/${project._id}`, {
+        headers: { Authorization: token },
+      })
+    }
+  })
+})
