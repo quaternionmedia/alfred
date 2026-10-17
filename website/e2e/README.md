@@ -2,15 +2,24 @@
 
 Playwright, replacing the Cypress suite that lived in `website/cypress/`.
 
+The whole suite, on a stack built from the checkout -- the site, the api, a
+render worker for the `@slow` specs, and the database -- in Docker:
+
+```sh
+./al test
+```
+
+Or from the host, against a stack you are already running:
+
 ```sh
 cd website
-npm install
+yarn install
 npx playwright install --with-deps chromium
 
-npm run e2e          # the gate: everything except @perf
-npm run e2e:perf     # page-load budget, on request
-npm run e2e:ui       # interactive runner
-npm run e2e:report   # last HTML report
+yarn e2e             # the gate: everything except @perf and @recipe
+yarn e2e:perf        # page-load budget, on request
+yarn e2e:ui          # interactive runner
+yarn e2e:report      # last HTML report
 ```
 
 `E2E_BASE_URL` defaults to `http://localhost:8000`. Before the first test,
@@ -61,30 +70,21 @@ and its `CYPRESS_baseUrl` (`http://api/`) disagreed with `cypress.json`'s
 
 ## Verification status
 
-The suite was run against a live stack: 24 passed, 1 skipped, twice
-consecutively, in about 8 seconds; the `@perf` project passes separately.
+`./al test` on `integrate/review-fixes`: **212 passed, 1 skipped, in 3.3
+minutes**, including the `@slow` specs that wait on a real encode. The skip is
+data-dependent: the project filter test needs more than three projects.
 
-That run needed a locally patched application image, because the committed
-one does not build. Three independent breaks, all from unpinned or unlocked
-dependencies, none of them introduced by this conversion:
-
-1. `FROM python` in the Dockerfile now resolves to Python 3.14, which no
-   longer bundles setuptools, so `bezier` fails at `pip install` with
-   `No module named 'pkg_resources'`.
-2. Pinning the base to 3.11 gets past that and then fails on
-   `rm /etc/ImageMagick-6/policy.xml`. The base ships ImageMagick 7, whose
-   policy lives at `/etc/ImageMagick-7/`; the 6 path does not exist.
-3. `parcel` floats from `^2.8.3` to 2.16.4 while `@parcel/transformer-sass`
-   is pinned to exactly `2.8.3`. Parcel requires them to match, so
-   `parcel build` fails and there is no `dist/` for the API to serve. Neither
-   `yarn.lock` nor `package-lock.json` is committed, which is what lets this
-   drift happen at all.
-
-Until those are fixed, `./al test` cannot pass — not because of the tests.
-The verification above used `FROM python:3.11`, `rm -f`, and a matching
-transformer version, applied to throwaway copies outside the repository.
+The three image breaks recorded when this suite replaced Cypress -- `FROM
+python` reaching 3.14, the ImageMagick 6 policy path on an ImageMagick 7 base,
+and `parcel` drifting with no lockfile -- are fixed: the base is pinned by
+digest, the policy is edited where ImageMagick 7 keeps it, and `yarn.lock` is
+committed. The run installs its npm dependencies outside the checkout, so it
+no longer rewrites `website/yarn.lock`.
 
 ## Defects this conversion surfaced
+
+All four are fixed; `navigation.spec.js` now asserts there are no duplicate
+ids, and the logo, reload and mount problems are gone with their causes.
 
 - **Duplicate element ids.** The nav bar and the menu bar render the same
   components, so `home-link`, `projects-link`, `renders-link`,
@@ -107,38 +107,40 @@ transformer version, applied to throwaway copies outside the repository.
 
 ## Authentication
 
-There is no `storageState` shortcut here, and this is a property of the app
-rather than of Playwright. `src/User.js` keeps the JWT in a module-level
-object; nothing is written to a cookie or to storage, so there is no
-persisted credential to seed and a reload ends the session. Each test that
-needs a session logs in through the form via the `authedPage` fixture.
-
-The commented-out `auth.js` tried to shortcut this by seeding a `user` key
-into `localStorage`, which the app never reads. That is consistent with the
-file never having worked.
+There is no `storageState` shortcut here. `src/User.js` keeps the session in
+`sessionStorage`, so it survives a reload in the same tab and ends with the
+tab, and it renews the token while the editor is in use. Each test that needs
+a session logs in through the form via the `authedPage` fixture, which also
+proves the login took effect. `session.spec.js` covers renewal, staying logged
+in and logout; `views.spec.js` that a reload keeps the session.
 
 ## What is covered
 
 | Area | Where | Level |
 |---|---|---|
-| Login, logout, bad password | `login.spec.js` | UI |
-| Token issue, `/users/me`, 401s | `auth.spec.js` | API |
-| Project list, table columns, row-per-project | `projects.spec.js` | UI + API |
-| Project row actions route to editor and form | `projects.spec.js` | UI |
-| Render list authorized + anonymous | `renders.spec.js` | API + UI |
-| Renders, documents and home views render | `views.spec.js` | UI |
-| No uncaught page errors across the main views | `views.spec.js` | UI |
-| Unknown route leaves the shell intact | `views.spec.js` | UI |
-| A reload ends the session | `views.spec.js` | UI |
-| Routing, history, menu | `navigation.spec.js` | UI |
-| Editor toolbar presence | `otto.spec.js` | UI |
+| Login, registration (incl. closed registration) | `login.spec.js` | UI |
+| Token issue, `/users/me`, 401s, project ownership | `auth.spec.js` | API |
+| Token renewal, staying logged in, logout | `session.spec.js` | UI |
+| Project selector and its filter | `projects.spec.js` | UI + API |
+| Demo project and media, empty states | `demo.spec.js` | UI + API |
+| The four-stage flow, delivery with real bytes | `flow.spec.js` | UI + API |
+| Timeline editor, transport, saving | `editor.spec.js`, `tools.spec.js`, `otto.spec.js` | UI |
+| Trim by mouse and touch, cut | `timeline-tools.spec.js` | UI |
+| Adding and editing template clips | `templates.spec.js` | UI |
+| The render request: clip starts, fades, toolbar, form | `editor-render.spec.js` | UI |
+| Render checks before queueing, status, another user | `render-api.spec.js` | API |
+| Render pipeline end to end, downloads, ranges | `render-pipeline.spec.js` | API, `@slow` |
+| Following a render, downloading it | `deliver.spec.js` | UI |
+| Render list | `renders.spec.js` | API + UI |
+| Preview contract, malformed input, partial writes | `api-contract.spec.js` | API |
+| Routing, history, menu, unique ids | `navigation.spec.js` | UI |
+| Views render, no uncaught page errors, reload | `views.spec.js` | UI |
+| Layout at every width | `appearance.spec.js` | UI |
+| Recipe walkthroughs (the cookbook) | `recipes.spec.js` | UI, `@recipe` |
 | Page-load budget | `performance.spec.js` | UI, `@perf` |
 
 The project assertions read the expected set from `GET /project` rather than
-hardcoding names, so they survive a different seed. The app seeds three demo
-projects into an empty database at startup, so a fresh stack has content to
-assert against — that seeding was broken until the DB cleanup, which is why
-these tests are possible now and were not before.
+hardcoding names, so they survive a different seed.
 
 The uncaught-page-error check is worth more than it looks: a mithril view that
 raises during render leaves the page half-drawn without failing any request,
@@ -146,46 +148,13 @@ so no other test in this suite would notice.
 
 ## What is not covered
 
-Nothing below was covered by the Cypress suite either — this is the
-inherited gap, not a regression from the conversion.
-
-1. **Rendering.** The core function of the product. Submitting a render,
-   watching it progress, and verifying output is never exercised. `POST
-   /render`, `POST /render/rerender/{id}`, and the Celery task in
-   `alfred/core/utils/tasks.py` have no test at any level.
-2. **Project mutation.** Create, update and delete all come from
-   `MotorCRUDRouter`. Only the list endpoint is touched; nothing verifies a
-   project can be saved or that an edit persists.
-3. **Preview.** `POST /preview` is untested, and preview is how a user sees
-   their edit before committing to a render.
-4. **The timeline editor.** `otto.spec.js` asserts controls exist. No test
-   performs a trim, cut, slip, slide or roll, or checks the resulting EDL.
-   This is the most complex UI in the product and its behavior is untested.
-5. **Video delivery.** `GET /videos/{video}` serves partial content with
-   range headers; `alfred/core/responses/partial.py` implements the 206 path
-   by hand, and none of it is tested. Two specific gaps: the handler joins
-   the path parameter onto `/app/videos` with no containment check, and any
-   filename that does not exist raises through as an unhandled 500 rather
-   than a 404.
-
-   The containment gap is **not currently exploitable**, and the reason is
-   worth writing down because it is not the application's doing. Starlette
-   decodes the request path before routing, and `{video}` matches `[^/]+`, so
-   any encoding that would introduce a separator stops matching the route and
-   falls through to the SPA mount. Verified against a running instance with
-   single- and double-encoded separators, UTF-8 overlong sequences,
-   backslashes and a null byte: every one either 404s without reaching the
-   handler or 500s on a literal filename inside `/app/videos`. Declaring the
-   route `{video:path}` would remove that accidental protection and make it a
-   live traversal immediately, which is what a test here should pin.
-6. **Authorization boundaries.** Admin (`POST /invoice`) and superuser
-   routes are never called, as either an admin or a normal user. Nothing
-   verifies a normal user is refused.
-7. **Registration and password reset.** Registration is exercised only
-   incidentally by `global-setup.js`. Reset and verification flows are
-   untested.
-8. **Fonts, documents, issue reporting.** `GET /fonts`, the documents view,
-   and `POST /{item_id}/report` are untested.
-9. **Cross-browser.** Only chromium runs. The config takes firefox and
-   webkit by adding projects; the product claims mobile support, which
-   nothing checks.
+1. **Password reset and verification.** Nothing delivers the token outside
+   development, and no spec drives either flow.
+2. **Fonts and documents.** `GET /fonts` and the documents view are
+   exercised only by the views rendering.
+3. **Slip, slide and dual roller.** Not built; the specs check that they say so.
+4. **Cross-browser and real devices.** Only chromium runs. Touch is covered
+   through pointer events, not on a phone; the config takes firefox and webkit
+   by adding projects.
+5. **Cloud delivery.** The server offers only `local`; a bucket destination is
+   tested at the unit level, never against a real bucket.
