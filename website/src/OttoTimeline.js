@@ -1,6 +1,5 @@
 import m from 'mithril'
 import Sortable, { MultiDrag } from 'sortablejs'
-import { ContentEditable } from 'mithril-contenteditable'
 
 // Sortable.mount(new MultiDrag());
 var state = require("./Globals").state
@@ -8,95 +7,166 @@ import { Video, Edl, array_move } from './Video'
 import { Preview } from './Preview'
 import { Player } from './Player'
 import { auth } from './Login'
+import { cutAtPlayhead } from './TimelineTools'
 
+// How far a press may wander and still count as a tap. Past this it is a drag
+// -- on a touch screen, usually the start of scrolling the timeline -- and
+// must not seek.
+const TAP_SLOP = 8
+
+// The shortest a trim may make a clip, in seconds.
+const SHORTEST = 0.1
+
+/**
+ * One clip on the timeline, and what the timeline tools do to it.
+ *
+ * Pointer events, not mouse events. Trim and seek listened for `mousedown`
+ * and `mousemove`, which a touch screen does not send while a finger moves --
+ * it sends touch events, and synthesises mouse events only after a tap -- so
+ * on the phones and tablets the README promises, trimming did nothing at all.
+ * Pointer events are one stream for mouse, pen and touch.
+ *
+ * A trim captures the pointer (`setPointerCapture`), so the drag keeps
+ * arriving at this clip when it leaves the clip's edge -- which is the whole
+ * gesture, since the point is to make it wider -- and the release arrives
+ * wherever it happens. That replaces listeners on `document`, which had to be
+ * added and removed by hand; when they were bound to the clip instead, every
+ * press leaked one, and clips resized without being dragged.
+ *
+ * Seeking happens on release, not on press. With the timeline scrollable by
+ * touch, a press is as likely to be the start of a scroll as a choice of
+ * position; a scroll moves the pointer (or the browser cancels it), and only a
+ * press that stays put is a tap.
+ */
 export function Clip() {
-  // Listeners for an in-progress trim, held so they can be removed again.
-  let dragging = null
+  // The gesture in progress: a trim being dragged, or a press that may be a tap.
+  let gesture = null
 
   return {
     oncreate: vnode => {
       const element = vnode.dom
 
-      element.addEventListener('mousedown', e => {
+      const capture = id => {
+        try {
+          element.setPointerCapture(id)
+        } catch (e) {
+          // An id the browser no longer considers active. The drag still
+          // works while it stays over the clip.
+        }
+      }
+
+      const finishTrim = commit => {
+        const trim = gesture
+        gesture = null
         // `vnode.attrs`, read now rather than captured at oncreate. This
         // component instance is reused for whatever clip ends up at its
         // position -- the list is unkeyed -- so a reference taken once
         // describes the clip that used to be here.
-        const attrs = vnode.attrs
+        const clip = Edl.edl[vnode.attrs.i]
+        if (!commit || !clip) {
+          element.style.width = trim.startStyle
+          return
+        }
+        const seconds = Math.max(SHORTEST, parseFloat(element.style.width) / state.scale())
+        clip.duration = Math.round(seconds * 1000) / 1000
+        // A media clip is a window onto its file: its out-point is where
+        // the window ends, so it moves with the length. Left alone it went
+        // on reporting the length the clip was added at.
+        if (clip.type !== 'template') {
+          clip.outpoint = Math.round(((Number(clip.inpoint) || 0) + clip.duration) * 1000) / 1000
+        }
+        Edl.update()
+      }
 
-        if (state.tool() == 'trim') {
+      element.addEventListener('pointerdown', e => {
+        // The primary button, or any touch or pen contact.
+        if (e.pointerType === 'mouse' && e.button !== 0) return
+        if (gesture) return
+        const tool = state.tool()
+        if (tool === 'trim') {
           e.preventDefault()
-          if (dragging) return
-
-          const startWidth = element.getBoundingClientRect().width
-          const startX = e.pageX
-
-          const resize = ev => {
-            const w = startWidth + (ev.pageX - startX)
-            if (w > 4) element.style.width = w + 'px'
+          gesture = {
+            kind: 'trim',
+            id: e.pointerId,
+            startX: e.clientX,
+            startWidth: element.getBoundingClientRect().width,
+            startStyle: element.style.width,
           }
-
-          const stop = () => {
-            document.removeEventListener('mousemove', resize)
-            document.removeEventListener('mouseup', stop)
-            dragging = null
-            const clip = Edl.edl[attrs.i]
-            if (clip) {
-              clip.duration = parseFloat(element.style.width) / state.scale()
-              Edl.update()
-            }
-          }
-
-          // On `document`, not on the clip.
-          //
-          // Both were bound to the element itself, so dragging past its edge
-          // -- which is the whole gesture, since the point is to make it
-          // wider -- stopped `mousemove` firing, and releasing the button
-          // anywhere but over the clip never reached `stopResize`. The
-          // `mousemove` handler then stayed attached for the life of the
-          // page, and every subsequent press added another.
-          //
-          // The visible result was that clips resized without being dragged:
-          // after pressing two or three of them, moving the pointer across
-          // any one resized it, and they appeared to respond in parallel.
-          dragging = { resize, stop }
-          document.addEventListener('mousemove', resize)
-          document.addEventListener('mouseup', stop)
-        } else if (state.tool() == 'time') {
-          const p = e.offsetX / e.target.offsetWidth
-          const within = p * (Number(attrs.duration) || 0)
-          // Through the transport, so the viewer follows the click. Setting
-          // `Edl.time` directly moved the playhead marker and left the
-          // preview showing whatever it had been showing.
-          Player.seek(Edl.startOf(attrs.i) + within)
+          capture(e.pointerId)
+        } else if (tool === 'time' || tool === 'cut') {
+          gesture = { kind: 'tap', tool, id: e.pointerId, x: e.clientX, y: e.clientY }
         }
       })
+
+      element.addEventListener('pointermove', e => {
+        if (!gesture || e.pointerId !== gesture.id) return
+        if (gesture.kind === 'trim') {
+          const width = gesture.startWidth + (e.clientX - gesture.startX)
+          if (width > 4) element.style.width = `${width}px`
+        } else if (
+          Math.abs(e.clientX - gesture.x) > TAP_SLOP ||
+          Math.abs(e.clientY - gesture.y) > TAP_SLOP
+        ) {
+          gesture = null
+        }
+      })
+
+      element.addEventListener('pointerup', e => {
+        if (!gesture || e.pointerId !== gesture.id) return
+        if (gesture.kind === 'trim') return finishTrim(true)
+        const tool = gesture.tool
+        gesture = null
+        // Where along the clip, from the clip's own box. `offsetX` is
+        // relative to whichever child was under the pointer -- the name, the
+        // in-point -- so pressing on the label seeked to the wrong place.
+        const box = element.getBoundingClientRect()
+        const along = box.width > 0 ? Math.max(0, Math.min(1, (e.clientX - box.left) / box.width)) : 0
+        const at = Edl.startOf(vnode.attrs.i) + along * (Number(vnode.attrs.duration) || 0)
+        // Through the transport, so the viewer follows the click. Setting
+        // `Edl.time` directly moved the playhead marker and left the
+        // preview showing whatever it had been showing.
+        Player.seek(at)
+        // The cut tool is a razor: the playhead goes where you pressed, and
+        // the clip under it splits there.
+        if (tool === 'cut') cutAtPlayhead()
+      })
+
+      // The browser took the pointer back (it is scrolling, or the clip went
+      // away mid-drag): a trim is abandoned rather than half-applied.
+      const abandon = e => {
+        if (!gesture || e.pointerId !== gesture.id) return
+        if (gesture.kind === 'trim') finishTrim(false)
+        else gesture = null
+      }
+      element.addEventListener('pointercancel', abandon)
+      element.addEventListener('lostpointercapture', abandon)
     },
 
     onremove: () => {
-      // A clip removed mid-drag would otherwise leave both handlers on the
-      // document, resizing an element that is no longer in the page.
-      if (dragging) {
-        document.removeEventListener('mousemove', dragging.resize)
-        document.removeEventListener('mouseup', dragging.stop)
-        dragging = null
-      }
+      gesture = null
     },
 
     view: vnode => {
+      const at = vnode.attrs.i
       return m(
         '.clip',
         {
+          // In pixels. A bare number is an invalid length outside quirks
+          // mode, so with a doctype every clip collapsed to its minimum.
           style: {
-            width: vnode.attrs.duration * state.scale(),
+            width: `${(Number(vnode.attrs.duration) || 0) * state.scale()}px`,
           },
           ...vnode.attrs,
         },
         [
           m('i.material-icons.progress', {
             style: {
-              display: Edl.current == vnode.attrs.i ? 'inherit' : 'none',
-              left: Video.time() * state.scale(),
+              display: Edl.current == at ? 'inherit' : 'none',
+              // How far into this clip the playhead is. This used the
+              // position in the source file, which counts from the file's
+              // start, so on a clip that starts part-way into its file the
+              // marker sat past where it should.
+              left: `${Math.max(0, Edl.time - Edl.startOf(at)) * state.scale()}px`,
             },
           }),
           ...vnode.children,
@@ -107,62 +177,34 @@ export function Clip() {
 }
 
 
+/** What a template clip says on the timeline: its text, else its template. */
+export const templateLabel = clip => {
+  const text = clip && clip.data && clip.data.text
+  return text ? String(text) : (clip && clip.name) || 'template'
+}
+
 export function Template() {
   return {
-    view: (vnode) => {
-      return m(Clip, {
+    view: vnode =>
+      m(
+        Clip,
+        {
           class: 'template',
+          title: `${vnode.attrs.name}: ${templateLabel(vnode.attrs)}`,
           ...vnode.attrs,
-        }, [
-        m(ContentEditable, {
-          style: {margin: '5px'},
-          // Original HTML input
-          html: this.html,
-          // Returns the updated HTML code
-          oncreate: html => {
-            // The same Template component renders both timeline clips and bin
-            // entries, and only timeline clips carry `data`. Bin entries come
-            // from /templates and describe a template rather than an instance
-            // of one, so this threw "Cannot read properties of undefined
-            // (reading 'text')" on every render of the bin.
-            //
-            // Falling back to the template's name gives a bin entry a sensible
-            // label instead of an exception.
-            const data = vnode.attrs.data || {}
-            const label = data['text'] !== undefined ? data['text'] : vnode.attrs.name
-            this.html = `${JSON.stringify(label === undefined ? '' : label).slice(1, -1)}`
-            m.redraw()
-          },
-          onchange: html => {
-            this.html = html
-
-          },
-          // Example to prevent the user from entering commas
-          onkeydown: e => {
-            switch (e.key) {
-              case 'Enter': e.preventDefault()
-              e.stopPropagation()
-              console.log('enter')
-              Edl.update()
-              case 'ArrowLeft': e.stopPropagation()
-              case 'ArrowRight': e.stopPropagation()
-            }
-            Edl.edl[vnode.attrs.i].data['text'] = this.html
-          },
-
-          // Replace the base tag, if needed
-          tagName: 'div',
-          // By default, &amp; etc are replaced by their normal counterpart when losing focus.
-          // cleanupHtml: false,
-          // By default, don't allow the user to enter newlines
-          // preventNewline: false,
-          // By default, select all text when the element receives focus
-          // selectAllOnFocus: false,
-          // By default, when pasting text, remove all HTML and keep the plain text.
-          // pasteAsPlainText: false,
-        }),
-      ])
-    }
+        },
+        [
+          // A label, not an editor. This was a mithril-contenteditable
+          // instance, and the version installed (0.1.4) renders two hard-coded
+          // "<i>Hello, world</i>" divs before the editable one -- so every
+          // template clip read "Hello, world Hello, world" followed by its
+          // text, and editing it wrote a stale copy of the text on the next
+          // keystroke. The template's settings, text included, are edited
+          // beside the preview now (TemplateParams.js), where there is room to
+          // show why a setting will not render.
+          m('p.clipname', templateLabel(vnode.attrs)),
+        ]
+      ),
   }
 }
 
@@ -187,6 +229,10 @@ export function OttoTimeline() {
   // Loading only on init meant the first project opened was the only one that
   // ever appeared.
   let loaded = null
+  // Which load is the latest. A project id is not enough to tell: opening A,
+  // then B, then A again leaves two requests for A in flight, and both used to
+  // pass the check -- the second appending A's clips after the first's.
+  let ticket = 0
 
   const open = () => {
     // Only ask for a project when there is one to ask for. Unguarded, this
@@ -208,41 +254,62 @@ export function OttoTimeline() {
     const projectId = m.route.param('project') || null
     if (projectId === loaded) return
     loaded = projectId
+    const mine = ++ticket
 
-    if (!projectId) {
-      Edl.edl = []
-      Edl.current = 0
-      Edl.time = 0
-      Edl.update()
-      return
-    }
-    // Remember which request this is, so a slow one cannot overwrite newer
-    // state when it finally lands. Without this, selecting a project and
-    // adding material before the fetch returned discarded the addition: the
-    // response assigns the whole clip list, and it assigned the version from
-    // before the click.
-    const pending = projectId
-    auth(`/project/${projectId}`, {})
-        .then(e => {
-          if (pending !== loaded) return
-          // `e.edl` is the API's Edl document, {clips, duration}. This module's
-          // `Edl.edl` is the flat clips array -- it is indexed, mapped, sliced
-          // and reduced everywhere below. Assigning the document straight in
-          // gave `Edl.edl.map is not a function` on every render, which is why
-          // the timeline stayed empty even once projects had clips.
-          //
-          // Same word, two shapes. Worth remembering when reading either side.
-          Edl.edl = (e.edl && e.edl.clips) || []
-          Edl.current = 0
-          Edl.time = 0
-          Edl.update()
-        })
-        .catch(err => {
-          // Let the next attempt retry rather than pinning a failed id.
-          loaded = null
-          console.error('could not load the project timeline', err)
-        })
+    // Empty now, not when the response lands. The previous project's clips
+    // are not this one's, and leaving them up while the request is in flight
+    // made anything added meanwhile land on the wrong timeline. Not
+    // `Edl.update()`: this runs inside a render (oninit, onupdate), where
+    // mithril refuses a synchronous redraw.
+    Edl.edl = []
+    Edl.current = 0
+    Edl.time = 0
+    m.redraw()
+
+    if (projectId) fetchClips(projectId, mine, 0)
   }
+
+  const fetchClips = (projectId, mine, attempt) =>
+    auth(`/project/${projectId}`, {})
+      .then(e => {
+        // A newer load has started since; it owns the timeline now.
+        if (mine !== ticket) return
+        // `e.edl` is the API's Edl document, {clips, duration}. This module's
+        // `Edl.edl` is the flat clips array -- it is indexed, mapped, sliced
+        // and reduced everywhere below. Assigning the document straight in
+        // gave `Edl.edl.map is not a function` on every render, which is why
+        // the timeline stayed empty even once projects had clips.
+        //
+        // Same word, two shapes. Worth remembering when reading either side.
+        //
+        // Anything on the timeline now was added while this request was in
+        // flight, to this project, so it goes after the project's clips.
+        // Assigning the response outright discarded it: choose a project,
+        // add a clip before the fetch returned, and the clip vanished when it
+        // did -- then Save, finding nothing on the timeline, saved nothing.
+        // That was the save test failing on most runs.
+        Edl.edl = ((e.edl && e.edl.clips) || []).concat(Edl.edl)
+        Edl.current = 0
+        Edl.time = 0
+        Edl.update()
+      })
+      .catch(err => {
+        if (mine !== ticket) return
+        console.error('could not load the project timeline', err)
+        // Try again a few times if the failure might pass, without clearing
+        // anything added meanwhile.
+        //
+        // This used to forget the id instead, so the next redraw asked again
+        // -- and every answer redraws, so a project that does not exist was
+        // requested in a tight loop for as long as the page stayed open.
+        // Missing (404), malformed (422) or unauthorised (401, which auth()
+        // has already handled) will not change by asking again.
+        const code = err && err.code
+        if (code === 401 || code === 404 || code === 422 || attempt >= 3) return
+        setTimeout(() => {
+          if (mine === ticket) fetchClips(projectId, mine, attempt + 1)
+        }, 2000 * (attempt + 1))
+      })
 
   return {
     oninit: open,
@@ -250,7 +317,10 @@ export function OttoTimeline() {
     oncreate: (vnode) => {
       new Sortable(vnode.dom, {
         multiDrag: true,
-        group: 'clip',
+        // Accepts drops from the bin. A bare `'clip'` accepts only its own
+        // group, and the bin is `'media'`, so Sortable refused every drag
+        // from the bin before the drop handler could see it.
+        group: { name: 'clip', put: ['media'] },
         selectedClass: "selected",
         swapThreshold: 0.50,
         animation: 150,
@@ -282,7 +352,12 @@ export function OttoTimeline() {
       window.scroll(0,0)
     },
     view: (vnode) => {
-      return m('#timeline.timeline', [
+      // The tool decides the cursor and what a touch on a clip means -- a
+      // scroll, or a gesture of the tool's -- so it is a class here, read by
+      // editor.scss, rather than an inline cursor the toolbar used to set on
+      // an element it looked up while rendering itself.
+      const tool = String(state.tool()).replace(/\s+/g, '-')
+      return m('#timeline.timeline', { class: `tool-${tool}` }, [
         Edl.edl.map((c, i) => {
           if (c) {
             c.i = i

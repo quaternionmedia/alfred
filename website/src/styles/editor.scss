@@ -52,6 +52,10 @@ $rule: 1px solid #2e2e2e;
   padding-top: 0.4rem;
   padding-bottom: 0.4rem;
   border-bottom: $rule;
+  // Never squeezed. The page is a fixed-height column whose regions shrink
+  // to fit and scroll inside themselves, and this one is a single row with
+  // the play button in it: shrunk, it scrolled its own controls out of view.
+  flex-shrink: 0;
 
   // The slider takes the room left over, so the playhead is the widest control
   // on the row -- it is the one being dragged.
@@ -139,6 +143,201 @@ $rule: 1px solid #2e2e2e;
     &:hover {
       background: none;
     }
+  }
+}
+
+// ---- the timeline, under each tool ---------------------------------------
+
+// What a touch on a clip means depends on the tool. Selecting (and cutting)
+// is a tap, so a swipe is left to the browser to scroll the timeline -- a
+// phone has no other way to reach a clip off screen. Trimming and moving are
+// drags of the clip itself, so the browser must not take the gesture for a
+// scroll. (style.css sets `touch-action: none` on every clip, which made the
+// timeline unscrollable by touch under any tool.)
+#timeline {
+  &.tool-time .clip,
+  &.tool-cut .clip {
+    touch-action: pan-x pan-y;
+  }
+
+  &.tool-trim .clip,
+  &.tool-move .clip {
+    touch-action: none;
+  }
+
+  &.tool-time .clip {
+    cursor: text;
+  }
+
+  &.tool-trim .clip {
+    cursor: ew-resize;
+  }
+
+  &.tool-move .clip {
+    cursor: grab;
+  }
+
+  &.tool-cut .clip {
+    cursor: url('../assets/content-cut.svg') 12 12, crosshair;
+  }
+}
+
+// ---- the bin: what can go on the timeline --------------------------------
+
+// Entries wrap rather than shrinking to fit one row. Squeezed onto one line,
+// two dozen entries were a few pixels each and read "vide", "vide", "vide".
+.editorsurface #bin {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 0.3rem;
+  // About three rows, then it scrolls: the bin feeds the timeline and should
+  // not take the room the timeline needs.
+  max-height: 8rem;
+  overflow-y: auto;
+}
+
+#bin .binclip {
+  width: 9rem;
+  height: auto;
+  min-height: 2.25rem;
+  margin: 0;
+  padding: 0 0.2rem 0 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  cursor: grab;
+
+  .binlabel {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.8rem;
+  }
+}
+
+// Adding without dragging: from the keyboard, and on a phone.
+.binadd {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  i {
+    font-size: 1.1rem;
+  }
+
+  &:hover,
+  &:focus-visible {
+    border-color: #f2aa4c;
+    color: #f2aa4c;
+  }
+}
+
+// ---- the selected template clip's settings -------------------------------
+
+.templateparams {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.3rem 0.5rem;
+  align-items: center;
+  // Rows as tall as their content. Stretched, they spread over the whole
+  // height of the viewer column and pushed the last field out of sight.
+  align-content: start;
+  width: 21rem;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem;
+  border: $rule;
+  border-radius: 4px;
+  background: #161616;
+  color: #d8d8d8;
+  font-size: 0.8rem;
+  text-align: left;
+
+  h4 {
+    grid-column: 1 / -1;
+    margin: 0;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #8f8f8f;
+
+    .paramclip {
+      text-transform: none;
+      letter-spacing: normal;
+    }
+  }
+
+  textarea,
+  input[type='text'],
+  input[type='number'] {
+    min-width: 0;
+    padding: 0.25rem 0.35rem;
+    background: #101010;
+    color: inherit;
+    border: 1px solid #3a3a3a;
+    border-radius: 3px;
+    font: inherit;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  label {
+    justify-self: start;
+  }
+
+  .paramcolour {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 5.5rem 2rem minmax(0, 1fr) auto;
+    gap: 0.35rem;
+    align-items: center;
+  }
+
+  .swatch {
+    width: 2rem;
+    height: 1.5rem;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+
+    // Not set: the template's own default applies, which the swatch cannot
+    // know, so it does not pretend to.
+    &.unset {
+      opacity: 0.3;
+    }
+  }
+
+  .paramreset {
+    padding: 0.15rem 0.4rem;
+    border: 1px solid #3a3a3a;
+    border-radius: 3px;
+    background: #222;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+
+    &:hover {
+      border-color: #f2aa4c;
+    }
+  }
+
+  .paramproblem {
+    grid-column: 1 / -1;
+    margin: 0.2rem 0 0;
+    color: #d98a8a;
   }
 }
 

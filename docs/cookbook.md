@@ -225,6 +225,60 @@ so the answer does not confirm the id is real.
 - **a project you create is yours**
 - **another account can neither list nor open it**
 
+## deliver
+
+Following a render from queued to delivered.
+
+# Recipe: watching a render finish
+
+Queue a render and the Deliver stage follows it: the row moves from queued
+to rendering with a progress bar, then to rendered -- or to failed, with the
+reason. Nothing needs reloading. It used to be a snapshot of the moment the
+stage opened, so a render looked queued for as long as you watched it.
+
+The status and download routes are answered here rather than by a worker:
+what is under test is what the page does with each answer, and a real encode
+cannot be made to pause at 40% on cue. render-pipeline.spec.js drives the
+real thing end to end.
+
+### a queued render is followed until it settles
+
+Queue from the Render stage and watch the row on Deliver: a bar and a
+percentage while it renders, then "rendered" with Download and Deliver
+enabled. Once it has settled nothing goes on asking about it.
+
+- **the row moves from queued, through progress, to rendered**
+- **a failed render says why, and the words stay words**
+
+  The reason a render failed is shown under its row and in a
+  notification. Notifications are HTML, and a reason is whatever the
+  encoder printed, so it is escaped: angle brackets stay text.
+
+- **without a status route, the render list is read instead**
+
+  The status route is new. Against a server that predates it -- 404 --
+  the page falls back to the render list rather than giving up, and asks
+  the missing route only once.
+
+- **a render already on the list keeps moving while the stage is open**
+
+  Not queued from this page -- another tab, the form, before a reload --
+  so nothing is watching it by id. The stage refreshes its list while
+  anything on it is unfinished.
+
+### a finished render can be downloaded
+
+# Recipe: getting the video back
+
+Every rendered render has a Download button. It fetches the file with the
+session -- an `<a href>` cannot carry the Authorization header -- and
+saves it under the name the server gives it.
+
+- **the file arrives under its display name, fetched with the session**
+- **a delivered render can still be downloaded**
+- **an unfinished render offers no download yet, and says why**
+- **a refused download says why**
+
 ## demo
 
 Getting started from nothing.
@@ -337,6 +391,70 @@ matters here: what the panel does when the server says "nothing".
   present. Queue a render of it and check the API accepts the job.
 
 
+## editor render
+
+What the editor sends when it asks for a render.
+
+The editor plays its timeline as one track, each clip starting where the
+previous one ends. The renderer places clips by an explicit `start` and
+layers overlaps, treating a missing `start` as 0. The editor used to send
+clips with no `start` at all, so three five-second clips rendered stacked at
+second 0 -- five seconds of overlap, then ten of black -- while the preview
+played them one after another.
+
+These read the request the page actually sends (intercepted and answered
+here, so nothing is queued) rather than trusting the code that builds it.
+
+### the render request places every clip
+
+# Recipe: what "render" sends
+
+The exact case from the bug report: three five-second clips. They must
+arrive at 0, 5 and 10 seconds, with a total of 15 -- not all at 0.
+
+- **three clips added in the editor render end to end, not stacked**
+- **a start stored on a clip is replaced by its place on the timeline**
+
+  A saved `start` records where a clip was when it was saved. Reordering,
+  trimming or cutting moves it, so the request must be computed from the
+  timeline as it stands and never echo the stored value. Served here with
+  every stored start wrong, to prove the editor ignores them.
+
+- **a clip fades only when a fade was chosen for it**
+
+  The project routes store clips through otto's model, which fills in
+  its one-second fades, so every clip of a saved project arrives with
+  `fadeIn: 1` and `fadeOut: 1` that nobody set. Those go out as 0, like
+  a clip with no fade at all; a fade of any other length was chosen,
+  and is kept. Served here with one clip of each kind.
+
+- **the size typed on the Render stage is the size requested**
+
+  The size inputs were uncontrolled, and mithril writes `value` back on
+  every redraw -- so a redraw between typing and clicking restored the
+  project's size. Forcing a redraw in between is the point of this test.
+
+### the toolbar Render button
+
+It sent `?project=&width=&height=` and a body of bare clips. The route
+reads only the body, so every render from this button came out at the
+1920x1080 default with no project -- and with no starts, stacked.
+
+- **sends the Render stage request, in the body**
+### a form-driven project
+
+A project with fields and logic renders from a form on the Render stage:
+the logic compiles the form into clips. Those clips are layered on
+purpose -- here a colour field from 0 and a title over it from 1s -- so
+they keep their own starts, and a clip with none leaves with an explicit
+0 rather than relying on the renderer's default.
+
+The form also sent ffmpeg flags of its own and a quality of "web" or
+"TV"; the server now picks the encoding from a named preset and refuses
+client-supplied ffmpeg parameters, so this asserts neither is sent.
+
+- **renders its logic layered, with a preset and no ffmpeg flags**
+
 ## editor
 
 The timeline editor, with a project open.
@@ -351,20 +469,48 @@ so it survives a reseed.
 
 ### timeline editor
 
+"Timeline demo" exists and has more than one clip to edit.
+
 - **the demo project is seeded with a timeline**
 - **the timeline renders one element per clip**
+
+  Counted against the API rather than a literal: the seed can change
+  without this test needing to.
+
 - **each timeline clip is named after its template**
+
+  A clip on the timeline carries its template's name.
+
 - **the media bin lists the templates the API offers**
+
+  The bin was permanently empty: it asked for /otto/templates, which has
+  never existed, and the rejection was unhandled so nothing showed.
+
 - **the old editor URL lands on the project stage**
+
+  #!/editor was a route with no stage rail and no timeline. Its content
+  is a property of a project, so it lives beside the project you
+  selected.
+
 - **a selected project offers its template**
 
-  The regression guard for this whole session's frontend work.
+  The project's form logic and fields, beside the project on the Source
+  stage. Collapsed by default: most visits here are to pick a project,
+  not to inspect one.
 
-  Opening /otto used to produce four failures per visit: a 404 for
-  /[object Object] from a broken asset import, a 401 for /videos because
-  the bin used a request helper that sends no token, a 404 for
-  /otto/templates which never existed, and a 500 for /project/undefined.
-  None of them failed a test, because none of them threw.
+- **a clip added while the project is loading is kept**
+
+  The project's clips arrive asynchronously, and the response used to
+  replace the whole timeline -- so a clip added before it landed vanished
+  when it did, and Save then found nothing to save. That was the save
+  test in tools.spec.js failing on most runs. The response is held back
+  here so the order is certain rather than lucky.
+
+- **a project that does not exist is asked for once, not in a loop**
+
+  A failed load forgot the id, the answer redrew, and the redraw asked
+  again: an unknown id in the URL was requested for as long as the page
+  stayed open.
 
 - **opening the editor makes no failing requests**
 
@@ -550,6 +696,12 @@ registers its own user and needs registration open to do it.
 
 ### otto editor
 
+Slip, slide and dual roller could be chosen -- they lit up like the
+others -- and then did nothing to any clip. They are visibly disabled
+now, with a title saying why, and choosing one says so too.
+
+- **edit tools are present**
+- **tools that are not built yet say so, and do not pretend**
 - **<group> are present**
 - **action buttons are present**
 - **the play control is present**
@@ -876,6 +1028,142 @@ surface, which is the kind of thing that is only noticed deliberately.
 - **every gated route refuses an anonymous caller**
 - **a token from one login works across every gated route**
 - **the admin surface needs more than an ordinary session**
+
+## templates
+
+Template clips: adding them, and changing what they say.
+
+# Recipe: a title card
+
+Templates are made, not uploaded -- a title, a text box, a colour field.
+Add one from the bin under the timeline (its + button, or drag it into
+place) or from the Source stage's Templates list. Its settings appear beside
+the viewer: text, length and colours. The server renders every change, and
+if a setting cannot be rendered it says why, next to the settings.
+
+None of this worked before. The timeline refused drops from the bin, the
+drop handler threw on the shape of a template entry when one got through,
+and there was nowhere to change a template clip once it existed. Template
+clips only reached a timeline through demo and seed projects.
+
+### adding a template
+
+Press + on a template in the bin. It lands on the end of the timeline
+as five seconds of "Your text here", its settings open beside the
+viewer, and that is exactly what a render receives.
+
+- **the bin adds a template as a clip with text and five seconds**
+- **a template that takes no text is not given any**
+
+  makeColor's parameters are a colour and a position. Offering it a
+  text field would invite an edit that changes nothing.
+
+- **the Source stage lists every template, and adds one**
+
+  Templates are material too, so the Source stage lists them beside the
+  media, and says where an added one landed.
+
+- **a template dragged from the bin lands on the timeline**
+
+  The bin and the timeline are two Sortable lists, and the timeline's
+  group accepted only itself -- so a drag from the bin was refused before
+  the drop handler ever ran. And the handler, had it run, read fields
+  from the dragged element that template entries do not have.
+
+### changing a template clip's settings
+
+Each field changes the clip itself: the label on the timeline, its
+width, the frame the server renders for the viewer, and the clip a
+render receives. A colour can be typed or picked; the swatch follows.
+
+- **text, length and colour change the clip, its frame, and its render**
+- **typing a duration is not interrupted halfway**
+
+  The field is controlled; without a draft, "1." would be rewritten to
+  the clip's duration before the next digit arrived.
+
+- **a setting that cannot render says why, beside the settings**
+
+  Validation is the server's: the frame is rendered from the clip's data,
+  and a template that cannot render what it was given answers 422 with
+  the reason. That reason was read from a blob response with
+  `responseText`, which throws, so it never reached the screen. Served
+  here so the reason is known.
+
+
+## timeline tools
+
+The timeline tools, by mouse and by touch.
+
+# Recipe: trimming and cutting
+
+Choose a tool beside the timeline. **Trim** (`[ ]`) drags a clip's end to
+make it longer or shorter. **Time** (`|`) moves the playhead to where you
+press. The README promises editing on mobile devices, and these work by
+touch as well as by mouse: they listen for pointer events, which are one
+stream for both. They listened for mouse events, which a finger does not
+send while it moves, so on a phone trimming did nothing at all.
+
+### trim, by mouse
+
+Grab a clip near its end and drag. The pointer is captured, so the
+drag keeps arriving at the clip after leaving its edge -- the whole
+gesture -- and the clips after it move along.
+
+- **dragging a clip past its own edge lengthens it, and its out-point**
+### by touch
+
+A real touch drag, sent through the browser's input pipeline rather
+than as synthetic events -- the kind a phone sends.
+
+- **a finger can trim a clip**
+- **a tap on a clip moves the playhead to that point of it**
+
+  With the time tool, a tap half way along the second clip puts the
+  playhead half way through it.
+
+- **a swipe across the timeline is a scroll, not a seek**
+
+  The press that starts a scroll is not a choice of position: seeking on
+  press would jump the playhead every time someone scrolled.
+
+### cut
+
+# Recipe: cutting a clip in two
+
+Choose the scissors and press a clip where it should split: the playhead
+goes there and the clip becomes two. Or put the playhead anywhere and
+press S. Either half can then be trimmed, moved or deleted on its own.
+
+- **a media clip becomes two windows onto its file that meet**
+
+  The first half keeps the clip's in-point and ends where the cut is;
+  the second starts in the file where the first ends and finishes where
+  the original did. Back to back they show what the original showed.
+
+- **a template clip becomes two of the same template, edited separately**
+
+  A template has no in-point -- it is drawn fresh for its length -- so
+  it becomes two clips of the same template, each with its own copy of
+  the settings.
+
+- **S splits the clip under the playhead, whatever the tool**
+
+  Put the playhead anywhere -- here with the time tool, half way through
+  the first clip -- and press S.
+
+- **a cut at the very edge of a clip says why it did nothing**
+
+  At 0 the playhead is at the very start of the first clip, so a cut
+  there would leave nothing on one side. It is refused, and says so.
+
+### on a phone
+
+There was no doctype, so every browser laid the page out in quirks
+mode; and the viewport carried `maximum-scale=1`, which stops a phone
+from zooming -- the one tool someone who needs larger controls has.
+
+- **the page is laid out to standard, and can be zoomed**
 
 ## tools
 

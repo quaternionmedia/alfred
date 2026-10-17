@@ -27,6 +27,16 @@ recessed: #101010
   --purp1: #46346e;
 }
 
+/* The page is a column exactly as tall as the window, whose regions scroll
+   inside themselves. `body { height: 100% }` meant the window only in quirks
+   mode, where a percentage height with no sized parent falls through to the
+   viewport; with a doctype it is a percentage of `html`, so `html` has to be
+   sized too, or the body grows with its content and, with `overflow: hidden`,
+   everything below the window is unreachable. */
+html {
+  height: 100%;
+}
+
 body {
   font-family: Verdana, Geneva, sans-serif;
   background: var(--grey1);
