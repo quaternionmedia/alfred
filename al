@@ -1,5 +1,8 @@
 #!/bin/sh
-VERSION=v0.1.3
+# Read from alfred/_version.py, the source of truth, rather than restated
+# here: the copy that used to sit on this line said v0.1.3 two releases after
+# 0.1.3.
+VERSION=v$(sed -n "s/^__version__ = ['\"]\(.*\)['\"]$/\1/p" "$(dirname "$0")/alfred/_version.py")
 
 HELP="./al
 
@@ -204,23 +207,37 @@ elif [ $1 = "restart" -o $1 = "r" ]; then
 
 elif [ $1 = "seed" -o $1 = "db" ]; then
   shift
-  docker compose exec api python3.10 -c """
-from seed import seed
-from db import db
+  # What the api does at startup, on request: the demo projects go into an
+  # empty Project collection, and one with anything in it is left alone.
+  #
+  # Both of these called python3.10, which the image does not have, and
+  # imported `seed` and `db` as top-level modules, which they are not; seed
+  # also wrote to `projects`, a collection nothing reads. They run the api
+  # image's own interpreter against the modules the api uses.
+  docker compose exec api python -c '
+from alfred.core.utils import get_sync_db
+from alfred.seed import seed
 
-if db.projects.count_documents({}) == 0:
-  db.projects.insert_many(seed)
-"""
+db = get_sync_db()
+if db.Project.count_documents({}):
+    print("Project already holds documents; nothing seeded. ./al reseed replaces them.")
+else:
+    db.Project.insert_many(seed)
+    print(f"seeded {len(seed)} projects")
+'
 
 elif [ $1 = "reinit" -o $1 = "reseed" ]; then
   shift
-  docker compose -f docker-compose.yml -f dev.yml exec api python3.10 -c """
-from seed import seed
+  # Drops the Project collection and seeds it again -- destructive on purpose.
+  docker compose exec api python -c '
 from alfred.core.utils import get_sync_db
+from alfred.seed import seed
+
 db = get_sync_db()
 db.Project.drop()
 db.Project.insert_many(seed)
-"""
+print(f"dropped Project and seeded {len(seed)} projects")
+'
 
 elif [ $1 = "sh" ]; then
   shift
@@ -242,13 +259,27 @@ elif [ $1 = "dump" ]; then
   shift
   DATE=`date "+%Y-%m-%d-%H%M%S"`
   FILENAME=alfred_db_$DATE.gz
-  docker compose exec db sh -c "mongodump --db alfred --gzip --archive=$FILENAME"
-  docker container cp alfred_db_1:$FILENAME $FILENAME
+  # Streamed out of the db service, rather than written inside the container
+  # and copied out by name: `alfred_db_1` is how compose v1 named it, compose
+  # v2 says `alfred-db-1`, so the copy found no container and the dump stayed
+  # inside one. -T because a TTY would mangle the archive's bytes.
+  if docker compose exec -T db mongodump --db alfred --gzip --archive > "$FILENAME"; then
+    echo "wrote $FILENAME"
+  else
+    rm -f "$FILENAME"
+    echo "dump failed; is the stack running?" >&2
+    exit 1
+  fi
 
 elif [ $1 = "restore" ]; then
   shift
-  docker container cp $1 alfred_db_1:/$1
-  docker compose exec db sh -c "mongorestore --gzip --db alfred --archive=/$1 --drop"
+  if [ ! -f "$1" ]; then
+    echo "usage: ./al restore <archive written by ./al dump>" >&2
+    exit 1
+  fi
+  # Streamed in, for the same reason dump streams out. --drop replaces each
+  # collection the archive holds with the archive's copy.
+  docker compose exec -T db mongorestore --gzip --archive --drop < "$1"
 
 elif [ $1 = "reload" ]; then
   shift
