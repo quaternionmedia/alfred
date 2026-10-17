@@ -66,6 +66,23 @@ class TestPublicFrameNames:
         assert (data_dir / path.name).is_file()
 
 
+class TestTheEngineRefusingAClip:
+    def test_is_a_422_naming_it_not_a_500(self, client, monkeypatch):
+        """otto raises EdlException for input it cannot build (contract C8)."""
+        from otto.exceptions import EdlException
+
+        from alfred.core.routes import preview
+
+        monkeypatch.setattr(
+            preview, 'generateEdl', _raise(EdlException('clip 1: no such template'))
+        )
+        res = client.post(
+            '/preview/?t=0', json={'edl': TEMPLATE_EDL, 'width': 64, 'height': 48}
+        )
+        assert res.status_code == 422
+        assert 'clip 1' in res.json()['detail']
+
+
 class TestTheTemplatePreviewKeepsNothing:
     def test_the_image_comes_back_and_no_file_stays(
         self, client, data_dir, monkeypatch

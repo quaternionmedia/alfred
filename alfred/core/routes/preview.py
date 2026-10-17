@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
+from otto.exceptions import EdlException
 from otto.models import Clip, Edl, TemplateData
 from otto.render import generateEdl
 from starlette.background import BackgroundTask
@@ -83,7 +84,13 @@ async def previewFrame(t: float, render: Render):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     # TODO: reduce clips to active clips
     # active = [c for c in render.edl.clips if t >= (c.start or 0) + (c.offset or 0)]
-    video = generateEdl(timeline, moviesize=(render.width, render.height))
+    try:
+        video = generateEdl(timeline, moviesize=(render.width, render.height))
+    except EdlException as exc:
+        # The engine's own refusal of a clip it cannot build (contract C8) is
+        # the request's fault, and names the clip: a 422 with that message,
+        # not a 500.
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     frame_name = frame_path()
     print(f'saving frame {t} as: {frame_name}', video)
     video.save_frame(frame_name, t=t, withmask=False)
