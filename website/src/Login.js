@@ -66,6 +66,33 @@ export function auth(url, opts) {
   return req
 }
 
+/** What to tell someone whose registration was refused.
+ *
+ * Every failure used to read "error regestering". The one that most needs
+ * saying plainly is a server that does not take registrations at all -- closed
+ * by default in production -- because nothing the person can type will fix it,
+ * and a generic error invites them to keep trying. The server's own wording is
+ * shown when it gives one, so the message cannot drift from the policy.
+ */
+export function registrationFailure(err) {
+  const detail = err && err.response && err.response.detail
+  if (err && err.code == 403) {
+    return typeof detail == 'string'
+      ? detail
+      : 'Registration is closed on this server. Ask an administrator for an account.'
+  }
+  if (detail == 'REGISTER_USER_ALREADY_EXISTS') {
+    return 'That email address already has an account. Log in instead.'
+  }
+  if (detail && detail.code == 'REGISTER_INVALID_PASSWORD') {
+    return `That password was refused: ${detail.reason}`
+  }
+  if (err && err.code == 422) {
+    return 'That does not look like an email address.'
+  }
+  return 'Registration failed. Try again, or ask an administrator.'
+}
+
 export const Login = () => {
   return {
     view: (vnode) => {
@@ -145,7 +172,7 @@ export const Login = () => {
                     success(`${res.first_name} is now registered!`)
                   }).catch( err => {
                     console.log('error registering', err)
-                    error('error regestering')
+                    error(registrationFailure(err), 8)
                   })
                 }, () => {
                 })

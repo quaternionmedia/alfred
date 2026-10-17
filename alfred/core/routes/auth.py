@@ -1,22 +1,43 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 
+from alfred import config
+
 from ..models import UserCreate, UserRead
 from .users import auth_backend, current_active_user, fastapi_users
 
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 90
-
-credentials_exception = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Could not validate credentials",
-    headers={"WWW-Authenticate": "Bearer"},
+REGISTRATION_CLOSED = (
+    'Registration is closed on this server. Ask an administrator for an account.'
 )
+
+
+async def registration_is_open():
+    """Refuse to create accounts unless this server accepts them.
+
+    A dependency on the register route rather than leaving the route out, for
+    two reasons. Left out, `POST /auth/register` falls through to the static
+    mount and answers 405 -- which says "wrong method", not "closed", and the
+    SPA could not tell a misconfigured client from a deliberate policy. And
+    dependencies resolve before the body is validated, so a closed server
+    answers 403 to any registration attempt without first explaining what a
+    valid one would look like.
+
+    Reads the setting through the module at request time, so the tests can
+    open and close registration without restarting the app.
+    """
+    if not config.ALLOW_REGISTRATION:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail=REGISTRATION_CLOSED
+        )
+
 
 auth = APIRouter()
 
 
 auth.include_router(fastapi_users.get_auth_router(auth_backend), prefix='/jwt')
-auth.include_router(fastapi_users.get_register_router(UserRead, UserCreate))
+auth.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    dependencies=[Depends(registration_is_open)],
+)
 auth.include_router(fastapi_users.get_reset_password_router())
 auth.include_router(fastapi_users.get_verify_router(UserRead))
 

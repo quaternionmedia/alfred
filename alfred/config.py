@@ -16,6 +16,40 @@ def _truthy(value):
     return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
+def _given(value):
+    """Whether a variable was actually set to something.
+
+    Empty counts as unset. Compose passes a host variable through as
+    `X=${X:-}`, which hands the container an empty string for a variable
+    nobody set -- and an empty string must mean "use the default", not
+    "explicitly off".
+    """
+    return value is not None and str(value).strip() != ''
+
+
+def resolve_allow_registration(env):
+    """Whether `POST /auth/register` may create accounts.
+
+    Registration was mounted unconditionally, so anyone who could reach a
+    production server could give themselves an account on it. Open by default
+    in development, where registering is how you get a user at all, and closed
+    by default under ALFRED_PRODUCTION, where accounts are handed out rather
+    than taken.
+
+    ALFRED_ALLOW_REGISTRATION overrides the default in either direction,
+    parsed exactly like ALFRED_DEV_SKIP_AUTH: `1`, `true`, `yes` or `on` opens
+    it, and any other value closes it. Unrecognised fails closed, for the same
+    reason it fails towards auth staying on.
+    """
+    explicit = env.get('ALFRED_ALLOW_REGISTRATION')
+    if _given(explicit):
+        return _truthy(explicit)
+    return not env.get('ALFRED_PRODUCTION')
+
+
+ALLOW_REGISTRATION = resolve_allow_registration(environ)
+
+
 def resolve_dev_skip_auth(env):
     """Whether to accept unauthenticated requests as a fixed dev user.
 
