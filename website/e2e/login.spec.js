@@ -32,4 +32,22 @@ test.describe('login UI', () => {
     await page.goto('/#!/projects')
     await expect(page.locator(SELECTORS.login)).toHaveText(/login/i)
   })
+
+  test('a deep link survives logging in', async ({ page }) => {
+    /**
+     * The login screen carries the route to come back to, and a route with a
+     * query in it -- a stage, a project -- came back as nothing. mithril
+     * decodes the whole hash before splitting off the query, so
+     * `redirect=/?stage=render` split on its second `=` and the value read
+     * as empty; logging in landed on `/` every time.
+     */
+    await page.goto('/#!/?stage=render')
+    await expect(page).toHaveURL(/#!\/login\?redirect=/)
+
+    await page.locator('#username').fill(CREDENTIALS.username)
+    await page.locator('#password').fill(CREDENTIALS.password)
+    await page.locator('#submit').click()
+
+    await expect(page).toHaveURL(/#!\/\?stage=render/)
+  })
 })

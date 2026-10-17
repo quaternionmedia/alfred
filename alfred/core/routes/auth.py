@@ -50,13 +50,14 @@ async def refresh_jwt(
 ):
     """Issue a fresh token to a caller whose current one is still valid.
 
-    This called `auth_backend.get_login_response(user, response, fastapi_users)`,
-    which has not existed on AuthenticationBackend for several major versions --
-    it carries `login` and `logout` and nothing else. So every refresh answered
-    500, and the frontend calls this on *every* 401: `auth()` in Login.js
-    catches an unauthorised response, tries to refresh, and only then gives up
-    and redirects. A session reaching its expiry therefore failed with a server
-    error rather than renewing, and the one path that exists to keep somebody
-    logged in was the one path that could not work.
+    Still valid is the whole contract: an expired token is refused like any
+    other, so this extends a session and cannot revive one. The SPA therefore
+    renews *before* expiry, while it is in use, rather than after a 401 --
+    which is what it used to do, and why sessions simply ended after an hour:
+    by the time it asked, the token it asked with had already been refused.
+
+    This also called `auth_backend.get_login_response(...)`, which has not
+    existed on AuthenticationBackend for several major versions, so every
+    refresh answered 500 until that was fixed.
     """
     return await auth_backend.login(strategy, user, response)

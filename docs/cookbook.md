@@ -460,8 +460,37 @@ waiting for the encode.
 
 - **shows an error for an invalid password**
 - **logs in with valid credentials**
+
+  The login screen carries the route to come back to, and a route with a
+  query in it -- a stage, a project -- came back as nothing. mithril
+  decodes the whole hash before splitting off the query, so
+  `redirect=/?stage=render` split on its second `=` and the value read
+  as empty; logging in landed on `/` every time.
+
 - **logs back out**
+
+  The login screen carries the route to come back to, and a route with a
+  query in it -- a stage, a project -- came back as nothing. mithril
+  decodes the whole hash before splitting off the query, so
+  `redirect=/?stage=render` split on its second `=` and the value read
+  as empty; logging in landed on `/` every time.
+
 - **leaves a protected view anonymous for a visitor**
+
+  The login screen carries the route to come back to, and a route with a
+  query in it -- a stage, a project -- came back as nothing. mithril
+  decodes the whole hash before splitting off the query, so
+  `redirect=/?stage=render` split on its second `=` and the value read
+  as empty; logging in landed on `/` every time.
+
+- **a deep link survives logging in**
+
+  The login screen carries the route to come back to, and a route with a
+  query in it -- a stage, a project -- came back as nothing. mithril
+  decodes the whole hash before splitting off the query, so
+  `redirect=/?stage=render` split on its second `=` and the value read
+  as empty; logging in landed on `/` every time.
+
 
 ## navigation
 
@@ -694,19 +723,28 @@ makes the Deliver button a guess.
 
 ## session
 
-The session lifecycle: refresh, logout, and what a token is worth.
+The session lifecycle: renewal, expiry, logout, and what a token is worth.
 
 # Recipe: staying logged in, and stopping
 
-The editor keeps a JWT in sessionStorage and sends it as a bearer token. When
-a request comes back 401 the app tries `/auth/jwt/refresh` before giving up
-and redirecting to the login screen -- so refresh is the only mechanism that
-keeps anybody logged in past a token's lifetime, and it is worth testing at
-the HTTP level rather than only through the UI.
+The editor keeps a JWT in sessionStorage and sends it as a bearer token.
+Tokens live an hour, and `/auth/jwt/refresh` only exchanges one that still
+works -- so the editor renews its token a few minutes before it expires, for
+as long as somebody is using it, and again whenever the window comes back
+into focus with more than half the token spent. A tab left alone for a whole
+token lifetime is not renewed, and lapses.
 
-These are deliberately API-level. The browser path is covered in
-views.spec.js ("a reload keeps the session"); what is checked here is the
-contract the browser depends on.
+When the session does end -- the token ran out, or the server refused it --
+the editor sends you to the login screen, and back to where you were once
+you have logged in.
+
+It used to try to refresh *after* a request came back 401, by which time the
+token it refreshed with had already been refused: that retry never renewed
+anything, and every session simply ended an hour after login.
+
+The browser tests here move the page's clock rather than waiting an hour.
+The server's clock does not move, which is the point: a token the page
+believes is nearly spent is still good at the server, so renewing it works.
 
 ### token refresh
 
@@ -714,54 +752,61 @@ This answered 500 for every caller.
 
 The route called `auth_backend.get_login_response(...)`, which has not
 existed on fastapi-users' AuthenticationBackend for several major
-versions -- it carries `login` and `logout` and nothing else. So the one
-path that exists to keep somebody logged in was the one path that could
-not work, and a session reaching its expiry failed with a server error
-rather than renewing.
+versions -- it carries `login` and `logout` and nothing else.
 
 - **a valid token can be exchanged for a new one**
 - **the refreshed token actually authenticates**
+
+  `iat` beside `exp`, so the editor can count a token's lifetime down on
+  its own clock. Judged against `exp` alone, a browser running a few
+  minutes slow would renew a token that had already died.
+
+- **a token says how long it lives, in server time**
+
+  `iat` beside `exp`, so the editor can count a token's lifetime down on
+  its own clock. Judged against `exp` alone, a browser running a few
+  minutes slow would renew a token that had already died.
+
 - **refresh refuses an anonymous caller**
-
-  Pinned as a property, not filed as a defect.
-
-  These are stateless JWTs with no server-side revocation list, so logging
-  out clears the browser's copy and cannot invalidate a token somebody
-  already holds. That is how the mechanism works and it is a real
-  consequence: a leaked token stays valid until it expires, and "log out
-  everywhere" is not something this design can offer.
-
-  If revocation is ever added this test goes red, which is the moment to
-  decide deliberately rather than discover it.
-
 - **refresh refuses a malformed token**
+### staying logged in
 
-  Pinned as a property, not filed as a defect.
+- **an editor in use renews its token before it expires**
+- **coming back to the window renews a token more than half spent**
+- **a tab nobody uses is not renewed a second time**
+- **a session that ran out while the machine slept goes to log in, and back**
 
-  These are stateless JWTs with no server-side revocation list, so logging
-  out clears the browser's copy and cannot invalidate a token somebody
-  already holds. That is how the mechanism works and it is a real
-  consequence: a leaked token stays valid until it expires, and "log out
-  everywhere" is not something this design can offer.
+  Any 401: the token expired, or the server no longer accepts it -- a
+  restart with a new signing key, a disabled account. Renewal cannot
+  help, so the editor does not try; it keeps the route to come back to.
 
-  If revocation is ever added this test goes red, which is the moment to
-  decide deliberately rather than discover it.
+- **a session the server refuses goes to log in, and back**
+
+  Any 401: the token expired, or the server no longer accepts it -- a
+  restart with a new signing key, a disabled account. Renewal cannot
+  help, so the editor does not try; it keeps the route to come back to.
 
 ### logout
 
-Pinned as a property, not filed as a defect.
-
-These are stateless JWTs with no server-side revocation list, so logging
-out clears the browser's copy and cannot invalidate a token somebody
-already holds. That is how the mechanism works and it is a real
-consequence: a leaked token stays valid until it expires, and "log out
-everywhere" is not something this design can offer.
-
-If revocation is ever added this test goes red, which is the moment to
-decide deliberately rather than discover it.
+It posted to `/logout`, which is not a route; the static mount answered
+405 and nobody read it. It calls fastapi-users' own logout now, with the
+token it is ending, and forgets the token whatever the answer.
 
 - **logout succeeds for an authenticated caller**
+- **the editor logs out at the server, not at a route that does not exist**
 - **a bearer token still works after logout**
+
+  Pinned as a property, not filed as a defect.
+
+  These are stateless JWTs with no server-side revocation list, so logging
+  out clears the browser's copy and cannot invalidate a token somebody
+  already holds. That is how the mechanism works and it is a real
+  consequence: a leaked token stays valid until it expires, and "log out
+  everywhere" is not something this design can offer.
+
+  If revocation is ever added this test goes red, which is the moment to
+  decide deliberately rather than discover it.
+
 ### what a token gets you
 
 The e2e user is not a superuser, so the admin router must refuse it.
