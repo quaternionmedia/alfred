@@ -4,13 +4,13 @@ The frontend's media bin has always asked for a template list -- `Bin.js` calls
 it on init -- and no such route has ever existed, so the request 404'd and the
 template bin rendered empty.
 
-The list is an **explicit allowlist**, not `dir(otto.templates)`. That matters
-beyond tidiness. `generateEdl` resolves a clip's template with
-`getattr(templates, clip.name)` on a name that arrives from the client, and the
-module namespace holds fourteen callables, of which six are templates; the rest
-are imports it happens to carry -- `ColorClip`, `concatenate_videoclips`,
-`rgbToDec` and friends. Publishing the namespace would advertise those as
-templates, and validating against the namespace would bless them as input.
+The list is an **explicit allowlist**, not `dir(otto.templates)`. The module
+namespace holds far more callables than templates -- imports it happens to
+carry, `ColorClip`, `concatenate_videoclips`, `rgbToDec` and friends -- so
+publishing it would advertise those as templates. otto's own registry,
+`otto.templates.TEMPLATES`, is what the engine will render: `generateEdl`
+looks a clip's name up there and refuses any other. The allowlist is what this
+API offers and accepts, and it is narrower still -- see `final` below.
 
 Keeping the allowlist here rather than in `otto` follows the control-plane
 seam: which templates a caller may ask for is an API question, not a rendering
@@ -38,17 +38,17 @@ TEMPLATE_NAMES = (
 
 # `final` is deliberately absent, and it is the interesting case.
 #
-# It requires `address`, `website` and `phone` -- it raises KeyError without
-# them -- and `TemplateData`, the only thing a clip's `data` can be, models
-# none of the three. Pydantic drops unknown keys silently, so those values
-# cannot reach the template through an EDL or through the preview endpoint no
-# matter what a caller sends. It is structurally undrivable through this API.
+# It draws a headline, an address, a website and a phone number, and
+# `TemplateData`, the only thing a clip's `data` can be, models none of the
+# last three. Pydantic drops unknown keys silently, so those values cannot
+# reach the template through an EDL or through the preview endpoint no matter
+# what a caller sends. The engine renders `final` without them -- the address
+# and website come from otto's own defaults and the phone is left out -- so
+# offered here, it would put otto's placeholder address and website into
+# somebody's video, with no field that could change them.
 #
 # otto's own docstring marks it DEPRICATED, so the fix is to stop advertising
 # it rather than to widen TemplateData for a template that is on the way out.
-# Advertising a template that cannot be driven is worse than omitting one:
-# every attempt fails as "A clip did not get made properly", which reads as a
-# bug in the caller's data.
 UNDRIVABLE_TEMPLATES = ('final',)
 
 # Parameters every template takes from the engine rather than from the caller.
@@ -65,7 +65,9 @@ class Template(BaseModel):
 
 
 def _describe(name):
-    fn = getattr(otto_templates, name, None)
+    # From the registry, which is what the engine renders, not from the
+    # module's namespace, which holds more than templates.
+    fn = otto_templates.TEMPLATES.get(name)
     if fn is None or not callable(fn):
         return None
     doc = inspect.getdoc(fn) or ''
@@ -94,8 +96,8 @@ def available_templates():
 
     Skips names the engine does not have rather than failing the request: a
     version of otto without one template should still let the bin show the
-    others. `test_every_advertised_template_exists` is what turns that
-    silence into a failure at test time instead.
+    others. `test_every_advertised_template_is_in_the_engine_s_registry` is
+    what turns that silence into a failure at test time instead.
     """
     described = (_describe(name) for name in TEMPLATE_NAMES)
     return [t for t in described if t is not None]
