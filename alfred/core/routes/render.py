@@ -148,9 +148,15 @@ SERVER_OWNED = (
 # the engine does is allocate it.
 MAX_DIMENSION = 7680
 
+# The fastest frame rate a render may ask for. The engine encodes at the rate
+# asked for -- it used to encode at 30 whatever was sent -- and every frame is
+# the worker's time and disk: without a bound, one request could ask for a
+# million frames a second.
+MAX_FPS = 120
+
 
 def refuse_bad_request(render: Render) -> str:
-    """422 for encoder options or a size out of range; else the preset name.
+    """422 for encoder options, or a size or rate out of range; else the preset.
 
     `ffmpeg_params` and `bitrate` went onto ffmpeg's command line as sent
     (C5). They are refused rather than ignored, so a client relying on them
@@ -174,6 +180,12 @@ def refuse_bad_request(render: Render) -> str:
                 status_code=422,
                 detail=f'{name} must be between 16 and {MAX_DIMENSION} pixels',
             )
+    # Null is the default rate (`task_payload`); anything else must be one.
+    if render.fps is not None and not 1 <= render.fps <= MAX_FPS:
+        raise HTTPException(
+            status_code=422,
+            detail=f'fps must be between 1 and {MAX_FPS} frames per second',
+        )
     try:
         return preset_for(render.quality).name
     except UnknownQuality as exc:

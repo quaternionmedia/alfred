@@ -286,6 +286,28 @@ class TestFrameSize:
         assert payload['moviesize'] == [1920, 1080]
 
 
+class TestFrameRate:
+    """Bounded like the frame size, now the engine encodes at the rate asked
+    for. It used to encode at 30 whatever a request said."""
+
+    @pytest.mark.parametrize('fps', [0, -24, 0.5, 121, 1e6])
+    def test_out_of_range_is_a_422(self, api, fps):
+        client, store, queue = api
+        res = client.post('/render', json=render_request(fps=fps))
+        assert res.status_code == 422
+        assert 'fps' in res.json()['detail']
+        assert store.renders == {} and queue.sent == []
+
+    @pytest.mark.parametrize('fps', [1, 23.976, 29.97, 60, 120])
+    def test_a_real_rate_reaches_the_worker(self, api, fps):
+        render, payload = queued(api, fps=fps)
+        assert payload['fps'] == fps
+
+    def test_null_means_the_default(self, api):
+        render, payload = queued(api, fps=None)
+        assert payload['fps'] == 30.0
+
+
 class TestRequeueingAnOldRender:
     def test_it_is_renamed_to_its_id_and_given_a_known_quality(self, api):
         client, store, queue = api
