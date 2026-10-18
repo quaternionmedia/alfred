@@ -69,8 +69,9 @@ would come back while every other endpoint stayed open.
    common choice and is the wrong one: the operator who set it believes it
    took effect, and the process comes up looking healthy either way.
 3. **No production passthrough.** The variable is wired only in `dev.yml`.
-   `production.yml` does not mention it, so a production stack has no
-   environment variable to read even if one were set on the host.
+   `production.yml` names it only to say it is withheld, and does not pass
+   it, so a production stack has no environment variable to read even if one
+   were set on the host. `tests/unit/test_stack_settings.py` holds that.
 4. **Loopback by default.** `dev.yml` publishes the api on 127.0.0.1, so with
    the bypass on, the superuser is reachable from this machine only.
    `ALFRED_BIND=0.0.0.0` opens it to the network (to try the editor on a phone,

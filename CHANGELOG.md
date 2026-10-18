@@ -235,8 +235,9 @@ production stack needs its own signing key.
   governance and keep the action versions it ships them with, checkout v4
   and setup-python v5, which target Node 20.
 - **The api test jobs install the lockfiles with `--no-deps`**
-  (`requirements.lock`, `requirements-test.lock`, then the project and the
-  vendored engine), all through the pytest workflow's `pip_args`.
+  (`requirements.lock`, `requirements-test.lock` and
+  `requirements-render.lock`, the engine's `render` extra; then the project
+  and both vendored engines), all through the pytest workflow's `pip_args`.
 - **CI installs `alfred/vox` editable** beside the engine; the e2e stack runs a
   deterministic stub audio engine, and both browser projects.
 
