@@ -4,7 +4,6 @@ from textwrap import wrap
 
 from beanie import init_beanie
 from fastapi import Depends, FastAPI
-from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 from starlette.staticfiles import StaticFiles
@@ -18,6 +17,7 @@ from alfred.config import (
     secret_key_problem,
 )
 from alfred.core.models.users import UserRead, UserUpdate
+from alfred.core.responses import MediaAwareGZipMiddleware
 from alfred.core.routes import (
     ProjectAPI,
     RenderAPI,
@@ -55,7 +55,9 @@ app = FastAPI(
     openapi_tags=docs.tags_metadata,
     docs_url='/api',
 )
-app.add_middleware(GZipMiddleware)
+# GZip for JSON and the SPA's assets; media and byte ranges go out as they are
+# (see `responses/compression.py`).
+app.add_middleware(MediaAwareGZipMiddleware)
 
 
 @app.on_event('startup')

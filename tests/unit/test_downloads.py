@@ -123,6 +123,40 @@ class TestWholeAndPartialFiles:
         res = client.get('/videos/big.mp4', headers={'Range': f'bytes={BIG}-'})
         assert res.status_code == 416
 
+    def test_a_suffix_longer_than_the_file_is_the_whole_file(self, api, big_file):
+        """RFC 9110 14.1.2. Starlette answered 416: its start went negative."""
+        client, _ = api
+        res = client.get('/videos/big.mp4', headers={'Range': f'bytes=-{BIG * 2}'})
+        assert res.status_code == 206
+        assert res.headers['content-range'] == f'bytes 0-{BIG - 1}/{BIG}'
+        assert res.content == big_file.read_bytes()
+
+    def test_a_suffix_of_nothing_is_still_a_416(self, api, big_file):
+        client, _ = api
+        assert (
+            client.get('/videos/big.mp4', headers={'Range': 'bytes=-0'}).status_code
+            == 416
+        )
+
+
+class TestClampingSuffixRanges:
+    @pytest.mark.parametrize(
+        'header,clamped',
+        [
+            ('bytes=-500', 'bytes=0-'),
+            ('bytes=-100', 'bytes=-100'),
+            ('bytes=-99', 'bytes=-99'),
+            ('bytes=0-9, -500', 'bytes=0-9,0-'),
+            ('bytes=0-9', 'bytes=0-9'),
+            ('bytes=-0', 'bytes=-0'),
+            ('items=-500', 'items=-500'),
+        ],
+    )
+    def test_only_a_suffix_past_the_start_changes(self, header, clamped):
+        from alfred.core.responses.partial import clamp_suffix_ranges
+
+        assert clamp_suffix_ranges(header, 100) == clamped
+
 
 def stored(store, renders, **fields):
     """A render in the store, with its output file written if it finished."""
