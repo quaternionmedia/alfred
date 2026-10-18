@@ -3,11 +3,14 @@ name: ⚗️ CI tests
 on: [push, pull_request]
 
 jobs:
-  # The suite as the image runs it: Python 3.11, the versions requirements.lock
-  # pins (installed first, in their own pip call, as the Dockerfile does), and
-  # the engine vendored at alfred/otto rather than the release on PyPI. The
-  # org workflow's defaults are a floating 3.x -- 3.14, where reportlab<4 has
-  # no wheel and nothing installs -- with no submodules and no lockfile.
+  # The suite as the image runs it: Python 3.11, exactly the versions
+  # requirements.lock pins plus the test tools requirements-test.lock pins from
+  # the same resolution, and the engine vendored at alfred/otto rather than the
+  # release on PyPI. All with --no-deps, as the Dockerfile and tests/noxfile.py
+  # install them: the lock overrides a pin of fastapi-users' that pip cannot,
+  # so a resolving install refuses it (the Dockerfile says more). The org
+  # workflow's defaults are a floating 3.x -- 3.14, where reportlab<4 has no
+  # wheel and nothing installs -- with no submodules and no lockfile.
   # publish.yml runs the same job as its release gate; keep the two in step.
   api_tests:
     name: 🐢 API tests
@@ -16,8 +19,7 @@ jobs:
     with:
       python_version: '3.11'
       submodules: recursive
-      requirements: requirements.lock
-      pip_args: '-e .[test] -e alfred/otto'
+      pip_args: '--no-deps -r requirements.lock -r requirements-test.lock -e . -e alfred/otto'
 
   lint:
     name: 👖 Linter

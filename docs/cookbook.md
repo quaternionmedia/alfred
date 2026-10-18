@@ -208,6 +208,46 @@ height.
 
 - **the media bin and the timeline agree on clip appearance**
 
+## assets
+
+The interface's own assets come from the app, not from a CDN.
+
+AGENTS.md rules out frontend assets loaded from a CDN, and the icon font was
+one: its stylesheet named a file on Google's font servers, and that face
+was the one the browser used, so every page view fetched it from Google.
+The font is bundled from an npm package now. These hold that in place, and
+check what someone using the app would notice -- that the icons are icons,
+rather than the ligature names ("play_arrow") a missing font leaves on the
+buttons.
+
+- **no stylesheet or font comes from another origin**
+
+  Every request from the first one, login screen included, so a link in
+  index.html cannot slip past by loading before the session exists. And
+  declared counts as well as fetched: of two faces with the same family,
+  style and weight the browser downloads only the one it settles on, so a
+  CDN face shadowed by a local one is never requested -- until the local
+  one goes away.
+
+- **every icon on every stage is drawn by the icon font**
+
+  A name the font knows is one glyph, about as wide as the text is tall. A
+  missing font leaves the name itself on the button, and a name the font
+  does not know leaves blank space, a letter's width per letter; either
+  way the text is several ems wide. So this is geometry, over the icons
+  actually shown, rather than a list of names kept by hand. The text is
+  measured, not the element, so padding cannot count.
+
+- **the move tool asks for `swap_horizontal`, which the font does not have**
+
+  A defect, pinned rather than hidden. Material Icons calls the icon
+  `swap_horiz`. The font draws that glyph for the first ten letters of
+  TimelineTools.js's name and blank space for the last five, so the button
+  looks right while its text is six ems wide in a one-em box -- with the
+  CDN font as with this one. Fixing the name fails this test; then delete
+  it, and the name from NOT_IN_THE_FONT.
+
+
 ## auth
 
 ### auth API
