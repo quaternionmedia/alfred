@@ -393,6 +393,47 @@ matters here: what the panel does when the server says "nothing".
   present. Queue a render of it and check the API accepts the job.
 
 
+## editor access
+
+The editor from the keyboard, and read as text.
+
+# Recipe: choosing a timeline tool without a mouse
+
+The tools beside the timeline are buttons. Tab to one and press Enter or
+Space to choose it; the chosen tool is announced as pressed. They were
+icons that announced themselves as buttons and could not be reached: no tab
+stop, and neither key did anything. Space is still play and pause whenever
+the keyboard has not moved to a button -- choosing a tool with the mouse
+does not take it away.
+
+### the timeline tools from the keyboard
+
+Named for the tool, not for its icon: the icon's ligature text --
+"content_cut" -- is hidden from assistive technology.
+
+- **every tool is a button with a name**
+- **Tab reaches a tool, and Enter or Space chooses it**
+
+  The page's own Space handler cancelled the press and played the
+  timeline instead, so a keyboard could not have chosen a tool even had
+  it reached one.
+
+- **Space pressing a tool does not also start playback**
+
+  The page's own Space handler cancelled the press and played the
+  timeline instead, so a keyboard could not have chosen a tool even had
+  it reached one.
+
+- **after choosing a tool with the mouse, Space still plays**
+
+  Two bare anchors side by side read "User documentationAPI reference".
+
+### the footer
+
+Two bare anchors side by side read "User documentationAPI reference".
+
+- **its links are separated, to the eye and in the text**
+
 ## editor render
 
 What the editor sends when it asks for a render.

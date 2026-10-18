@@ -94,7 +94,7 @@ test.describe('trim, by mouse', () => {
     const sent = await captureRenders(authedPage)
     const first = project.edl.clips[0]
 
-    await authedPage.locator('#TTools i[title="trim"]').click()
+    await authedPage.locator('#TTools [data-tool="trim"]').click()
     const clip = authedPage.locator('#timeline .clip').first()
     const box = await clip.boundingBox()
 
@@ -126,7 +126,7 @@ test.describe('by touch', () => {
      * than as synthetic events -- the kind a phone sends.
      */
     await openMediaProject(authedPage, request, token)
-    await authedPage.locator('#TTools i[title="trim"]').click()
+    await authedPage.locator('#TTools [data-tool="trim"]').click()
 
     const clip = authedPage.locator('#timeline .clip').first()
     const box = await clip.boundingBox()

@@ -146,6 +146,74 @@ $rule: 1px solid #2e2e2e;
   }
 }
 
+// The timeline tools are buttons, so the keyboard can reach and press them,
+// drawn as the icon column they were. Under the id so that neither global
+// button styles nor the `.tools i` rules above decide how they look.
+#TTools .tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: content-box;
+  min-width: 24px;
+  height: 24px;
+  margin: 2px;
+  padding: 0.25rem;
+  border: 3px solid #393939;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: #262626;
+  }
+
+  // The chosen tool is the only one with a fill.
+  &.active {
+    background: #393939;
+  }
+
+  // Where the keyboard is, visibly: a button that cannot be seen to have the
+  // focus is barely more reachable than one that cannot take it.
+  &:focus-visible {
+    outline: 2px solid #f2aa4c;
+    outline-offset: 1px;
+  }
+
+  &.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+
+    &:hover {
+      background: none;
+    }
+  }
+
+  // `|` and `[ ]` are text rather than icons, sized to sit with them.
+  .glyph {
+    font-size: 16px;
+    white-space: nowrap;
+  }
+
+  // The icon is the button's content now, not a control of its own: none of
+  // the box `.tools i` draws around a toolbar icon.
+  i {
+    width: auto;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
+  i,
+  .glyph {
+    pointer-events: none;
+  }
+}
+
 // ---- the timeline, under each tool ---------------------------------------
 
 // What a touch on a clip means depends on the tool. Selecting (and cutting)

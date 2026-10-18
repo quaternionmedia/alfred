@@ -10,4 +10,13 @@ footer {
   .link {
     text-decoration: underline;
   }
+  // The documentation links share a line with the session link and the
+  // project link, so each is set apart by a separator and a little air.
+  .doclinks {
+    display: inline;
+  }
+  .sep {
+    padding: 0 0.35em;
+    color: var(--grey4);
+  }
 }

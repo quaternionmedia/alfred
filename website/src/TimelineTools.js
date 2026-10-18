@@ -41,55 +41,81 @@ export function cutAtPlayhead() {
 }
 
 const TOOLS = [
-  { id: 'time', title: 'time selector', glyph: '|' },
-  { id: 'trim', title: 'trim', glyph: '[ ]' },
-  { id: 'move', title: 'move', icon: 'swap_horizontal' },
+  { id: 'time', label: 'Time', title: 'time selector', glyph: '|' },
+  { id: 'trim', label: 'Trim', title: 'trim', glyph: '[ ]' },
+  // `swap_horiz`: the icon font has no `swap_horizontal`. The longer name
+  // drew the arrow followed by the letters "ontal", and only a fixed-width
+  // box clipping them off kept that from showing.
+  { id: 'move', label: 'Move', title: 'move', icon: 'swap_horiz' },
   {
     id: 'cut',
+    label: 'Cut',
     title: 'cut: click a clip to split it there, or press S to split at the playhead',
     icon: 'content_cut',
   },
-  { id: 'slip', title: 'slip (not yet available)', icon: 'swap_calls', later: true },
-  { id: 'slide', title: 'slide (not yet available)', icon: 'sync_alt', later: true },
+  { id: 'slip', label: 'Slip', title: 'slip (not yet available)', icon: 'swap_calls', later: true },
+  { id: 'slide', label: 'Slide', title: 'slide (not yet available)', icon: 'sync_alt', later: true },
   {
     id: 'dual roller',
+    label: 'Dual roller',
     title: 'dual roller (not yet available)',
     icon: 'compare_arrows',
     later: true,
   },
 ]
 
+/**
+ * One tool: a real button.
+ *
+ * These were `<i>` icons with `role="button"`, which a screen reader announced
+ * as buttons that the keyboard could not reach -- no tab stop, and Enter or
+ * Space did nothing. A `<button>` is focusable and answers both keys by
+ * itself, so the keyboard gets exactly what the pointer gets.
+ *
+ * Its name is the tool's (`aria-label`); the icon is decoration, hidden from
+ * assistive technology, so it does not announce itself as "content_cut". The
+ * title stays as the tooltip, which is where a tool explains how to use it.
+ *
+ * A tool that is not built yet is `aria-disabled`, not `disabled`: still in
+ * the tab order and still pressable, so activating it -- by any means -- says
+ * why nothing happened rather than doing nothing silently.
+ */
+const ToolButton = {
+  view: ({ attrs: { tool } }) => {
+    const active = !tool.later && state.tool() === tool.id
+    return m(
+      'button.tool',
+      {
+        type: 'button',
+        title: tool.title,
+        'aria-label': tool.label,
+        'data-tool': tool.id,
+        class: [tool.later ? 'disabled' : '', active ? 'active' : ''].join(' ').trim(),
+        'aria-disabled': tool.later ? 'true' : undefined,
+        'aria-pressed': tool.later ? undefined : active ? 'true' : 'false',
+        onclick: () => {
+          if (tool.later) {
+            message(`${tool.label} is not available yet`, 3)
+            return
+          }
+          state.tool(tool.id)
+        },
+      },
+      tool.icon
+        ? m('i.material-icons', { 'aria-hidden': 'true' }, tool.icon)
+        : m('span.glyph', { 'aria-hidden': 'true' }, tool.glyph)
+    )
+  },
+}
+
 export default class TimelineTools {
   view() {
+    // A group, not a `toolbar`: that role promises arrow keys moving between
+    // the tools, and these are reached with Tab like every other control.
     return m(
       'span#TTools.tools.toolcol',
-      {},
-      TOOLS.map(tool =>
-        m(
-          tool.icon ? 'i.material-icons' : 'i.custom',
-          {
-            title: tool.title,
-            'data-tool': tool.id,
-            // A button to assistive technology, so that pressed and disabled
-            // are announced: on a bare <i> neither attribute means anything.
-            role: 'button',
-            class: tool.later ? 'disabled' : '',
-            'aria-disabled': tool.later ? 'true' : undefined,
-            'aria-pressed': tool.later ? undefined : state.tool() === tool.id ? 'true' : 'false',
-            onclick: () => {
-              if (tool.later) {
-                message(`${tool.id[0].toUpperCase()}${tool.id.slice(1)} is not available yet`, 3)
-                return
-              }
-              state.tool(tool.id)
-            },
-            style: {
-              'background-color': state.tool() === tool.id ? '#393939' : 'transparent',
-            },
-          },
-          tool.icon || tool.glyph
-        )
-      )
+      { role: 'group', 'aria-label': 'Timeline tools' },
+      TOOLS.map(tool => m(ToolButton, { tool }))
     )
   }
 }

@@ -216,6 +216,8 @@ export function authedSource(path) {
 }
 
 
+const PRESSABLE = ['BUTTON', 'A', 'SUMMARY']
+
 export var Preview = () => {
   // One handler, removed on unmount.
   //
@@ -226,16 +228,53 @@ export var Preview = () => {
   // anything, which is the only reason the duplication never showed.
   let onkeydown = null
 
+  // How the focus arrived where it is: with a pointer press, or otherwise --
+  // the keyboard, or a script. Space presses a control the keyboard moved to,
+  // and is play and pause on one that merely kept the focus after a click.
+  //
+  // Recorded rather than read from `:focus-visible`, which looked like the
+  // same question and is not: Chrome makes the focused element focus-visible
+  // as soon as any key is pressed, so by the time this handler asks, a button
+  // that was clicked answers as though the keyboard had moved to it.
+  let pressed = null
+  let pressedAt = 0
+  let pointerFocused = null
+  const onpointerdown = e => {
+    pressed = e.target
+    pressedAt = Date.now()
+  }
+  const onfocusin = e => {
+    // A press focuses what it lands on at once; a stale one (a press on
+    // something that takes no focus, long ago) says nothing about this focus.
+    const recent = pressed && Date.now() - pressedAt < 1000
+    const byPointer =
+      recent && (e.target === pressed || (e.target.contains && e.target.contains(pressed)))
+    pointerFocused = byPointer ? e.target : null
+    pressed = null
+  }
+
   return {
     oncreate: () => {
+      document.addEventListener('pointerdown', onpointerdown, true)
+      document.addEventListener('focusin', onfocusin, true)
       onkeydown = e => {
         // Not while typing: these keys belong to the field that has focus.
-        const tag = (document.activeElement || {}).tagName
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return
-        if ((document.activeElement || {}).isContentEditable) return
+        // A select is a field too -- its arrow keys change its value, and
+        // seeking instead made the aspect and resolution menus unusable
+        // from the keyboard.
+        const focused = document.activeElement || {}
+        const tag = focused.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+        if (focused.isContentEditable) return
 
         switch (e.code) {
           case 'Space':
+            // Space presses a button the keyboard has moved to -- that is how
+            // the keyboard operates the timeline tools, and taking the key for
+            // play here cancelled the press. A button that merely kept the
+            // focus after a click is not that: Space stays play and pause, as
+            // someone who just chose a tool with the mouse expects.
+            if (PRESSABLE.includes(tag) && focused !== pointerFocused) break
             e.preventDefault()
             Player.toggle()
             break
@@ -269,6 +308,8 @@ export var Preview = () => {
     onremove: () => {
       if (onkeydown) document.removeEventListener('keydown', onkeydown)
       onkeydown = null
+      document.removeEventListener('pointerdown', onpointerdown, true)
+      document.removeEventListener('focusin', onfocusin, true)
     },
 
     view: () => {

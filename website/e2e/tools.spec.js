@@ -126,7 +126,7 @@ test.describe('the tools pass their events', () => {
     const project = await mediaProject(request, token)
     await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
 
-    const trim = authedPage.locator('#TTools i[title="trim"]')
+    const trim = authedPage.locator('#TTools [data-tool="trim"]')
     await expect(trim).toBeVisible()
 
     const background = () => trim.evaluate(el => getComputedStyle(el).backgroundColor)
@@ -144,7 +144,7 @@ test.describe('the tools pass their events', () => {
     await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
 
     const highlighted = async () =>
-      authedPage.locator('#TTools i').evaluateAll(
+      authedPage.locator('#TTools [data-tool]').evaluateAll(
         nodes =>
           nodes.filter(n => {
             const bg = getComputedStyle(n).backgroundColor
@@ -152,8 +152,8 @@ test.describe('the tools pass their events', () => {
           }).length
       )
 
-    for (const tool of ['trim', 'move', 'time selector']) {
-      await authedPage.locator(`#TTools i[title="${tool}"]`).click()
+    for (const tool of ['trim', 'move', 'time']) {
+      await authedPage.locator(`#TTools [data-tool="${tool}"]`).click()
       expect(await highlighted(), `after choosing ${tool}`).toBe(1)
     }
   })
