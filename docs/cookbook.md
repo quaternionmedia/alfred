@@ -2000,6 +2000,29 @@ focused and leaves its stack showing whichever tab it showed.)
   entry rather than adding one, so the rail follows and Back does not walk
   through every tab chosen.
 
+- **a tab chosen stays in front while the address catches up**
+
+  Choosing a tab writes its stage into the address, which the router reads
+  back a moment later. A redraw in that moment brought the stage from
+  before back over the tab just chosen: Render in front again, the rail on
+  Edit, until something else was chosen. On a loaded machine the rail
+  test above did this in one run of ten to twenty; here the moment is
+  held open and a redraw put in it, so it would happen every time.
+
+- **the address follows the last tab chosen, however quick**
+
+  Two tabs chosen before the router has read the first back: the address
+  names the second one's stage, as the rail does. Render chosen after
+  Captions was taken for the stage the route still said -- Render, from
+  before -- and never written, so the address and the rail stayed on
+  Captions' Edit while Render was in front.
+
+- **Back and Forward bring the stage forward**
+
+  A stage chosen on the rail is a page visited: Back returns to the stage
+  before, with its panel in front, and Forward to the one after. (A tab
+  chosen replaces the address rather than adding to it.)
+
 ### the arrangement is kept
 
 Closing a panel and choosing a tab are kept in this browser

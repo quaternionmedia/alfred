@@ -5,7 +5,7 @@ import { PanelRegistry, STAGE_PANELS } from './registry'
 import { DEFAULT_LAYOUT, REOPEN, panelConfig } from './default_layout'
 import { forgetLayout, keepLayout, readSavedLayout, savedLayoutText } from './saved_layout'
 import { PanelHosts } from './hosts'
-import { Flow } from '../Stages'
+import { Flow, stageNamed } from '../Stages'
 import { escapeHtml } from '../Problem'
 
 /**
@@ -30,8 +30,10 @@ import { escapeHtml } from '../Problem'
 let gl = null
 let host = null
 let saveTimer = null
-// The `?stage=` last brought forward, so a redraw does not bring it forward
-// again over whatever the viewer has chosen since.
+// The `?stage=` the workspace has answered: brought forward (`showStage`), or
+// written by the tab that chose it (`followTab`). A redraw brings the stage in
+// the address forward only when it is another -- the address has changed
+// since -- so it never brings one back over what the viewer has chosen since.
 let appliedStage = null
 let decorating = false
 
@@ -160,18 +162,29 @@ function splitAround(layout, anchor, entry, at) {
   return visit(layout, 'root')
 }
 
-/** The stage a tab belongs to, in the address: choosing a panel is choosing its stage. */
+/**
+ * The stage a tab belongs to, in the address: choosing a panel is choosing its stage.
+ *
+ * The address and the route are two syncs that once fought. Writing the stage
+ * here and reading it back in `followRoute` went through the route, which
+ * answers from before the change until mithril resolves it a tick later
+ * (`Flow.address`): a redraw in that tick read the stage from before, took it
+ * for a new one and brought its panel back over the tab just chosen, and a
+ * second tab chosen in it was taken for the stage already written. Both sides
+ * read the address itself now, which is never behind, and the tab chosen
+ * marks its stage answered, so `followRoute` has nothing to undo.
+ */
 function followTab(id) {
   const definition = PanelRegistry.get(id)
-  if (!definition || Flow.stage() === definition.stage) return
-  appliedStage = definition.stage
-  m.route.set(
-    m.route.get().split('?')[0],
-    { ...m.route.param(), stage: definition.stage },
+  if (!definition) return
+  const { path, params } = Flow.address()
+  if (stageNamed(params.stage) !== definition.stage) {
+    params.stage = definition.stage
     // Replaced, not pushed: a tab chosen is not a page visited, and Back
     // walking through every tab clicked would be a strange history.
-    { replace: true }
-  )
+    m.route.set(path, params, { replace: true })
+  }
+  appliedStage = params.stage
 }
 
 function onClick(e) {
@@ -334,10 +347,16 @@ export const Workspace = {
     host = null
   },
 
-  /** Bring the stage named in the address forward, when it changes. */
+  /**
+   * Bring the stage named in the address forward when it names another: a
+   * link followed, Back or Forward, a project opened at a stage. (The rail
+   * brings its stage forward itself, through `Flow.followers`.) Read from
+   * the address, not the route, which is a tick behind each change
+   * (`followTab`).
+   */
   followRoute() {
     if (!gl) return
-    const stage = m.route.param('stage')
+    const stage = Flow.address().params.stage
     if (stage === appliedStage) return
     appliedStage = stage
     if (stage && STAGE_PANELS[stage]) Workspace.showStage(stage)

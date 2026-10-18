@@ -35,6 +35,10 @@ export const STAGES = [
 
 export const DEFAULT_STAGE = 'edit'
 
+/** The stage `requested` names, or the default where it names none. */
+export const stageNamed = requested =>
+  STAGES.some(s => s.id === requested) ? requested : DEFAULT_STAGE
+
 export const Flow = {
   projects: [],
   renders: [],
@@ -57,9 +61,26 @@ export const Flow = {
   // ignored. Reading the route on each draw removes the thing that could
   // disagree, and makes a reload, a bookmark and a shared link all land where
   // the person left off.
-  stage: () => {
-    const requested = m.route.param('stage')
-    return STAGES.some(s => s.id === requested) ? requested : DEFAULT_STAGE
+  stage: () => stageNamed(m.route.param('stage')),
+
+  /**
+   * The address as it stands, `{path, params}`, read from the location.
+   *
+   * For a view, `m.route.param()` is the address. For whatever acts on the
+   * address it is not quite: `m.route.set` writes the location at once and
+   * resolves the route -- which `m.route.param()` and `m.route.get()` answer
+   * from -- on a later tick, and a redraw or a click can come in between.
+   * Then the route is the one from before. Compared with it, the stage just
+   * written looked like a change, and the workspace brought the stage before
+   * back over the tab just chosen (layout/workspace.js); built on it, the
+   * next address put back parameters the last one had changed. The location
+   * is never behind. (Under mithril's default `#!` prefix, which this app
+   * keeps.)
+   */
+  address: () => {
+    const hash = window.location.hash
+    const prefix = m.route.prefix
+    return m.parsePathname(hash.startsWith(prefix) ? hash.slice(prefix.length) : '/')
   },
 
   go: id => {

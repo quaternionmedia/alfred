@@ -62,6 +62,33 @@ const box = async locator => {
   return b && { x: b.x, y: b.y, width: b.width, height: b.height }
 }
 
+/**
+ * Hold back what the page asks to run "as soon as possible" -- `setTimeout`
+ * with no delay -- until `releaseTheRouter`.
+ *
+ * Among it is mithril's router reading the address back. `m.route.set` writes
+ * the address at once and resolves the route it describes on that later tick,
+ * and until then `m.route.param()` answers with the route from before. On a
+ * busy page a redraw lands in between now and then; held, one lands there
+ * every time the test makes one.
+ */
+const holdTheRouter = page =>
+  page.evaluate(() => {
+    const later = window.setTimeout
+    const held = []
+    window.setTimeout = (run, delay, ...args) => {
+      if (delay !== undefined) return later(run, delay, ...args)
+      held.push(() => run(...args))
+      return 0
+    }
+    window.releaseTheRouter = () => {
+      window.setTimeout = later
+      for (const run of held.splice(0)) run()
+    }
+  })
+
+const releaseTheRouter = page => page.evaluate(() => window.releaseTheRouter())
+
 test.describe('the default workspace', () => {
   test('every panel is in it, once, under its registry id', async ({ authedPage }) => {
     /**
@@ -201,6 +228,78 @@ test.describe('?stage= in the workspace', () => {
     await expect(authedPage.locator('#stage-deliver')).toHaveClass(/active/)
     // The tab chosen stays chosen: the stage does not bring Render back over it.
     await expect(tab(authedPage, 'deliver')).toHaveAttribute('aria-selected', 'true')
+  })
+
+  test('a tab chosen stays in front while the address catches up', async ({ authedPage }) => {
+    /**
+     * Choosing a tab writes its stage into the address, which the router reads
+     * back a moment later. A redraw in that moment brought the stage from
+     * before back over the tab just chosen: Render in front again, the rail on
+     * Edit, until something else was chosen. On a loaded machine the rail
+     * test above did this in one run of ten to twenty; here the moment is
+     * held open and a redraw put in it, so it would happen every time.
+     */
+    await authedPage.goto('/#!/?stage=render')
+    await expect(tab(authedPage, 'render')).toHaveAttribute('aria-selected', 'true')
+    await holdTheRouter(authedPage)
+
+    await tab(authedPage, 'captions').click()
+    // A redraw before the router has read the address back.
+    await menuButton(authedPage).click()
+    await expect(authedPage.locator('#panels-menu')).toBeVisible()
+    // Mutation: read the stage from `m.route.param()` in followRoute -- the
+    // redraw brings Render back over Captions, and this fails.
+    await expect(tab(authedPage, 'captions')).toHaveAttribute('aria-selected', 'true')
+    await authedPage.keyboard.press('Escape')
+
+    await releaseTheRouter(authedPage)
+    await expect(authedPage.locator('#stage-edit')).toHaveClass(/active/)
+    await expect(tab(authedPage, 'captions')).toHaveAttribute('aria-selected', 'true')
+  })
+
+  test('the address follows the last tab chosen, however quick', async ({ authedPage }) => {
+    /**
+     * Two tabs chosen before the router has read the first back: the address
+     * names the second one's stage, as the rail does. Render chosen after
+     * Captions was taken for the stage the route still said -- Render, from
+     * before -- and never written, so the address and the rail stayed on
+     * Captions' Edit while Render was in front.
+     */
+    await authedPage.goto('/#!/?stage=render')
+    await expect(tab(authedPage, 'render')).toHaveAttribute('aria-selected', 'true')
+    await holdTheRouter(authedPage)
+
+    await tab(authedPage, 'captions').click()
+    await tab(authedPage, 'render').click()
+    await releaseTheRouter(authedPage)
+    // Mutation: ask `Flow.stage()` whether the address already names the
+    // tab's stage -- it answers from before, Render is not written, and this
+    // fails.
+    await expect(authedPage).toHaveURL(/stage=render/)
+    await expect(authedPage.locator('#stage-render')).toHaveClass(/active/)
+    await expect(tab(authedPage, 'render')).toHaveAttribute('aria-selected', 'true')
+  })
+
+  test('Back and Forward bring the stage forward', async ({ authedPage }) => {
+    /**
+     * A stage chosen on the rail is a page visited: Back returns to the stage
+     * before, with its panel in front, and Forward to the one after. (A tab
+     * chosen replaces the address rather than adding to it.)
+     */
+    await authedPage.goto('/#!/?stage=render')
+    await expect(tab(authedPage, 'render')).toHaveAttribute('aria-selected', 'true')
+    await authedPage.locator('#stage-deliver').click()
+    await expect(tab(authedPage, 'deliver')).toHaveAttribute('aria-selected', 'true')
+
+    await authedPage.goBack()
+    await expect(authedPage).toHaveURL(/stage=render/)
+    await expect(tab(authedPage, 'render')).toHaveAttribute('aria-selected', 'true')
+    await expect(authedPage.locator('#stage-render')).toHaveClass(/active/)
+
+    await authedPage.goForward()
+    await expect(authedPage).toHaveURL(/stage=deliver/)
+    await expect(tab(authedPage, 'deliver')).toHaveAttribute('aria-selected', 'true')
+    await expect(authedPage.locator('#stage-deliver')).toHaveClass(/active/)
   })
 })
 
