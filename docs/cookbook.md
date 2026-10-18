@@ -258,6 +258,118 @@ so the answer does not confirm the id is real.
 - **a project you create is yours**
 - **another account can neither list nor open it**
 
+## captions
+
+Captions: typed, imported, transcribed, and drawn into renders.
+
+A project's captions are text and the stretch of the timeline it is shown
+for. The Captions panel, folded under the stage rail on the Edit stage,
+edits them by hand, reads them from a SubRip, WebVTT or JSON file -- the
+server reads it, the panel shows what it found, and saving keeps it -- or
+has the timeline's own sound transcribed by the server's audio engine. The
+caption under the playhead shows over the viewer; renders carry the
+captions once the project's style says to draw them, which it does not
+until someone ticks the box.
+
+This stack's audio engine is a stub speaking joe's media API (see
+test_e2e.yml): it "hears" a segment wherever there is sound. The specs that
+transcribe through it run the real worker and the real mix, and wait for
+them, so they are tagged @slow.
+
+### captions by hand
+
+# Recipe: caption a timeline by hand
+
+Add a caption at the playhead, type what is said, set when it starts
+and ends -- in seconds, or from the playhead -- and save. The list
+keeps itself in order of when captions start.
+
+- **captions are typed, kept in order, and saved**
+- **a caption that cannot be shown says why, and is not saved**
+
+  A caption with no text, or one that ends before it starts, is marked
+  with the reason, and Save waits until it is fixed.
+
+- **a caption is deleted, and the deletion saved**
+
+  Deleting takes a caption out of the list; saving takes it off the
+  project.
+
+### captions from a file
+
+# Recipe: import subtitles
+
+Import a SubRip (.srt), WebVTT (.vtt) or JSON file. The server reads it
+-- forgiving the habits of the tools that wrote it -- and the panel
+shows what it found before anything is kept: use them, add them to
+the captions already there, or cancel.
+
+- **a subtitle file is read by the server, reviewed, and saved**
+- **a file that cannot be read says which line**
+
+  The server's reason, naming the line it could not read, is shown where
+  the review would have been, and nothing is kept.
+
+### how captions are drawn
+
+Size, position, colours, the box behind the text and the font are
+saved with the captions. "Draw into renders" starts unticked: a
+project's captions are drawn only once someone says so.
+
+- **the style is saved with the captions, and off until someone says**
+- **the caption under the playhead shows over the viewer**
+
+  Whether or not the panel is open, the caption under the playhead is
+  drawn over the viewer in its style; past it, nothing is.
+
+- **renders carry the captions once they are drawn, and not before**
+
+  # Recipe: burn captions into a render
+
+  Tick "Draw into renders" and save. Every render of the timeline then
+  carries the captions and their style, and the server draws them over
+  the picture at the render's own size.
+
+### transcribing the timeline
+
+Transcribing needs an audio engine that answers and a renderer to mix
+the timeline's sound. Without one, the button says which is missing.
+
+- **transcribing says why it cannot**
+### @slow transcribing through the worker
+
+# Recipe: caption a timeline from what it says
+
+"Transcribe timeline" sends the project's saved timeline to the
+server's audio engine: the render worker mixes its sound, the engine
+hears it, and what it said becomes captions, timed by the timeline.
+Here the sound is two bursts of tone placed a second into the
+timeline, and the stub engine hears a line of speech in each.
+
+- **the timeline is heard by the audio engine and captioned**
+- **a timeline with no sound fails, and says so**
+
+  A timeline whose clips have no sound track -- the demo media is silent
+  -- fails with that reason, and the captions it had are left alone.
+
+### the audio engine, through the API
+
+`audio_engine` says whether one is `configured` and `ok`, and in
+`detail`, why not.
+
+- **GET /health says whether there is one**
+- **a project answers its captions, style and job**
+
+  `PUT /project/{id}/captions` answers what it stored, in order; the
+  style states `enabled`, and `GET /project/{id}` carries both.
+
+### @slow the audio engine hears library media
+
+`GET /media/{name}/audio` answers what the engine measured: here, the
+fixture's two bursts of tone, as onsets and the silences around them.
+
+- **a library file is analysed by the engine**
+
 ## deliver
 
 Following a render from queued to delivered.

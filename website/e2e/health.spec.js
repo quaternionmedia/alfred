@@ -30,11 +30,18 @@ test.describe('health', () => {
     const res = await request.get('/health', { headers: { Authorization: token } })
     expect(res.status()).toBe(200)
     const health = await res.json()
-    expect(Object.keys(health).sort()).toEqual(['api', 'db', 'queue', 'renderer'])
+    expect(Object.keys(health).sort()).toEqual([
+      'api',
+      'audio_engine',
+      'db',
+      'queue',
+      'renderer',
+    ])
     expect(health.api).toBe('ok')
     expect(health.db).toBe('ok')
     expect(Object.keys(health.renderer).sort()).toEqual(['ok', 'workers'])
     expect(Object.keys(health.queue)).toEqual(['pending'])
+    expect(Object.keys(health.audio_engine).sort()).toEqual(['configured', 'detail', 'ok'])
   })
 
   test('the running worker answers, so the renderer is ok', async ({

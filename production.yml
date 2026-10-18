@@ -59,6 +59,10 @@ services:
       # M6). It wrote them under the working directory's `data/`, which was
       # served publicly at /data. The renderer is given the same directory.
       - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
+      # The audio engine captions are transcribed with; none unless set. The
+      # renderer below is given the same address.
+      - ALFRED_AUDIO_ENGINE_URL=${ALFRED_AUDIO_ENGINE_URL:-}
+      - ALFRED_AUDIO_ENGINE_TIMEOUT=${ALFRED_AUDIO_ENGINE_TIMEOUT:-}
 
   # No ports for the database. It was published on 192.168.192.52:27017,
   # which put an unauthenticated MongoDB on the LAN; nothing outside this
@@ -101,3 +105,5 @@ services:
       - VIDEO_DIR=/app/videos
       - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
       - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
+      - ALFRED_AUDIO_ENGINE_URL=${ALFRED_AUDIO_ENGINE_URL:-}
+      - ALFRED_AUDIO_ENGINE_TIMEOUT=${ALFRED_AUDIO_ENGINE_TIMEOUT:-}

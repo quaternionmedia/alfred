@@ -134,6 +134,8 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Render checks before queueing, status, another user | `render-api.spec.js` | API |
 | Render pipeline end to end, downloads, ranges | `render-pipeline.spec.js` | API, `@slow` |
 | Following a render, downloading it, no renderer running | `deliver.spec.js` | UI |
+| Captions: typed, imported, styled, over the viewer, carried by renders | `captions.spec.js` | UI + API |
+| Captions transcribed through the stub audio engine and the worker; library media analysed | `captions.spec.js` | UI + API, `@slow` |
 | Render list | `renders.spec.js` | API + UI |
 | Preview contract, malformed input, partial writes | `api-contract.spec.js` | API |
 | Routing, history, menu, unique ids | `navigation.spec.js` | UI |
