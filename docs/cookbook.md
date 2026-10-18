@@ -1415,6 +1415,11 @@ makes the Deliver button a guess.
   could complete between the API read and the assertion, and the test
   failed for having been right a moment earlier.
 
+  The snapshot is taken once the list has arrived, with a render of the
+  test's own on it -- queued, rendering or done by then; the rule holds
+  for each. Taken at a fixed 300 ms, a list slower than that read as
+  nothing rendered, and the test skipped itself.
+
 - **a delivered render says where it went**
 
 ## session
