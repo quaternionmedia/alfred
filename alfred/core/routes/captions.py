@@ -34,7 +34,7 @@ from ..utils.db import User
 from ..utils.media import RefusedEdl, check_edl
 from ..utils.ownership import owner_filter
 from ..utils.tasks import transcribeCaptions
-from ..utils.transcription import sounding_timeline
+from ..utils.transcription import sounding_clips
 from .templates import TEMPLATE_NAMES
 from .users import current_active_user
 
@@ -258,7 +258,7 @@ def timeline_to_transcribe(project: dict) -> Edl:
         raise HTTPException(
             status_code=422, detail=f'The saved timeline cannot be played: {exc}'
         ) from exc
-    if sounding_timeline(edl) is None:
+    if not sounding_clips(edl):
         raise HTTPException(
             status_code=422,
             detail=(

@@ -1,19 +1,26 @@
 """A timeline's sound, transcribed into captions (contract K2).
 
-The worker's half of `POST /project/{id}/captions/transcribe`. otto builds the
-project's saved timeline -- the clips that can make a sound, timed exactly as
-a render times them -- and writes what it would play as one 16 kHz mono WAV
-in a directory private to this job, removed afterwards. The audio engine
-hears it (`utils.audio_engine`), and what it heard becomes captions
-(`utils.captions`). The file spans the whole timeline from 0, so the engine's
-times are already timeline seconds.
+The worker's half of `POST /project/{id}/captions/transcribe`. otto writes
+what the project's saved timeline sounds like (`otto.render.renderSound`) --
+its video and audio clips, timed exactly as a render times them -- as one
+16 kHz mono WAV in a directory private to this job, removed afterwards. The
+audio engine hears it (`utils.audio_engine`), and what it heard becomes
+captions (`utils.captions`). The file spans the whole timeline from 0, so the
+engine's times are already timeline seconds.
+
+alfred chose the codec, the channels and ffmpeg's options here, and had
+moviepy write the file: media encoding in a control plane that is meant to do
+none. It asks for a rate now, and says what a timeline with nothing to hear
+means to the person waiting; the mix and the file are otto's.
 """
 
 import os
 import shutil
 import tempfile
 
+from otto.exceptions import NoSoundException
 from otto.models import Edl
+from otto.render import SOUND_TYPES, renderSound
 
 from . import audio_engine
 from .captions import captions_from_transcript, timeline_end
@@ -23,72 +30,44 @@ from .media import resolve_edl
 # sending more is only a bigger upload.
 SPEECH_RATE = 16000
 
-# What the timeline is mixed at, as a render mixes it (otto's AUDIO_FPS);
-# ffmpeg resamples to SPEECH_RATE as it writes, rather than the mix picking
-# the nearest sample.
-MIX_RATE = 48000
-
-# The clips that can make a sound. A template or an image is silent, and
-# building one costs an ImageMagick run for nothing.
-SOUNDING = frozenset({'video', 'audio'})
-
-# The picture is never looked at; a video is decoded at the smallest size
-# that is still a frame.
-PICTURE = (64, 36)
-
 
 class NothingToHear(ValueError):
     """The timeline makes no sound. Its message is for the person waiting."""
 
 
-def sounding_timeline(edl: Edl):
-    """`edl`'s clips that can make a sound, as long as the whole timeline --
-    so silence stands where the rest were and times do not move -- or None
-    when none can."""
-    clips = [clip for clip in edl.clips if clip.type in SOUNDING]
-    if not clips:
-        return None
-    return Edl(clips=clips, duration=timeline_end(edl))
+def sounding_clips(edl: Edl) -> list:
+    """`edl`'s clips of a kind that can make a sound (otto's SOUND_TYPES:
+    video and audio), in order; none when nothing in it could be heard.
+
+    Asked before a transcription is queued, so that a timeline of templates
+    and images is refused at once rather than by the worker. Whether the
+    clips that can sound do -- a video may have no sound track -- only otto
+    can say, from the files.
+    """
+    return [clip for clip in edl.clips if clip.type in SOUND_TYPES]
 
 
 def mix_timeline(edl: Edl, path, rate=SPEECH_RATE) -> float:
-    """Write what `edl` sounds like to `path`, a `rate` Hz mono 16-bit WAV.
+    """Have otto write what `edl` sounds like to `path`: a `rate` Hz mono
+    16-bit WAV, as long as the whole timeline (`otto.render.renderSound`).
 
     Media names must already be resolved (`utils.media.resolve_edl`).
-    Returns the sound's length in seconds; NothingToHear when there is none.
+    Returns the WAV's length in seconds; NothingToHear when there is none.
     """
-    from otto.render import generateEdl
-
-    sounding = sounding_timeline(edl)
-    if sounding is None:
+    if not sounding_clips(edl):
         raise NothingToHear(
             'the timeline has no video or audio clips, so there is nothing to '
             'transcribe'
         )
-    video = generateEdl(sounding, moviesize=PICTURE)
-    sound = video.audio
-    if sound is None:
+    try:
+        return renderSound(edl, path, rate=rate)
+    except NoSoundException as exc:
+        # Video clips, none of which has a sound track where it plays: otto
+        # finds that out from the files.
         raise NothingToHear(
             "none of the timeline's clips has a sound track, so there is nothing "
             'to transcribe'
-        )
-    try:
-        sound.write_audiofile(
-            str(path),
-            fps=MIX_RATE,
-            nbytes=2,
-            codec='pcm_s16le',
-            # Output options, after moviepy's own: one channel, resampled by
-            # ffmpeg. The last -ar given is the one ffmpeg uses.
-            ffmpeg_params=['-ac', '1', '-ar', str(rate)],
-            logger=None,
-        )
-        return float(sound.duration)
-    finally:
-        try:
-            video.close()
-        except Exception:  # noqa: BLE001 - closing is housekeeping
-            pass
+        ) from exc
 
 
 def transcribe_timeline(edl_data: dict):
@@ -96,10 +75,12 @@ def transcribe_timeline(edl_data: dict):
     of speech the engine heard.
 
     Raises what stops it, with a message for the person waiting: a media name
-    the library does not hold (MediaNameError), a timeline with nothing to
-    hear, or in which no speech was heard (NothingToHear), an engine that is
-    missing, refuses the sound or fails (AudioEngineError), or more captions
-    than a project carries (TooManyCaptions).
+    the library does not hold (MediaNameError), a clip otto cannot play
+    (otto's EdlException, naming the clip by its place in the timeline), a
+    timeline with nothing to hear, or in which no speech was heard
+    (NothingToHear), an engine that is missing, refuses the sound or fails
+    (AudioEngineError), or more captions than a project carries
+    (TooManyCaptions).
     """
     edl = resolve_edl(Edl.parse_obj(edl_data))
     until = timeline_end(edl)
