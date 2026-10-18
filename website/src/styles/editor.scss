@@ -42,8 +42,11 @@ $rule: 1px solid #2e2e2e;
     min-width: 0;
   }
 
+  // Positioned, with the preview filling it, so whatever is drawn over the
+  // picture (Viewer.js, `viewerOverlays`) places itself against the frame.
   #head,
   .head {
+    position: relative;
     flex: 0 0 auto;
     box-sizing: border-box;
     margin: 0;

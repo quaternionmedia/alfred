@@ -1954,6 +1954,14 @@ panel: a larger window makes it larger and the same shape, and an
 upright output makes it upright.
 
 - **resizing the panel resizes the picture, never reshapes it**
+### the frame takes overlays
+
+What is drawn over the picture -- the caption under the playhead -- is
+placed against the frame (`viewerOverlays`, panels/Viewer.js), so the
+frame is positioned and the preview fills it, with nothing else in
+between.
+
+- **the frame is positioned, and the picture fills it**
 ### the workspace and the phone flow
 
 Below 1024 pixels the workspace gives way to the phone flow, and comes

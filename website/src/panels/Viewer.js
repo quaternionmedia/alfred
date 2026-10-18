@@ -21,13 +21,29 @@ import { PlaybackTools, SpeedTools } from '../Tools'
  * where they always were; the desktop workspace gives them a panel of their
  * own.
  */
+
+/**
+ * What is drawn over the picture: components, each in the frame after the
+ * preview, in front of it. The frame is positioned (`position: relative`,
+ * editor.scss) and the preview fills it, so an overlay places itself over
+ * the picture with `position: absolute`. Empty here; the captions work adds
+ * the caption under the playhead -- `viewerOverlays.push(CaptionOverlay)` --
+ * without the viewer changing shape.
+ *
+ * @type {import('mithril').Component[]}
+ */
+export const viewerOverlays = []
+
 export const Viewer = {
   view: ({ attrs }) =>
     m('.viewerpanel', [
       m('section.viewer', [
         // The frame fits the room this panel is given, at the output's
         // aspect ratio (Head.js), so it is wrapped in the room to fit.
-        m('.viewerframe', m(Head, [m(Preview)])),
+        m(
+          '.viewerframe',
+          m(Head, [m(Preview), viewerOverlays.map(overlay => m(overlay))])
+        ),
         m('.viewersettings', [
           m(Aspect, ['16:9', '4:3', '4:5', '1:1', '5:4', '3:4', '9:16']),
           m(Resolution, ['1080p', '720p', '480p', '240p']),

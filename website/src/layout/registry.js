@@ -5,11 +5,12 @@ import { Timeline } from '../panels/Timeline'
 import { TemplateSettings } from '../panels/TemplateSettings'
 import { Render } from '../panels/Render'
 import { Deliver } from '../panels/Deliver'
-// By whichever name the module exports it: the placeholder exports both, and
-// the captions work (contract K3) replaces the file.
+// The panel is the module's default export, as the captions work (contract
+// K3) delivers it; the placeholder exports it under its name as well, and a
+// named export is the fallback for a module that has only that.
 import * as CaptionsModule from '../panels/Captions'
 
-const Captions = CaptionsModule.Captions || CaptionsModule.default
+const Captions = CaptionsModule.default || CaptionsModule.Captions
 
 /**
  * Every panel the editor has, once.

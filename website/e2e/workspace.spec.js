@@ -586,6 +586,29 @@ test.describe('the viewer keeps its shape', () => {
   })
 })
 
+test.describe('the frame takes overlays', () => {
+  test('the frame is positioned, and the picture fills it', async ({ authedPage }) => {
+    /**
+     * What is drawn over the picture -- the caption under the playhead -- is
+     * placed against the frame (`viewerOverlays`, panels/Viewer.js), so the
+     * frame is positioned and the preview fills it, with nothing else in
+     * between.
+     */
+    await authedPage.goto('/')
+    const head = authedPage.locator('#head')
+    await expect(head).toBeVisible()
+    expect(await head.evaluate(n => getComputedStyle(n).position)).toBe('relative')
+
+    const frame = await box(head)
+    const picture = await box(head.locator('#preview'))
+    // Inside the frame's 3px border, and the whole of it.
+    expect(picture.x).toBeGreaterThanOrEqual(frame.x)
+    expect(picture.y).toBeGreaterThanOrEqual(frame.y)
+    expect(picture.width).toBeGreaterThanOrEqual(frame.width - 8)
+    expect(picture.height).toBeGreaterThanOrEqual(frame.height - 8)
+  })
+})
+
 test.describe('the workspace and the phone flow', () => {
   test('narrowing the window swaps one for the other, and the work stays', async ({
     authedPage,
