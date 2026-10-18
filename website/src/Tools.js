@@ -5,9 +5,10 @@ import { Video, Edl } from './Video'
 import { auth } from './Login'
 import { message, success, error, defaults } from 'alertifyjs'
 import { Resolution, Aspect } from './Resolution'
-import { queueRender, renderSize, timelineRender } from './RenderRequest'
+import { queueRender, renderSize, timelineEdl, timelineRender } from './RenderRequest'
 import { requestProblem } from './Problem'
 import { Flow } from './Stages'
+import { Draft } from './Draft'
 
 // `downloadFile(url)` lived here and was never called: an anchor pointed at a
 // protected URL cannot carry the session's Authorization header, so it could
@@ -144,13 +145,28 @@ export function ProjectTools() {
               // save button had never once saved anything, and said nothing
               // when it failed: the response was parsed inside a `.then` with
               // no `.catch`, so the rejection went nowhere.
+              //
+              // The timeline as a render receives it (contract M4): every
+              // clip placed by an explicit start, its fades explicit, its
+              // window in step with its length -- built by the same function,
+              // so a saved project renders as this editor renders it, from
+              // here or from anything else that reads `project.edl`. This
+              // sent the raw clips, view bookkeeping (`i`) included, with no
+              // starts: rendered as saved, they stacked at second 0.
+              const edl = timelineEdl(Edl.edl)
               auth(`/project/${project}/timeline`, {
                 method: 'PUT',
-                body: { clips: Edl.edl },
+                body: edl,
               })
-                .then(() => {
+                .then(updated => {
                   saving = false
-                  success(`Saved ${Edl.edl.length} clips to the project`)
+                  // The project list shows clip counts and lengths.
+                  if (updated && updated._id) {
+                    Flow.projects = Flow.projects.map(p => (p._id === updated._id ? updated : p))
+                  }
+                  // What was saved is no longer a draft (Draft.js).
+                  Draft.saved(project, edl.clips)
+                  success(`Saved ${edl.clips.length} clips to the project`)
                   m.redraw()
                 })
                 .catch(() => {

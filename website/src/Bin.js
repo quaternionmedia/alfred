@@ -2,7 +2,8 @@ import m from 'mithril'
 import { Sortable } from 'sortablejs'
 import { auth } from './Login'
 import { User } from './User'
-import { addClip, templateClip, videoClip } from './Clips'
+import { addClip, mediaClip, templateClip } from './Clips'
+import { Library } from './Library'
 
 /**
  * The media bin: every template and media file, to drag onto the timeline or
@@ -23,7 +24,6 @@ import { addClip, templateClip, videoClip } from './Clips'
  */
 
 var Bin = {
-  videos: [],
   templates: [],
   loaded: false,
 
@@ -37,6 +37,10 @@ var Bin = {
   // true; loading only there left the bin permanently empty for anyone who
   // arrived by reload rather than by logging in.
   fill: () => {
+    // The media is the page's one library (Library.js), shared with the
+    // Source stage; it fetches once, and backs off after a failure.
+    Library.load()
+
     if (Bin.loaded || !User.loggedIn) return
     Bin.loaded = true
 
@@ -44,16 +48,6 @@ var Bin = {
     // that requires one -- so /videos answered 401 every time and the media
     // bin was permanently empty. Nothing surfaced it: the rejection was never
     // handled, so the bin simply rendered nothing.
-    auth('/videos')
-      .then(e => {
-        Bin.videos = e
-        m.redraw()
-      })
-      .catch(e => {
-        Bin.loaded = false
-        console.error('could not load videos for the bin', e)
-      })
-
     auth('/templates')
       .then(e => {
         Bin.templates = e
@@ -70,7 +64,7 @@ var Bin = {
     if (kind === 'template') {
       return templateClip(Bin.templates.find(t => t.name === name) || name)
     }
-    if (kind === 'video') return videoClip(name)
+    if (kind === 'media') return mediaClip(name)
     return null
   },
 
@@ -120,16 +114,28 @@ var Bin = {
           title: t.description ? t.description.replace(/\*/g, '') : t.name,
         })
       ),
-      Bin.videos.map(f =>
+      Library.items.map(item =>
         m(BinEntry, {
-          key: `video:${f}`,
-          kind: 'video',
-          name: f,
-          label: String(f).split('/').pop(),
-          title: f,
+          key: `media:${item.name}`,
+          kind: 'media',
+          // The entry's look follows what the file is.
+          type: item.kind,
+          name: item.name,
+          label: String(item.name).split('/').pop(),
+          title: item.duration
+            ? `${item.name} (${seconds(item.duration)})`
+            : item.name,
         })
       ),
     ]),
+}
+
+/** A length for a label: "3.0 s", "1:05". */
+export function seconds(s) {
+  const n = Number(s) || 0
+  if (n < 60) return `${n.toFixed(1)} s`
+  const whole = Math.round(n)
+  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`
 }
 
 /**
@@ -142,7 +148,7 @@ const BinEntry = {
     m(
       '.clip.binclip',
       {
-        class: attrs.kind === 'template' ? 'template' : 'video',
+        class: attrs.kind === 'template' ? 'template' : attrs.type || 'video',
         name: attrs.name,
         title: attrs.title,
         'data-bin-kind': attrs.kind,

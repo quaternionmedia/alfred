@@ -245,6 +245,111 @@ test.describe('a queued render is followed until it settles', () => {
   })
 })
 
+test.describe('when no renderer is running', () => {
+  /**
+   * # Recipe: knowing why a render is not moving
+   *
+   * With no render worker running, a queued render stays queued. The Render
+   * and Deliver stages say so -- "No renderer is running -- renders stay
+   * queued" -- from the server's own health check (`GET /health`), and the
+   * page asks about a queued render rarely until a renderer starts, then
+   * promptly again. A server that cannot say leaves the stages as they were.
+   */
+
+  const NOTICE = 'No renderer is running — renders stay queued'
+
+  /** Answer `GET /health` with `workers()` render workers (a 404 for `null`). */
+  async function serveHealth(page, workers) {
+    let asked = 0
+    await page.route(
+      url => url.pathname === '/health',
+      route => {
+        asked++
+        const count = workers()
+        if (count === null) return route.fulfill({ status: 404, json: { detail: 'Not Found' } })
+        return route.fulfill({
+          json: {
+            api: 'ok',
+            db: 'ok',
+            renderer: { ok: count > 0, workers: count },
+            queue: { pending: 1 },
+          },
+        })
+      }
+    )
+    return () => asked
+  }
+
+  /**
+   * Start the page over, then open `stage`: the page that logged in is not
+   * the one that asks, so what is counted is this page's asking.
+   */
+  async function openStage(page, stage) {
+    await page.reload()
+    await page.goto(`/#!/?stage=${stage}`)
+  }
+
+  test('the Render and Deliver stages say so', async ({ authedPage }) => {
+    await serveHealth(authedPage, () => 0)
+    await openStage(authedPage, 'render')
+    await expect(authedPage.locator('#panel-render #renderer-offline')).toHaveText(NOTICE)
+
+    await authedPage.locator('#stage-deliver').click()
+    await expect(authedPage.locator('#panel-deliver #renderer-offline')).toHaveText(NOTICE)
+  })
+
+  test('with a renderer running, nothing is said', async ({ authedPage }) => {
+    await serveHealth(authedPage, () => 2)
+    await openStage(authedPage, 'render')
+    await expect(authedPage.locator('#panel-render h3')).toBeVisible()
+    await authedPage.locator('#stage-deliver').click()
+    await expect(authedPage.locator('#panel-deliver h3')).toBeVisible()
+    await authedPage.waitForTimeout(500)
+    await expect(authedPage.locator('#renderer-offline')).toHaveCount(0)
+  })
+
+  test('a server without the health check is asked once, and nothing is said', async ({
+    authedPage,
+  }) => {
+    const asked = await serveHealth(authedPage, () => null)
+    await openStage(authedPage, 'render')
+    await authedPage.locator('#stage-deliver').click()
+    await authedPage.locator('#stage-render').click()
+    await expect(authedPage.locator('#panel-render h3')).toBeVisible()
+    await authedPage.waitForTimeout(500)
+    await expect(authedPage.locator('#renderer-offline')).toHaveCount(0)
+    expect(asked()).toBe(1)
+  })
+
+  test('a queued render is asked about rarely, and promptly once a renderer starts', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    let workers = 0
+    await serveHealth(authedPage, () => workers)
+    const status = sequence([{ state: 'queued', status: null, progress: null }])
+    await serveRenders(authedPage, { list: sequence([[renderDoc()]]), status })
+
+    const row = await queueFromRenderStage(authedPage, request, token)
+    await expect(row).toHaveAttribute('data-state', 'queued')
+    await expect(authedPage.locator('#panel-deliver #renderer-offline')).toBeVisible()
+
+    // Asked once on queueing, and then left alone: at the ordinary pace this
+    // would have been four or five times by now.
+    await authedPage.waitForTimeout(5000)
+    expect(status.calls(), 'asked about a render that cannot move').toBeLessThanOrEqual(2)
+
+    // A renderer starts; the stage learns it the next time it asks.
+    workers = 1
+    const before = status.calls()
+    await authedPage.locator('#stage-render').click()
+    await authedPage.locator('#stage-deliver').click()
+    await expect(authedPage.locator('#renderer-offline')).toHaveCount(0)
+    await expect.poll(() => status.calls(), { timeout: 5000 }).toBeGreaterThan(before)
+  })
+})
+
 test.describe('a finished render can be downloaded', () => {
   /**
    * # Recipe: getting the video back

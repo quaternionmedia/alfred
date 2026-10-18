@@ -62,8 +62,11 @@ test.describe('the render request places every clip', () => {
     /**
      * # Recipe: what "render" sends
      *
-     * The exact case from the bug report: three five-second clips. They must
-     * arrive at 0, 5 and 10 seconds, with a total of 15 -- not all at 0.
+     * The exact case from the bug report: three clips of one file, added one
+     * after another. They must arrive end to end -- the second where the
+     * first ends, the third where the second ends -- not all at 0. (How long
+     * each is depends on what the server measured the file as; five seconds
+     * when it measures nothing.)
      */
     const sent = await captureRenders(authedPage)
 
@@ -81,10 +84,15 @@ test.describe('the render request places every clip', () => {
 
     expect(sent).toHaveLength(1)
     const { body } = sent[0]
-    expect(starts(body)).toEqual([0, 5, 10])
-    expect(durations(body)).toEqual([5, 5, 5])
-    expect(body.edl.duration).toBe(15)
-    expect(body.duration).toBe(15)
+    const [length] = durations(body)
+    expect(length).toBeGreaterThan(0)
+    expect(durations(body)).toEqual([length, length, length])
+    const [a, b, c] = starts(body)
+    expect(a).toBe(0)
+    expect(b).toBeCloseTo(length, 3)
+    expect(c).toBeCloseTo(2 * length, 3)
+    expect(body.edl.duration).toBeCloseTo(3 * length, 3)
+    expect(body.duration).toBe(body.edl.duration)
     // Hard cuts, as the preview plays them. Left unset, otto would fade every
     // clip in and out over a second: a dip to black at each cut.
     expect(fades(body)).toEqual([
@@ -242,6 +250,84 @@ test.describe('the render request places every clip', () => {
   })
 })
 
+test.describe('a saved timeline is the timeline a render receives', () => {
+  test('Save sends exactly what Render sends: placed, with explicit fades', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * # Recipe: what "save" stores
+     *
+     * A project stores the clips a render of it would receive (contract M4):
+     * each placed by an explicit start, its fades explicit -- 0 unless one
+     * was chosen -- and its window in step with its length. Anything that
+     * renders `project.edl` as stored gets the video this editor renders.
+     * Save sent the raw clips: no starts, so rendered as stored they stacked
+     * at second 0, and the view's own bookkeeping went along with them.
+     *
+     * Served here with stale starts, the one-second fades the old routes
+     * wrote onto every clip, a chosen fade, and an out-point that disagrees
+     * with the clip's length. The save is answered here too: the shared
+     * fixture is not written.
+     */
+    const project = await projectNamed(request, token, MEDIA_PROJECT)
+    const [video, colour] = project.edl.clips
+    expect(video.type, `${MEDIA_PROJECT} starts with a video clip`).toBe('video')
+    const doctored = {
+      ...project,
+      edl: {
+        ...project.edl,
+        clips: [
+          { ...video, start: 99, fadeIn: 1, fadeOut: 1, outpoint: video.inpoint + video.duration + 2 },
+          { ...colour, start: 99, fadeIn: 0.5, fadeOut: 2 },
+        ],
+      },
+    }
+    await authedPage.route(
+      url => url.pathname === `/project/${project._id}`,
+      route =>
+        route.request().method() === 'GET' ? route.fulfill({ json: doctored }) : route.fallback()
+    )
+    const saved = []
+    await authedPage.route(
+      url => url.pathname === `/project/${project._id}/timeline`,
+      async route => {
+        const body = route.request().postDataJSON()
+        saved.push(body)
+        await route.fulfill({ json: { ...doctored, edl: body } })
+      }
+    )
+    const sent = await captureRenders(authedPage)
+
+    await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(2)
+
+    await authedPage.locator('#save-timeline').click()
+    await expect.poll(() => saved.length).toBe(1)
+    await authedPage.locator('#render-timeline').click()
+    await expect.poll(() => sent.length).toBe(1)
+
+    const stored = saved[0]
+    expect(stored).toEqual(sent[0].body.edl)
+    expect(stored.clips.map(c => c.start)).toEqual([0, video.duration])
+    expect(stored.duration).toBe(video.duration + colour.duration)
+    // The guessed default goes out as no fade; the chosen one is kept.
+    expect(fades({ edl: stored })).toEqual([
+      [0, 0],
+      [0.5, 2],
+    ])
+    // The window agrees with the length the editor played.
+    expect(stored.clips[0].outpoint).toBe(video.inpoint + video.duration)
+    for (const clip of stored.clips) {
+      expect(clip).not.toHaveProperty('i')
+      // Nor the engine's defaults, which the old routes stored as nulls on
+      // every clip they saved: unsaid is how a default is kept.
+      expect(Object.values(clip), JSON.stringify(clip)).not.toContain(null)
+    }
+  })
+})
+
 test.describe('the toolbar Render button', () => {
   test('sends the Render stage request, in the body', async ({
     authedPage,
@@ -356,6 +442,46 @@ test.describe('a form-driven project', () => {
     if (project) {
       await request.delete(`/project/${project._id}`, { headers: { Authorization: token } })
     }
+  })
+
+  test('its preview frame is shown from the address the server gives', async ({
+    authedPage,
+  }) => {
+    /**
+     * `POST /preview/` answers with where the frame is: a signed URL for the
+     * private frames route, which the image fetches by itself -- or, from a
+     * server before that route, a path under the public `/data` mount.
+     */
+    const PNG = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      'base64'
+    )
+    const frame = `/preview/frames/0123abcd.jpg?exp=${Math.floor(Date.now() / 1000) + 600}&sig=e2e`
+    const answers = [frame, 'data/none.jpg']
+    await authedPage.route(
+      url => url.pathname === '/preview/',
+      route => route.fulfill({ json: answers.shift() })
+    )
+    const fetched = []
+    await authedPage.route(
+      url => url.pathname.startsWith('/preview/frames/') || url.pathname === '/data/none.jpg',
+      async route => {
+        fetched.push({ url: route.request().url(), headers: route.request().headers() })
+        await route.fulfill({ status: 200, contentType: 'image/png', body: PNG })
+      }
+    )
+
+    await authedPage.goto(`/#!/?project=${project._id}&stage=render`)
+    const form = authedPage.locator('#template_form')
+    await form.locator('input[name="headline"]').fill('A frame')
+    await form.locator('input[name="preview"]').click()
+    await expect(authedPage.locator('img#form-preview')).toHaveAttribute('src', frame)
+    await expect.poll(() => fetched.length).toBe(1)
+    expect(fetched[0].url).toContain('sig=e2e')
+    expect(fetched[0].headers.authorization).toBeUndefined()
+
+    await form.locator('input[name="preview"]').click()
+    await expect(authedPage.locator('img#form-preview')).toHaveAttribute('src', '/data/none.jpg')
   })
 
   test('renders its logic layered, with a preset and no ffmpeg flags', async ({

@@ -268,6 +268,20 @@ enabled. Once it has settled nothing goes on asking about it.
   so nothing is watching it by id. The stage refreshes its list while
   anything on it is unfinished.
 
+### when no renderer is running
+
+# Recipe: knowing why a render is not moving
+
+With no render worker running, a queued render stays queued. The Render
+and Deliver stages say so -- "No renderer is running -- renders stay
+queued" -- from the server's own health check (`GET /health`), and the
+page asks about a queued render rarely until a renderer starts, then
+promptly again. A server that cannot say leaves the stages as they were.
+
+- **the Render and Deliver stages say so**
+- **with a renderer running, nothing is said**
+- **a server without the health check is asked once, and nothing is said**
+- **a queued render is asked about rarely, and promptly once a renderer starts**
 ### a finished render can be downloaded
 
 # Recipe: getting the video back
@@ -393,6 +407,170 @@ matters here: what the panel does when the server says "nothing".
   present. Queue a render of it and check the API accepts the job.
 
 
+## editor access
+
+The editor from the keyboard, and read as text.
+
+# Recipe: choosing a timeline tool without a mouse
+
+The tools beside the timeline are buttons. Tab to one and press Enter or
+Space to choose it; the chosen tool is announced as pressed. They were
+icons that announced themselves as buttons and could not be reached: no tab
+stop, and neither key did anything. Space is still play and pause whenever
+the keyboard has not moved to a button -- choosing a tool with the mouse
+does not take it away.
+
+### the timeline tools from the keyboard
+
+Named for the tool, not for its icon: the icon's ligature text --
+"content_cut" -- is hidden from assistive technology.
+
+- **every tool is a button with a name**
+- **Tab reaches a tool, and Enter or Space chooses it**
+
+  The page's own Space handler cancelled the press and played the
+  timeline instead, so a keyboard could not have chosen a tool even had
+  it reached one.
+
+- **Space pressing a tool does not also start playback**
+
+  The page's own Space handler cancelled the press and played the
+  timeline instead, so a keyboard could not have chosen a tool even had
+  it reached one.
+
+- **after choosing a tool with the mouse, Space still plays**
+
+  Two bare anchors side by side read "User documentationAPI reference".
+
+### the footer
+
+Two bare anchors side by side read "User documentationAPI reference".
+
+- **its links are separated, to the eye and in the text**
+
+## editor draft
+
+An unsaved timeline outlives the page that made it.
+
+# Recipe: getting unsaved edits back
+
+Edits to a project's timeline are kept in the tab until they are saved. If
+the page is reloaded, or the session runs out and you log in again, opening
+the project offers them back: **Restore them** puts the unsaved timeline on
+screen, **Discard** keeps the saved one. Saving clears what was kept. It is
+the tab's own, and goes when the tab does.
+
+Every edit since the last save used to be lost, with no warning, whenever
+the page went away.
+
+These open the shared media project and never save it: what a test keeps
+stays in its own browser, and the one test that saves brings its own
+project.
+
+### an unsaved timeline outlives a reload
+
+- **after a reload the unsaved timeline is offered back, and restored**
+- **discarded, it is gone, and the saved timeline stays**
+
+  Opening a project, selecting clips and playing them changes nothing,
+  so nothing is kept -- and a stored `start` or fade, which the editor
+  would send differently, is not counted as a change.
+
+- **a timeline that was only looked at offers nothing**
+
+  Opening a project, selecting clips and playing them changes nothing,
+  so nothing is kept -- and a stored `start` or fade, which the editor
+  would send differently, is not counted as a change.
+
+- **saving clears what was kept**
+### an unsaved timeline outlives the session
+
+The server refusing the session sends the page to log in, carrying
+where it was; the timeline goes with the page. Logging in again comes
+back to the project, and offers what was unsaved.
+
+- **when the session ends, logging in again offers it back**
+### storage that refuses
+
+Private browsing and full quotas refuse storage outright. The editor
+goes on working; there is simply nothing to offer back.
+
+- **a browser that will not keep the timeline still edits it**
+
+## editor media
+
+Media in the editor: how long it runs, and how the browser fetches it.
+
+# Recipe: adding footage at its own length
+
+Choose a file on the Source stage (or press + beside it in the bin) and it
+arrives as the whole file, from its start: as long as the file runs, which
+the Source stage shows beside its name. A still image arrives as five
+seconds of the picture, as does a file whose length the server could not
+measure. Trimming stops at the end of the file. Every library clip used to
+arrive as five seconds, because nothing reported a length.
+
+The server's media list (`GET /media`) carries, for each file, its kind,
+its length and a short-lived signed URL. The viewer plays a video from that
+URL by itself -- streaming, seeking -- instead of downloading the whole file
+with the session first; renders download the same way. A server without
+that list still works: names come from `GET /videos`, and files are fetched
+with the session as before.
+
+The media list, the signed URLs and the render list are answered here: what
+is under test is what the editor does with each answer.
+
+### a library clip is as long as its file
+
+- **it arrives at the length the server measured, from its start**
+- **a file the server could not measure arrives as five seconds**
+
+  It was sent as a video clip. otto draws an image clip as one picture
+  for as long as the clip lasts, with no in-point to move.
+
+- **a still image arrives as a picture: a length and no window**
+
+  It was sent as a video clip. otto draws an image clip as one picture
+  for as long as the clip lasts, with no in-point to move.
+
+- **a server without the media list: names from /videos, five seconds each**
+
+  Against a server from before `GET /media` -- it answers 404 -- the
+  editor reads the older list of names and carries on as it did.
+
+### a trim stops at the end of the file
+
+The shared fixture's video clip plays the first three seconds of
+demo-bars. Served here as a 3.5-second file, a long drag to the right
+lengthens the clip by half a second and no more.
+
+- **dragging past the end of the source leaves the clip as long as the file**
+### media is fetched by signed URL
+
+The element is handed the signed URL and fetches it itself -- no
+Authorization header, no blob: it streams, and nothing holds the
+whole file in memory. (The request is passed on here with the session
+added, so that a server which does not check signatures yet still
+serves it.)
+
+- **the viewer plays a video from its signed URL, fetched by the browser**
+- **a signed URL that has run out is renewed, not handed to the viewer**
+- **a finished render downloads from its signed link**
+
+  # Recipe: downloading a render
+
+  Download hands the browser the render's signed link: the browser
+  fetches the file straight to disk, under the name the server gives it,
+  the way any download goes -- instead of the page fetching the whole
+  file into memory with the session and handing it over afterwards.
+
+- **a download link that has run out is asked for again**
+
+  The list was read when the stage opened; by the time Download is
+  pressed its link may have run out. A fresh one comes from the
+  render's status.
+
+
 ## editor render
 
 What the editor sends when it asks for a render.
@@ -411,8 +589,11 @@ here, so nothing is queued) rather than trusting the code that builds it.
 
 # Recipe: what "render" sends
 
-The exact case from the bug report: three five-second clips. They must
-arrive at 0, 5 and 10 seconds, with a total of 15 -- not all at 0.
+The exact case from the bug report: three clips of one file, added one
+after another. They must arrive end to end -- the second where the
+first ends, the third where the second ends -- not all at 0. (How long
+each is depends on what the server measured the file as; five seconds
+when it measures nothing.)
 
 - **three clips added in the editor render end to end, not stacked**
 - **a start stored on a clip is replaced by its place on the timeline**
@@ -436,6 +617,23 @@ arrive at 0, 5 and 10 seconds, with a total of 15 -- not all at 0.
   every redraw -- so a redraw between typing and clicking restored the
   project's size. Forcing a redraw in between is the point of this test.
 
+### a saved timeline is the timeline a render receives
+
+# Recipe: what "save" stores
+
+A project stores the clips a render of it would receive (contract M4):
+each placed by an explicit start, its fades explicit -- 0 unless one
+was chosen -- and its window in step with its length. Anything that
+renders `project.edl` as stored gets the video this editor renders.
+Save sent the raw clips: no starts, so rendered as stored they stacked
+at second 0, and the view's own bookkeeping went along with them.
+
+Served here with stale starts, the one-second fades the old routes
+wrote onto every clip, a chosen fade, and an out-point that disagrees
+with the clip's length. The save is answered here too: the shared
+fixture is not written.
+
+- **Save sends exactly what Render sends: placed, with explicit fades**
 ### the toolbar Render button
 
 It sent `?project=&width=&height=` and a body of bare clips. The route
@@ -454,6 +652,12 @@ they keep their own starts, and a clip with none leaves with an explicit
 The form also sent ffmpeg flags of its own and a quality of "web" or
 "TV"; the server now picks the encoding from a named preset and refuses
 client-supplied ffmpeg parameters, so this asserts neither is sent.
+
+- **its preview frame is shown from the address the server gives**
+
+  `POST /preview/` answers with where the frame is: a signed URL for the
+  private frames route, which the image fetches by itself -- or, from a
+  server before that route, a path under the public `/data` mount.
 
 - **renders its logic layered, with a preset and no ffmpeg flags**
 
@@ -797,11 +1001,12 @@ it is gone.
 ### otto editor
 
 Slip, slide and dual roller could be chosen -- they lit up like the
-others -- and then did nothing to any clip. They are visibly disabled
-now, with a title saying why, and choosing one says so too.
+others -- and then did nothing to any clip, so for a while they were
+shown disabled. They work now (timeline-tools.spec.js drives each), and
+each says in its title how it is used.
 
 - **edit tools are present**
-- **tools that are not built yet say so, and do not pretend**
+- **every tool can be chosen, and is the only one chosen**
 - **<group> are present**
 - **action buttons are present**
 - **the play control is present**
@@ -1155,8 +1360,10 @@ Template clips: adding them, and changing what they say.
 Templates are made, not uploaded -- a title, a text box, a colour field.
 Add one from the bin under the timeline (its + button, or drag it into
 place) or from the Source stage's Templates list. Its settings appear beside
-the viewer: text, length and colours. The server renders every change, and
-if a setting cannot be rendered it says why, next to the settings.
+the viewer: text, length, font and size, how the text is aligned, where the
+template sits in the frame, and colours -- whichever of those the template
+takes. The server renders every change, and if a setting cannot be rendered
+it says why, next to the settings.
 
 None of this worked before. The timeline refused drops from the bin, the
 drop handler threw on the shape of a template entry when one got through,
@@ -1207,6 +1414,33 @@ render receives. A colour can be typed or picked; the swatch follows.
   `responseText`, which throws, so it never reached the screen. Served
   here so the reason is known.
 
+### a template's type and placement
+
+# Recipe: setting a title's font, size and position
+
+A text template is offered a font -- from the fonts this server can draw
+-- a size, and where it sits in the frame; a text box also how its text
+is aligned in the box. Each is the template's own until chosen, and
+"Template default" puts it back.
+
+- **font, size, alignment and position change the frame and the render**
+- **each template is offered only what it takes**
+
+  A title takes a font and a position but aligns nothing; a colour field
+  takes a position, and nothing about text.
+
+- **a font that cannot be drawn says why, and the default puts it right**
+
+  Validation is the server's, as for every setting: the frame is
+  rendered with the font, and a refusal's reason is shown beside the
+  fields. Served here so the reason is known.
+
+- **a placement written by a project's logic is kept, not replaced**
+
+  A project can place a template by coordinates, which the form offers
+  no field for. It is shown as set, and goes on to the render untouched
+  when other settings change.
+
 
 ## timeline tools
 
@@ -1225,7 +1459,8 @@ send while it moves, so on a phone trimming did nothing at all.
 
 Grab a clip near its end and drag. The pointer is captured, so the
 drag keeps arriving at the clip after leaving its edge -- the whole
-gesture -- and the clips after it move along.
+gesture -- and the clips after it move along. (Its file is served as a
+minute long, so the end of the file is not what stops it.)
 
 - **dragging a clip past its own edge lengthens it, and its out-point**
 ### by touch
@@ -1258,11 +1493,19 @@ press S. Either half can then be trimmed, moved or deleted on its own.
   the second starts in the file where the first ends and finishes where
   the original did. Back to back they show what the original showed.
 
-- **a template clip becomes two of the same template, edited separately**
+- **a template clip becomes two halves of one animation, edited separately**
 
-  A template has no in-point -- it is drawn fresh for its length -- so
-  it becomes two clips of the same template, each with its own copy of
-  the settings.
+  Two clips of the same template, each with its own copy of the
+  settings. The second carries on where the first stopped: it starts in
+  the template where the cut was (its in-point) and ends where the
+  original did (its out-point), so its animation continues rather than
+  starting over -- in the viewer, and in the render.
+
+- **a continuing half keeps its window when its length changes**
+
+  otto plays a clip with an out-point from its in-point to its out-point
+  and does not read `duration`. So a length typed beside the viewer has
+  to move the out-point too, or the render would ignore it.
 
 - **S splits the clip under the playhead, whatever the tool**
 
@@ -1273,6 +1516,86 @@ press S. Either half can then be trimmed, moved or deleted on its own.
 
   At 0 the playhead is at the very start of the first clip, so a cut
   there would leave nothing on one side. It is refused, and says so.
+
+### slip
+
+# Recipe: choosing which part of a clip plays
+
+Choose **Slip** and drag a clip: it keeps its length and its place, and
+the part of its file it shows moves under it. The picture follows the
+pointer, as in other editors -- drag right to bring in earlier material,
+left for later -- stopping at the start and the end of the file.
+
+- **by mouse, the window moves along the file and nothing else does**
+- **it stops at the start and at the end of the file**
+
+  A template is drawn on demand from its own second 0, so it can show
+  any stretch of its animation -- but nothing before its start.
+
+- **a template slips through its animation**
+
+  A template is drawn on demand from its own second 0, so it can show
+  any stretch of its animation -- but nothing before its start.
+
+- **a clip showing the whole of its file says there is nothing to slip**
+
+  # Recipe: moving a clip between its neighbours
+
+  Choose **Slide** and drag a clip along the timeline. It keeps what it
+  shows; its neighbours give and take the time -- the clip before it ends
+  later or sooner, the clip after it starts later or sooner in its file --
+  so the timeline keeps its length.
+
+### slide
+
+# Recipe: moving a clip between its neighbours
+
+Choose **Slide** and drag a clip along the timeline. It keeps what it
+shows; its neighbours give and take the time -- the clip before it ends
+later or sooner, the clip after it starts later or sooner in its file --
+so the timeline keeps its length.
+
+- **by mouse, the neighbours give and take the time**
+- **the first clip has nothing before it to slide against, and says so**
+
+  # Recipe: moving a cut
+
+  Choose the **dual roller** and drag near a cut: the cut moves, the clip
+  before it ending where the clip after it now starts in its file. Pressed
+  on a clip's first half, the roller takes the cut at its start; on its
+  second half, the cut at its end.
+
+### dual roller
+
+# Recipe: moving a cut
+
+Choose the **dual roller** and drag near a cut: the cut moves, the clip
+before it ending where the clip after it now starts in its file. Pressed
+on a clip's first half, the roller takes the cut at its start; on its
+second half, the cut at its end.
+
+- **by mouse, one clip ends where the next now starts**
+
+  Rolled right, the second clip gives up all but a tenth of a second:
+  the shortest a clip may be. Rolled left, the second clip can start no
+  earlier than its file does.
+
+- **the cut moves only as far as both clips allow**
+
+  Rolled right, the second clip gives up all but a tenth of a second:
+  the shortest a clip may be. Rolled left, the second clip can start no
+  earlier than its file does.
+
+- **a single clip has no cut to roll, and says so**
+### slip, slide and roll by touch
+
+- **a finger slips a clip**
+- **a finger slides a clip**
+- **a finger rolls a cut**
+
+  There was no doctype, so every browser laid the page out in quirks
+  mode; and the viewport carried `maximum-scale=1`, which stops a phone
+  from zooming -- the one tool someone who needs larger controls has.
 
 ### on a phone
 
@@ -1304,8 +1627,9 @@ The preview was blank for every video clip.
 `<video src="videos/x.mp4">` is a browser-issued request with no
 Authorization header, and /videos requires a session -- so it 401'd and
 showed nothing. Selecting media in the bin looked like a click that did
-not register. The element is handed an object URL fetched with the token
-instead.
+not register. The element is handed the signed URL the server issued
+for the file, or -- from a server that issues none -- an object URL for
+the file fetched with the token.
 
 - **a video clip previews from generated demo footage**
 - **a template clip previews as a rendered frame**

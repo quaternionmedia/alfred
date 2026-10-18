@@ -48,8 +48,9 @@ test.describe('selected media renders', () => {
      * `<video src="videos/x.mp4">` is a browser-issued request with no
      * Authorization header, and /videos requires a session -- so it 401'd and
      * showed nothing. Selecting media in the bin looked like a click that did
-     * not register. The element is handed an object URL fetched with the token
-     * instead.
+     * not register. The element is handed the signed URL the server issued
+     * for the file, or -- from a server that issues none -- an object URL for
+     * the file fetched with the token.
      */
     const project = await mediaProject(request, token)
 
@@ -60,10 +61,10 @@ test.describe('selected media renders', () => {
 
     const video = authedPage.locator('video.preview')
     await expect(video).toBeVisible({ timeout: 30_000 })
-    // A blob URL means the fetch carried the token and the bytes arrived.
-    // Generous timeouts: this downloads and decodes a real file, and with the
-    // suite running eight workers wide the first frame can take a while.
-    await expect(video).toHaveAttribute('src', /^blob:/, { timeout: 30_000 })
+    // Never the bare protected path: a signed URL, or a blob fetched with the
+    // token. Generous timeouts: this decodes a real file, and with the suite
+    // running wide the first frame can take a while.
+    await expect(video).toHaveAttribute('src', /^blob:|[?&]sig=/, { timeout: 30_000 })
 
     // readyState >= 2 is HAVE_CURRENT_DATA: decoded, not merely requested.
     await expect
@@ -126,7 +127,7 @@ test.describe('the tools pass their events', () => {
     const project = await mediaProject(request, token)
     await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
 
-    const trim = authedPage.locator('#TTools i[title="trim"]')
+    const trim = authedPage.locator('#TTools [data-tool="trim"]')
     await expect(trim).toBeVisible()
 
     const background = () => trim.evaluate(el => getComputedStyle(el).backgroundColor)
@@ -144,7 +145,7 @@ test.describe('the tools pass their events', () => {
     await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
 
     const highlighted = async () =>
-      authedPage.locator('#TTools i').evaluateAll(
+      authedPage.locator('#TTools [data-tool]').evaluateAll(
         nodes =>
           nodes.filter(n => {
             const bg = getComputedStyle(n).backgroundColor
@@ -152,9 +153,14 @@ test.describe('the tools pass their events', () => {
           }).length
       )
 
-    for (const tool of ['trim', 'move', 'time selector']) {
-      await authedPage.locator(`#TTools i[title="${tool}"]`).click()
-      expect(await highlighted(), `after choosing ${tool}`).toBe(1)
+    for (const tool of ['trim', 'move', 'time']) {
+      await authedPage.locator(`#TTools [data-tool="${tool}"]`).click()
+      // Polled: the page redraws on the next frame, not inside the click, and
+      // until it does the tool just left is still filled and the one under
+      // the pointer has its hover.
+      await expect
+        .poll(highlighted, { message: `after choosing ${tool}` })
+        .toBe(1)
     }
   })
 
@@ -381,6 +387,9 @@ test.describe('the project actions', () => {
       expect(saved.name, 'saving the timeline overwrote the project name').toBe(
         project.name
       )
+      // Stored as a render receives it: placed, and with no fade nobody chose.
+      expect(saved.edl.clips[0]).toMatchObject({ start: 0, fadeIn: 0, fadeOut: 0 })
+      expect(saved.edl.duration).toBe(saved.edl.clips[0].duration)
 
       await authedPage.reload()
       await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)

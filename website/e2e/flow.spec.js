@@ -23,6 +23,18 @@ async function demoProject(request, token) {
   return (await res.json()).find(p => p.name === DEMO)
 }
 
+/**
+ * Routes the editor asks for that a server from before them does not have:
+ * it answers 404, and the editor carries on without them (`GET /media` falls
+ * back to `GET /videos`; no `GET /health` means nothing is said about the
+ * renderer). Read from the server's own OpenAPI document, so a 404 from a
+ * server that does have the route still fails the test.
+ */
+async function absentRoutes(request) {
+  const paths = Object.keys(((await (await request.get('/openapi.json')).json()) || {}).paths || {})
+  return ['/media', '/health'].filter(path => !paths.includes(path))
+}
+
 test.describe('the four-stage flow', () => {
   test('the timeline is the entry point', async ({ authedPage }) => {
     // `/` used to be a marketing homepage. The first thing the app shows is
@@ -184,13 +196,16 @@ test.describe('the four-stage flow', () => {
   }) => {
     const demo = await demoProject(request, token)
     test.skip(!demo, 'demo project not seeded')
+    const absent = await absentRoutes(request)
 
     const failures = []
     authedPage.on('requestfinished', async req => {
       try {
         const res = await req.response()
+        const path = new URL(req.url()).pathname
+        if (res && res.status() === 404 && absent.includes(path)) return
         if (res && res.status() >= 400) {
-          failures.push(`${res.status()} ${req.method()} ${new URL(req.url()).pathname}`)
+          failures.push(`${res.status()} ${req.method()} ${path}`)
         }
       } catch (e) {
         // request objects can vanish mid-navigation
