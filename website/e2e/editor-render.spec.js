@@ -319,7 +319,12 @@ test.describe('a saved timeline is the timeline a render receives', () => {
     ])
     // The window agrees with the length the editor played.
     expect(stored.clips[0].outpoint).toBe(video.inpoint + video.duration)
-    for (const clip of stored.clips) expect(clip).not.toHaveProperty('i')
+    for (const clip of stored.clips) {
+      expect(clip).not.toHaveProperty('i')
+      // Nor the engine's defaults, which the old routes stored as nulls on
+      // every clip they saved: unsaid is how a default is kept.
+      expect(Object.values(clip), JSON.stringify(clip)).not.toContain(null)
+    }
   })
 })
 

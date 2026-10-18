@@ -65,6 +65,14 @@ export function timelineEdl(clips) {
       out.inpoint = toMs(inOf(clip))
       out.outpoint = toMs(out.inpoint + duration)
     }
+    // A field that is null says nothing otto's default does not. A clip from
+    // a project the old routes stored carries one for every field it did not
+    // set -- `offset`, `position`, `resize`, `opacity` and the rest -- and
+    // echoing them back would write the engine's defaults into the project
+    // again, which is what saving through this builder stops (contract M4).
+    for (const field of Object.keys(out)) {
+      if (out[field] === null || out[field] === undefined) delete out[field]
+    }
     placed.push(out)
     start += duration
   }
