@@ -360,8 +360,11 @@ elif [ $1 = "docker" -o $1 = "dock" ]; then
 elif [ $1 = "t" -o $1 = "test" -o $1 = "e2e" ]; then
   shift
   # --build, as CI runs it, so a local run tests this checkout's images rather
-  # than whichever ones an earlier run left behind.
-  docker compose -f test_e2e.yml up --build --exit-code-from e2e "$@"
+  # than whichever ones an earlier run left behind. --renew-anon-volumes for
+  # the same reason: the site's node_modules and the database are anonymous
+  # volumes, and compose hands a recreated container its old ones -- so after
+  # a dependency change the bundle was built against the previous install.
+  docker compose -f test_e2e.yml up --build --renew-anon-volumes --exit-code-from e2e "$@"
 
 elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   shift
