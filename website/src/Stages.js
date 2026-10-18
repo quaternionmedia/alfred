@@ -14,6 +14,7 @@ import { addClip, mediaClip, templateClip } from './Clips'
 import Bin, { seconds } from './Bin'
 import { Library } from './Library'
 import { expiresAt } from './Signed'
+import { CaptionsDrawer } from './captions/drawer'
 
 /**
  * The four stages of the flow, as one view.
@@ -989,7 +990,8 @@ export const StagePanel = () => ({
     if (stage === 'source') return m(SourcePanel)
     if (stage === 'render') return m(RenderPanel)
     if (stage === 'deliver') return m(DeliverPanel)
-    // Edit has no panel: it *is* the timeline, which is always mounted below.
-    return null
+    // Edit has no stage panel: it *is* the timeline, which is always mounted
+    // below. The captions edit beside it, folded until opened.
+    return m(CaptionsDrawer)
   },
 })

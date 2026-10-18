@@ -18,6 +18,7 @@ import { Scale } from './Scale'
 import { StageRail, StagePanel, Flow } from './Stages'
 import { TemplateParams } from './TemplateParams'
 import { DraftOffer } from './Draft'
+import { CaptionOverlay, VIEWER_CLASS } from './captions/overlay'
 
 export var Otto = {
   // Re-checked on every mount, not only at boot.
@@ -56,7 +57,8 @@ export var Otto = {
       m(StagePanel),
 
       m('section.viewer', [
-        m(Head, [m(Preview)]),
+        // The caption under the playhead lies over the preview.
+        m(Head, { class: VIEWER_CLASS }, [m(Preview), m(CaptionOverlay)]),
         m('.viewersettings', [
           m(Aspect, ['16:9', '4:3', '4:5', '1:1', '5:4', '3:4', '9:16']),
           m(Resolution, ['1080p', '720p', '480p', '240p']),
