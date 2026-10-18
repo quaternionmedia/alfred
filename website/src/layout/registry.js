@@ -6,11 +6,10 @@ import { TemplateSettings } from '../panels/TemplateSettings'
 import { Render } from '../panels/Render'
 import { Deliver } from '../panels/Deliver'
 // The panel is the module's default export, as the captions work (contract
-// K3) delivers it; the placeholder exports it under its name as well, and a
-// named export is the fallback for a module that has only that.
-import * as CaptionsModule from '../panels/Captions'
-
-const Captions = CaptionsModule.default || CaptionsModule.Captions
+// K3) delivers it. Imported by default, not through a namespace with a named
+// fallback: parcel resolves `CaptionsModule.Captions` at build time and fails
+// the build when the module has no such export, which the real panel does not.
+import Captions from '../panels/Captions'
 
 /**
  * Every panel the editor has, once.
