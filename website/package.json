@@ -30,16 +30,10 @@
     "sortablejs": "^1.13.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.18.3",
-    "@babel/plugin-proposal-decorators": "^7.18.10",
     "@parcel/transformer-sass": "^2.8.3",
     "@playwright/test": "^1.62.1",
-    "cssnano": "^5.1.13",
     "parcel": "^2.8.3",
     "sass": "^1.58.0"
-  },
-  "resolutions": {
-    "@babel/preset-env": "7.20.2"
   },
   "bugs": {
     "url": "https://github.com/quaternionmedia/alfred/issues"
