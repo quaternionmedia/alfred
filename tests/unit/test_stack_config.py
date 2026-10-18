@@ -231,6 +231,32 @@ class TestDependencyPinning:
             'or the loose ranges resolve first and the pins do nothing'
         )
 
+    def test_the_suite_installs_the_lockfile_before_the_project(self):
+        """The suite is evidence about the image only if it runs its versions.
+
+        The coverage session installed `-e ..[test]` and nothing else, which
+        resolves pyproject.toml's ranges on the day: the suite ran numpy 2.4
+        and starlette 0.50 while the image ran the lockfile's 1.24 and 0.44.
+        The same order rule as the Dockerfile's applies -- the pins first, or
+        the ranges resolve and the pins change nothing.
+        """
+        noxfile = strip_comments(read('tests/noxfile.py'))
+        assert 'def coverage(' in noxfile, 'no coverage session in tests/noxfile.py'
+        session = noxfile[noxfile.index('def coverage(') :]
+        pins = re.search(r"session\.install\([^)]*'\.\./requirements\.lock'", session)
+        project = re.search(
+            r"session\.install\([^)]*'-e',\s*'\.\.(\[[^]]*\])?'", session
+        )
+        assert pins, (
+            "the coverage session must install ../requirements.lock, or the "
+            'suite tests whatever pip resolves instead of what the image runs'
+        )
+        assert project, 'no `-e ..` install of the project in the coverage session'
+        assert pins.start() < project.start(), (
+            'requirements.lock must be installed before the project, or the '
+            'loose ranges resolve first and the pins do nothing'
+        )
+
     def test_requirements_lock_agrees_with_pdm_lock(self):
         """The exported file is a copy, and copies drift.
 

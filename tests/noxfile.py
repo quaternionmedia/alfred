@@ -40,6 +40,17 @@ def lint(session):
 
 @nox.session(tags=['test'])
 def coverage(session):
+    # The lockfile first, in its own pip call, the way the Dockerfile and CI
+    # install it, so the suite tests the versions the image runs.
+    #
+    # It did not. `-e ..[test]` alone resolves pyproject.toml's ranges afresh
+    # on every run, so on integrate/review-fixes the suite ran numpy 2.4,
+    # fastapi 0.125, starlette 0.50 and beanie 1.30 while the image ran
+    # requirements.lock's 1.24, 0.124, 0.44 and 1.29 -- the divergence the
+    # lockfile was introduced to end, back again one layer down, and a green
+    # suite was evidence about versions nothing deployed. test_stack_config.py
+    # holds this line in place.
+    session.install('-r', '../requirements.lock')
     session.install('-e', '..[test]')
     # The vendored engine, over any published `al-otto` the extras dragged in:
     # otherwise the suite imports otto from site-packages and tests a different
