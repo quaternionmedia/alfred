@@ -165,6 +165,12 @@ export const Flow = {
   rendersShown: 0,
 
   loadRenders: () => {
+    // Not before there is a session, as `load` does not. The Deliver stage
+    // asks as it opens, and a reload opens it before the stored session is
+    // confirmed: the list was requested without a token, refused, and asked
+    // again -- a 401 in the console on every reload of the stage. The list
+    // comes with `load` once the session is there.
+    if (!User.loggedIn) return Promise.resolve()
     const asked = ++Flow.rendersAsked
     return auth('/render')
       .then(r => {
