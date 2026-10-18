@@ -270,7 +270,8 @@ so the answer does not confirm the id is real.
 Captions: typed, imported, transcribed, and drawn into renders.
 
 A project's captions are text and the stretch of the timeline it is shown
-for. The Captions panel, folded under the stage rail on the Edit stage,
+for. The Captions panel -- on a wide screen a tab in the workspace, beside
+Render and Deliver; on a phone the Edit stage's panel, above the viewer --
 edits them by hand, reads them from a SubRip, WebVTT or JSON file -- the
 server reads it, the panel shows what it found, and saving keeps it -- or
 has the timeline's own sound transcribed by the server's audio engine. The
@@ -326,8 +327,8 @@ project's captions are drawn only once someone says so.
 - **the style is saved with the captions, and off until someone says**
 - **the caption under the playhead shows over the viewer**
 
-  Whether or not the panel is open, the caption under the playhead is
-  drawn over the viewer in its style; past it, nothing is.
+  Whether or not the Captions panel is in view, the caption under the
+  playhead is drawn over the viewer in its style; past it, nothing is.
 
 - **renders carry the captions once they are drawn, and not before**
 
