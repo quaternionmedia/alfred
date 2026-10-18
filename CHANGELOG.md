@@ -2,10 +2,12 @@
 
 ## Unreleased — review fixes
 
-Fixes from a review of alfred and otto, landed as five parallel branches and
-integrated on `integrate/review-fixes`: the render pipeline, auth and
-ownership, the editor, CI and operations, and the engine (otto pinned at
-a387666, `fix/engine-contract`). Read **Security** and **Changed** before
+Fixes from a review of alfred and otto, landed in two rounds of parallel
+branches. The first, integrated on `integrate/review-fixes`: the render
+pipeline, auth and ownership, the editor, CI and operations, and the engine
+(otto `fix/engine-contract`). The second, on `integrate/wave-2`: media
+access and storage, the editor again, accounts and the timeline API,
+dependencies, and the engine (otto pinned at e050396, `fix/engine-wave2`). Read **Security** and **Changed** before
 deploying: several requests that used to be accepted are now refused, and a
 production stack needs its own signing key.
 
@@ -39,6 +41,30 @@ production stack needs its own signing key.
 - **Deliveries and template previews are out of the public `/data` mount**, and
   finished renders are no longer listed in the shared media library.
   Password-reset and verification tokens stay out of production logs.
+- **Media is fetched by short-lived signed links, and `/data` is gone.**
+  `GET /render/{id}/download`, `GET /videos/{name}` and `GET
+  /preview/frames/{name}` accept a session or a signed URL
+  (`ALFRED_MEDIA_URL_TTL`, 900 s) issued only after the route's own checks, so
+  `<video>`, `<img>` and downloads stream instead of arriving as whole-file
+  blobs. The unauthenticated `/data` mount is removed; preview frames are
+  private (`ALFRED_PREVIEW_DIR`) and expire (`ALFRED_FRAME_TTL`).
+- **Remote media the engine fetches is never served.** It goes to a hidden
+  cache (`ALFRED_REMOTE_CACHE_DIR`, passed to otto as `OTTO_DOWNLOAD_DIR`),
+  pruned after `ALFRED_REMOTE_CACHE_TTL` (7 days); a download that failed part
+  way is no longer reused as if it were whole.
+- **A development checkout signs with a key of its own.** The committed
+  `.secret_key` stub leaves `ALFRED_SECRET_KEY` empty, and an empty key still
+  signs -- anyone could mint a development session. `./al init`, `./al dev`
+  and `./al thin` create a git-ignored `.secret_key.local`, and the startup
+  banner calls an empty key forgeable instead of claiming logins will fail.
+- **The development login cannot be claimed**: registering
+  `ALFRED_DEV_USER_EMAIL` is refused, and it gets no reset token or password.
+  **An account's email cannot be changed** while ownership is keyed by it
+  (422); `docs/ownership.md` plans the move to user ids.
+- **Dependencies.** python-multipart 0.0.32 (was 0.0.6), Pillow 12.3 (was
+  9.5.0), python-jose, ecdsa and rsa removed, and the lock refreshed within
+  its ranges: open advisories in the image's dependencies go from 82 to 20.
+  The icon font is served by the app, not fetched from Google.
 
 ### Changed
 
@@ -60,6 +86,27 @@ production stack needs its own signing key.
   as media again.
 - **Seeds and demos have owners.** `ALFRED_SEED_OWNER` names it; in development
   it is the dev user. Each account gets its own demo project.
+- **The engine is otto e050396.** Refusals count clips from 1; a video
+  clip's sound fades with its picture; a position the engine cannot place a
+  clip at is refused when the clip is built (a 422 naming the clip); each video
+  is probed once per version of its file; otto installs without bezier.
+- **Library clips arrive at their own length and kind** (`GET /media`),
+  previews stream from signed URLs, and downloads use `download_url`.
+- **A saved timeline holds what the editor sent.** Projects store and serve
+  their EDL with `exclude_unset`, the editor saves exactly the clips it renders
+  (explicit starts and fades), and settings and timeline saves write only their
+  own fields. A template's preview is built at the clip's length, as its render
+  is.
+- **One ownership rule** for projects and renders
+  (`alfred/core/utils/ownership.py`), and **one demo per account** even under
+  simultaneous requests (a partial unique index; projects carry `demo`).
+- **Deleting a render removes its files.** Bucket deliveries store a `gs://`
+  reference and are signed when asked for; media and byte ranges go out
+  uncompressed; workers poll the broker every 0.5 s.
+- **Python 3.11 only.** numpy 1.26.4; fastapi 0.125 with starlette 0.50;
+  beanie 1.30; celery 5.6; imageio-ffmpeg 0.6. Installs use `--no-deps` from
+  the lockfiles, because python-multipart overrides fastapi-users' exact pin;
+  `requirements-test.lock` pins the test tools.
 
 ### Fixed
 
@@ -84,6 +131,14 @@ production stack needs its own signing key.
   a phone.
 - **`./al` reports its real version**, and `seed`, `reseed`, `dump` and
   `restore` work; seeding assigns the same owner as startup.
+- **A worker started on a fresh database answers pings**, a `Range:
+  bytes=-N` longer than the file returns the whole file, `POST /auth/verify`
+  answers 200 (it answered 500 after confirming), and logging in as the
+  development login is a 400, not a 500.
+- **`./al pytest` tests the locked versions** -- it resolved from PyPI -- and
+  the test image is a stage of the root Dockerfile instead of `FROM
+  alfred_api`, whatever that tag held. `./al init` creates the `videos/`
+  directory the stacks mount.
 
 ### Added
 
@@ -101,6 +156,23 @@ production stack needs its own signing key.
   clean checkout -- site, api, render worker and database. `./al test` runs the
   same thing, and no longer rewrites `website/yarn.lock`.
 - **A `LICENSE` file** stating the MIT licence the package metadata declares.
+- **`GET /media`** (duration, size, kind and a signed URL per library file),
+  **`GET /health`** (database, renderer workers, queue) and **`GET /healthz`**,
+  `download_url` on render status and list items, and **`./al storage
+  migrate|orphans|cache`** (dry runs unless `--apply`).
+- **Slip, slide and dual roller** on the timeline, by mouse and touch; trims
+  stop at the end of the source; a cut template's second half continues its
+  animation.
+- **Template font, size, alignment and position** fields; a notice when no
+  renderer is running; unsaved timeline edits offered back after a reload or a
+  new login; timeline tools reachable from the keyboard.
+- **Password reset by mail** when `EMAIL_SERVER`, `EMAIL_USERNAME` and the new
+  `ALFRED_PUBLIC_URL` are set, with a reset page; production passes
+  `ALFRED_PUBLIC_URL` through.
+- **qmcp can drive alfred over its HTTP API** (qmcp branch
+  `feat/alfred-tools`): tools that list projects and templates, queue a render
+  and follow it, and a flow that puts a finished render to a person for
+  approval.
 
 ### CI and release
 
@@ -111,12 +183,17 @@ production stack needs its own signing key.
 - **Publishing needs a `v*` tag that names the version** in
   `alfred/_version.py`, and the backend suite passing at that commit. Every
   workflow runs on actions that target Node 24.
+- **The api test jobs install the lockfiles with `--no-deps`**
+  (`requirements.lock`, `requirements-test.lock`, then the project and the
+  vendored engine) and no longer use the org workflow's `requirements` input.
 
 ### Measured
 
-`./al pytest` on f0e8cb3: 699 passed, 2 skipped, 8 xfailed (the 11 defect pins
-the engine fixed are ordinary tests now). `./al test`: 212 passed, 1 skipped,
-including the `@slow` specs, which encode on the new engine.
+First round, on f0e8cb3: `./al pytest` 699 passed, 2 skipped, 8 xfailed;
+`./al test` 212 passed, 1 skipped. Second round, on `integrate/wave-2`:
+`./al pytest` 1117 passed, 2 skipped, 8 xfailed, with the database tier
+running; `./al test` 281 passed, 1 skipped, including the `@slow` specs,
+which encode on the new engine.
 
 ## 0.3.0 — breaking
 
