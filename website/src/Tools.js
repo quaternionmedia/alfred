@@ -1,5 +1,4 @@
 import m from 'mithril'
-import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
 import { Player } from './Player'
 import { Video, Edl } from './Video'
 import { auth } from './Login'

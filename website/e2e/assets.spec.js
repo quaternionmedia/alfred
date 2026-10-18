@@ -14,10 +14,11 @@ const { test, expect, login } = require('./fixtures')
 
 const STAGES = ['source', 'edit', 'render', 'deliver']
 
-// Names the app asks the icon font for that no Material Icons font has. Each
-// is a defect, pinned by a test of its own below, and left out of the check
-// that every other icon is a glyph.
-const NOT_IN_THE_FONT = ['swap_horizontal']
+// Names the app asks the icon font for that no Material Icons font has, left
+// out of the check that every other icon is a glyph. Empty: the last one, the
+// move tool's `swap_horizontal`, is `swap_horiz` now. A name added here is a
+// defect, and wants a test of its own pinning it.
+const NOT_IN_THE_FONT = []
 
 test('no stylesheet or font comes from another origin', async ({ page, baseURL }) => {
   /**
@@ -108,26 +109,4 @@ test('every icon on every stage is drawn by the icon font', async ({ authedPage 
     )
     expect(words, `icons drawn as words on ${stage}`).toEqual([])
   }
-})
-
-test('the move tool asks for `swap_horizontal`, which the font does not have', async ({
-  authedPage,
-}) => {
-  /**
-   * A defect, pinned rather than hidden. Material Icons calls the icon
-   * `swap_horiz`. The font draws that glyph for the first ten letters of
-   * TimelineTools.js's name and blank space for the last five, so the button
-   * looks right while its text is six ems wide in a one-em box -- with the
-   * CDN font as with this one. Fixing the name fails this test; then delete
-   * it, and the name from NOT_IN_THE_FONT.
-   */
-  await authedPage.goto('/?stage=edit')
-  await authedPage.evaluate(() => document.fonts.ready)
-
-  const ems = await authedPage.locator('[data-tool="move"]').evaluate(icon => {
-    const range = document.createRange()
-    range.selectNodeContents(icon)
-    return range.getBoundingClientRect().width / parseFloat(getComputedStyle(icon).fontSize)
-  })
-  expect(ems, 'the move tool icon, in ems').toBeGreaterThan(1.5)
 })

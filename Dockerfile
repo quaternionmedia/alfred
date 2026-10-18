@@ -5,7 +5,6 @@
 FROM python:3.11@sha256:d0199e2a90bf7a206a485b115323a75bc946f30b463d704c5435a454aca084dd AS api
 
 WORKDIR /app
-RUN mkdir -p data
 
 COPY pyproject.toml README.md requirements.lock ./
 COPY alfred alfred
@@ -31,7 +30,7 @@ RUN pip3 install --no-cache-dir --no-deps -r requirements.lock
 # The engine's render extras are not in the lockfile, so this install
 # resolves; nothing the engine depends on reaches python-multipart, so it
 # cannot undo the override.
-RUN BEZIER_NO_EXTENSION=true pip3 install -e alfred/otto[render]
+RUN pip3 install -e alfred/otto[render]
 RUN pip3 install --no-deps -e .
 # Not in the lockfile either -- pyproject.toml lists the server as a
 # development dependency -- so it is resolved here, and floats.
