@@ -98,4 +98,17 @@ test.describe('registering', () => {
 
     await expect(page.locator('.ajs-message')).toContainText(/already has an account/i)
   })
+
+  test('the address of the development login cannot be registered', async ({ page }) => {
+    /**
+     * The auth bypass acts as dev@example.com, and that account owns the
+     * seeded projects. It is made the first time the bypass runs, so on a
+     * server where it never had, whoever registered the address owned them.
+     * The server refuses it in any case, and says why.
+     */
+    await register(page, 'Dev@Example.com', 'a long enough password')
+
+    await expect(page.locator('.ajs-message')).toContainText(/development login/i)
+    await expect(page.locator(SELECTORS.login)).toHaveText(/login/i)
+  })
 })

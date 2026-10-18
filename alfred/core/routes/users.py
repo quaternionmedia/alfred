@@ -3,7 +3,7 @@ from typing import Optional
 
 from beanie import PydanticObjectId
 from fastapi import Depends, HTTPException, Request
-from fastapi_users import BaseUserManager, FastAPIUsers
+from fastapi_users import BaseUserManager, FastAPIUsers, exceptions
 from fastapi_users.authentication import (
     AuthenticationBackend,
     BearerTransport,
@@ -22,6 +22,25 @@ EMAIL_IS_THE_OWNER_KEY = (
     "An account's email address cannot be changed: its projects and renders "
     'are recorded against it, and changing it would leave them behind.'
 )
+
+DEV_ADDRESS_IS_RESERVED = (
+    "That address belongs to this server's development login and cannot be "
+    'registered. Use another address.'
+)
+
+DEV_ACCOUNT_HAS_NO_PASSWORD = (
+    'The development login has no password, and cannot be given one.'
+)
+
+
+def is_dev_address(email):
+    """Whether `email` is the auth bypass account's address, in any case.
+
+    In any case, because fastapi-users finds accounts by address
+    case-insensitively: `DEV@example.com` is the same login as
+    `dev@example.com`. Read through the module, so the tests can rename it.
+    """
+    return bool(email) and email.casefold() == config.DEV_USER_EMAIL.casefold()
 
 
 def announce_token(purpose, user, token):
@@ -74,6 +93,60 @@ class UserManager(
         if changes_owner_key(user, user_update.create_update_dict_superuser()):
             raise HTTPException(status_code=422, detail=EMAIL_IS_THE_OWNER_KEY)
         return await super().update(user_update, user, safe=safe, request=request)
+
+    async def create(self, user_create, safe=False, request=None):
+        """Create an account -- but never at the dev account's address.
+
+        The auth bypass acts as ALFRED_DEV_USER_EMAIL, and owns what
+        development creates for it: the seeded projects and its demo. That
+        account is made by the bypass on first use, so on a stack where the
+        bypass had never run, the address was free -- and with registration
+        open, whoever registered it owned the dev seeds, and became the
+        account the bypass would act as. Refused with 400 and a reason, like
+        fastapi-users' own refusals here, before anything is looked up.
+        """
+        if is_dev_address(user_create.email):
+            raise HTTPException(status_code=400, detail=DEV_ADDRESS_IS_RESERVED)
+        return await super().create(user_create, safe=safe, request=request)
+
+    async def validate_password(self, password, user):
+        """No password is ever set on the dev account.
+
+        It stores `!dev-no-login` where a hash belongs, so no password matches
+        it and the account cannot be logged into once the bypass is off --
+        and it is a superuser. Every route that sets a password comes through
+        here -- a reset, a superuser's `PATCH /users/{id}` -- so this is where
+        that property is kept.
+        """
+        if is_dev_address(getattr(user, 'email', None)):
+            raise exceptions.InvalidPasswordException(
+                reason=DEV_ACCOUNT_HAS_NO_PASSWORD
+            )
+        return await super().validate_password(password, user)
+
+    async def authenticate(self, credentials):
+        """A login -- refused for the dev account like a wrong password.
+
+        It was refused, but as a 500: fastapi-users hands the stored value to
+        passlib to verify, and `!dev-no-login` is not a hash passlib can
+        identify, so every attempt raised. A 400 is the answer any wrong
+        password gets. The hash runs anyway, so the refusal takes as long.
+        """
+        if is_dev_address(credentials.username):
+            self.password_helper.hash(credentials.password)
+            return None
+        return await super().authenticate(credentials)
+
+    async def forgot_password(self, user, request=None):
+        """Issue a reset token -- except to the dev account, which has no use for one.
+
+        It could not be used (see `validate_password`), and there is nobody at
+        the address to read it. The route answers 202 either way, as it does
+        for an address with no account, so this says nothing to the caller.
+        """
+        if is_dev_address(user.email):
+            return
+        return await super().forgot_password(user, request)
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")

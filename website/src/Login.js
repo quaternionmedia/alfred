@@ -92,10 +92,22 @@ export function registrationFailure(err) {
   if (detail && detail.code == 'REGISTER_INVALID_PASSWORD') {
     return `That password was refused: ${detail.reason}`
   }
+  // Any other refusal the server words for people -- the development login's
+  // address, which nobody may register -- is shown as it stands.
+  if (isSentence(detail)) return detail
   if (err && err.code == 422) {
     return 'That does not look like an email address.'
   }
   return 'Registration failed. Try again, or ask an administrator.'
+}
+
+/** A `detail` written for a person, rather than one of fastapi-users' codes.
+ *
+ * The codes are single upper-case words (`REGISTER_USER_ALREADY_EXISTS`); the
+ * server's own refusals are sentences, and are meant to be read as they are.
+ */
+export function isSentence(detail) {
+  return typeof detail == 'string' && /\s/.test(detail.trim())
 }
 
 export const Login = () => {

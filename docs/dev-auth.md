@@ -48,7 +48,8 @@ for it:
 
 Registration is open in development and closed under `ALFRED_PRODUCTION`;
 `ALFRED_ALLOW_REGISTRATION` overrides either default. To see the app as a
-normal account would, turn the bypass off and register one.
+normal account would, turn the bypass off and register one -- at any address
+but the dev account's, which is refused (see guard 5).
 
 `/users/me` is shadowed by a dev-only route registered ahead of the
 fastapi-users one. Swapping the dependency is not enough to cover it:
@@ -74,11 +75,15 @@ would come back while every other endpoint stayed open.
    the bypass on, the superuser is reachable from this machine only.
    `ALFRED_BIND=0.0.0.0` opens it to the network (to try the editor on a phone,
    say), and `./al dev` warns when that is combined with the bypass.
-5. **The dev account cannot be logged into.** It stores `!dev-no-login` where
-   a password hash belongs. fastapi-users verifies a candidate against that
-   hash, and no input hashes to it, so the account is unusable as a way in
-   once the flag is off again -- which matters, because it is a superuser and
-   it persists.
+5. **The dev account cannot be logged into, or claimed.** It stores
+   `!dev-no-login` where a password hash belongs, so no password matches it,
+   and a login is refused like a wrong one. That matters, because it is a
+   superuser and it persists once the flag is off again -- so nothing may
+   change it either: its address cannot be registered (the bypass makes the
+   account on first use, and until then whoever registered the address owned
+   the dev seeds), no password can be set on it by a reset or by a
+   superuser's `PATCH /users/{id}`, and no reset token is issued for it. The
+   rules live on `UserManager`, which every one of those routes goes through.
 
 Guard 2 is the load-bearing one, and it is worth knowing its limit:
 `ALFRED_PRODUCTION` is set by `production.yml`, so a deployment that does not

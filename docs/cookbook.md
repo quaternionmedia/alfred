@@ -659,6 +659,19 @@ registers its own user and needs registration open to do it.
 - **a server that does not take registrations says so**
 - **an address that already has an account says so**
 
+  The auth bypass acts as dev@example.com, and that account owns the
+  seeded projects. It is made the first time the bypass runs, so on a
+  server where it never had, whoever registered the address owned them.
+  The server refuses it in any case, and says why.
+
+- **the address of the development login cannot be registered**
+
+  The auth bypass acts as dev@example.com, and that account owns the
+  seeded projects. It is made the first time the bypass runs, so on a
+  server where it never had, whoever registered the address owned them.
+  The server refuses it in any case, and says why.
+
+
 ## navigation
 
 ### navigation
