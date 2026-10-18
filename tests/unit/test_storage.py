@@ -354,3 +354,150 @@ class TestTheCommandLine:
 
     def test_runs_the_orphan_report(self, dirs):
         assert storage.main(['orphans'], db=FakeDb()) == 0
+
+
+# --- the remote media cache -------------------------------------------------
+
+FETCHED = 'a' * 64
+
+
+class TestTheRemoteMediaCache:
+    """The engine keeps every file a clip's URL fetched, and removed none."""
+
+    @pytest.fixture
+    def cache(self, tmp_path, monkeypatch):
+        from alfred import config
+
+        root = tmp_path / '.remote-cache'
+        root.mkdir()
+        monkeypatch.setattr(config, 'REMOTE_CACHE_DIR', str(root))
+        monkeypatch.setattr(config, 'REMOTE_CACHE_TTL', 3600)
+        monkeypatch.setattr(
+            storage,
+            '_remote_cache_due',
+            storage.Every(storage.REMOTE_CACHE_SWEEP_INTERVAL),
+        )
+        return root
+
+    def test_files_past_the_ttl_go(self, cache):
+        old = aged(cache / f'{FETCHED}.mp4', 3601)
+        fresh = aged(cache / f'{"b" * 64}.jpg', 60)
+        assert storage.sweep_remote_cache(now=NOW) == 1
+        assert not old.exists() and fresh.exists()
+
+    def test_so_does_a_fetch_that_died_part_way(self, cache):
+        partial = aged(cache / f'.{FETCHED}.mp4.x1y2z3.part', 3601)
+        assert storage.sweep_remote_cache(now=NOW) == 1
+        assert not partial.exists()
+
+    def test_nothing_the_engine_did_not_name(self, cache):
+        others = [
+            aged(cache / 'notes.mp4', 10**6),
+            aged(cache / f'{FETCHED.upper()}.mp4', 10**6),
+            aged(cache / f'{FETCHED[:10]}.mp4', 10**6),
+        ]
+        assert storage.sweep_remote_cache(now=NOW) == 0
+        assert all(path.exists() for path in others)
+
+    def test_a_cache_that_is_not_there_is_nothing_to_do(self, tmp_path, monkeypatch):
+        from alfred import config
+
+        monkeypatch.setattr(config, 'REMOTE_CACHE_DIR', str(tmp_path / 'absent'))
+        assert storage.sweep_remote_cache(now=NOW) == 0
+
+    def test_those_that_fill_it_sweep_at_most_hourly(self, cache):
+        aged(cache / f'{FETCHED}.mp4', 4000)
+        assert storage.sweep_remote_cache_now_and_then(now=NOW) == 1
+        aged(cache / f'{"c" * 64}.mp4', 4000)
+        assert storage.sweep_remote_cache_now_and_then(now=NOW + 60) == 0
+        assert storage.sweep_remote_cache_now_and_then(now=NOW + 3600) == 1
+
+    def test_the_command_lists_then_removes(self, cache):
+        old = aged(cache / f'{FETCHED}.mp4', 4000)
+        lines = []
+        assert storage.cache_command(now=NOW, out=lines.append) == 0
+        assert old.exists()
+        assert lines[0].startswith('would remove: ')
+        assert lines[-1].startswith('Dry run: 1 files past ALFRED_REMOTE_CACHE_TTL')
+        assert storage.cache_command(apply=True, now=NOW, out=lines.append) == 0
+        assert not old.exists()
+
+    def test_all_empties_it_whatever_the_age(self, cache):
+        fresh = aged(cache / f'{FETCHED}.mp4', 10)
+        storage.cache_command(apply=True, everything=True, now=NOW, out=[].append)
+        assert not fresh.exists()
+
+    def test_an_empty_cache_says_so(self, cache):
+        lines = []
+        storage.cache_command(now=NOW, out=lines.append)
+        assert lines == ['Nothing in the remote media cache is past its TTL.']
+
+    def test_the_command_needs_no_database(self, cache):
+        assert storage.main(['cache']) == 0
+
+
+class TestWhoSweepsTheRemoteCache:
+    def test_the_api_when_it_starts(self):
+        from alfred.core.routes.media import sweep_remote_cache_at_startup
+        from alfred.main import app
+
+        assert sweep_remote_cache_at_startup in app.router.on_startup
+
+    def test_the_worker_after_a_render(self, monkeypatch, recorded_encode):
+        from alfred.core.utils import tasks
+
+        swept = []
+        monkeypatch.setattr(
+            tasks, 'sweep_remote_cache_now_and_then', lambda: swept.append(1)
+        )
+        run_a_render(tasks, monkeypatch)
+        assert swept == [1]
+
+    def test_without_ever_failing_the_render(self, monkeypatch, recorded_encode):
+        from alfred.core.utils import tasks
+
+        def broken():
+            raise OSError('disk on fire')
+
+        monkeypatch.setattr(tasks, 'sweep_remote_cache_now_and_then', broken)
+        outcome = run_a_render(tasks, monkeypatch)
+        assert outcome == ['rendered']
+
+
+def run_a_render(tasks, monkeypatch):
+    """Through the task, with the encode recorded and the outcome noted."""
+    outcome = []
+
+    class Logger:
+        def __init__(self, task, render_id):
+            pass
+
+        def rendered(self):
+            outcome.append('rendered')
+
+        def uploaded(self):
+            pass
+
+        def failed(self, *args, **kwargs):
+            outcome.append(('failed', kwargs.get('exc')))
+
+    monkeypatch.setattr(tasks, 'upload', lambda *a, **k: None)
+    monkeypatch.setattr(tasks, 'DbLogger', Logger)
+    tasks.renderRemote.apply(
+        kwargs=dict(
+            edl={
+                'clips': [
+                    {
+                        'type': 'template',
+                        'name': 'makeColor',
+                        'duration': 1.0,
+                        'data': {'color': '#f2aa4c'},
+                    }
+                ]
+            },
+            filename=f'{RENDER_ID}.mp4',
+            renderId=RENDER_ID,
+            moviesize=[64, 48],
+        )
+    )
+    return outcome

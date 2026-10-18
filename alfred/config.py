@@ -221,6 +221,38 @@ PREVIEW_DIR = environ.get('ALFRED_PREVIEW_DIR') or join(gettempdir(), 'alfred-pr
 FRAME_TTL = resolve_seconds(environ, 'ALFRED_FRAME_TTL', 3600)
 
 
+# Where the engine keeps media it fetched from a URL (contract M6). Inside the
+# library directory, so the api's previews and the worker's renders share one
+# copy through the mount they both have -- but in a hidden subdirectory, which
+# neither `GET /videos` nor `GET /media` lists and `/videos/{file}` never
+# serves. The engine wrote downloads to `data/` under its working directory,
+# which the api served publicly at /data.
+#
+# The engine reads OTTO_DOWNLOAD_DIR. The compose files set it outright; for
+# anything started another way it is set from here, at import -- before the
+# engine is imported, since the `alfred` package imports this module first --
+# so one value decides where downloads go in every process.
+def resolve_remote_cache_dir(env, video_dir):
+    """ALFRED_REMOTE_CACHE_DIR, else OTTO_DOWNLOAD_DIR, else in the library.
+
+    An explicit ALFRED_REMOTE_CACHE_DIR wins over an OTTO_DOWNLOAD_DIR that
+    disagrees; empty counts as unset.
+    """
+    for name in ('ALFRED_REMOTE_CACHE_DIR', 'OTTO_DOWNLOAD_DIR'):
+        if _given(env.get(name)):
+            return env[name].strip()
+    return join(video_dir, '.remote-cache')
+
+
+REMOTE_CACHE_DIR = resolve_remote_cache_dir(environ, VIDEO_DIR)
+environ['OTTO_DOWNLOAD_DIR'] = REMOTE_CACHE_DIR
+
+# How long fetched remote media is kept, in seconds; a week by default. The
+# engine keeps every file it fetches and never removed one. Swept when the api
+# starts, and at most hourly by the api and the worker as they fetch; `./al
+# storage cache` does it on demand.
+REMOTE_CACHE_TTL = resolve_seconds(environ, 'ALFRED_REMOTE_CACHE_TTL', 7 * 24 * 3600)
+
 # How long a signed media URL works, in seconds (contract M1). Long enough to
 # watch a preview or finish a download that started; a URL is reissued with
 # every listing and status, so nothing needs one to last.

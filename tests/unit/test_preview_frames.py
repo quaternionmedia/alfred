@@ -321,3 +321,19 @@ class TestFramesExpire:
         from alfred.core.routes.preview import sweep_frames_at_startup
 
         assert sweep_frames_at_startup in app.router.on_startup
+
+    def test_a_preview_keeps_the_remote_media_cache_in_check_too(
+        self, client, frames, monkeypatch
+    ):
+        """A preview is where the api fetches remote media."""
+        from alfred.core.utils import storage
+
+        swept = []
+        monkeypatch.setattr(
+            storage, 'sweep_remote_cache_now_and_then', lambda: swept.append(1)
+        )
+        res = client.post(
+            '/preview/?t=0', json={'edl': TEMPLATE_EDL, 'width': 64, 'height': 48}
+        )
+        assert res.status_code == 200
+        assert swept == [1]

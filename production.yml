@@ -48,6 +48,11 @@ services:
       # Hosts a clip may name remote media on, passed through from the
       # deploying shell; empty unless set. The renderer reads the same value.
       - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
+      # Where the engine keeps media it fetched from a URL: hidden in the
+      # library mount the renderer shares, never listed or served (contract
+      # M6). It wrote them under the working directory's `data/`, which was
+      # served publicly at /data. The renderer is given the same directory.
+      - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
 
   # No ports for the database. It was published on 192.168.192.52:27017,
   # which put an unauthenticated MongoDB on the LAN; nothing outside this
@@ -89,3 +94,4 @@ services:
       # path did here.
       - VIDEO_DIR=/app/videos
       - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
+      - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}

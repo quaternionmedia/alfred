@@ -1,11 +1,13 @@
 """What the server keeps on disk, and when it lets go of it.
 
 Files were written and never removed: every preview frame, every render's
-output and its local delivery copy outlived whatever made them. And renders
-finished before RENDER_DIR existed were written into the media library
-itself, where they are still listed as media to everyone.
+output and its local delivery copy, every remote file the engine fetched,
+outlived whatever made them. And renders finished before RENDER_DIR existed
+were written into the media library itself, where they are still listed as
+media to everyone.
 
-- `sweep` removes files that have outlived their time (preview frames).
+- `sweep` removes files that have outlived their time: preview frames, and
+  the remote media cache (`sweep_remote_cache`, `./al storage cache`).
 - `remove_render_files` removes a deleted render's own files.
 - `plan_migration` / `apply_migration` move legacy render outputs out of the
   library into RENDER_DIR (`./al storage migrate`).
@@ -18,6 +20,7 @@ does inside the api container. Nothing changes without `--apply`.
 
 import argparse
 import os
+import re
 import shutil
 import sys
 from dataclasses import dataclass, field
@@ -93,6 +96,68 @@ def sweep(
     As `expired` chooses them. Returns how many were removed.
     """
     return remove(expired(directory, max_age, now=now, matches=matches))
+
+
+class Every:
+    """Due at most once per `interval` seconds; at once if the clock went back."""
+
+    def __init__(self, interval: float):
+        self.interval = interval
+        self.last = float('-inf')
+
+    def due(self, now: float) -> bool:
+        if 0 <= now - self.last < self.interval:
+            return False
+        self.last = now
+        return True
+
+
+# --- the remote media cache -------------------------------------------------
+
+# What the engine keeps there: `<sha256 of the URL>.<ext>`, and while one is
+# being fetched `.<that name>.<random>.part`, which a fetch killed part way can
+# leave behind. Nothing else in the directory is touched.
+_CACHED = re.compile(r'[0-9a-f]{64}\.[A-Za-z0-9]{1,5}')
+_PARTIAL = re.compile(r'\.[0-9a-f]{64}\.[A-Za-z0-9]{1,5}\.[^/]*\.part')
+
+# The most often the cache is swept by the processes that fill it.
+REMOTE_CACHE_SWEEP_INTERVAL = 3600
+
+_remote_cache_due = Every(REMOTE_CACHE_SWEEP_INTERVAL)
+
+
+def is_remote_cache_file(name) -> bool:
+    return bool(_CACHED.fullmatch(name) or _PARTIAL.fullmatch(name))
+
+
+def expired_remote_media(now: Optional[float] = None, max_age=None) -> List[Found]:
+    """Fetched remote media older than ALFRED_REMOTE_CACHE_TTL (or `max_age`).
+
+    Age is time since the file was fetched: the engine reuses a cached file
+    without touching it, so one in daily use is fetched again once a TTL --
+    the price of not tracking every use.
+    """
+    max_age = config.REMOTE_CACHE_TTL if max_age is None else max_age
+    return expired(
+        config.REMOTE_CACHE_DIR, max_age, now=now, matches=is_remote_cache_file
+    )
+
+
+def sweep_remote_cache(now: Optional[float] = None, max_age=None) -> int:
+    """Remove fetched remote media past its TTL. Returns how many files went.
+
+    The engine fetches each URL a clip names once and keeps it, and nothing
+    removed one, so the cache grew for as long as remote media was used.
+    """
+    return remove(expired_remote_media(now=now, max_age=max_age))
+
+
+def sweep_remote_cache_now_and_then(now: Optional[float] = None) -> int:
+    """`sweep_remote_cache`, at most once an hour: for the paths that fill it."""
+    now = time() if now is None else now
+    if not _remote_cache_due.due(now):
+        return 0
+    return sweep_remote_cache(now=now)
 
 
 # --- a render's own files --------------------------------------------------
@@ -366,6 +431,34 @@ def orphans_command(db, apply=False, out=print) -> int:
     return 0
 
 
+def cache_command(apply=False, everything=False, now=None, out=print) -> int:
+    found = (
+        expired_remote_media(now=now, max_age=-1)
+        if everything
+        else expired_remote_media(now=now)
+    )
+    if not found:
+        out(
+            'Nothing in the remote media cache to remove.'
+            if everything
+            else 'Nothing in the remote media cache is past its TTL.'
+        )
+        return 0
+    total = _size(sum(f.size for f in found))
+    if apply:
+        removed = remove(found)
+        out(f'Removed {removed} of {len(found)} files ({total}).')
+        return 0 if removed == len(found) else 1
+    for item in found:
+        out(f'would remove: {item.path}  ({_size(item.size)})')
+    what = 'files' if everything else 'files past ALFRED_REMOTE_CACHE_TTL'
+    out(
+        f'Dry run: {len(found)} {what} ({total}). Nothing was changed; run '
+        'with --apply to remove them.'
+    )
+    return 0
+
+
 def main(argv=None, db=None) -> int:
     parser = argparse.ArgumentParser(
         prog='./al storage',
@@ -386,8 +479,21 @@ def main(argv=None, db=None) -> int:
         'orphans', help='find files whose render has been deleted'
     )
     orphans.add_argument('--apply', action='store_true', help='remove the files')
+    cache = commands.add_parser(
+        'cache',
+        help='remote media the engine fetched, past ALFRED_REMOTE_CACHE_TTL',
+    )
+    cache.add_argument('--apply', action='store_true', help='remove the files')
+    cache.add_argument(
+        '--all',
+        dest='everything',
+        action='store_true',
+        help='every cached file, whatever its age (a render using one fails)',
+    )
     args = parser.parse_args(argv)
 
+    if args.command == 'cache':
+        return cache_command(apply=args.apply, everything=args.everything)
     if db is None:
         from .db import get_sync_db
 

@@ -28,7 +28,7 @@ from starlette.concurrency import run_in_threadpool
 from alfred import config
 from alfred.config import DEV_SKIP_AUTH
 
-from ..utils import signing
+from ..utils import signing, storage
 from ..utils.media import LIBRARY_PREFIX, library_file, library_files, media_kind
 from ..utils.probe import probe
 from .users import fastapi_users, get_dev_user
@@ -132,8 +132,19 @@ def describe_library(video_dir=None) -> List[MediaItem]:
     return items
 
 
+async def sweep_remote_cache_at_startup():
+    """Fetched remote media past its TTL goes when the api starts.
+
+    Then at most hourly as previews and renders fetch more; see
+    `storage.sweep_remote_cache_now_and_then`.
+    """
+    removed = await run_in_threadpool(storage.sweep_remote_cache)
+    if removed:
+        print(f'removed {removed} expired files from the remote media cache')
+
+
 # Mounted behind the session.
-mediaAPI = APIRouter()
+mediaAPI = APIRouter(on_startup=[sweep_remote_cache_at_startup])
 
 
 @mediaAPI.get('/media', response_model=List[MediaItem])

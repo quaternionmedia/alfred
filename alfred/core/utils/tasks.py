@@ -13,6 +13,7 @@ from .bucket import upload
 from .encoding import preset_for
 from .logger import DbLogger, failure_reason, mark_failed
 from .media import MediaNameError, check_media_name, resolve_edl
+from .storage import sweep_remote_cache_now_and_then
 
 renderer = Celery(
     'renderer',
@@ -163,6 +164,13 @@ def renderRemote(
     # The render is finished and the file exists. Say so before attempting to
     # put it anywhere, because those are separate outcomes.
     log.rendered()
+
+    # The worker is what fetches most remote media, so it keeps that cache
+    # within its TTL -- at most hourly, and never at the render's expense.
+    try:
+        sweep_remote_cache_now_and_then()
+    except Exception as e:  # noqa: BLE001 - housekeeping must not fail a render
+        print('could not sweep the remote media cache', e)
 
     # Uploading is now one destination among several, reachable explicitly via
     # POST /render/{id}/deliver. Attempt it here for the deployments that

@@ -268,6 +268,8 @@ elif [ $1 = "storage" ]; then
   #                                    directory, and what is in the way
   #   ./al storage migrate --apply     move them
   #   ./al storage orphans [--apply]   files whose render has been deleted
+  #   ./al storage cache [--apply]     remote media the engine fetched, past
+  #                                    ALFRED_REMOTE_CACHE_TTL (--all: every one)
   #
   # -T: no terminal, so this works from scripts and CI as well as a shell.
   docker compose exec -T api python -m alfred.core.utils.storage "$@"

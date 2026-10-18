@@ -149,6 +149,9 @@ async def previewFrame(t: float, render: Render):
     print(f'saving frame {t} as: {frame_name}', video)
     video.save_frame(frame_name, t=t, withmask=False)
     sweep_frames()
+    # A preview is where the api fetches remote media, so it is where the
+    # api keeps that cache within its TTL.
+    storage.sweep_remote_cache_now_and_then()
     # Signed here, after the caller's session admitted the request: the URL is
     # how the frame reaches an `<img>`. It was a path under the public /data
     # mount.

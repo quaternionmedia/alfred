@@ -75,6 +75,12 @@ services:
       # Same passthrough as the renderer's: hosts a clip may name remote media
       # on, empty unless you ask for it.
       - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
+      # Where the engine keeps media it fetched from a URL: a hidden directory
+      # in the library mount the renderer shares, so a file previewed here is
+      # not fetched again to render, and is never listed or served (contract
+      # M6). The engine wrote downloads to `data/` under its working
+      # directory, which the api served publicly at /data. A container path.
+      - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
 
   renderer:
     build:
@@ -136,6 +142,9 @@ services:
       # The worker refuses any other URL rather than downloading it. The api
       # reads the same setting and refuses first.
       - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
+      # Where fetched remote media is kept; the api's, so one download serves
+      # both. See the api above.
+      - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
 
   db:
     ports:
