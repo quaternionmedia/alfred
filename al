@@ -177,9 +177,11 @@ elif [ $1 = "init" ]; then
   shift
   ensureDevKey
   mkdir -p $(dirname $0)/website/dist
-  mkdir -p $(dirname $0)/alfred/videos
-  mkdir -p $(dirname $0)/alfred/data
-  mkdir -p $(dirname $0)/alfred/site
+  # The media library the stack mounts at /app/videos. Created here so a
+  # Linux host owns it, rather than the root-owned directory Docker would
+  # make. (This used to create alfred/videos, alfred/data and alfred/site,
+  # which nothing mounts; the /data mount is gone altogether.)
+  mkdir -p $(dirname $0)/videos
   echo "installing dependencies"
   # Dependencies live in the image, not in the host's website/node_modules, so
   # this builds rather than installing into the bind mount. --renew-anon-volumes

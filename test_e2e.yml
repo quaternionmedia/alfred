@@ -133,7 +133,7 @@ services:
           'CMD',
           'python',
           '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost/openapi.json', timeout=3)",
+          "import urllib.request; urllib.request.urlopen('http://localhost/healthz', timeout=3)",
         ]
       interval: 5s
       timeout: 5s

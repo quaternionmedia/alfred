@@ -48,6 +48,12 @@ services:
       # Hosts a clip may name remote media on, passed through from the
       # deploying shell; empty unless set. The renderer reads the same value.
       - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
+      # The address account mail links to (password reset, confirmation) --
+      # never taken from a request's Host header, which the requester
+      # controls. The default is the host the traefik rule above serves;
+      # export ALFRED_PUBLIC_URL to deploy elsewhere. Reset mail also needs
+      # EMAIL_SERVER and EMAIL_USERNAME, which the `.email` env file carries.
+      - ALFRED_PUBLIC_URL=${ALFRED_PUBLIC_URL:-https://alfred.quaternion.media}
       # Where the engine keeps media it fetched from a URL: hidden in the
       # library mount the renderer shares, never listed or served (contract
       # M6). It wrote them under the working directory's `data/`, which was
