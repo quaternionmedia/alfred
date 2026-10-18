@@ -158,7 +158,10 @@ def run_al(tmp_path):
             timeout=60,
         )
         calls = log.read_text(encoding='utf-8') if log.exists() else ''
-        result.started = ' up' in calls and 'compose' in calls
+        result.calls = calls.splitlines()
+        result.started = any(
+            'compose' in call and ' up' in call for call in result.calls
+        )
         return result
 
     return run
@@ -248,3 +251,24 @@ class TestThePortGuard:
         assert result.returncode == 1 and not result.started
         assert 'another Alfred stack, the container alfred-api-1' in result.stderr
         assert 'ALFRED_PORT=8100 ./al dev' in result.stderr
+
+
+class TestTheBrowserSuite:
+    def test_a_run_starts_from_nothing_under_a_project_of_its_own(self, run_al):
+        """`./al test` removes what its last run left, then runs.
+
+        Under <project>-e2e: test_e2e.yml's api, renderer and db share their
+        names with the dev stack's, so under the checkout's own project a run
+        took over a running dev stack's containers -- and `down --volumes`
+        would remove them. The scratch checkout's project is `checkout`.
+        """
+        result = run_al('test')
+        assert result.returncode == 0, result.stderr
+        compose = [call for call in result.calls if 'compose' in call]
+        assert compose[0].startswith(
+            'docker compose -p checkout-e2e -f test_e2e.yml down --volumes'
+        ), compose
+        assert compose[1].startswith(
+            'docker compose -p checkout-e2e -f test_e2e.yml up --build'
+        ), compose
+        assert '--exit-code-from e2e' in compose[1]

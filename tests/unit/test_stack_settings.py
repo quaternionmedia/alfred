@@ -380,3 +380,75 @@ def test_the_docs_server_listens_on_loopback_by_default():
             f'./al serves the docs with {line!r}: bind '
             '"${ALFRED_BIND:-127.0.0.1}:4000"'
         )
+
+
+# --- the browser suite's stack ---------------------------------------------
+
+E2E_OUTPUTS = (
+    'ALFRED_RENDER_DIR',
+    'ALFRED_DELIVERY_DIR',
+    'ALFRED_PREVIEW_DIR',
+    'OTTO_DOWNLOAD_DIR',
+)
+
+
+def e2e_service(service):
+    return compose_file('test_e2e.yml')['services'][service]
+
+
+def mounted_at(service, path):
+    """(source, target) of the mount `path` is on in an e2e service: the one
+    whose target is the longest prefix of it."""
+    mounts = []
+    for volume in e2e_service(service).get('volumes') or []:
+        source, target = volume.split(':')[:2]
+        target = target.rstrip('/') or '/'
+        if path == target or path.startswith(target.rstrip('/') + '/'):
+            mounts.append((source, target))
+    assert mounts, f'{path} is on no mount of the e2e {service}'
+    return max(mounts, key=lambda mount: len(mount[1]))
+
+
+@pytest.mark.parametrize('service', SERVICES)
+def test_the_browser_suite_takes_nothing_from_the_shell(service):
+    """Its settings are fixed in test_e2e.yml, so a run tests the same stack
+    on every machine, whatever the shell running it exports."""
+    environment = as_mapping(e2e_service(service).get('environment'))
+    borrowed = sorted(
+        name
+        for name, value in environment.items()
+        if value is None or '$' in str(value)
+    )
+    assert not borrowed, f'the e2e {service} takes {borrowed} from the shell'
+
+
+@pytest.mark.parametrize('setting', E2E_OUTPUTS)
+@pytest.mark.parametrize('service', SERVICES)
+def test_what_the_browser_suite_makes_is_kept_off_the_checkout(service, setting):
+    """Renders, deliveries, preview frames and fetched media go to a volume
+    of the stack's own, not through the repository mount into the checkout.
+
+    With the defaults the e2e renders landed in the working tree's
+    videos/renders/ and its local deliveries in deliveries/, where the dev
+    stack listed them as orphans.
+    """
+    environment = as_mapping(e2e_service(service).get('environment'))
+    path = environment.get(setting)
+    assert path, f'the e2e {service} does not set {setting}, so it writes the default'
+    source, _ = mounted_at(service, path)
+    declared = compose_file('test_e2e.yml').get('volumes') or {}
+    assert source in declared, (
+        f"The e2e {service}'s {setting} is {path}, on the mount of {source!r} -- "
+        'not a volume test_e2e.yml declares, so the output lands outside the '
+        'stack: in the checkout, for the repository mount.'
+    )
+
+
+@pytest.mark.parametrize('setting', ['ALFRED_RENDER_DIR', 'OTTO_DOWNLOAD_DIR'])
+def test_the_api_and_the_renderer_find_each_others_files(setting):
+    """The worker writes a render where the api looks for it, and one fetch of
+    remote media serves both: same path, same volume."""
+    api = as_mapping(e2e_service('api').get('environment'))[setting]
+    renderer = as_mapping(e2e_service('renderer').get('environment'))[setting]
+    assert api == renderer, f'{setting}: the api has {api}, the renderer {renderer}'
+    assert mounted_at('api', api) == mounted_at('renderer', renderer)

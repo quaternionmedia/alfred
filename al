@@ -468,12 +468,26 @@ elif [ $1 = "docker" -o $1 = "dock" ]; then
 
 elif [ $1 = "t" -o $1 = "test" -o $1 = "e2e" ]; then
   shift
+  # A compose project of its own. test_e2e.yml names its services api,
+  # renderer and db, as the dev stack does, and under the checkout's default
+  # project they were the dev stack's containers: a run recreated a running
+  # dev stack with the test configuration. As <project>-e2e the two never meet.
+  e2e="docker compose -p $(projectName)-e2e -f test_e2e.yml"
+  # From nothing, as CI starts. `down --volumes` removes what the last run
+  # left: its containers, the volume its renders and deliveries are on, and
+  # the anonymous volumes holding the database and the node_modules of the
+  # site and the runner. --renew-anon-volumes alone gave each run fresh ones
+  # and left the old ones behind, unused, a set per run. The last run's
+  # containers and volumes stay until the next one, for its logs and outputs:
+  #   docker compose -p <project>-e2e -f test_e2e.yml logs api
+  $e2e down --volumes --remove-orphans
   # --build, as CI runs it, so a local run tests this checkout's images rather
   # than whichever ones an earlier run left behind. --renew-anon-volumes for
-  # the same reason: the site's node_modules and the database are anonymous
-  # volumes, and compose hands a recreated container its old ones -- so after
-  # a dependency change the bundle was built against the previous install.
-  docker compose -f test_e2e.yml up --build --renew-anon-volumes --exit-code-from e2e "$@"
+  # the same reason, should `down` have left a container: the site's
+  # node_modules and the database are anonymous volumes, and compose hands a
+  # recreated container its old ones -- so after a dependency change the
+  # bundle was built against the previous install.
+  $e2e up --build --renew-anon-volumes --exit-code-from e2e "$@"
 
 elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   shift
