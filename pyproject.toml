@@ -20,7 +20,14 @@ dependencies = [
     "fastapi-users-db-beanie<2.0.0,>=1.1.4",
     "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate",
     "ujson>=5.7.0",
-    "pillow==9.5.0",
+    # 9.5 was pinned because Pillow 10 removed Image.ANTIALIAS, which moviepy
+    # 1.0.3 resizes with -- and 9.5 has every advisory since against it,
+    # CVE-2023-4863 and CVE-2024-28219 among them. The engine now restores the
+    # name when Pillow lacks it (alfred/otto/otto/__init__.py), and
+    # tests/pipeline/test_resize.py draws and encodes through that path. 12.3
+    # has no advisory open. Below 13, two days old as this is written, until
+    # it has had the same test.
+    "pillow>=12.3,<13",
     # A constraint more than a dependency: nothing here imports numpy, but
     # moviepy and the engine do, and neither bounds it. The lock held 1.24, the
     # newest numpy that still installed on Python 3.8; 1.26 is the last 1.x.

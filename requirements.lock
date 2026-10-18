@@ -61,7 +61,7 @@ numpy==1.26.4
 packaging==26.2
 passlib[bcrypt]==1.7.4
 pdfrw==0.4
-pillow==9.5.0
+pillow==12.3.0
 proglog==0.1.12
 prompt-toolkit==3.0.52
 proto-plus==1.27.1
