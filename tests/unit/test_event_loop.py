@@ -299,6 +299,25 @@ class TestRunsInAThread:
         asyncio.run(preview.sweep_frames_at_startup())
         assert seen == [False]
 
+    def test_the_font_probe_at_startup(self, monkeypatch):
+        from alfred import main
+
+        seen, written = [], []
+
+        def fc_list(command, capture_output=False):
+            seen.append(on_the_loop())
+            return SimpleNamespace(stdout=b'"DejaVu Sans-Book"\n')
+
+        class Fonts:
+            async def update_one(self, query, update, upsert=False):
+                written.append((query, update))
+
+        monkeypatch.setattr(main, 'bash', fc_list)
+        monkeypatch.setattr(main, 'get_db', lambda: SimpleNamespace(fonts=Fonts()))
+        asyncio.run(main.checkFonts())
+        assert seen == [False]
+        assert written == [({'family': 'DejaVu-Sans'}, {'$set': {'style': ['Book']}})]
+
     def test_sending_a_render_to_the_worker(self, renders):
         _, queue = renders
         res = TestClient(app).post('/render', json=render_request())
