@@ -22,6 +22,7 @@ from alfred.core.routes import (
     ProjectAPI,
     RenderAPI,
     adminAPI,
+    audioAPI,
     authAPI,
     demoAPI,
     fontAPI,
@@ -244,6 +245,11 @@ app.include_router(
 )
 app.include_router(
     mediaAPI, dependencies=[Depends(current_active_user)], tags=['media']
+)
+# How a library file sounds, from the audio engine; seen by whoever sees the
+# library.
+app.include_router(
+    audioAPI, dependencies=[Depends(current_active_user)], tags=['media']
 )
 app.include_router(
     previewAPI,

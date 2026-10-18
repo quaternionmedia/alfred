@@ -1,4 +1,5 @@
 from .admin import adminAPI
+from .audio import audioAPI
 from .auth import auth as authAPI
 from .demo import demoAPI
 from .fonts import fontAPI
@@ -13,6 +14,7 @@ from .video import videoAPI, videoFileAPI
 
 __all__ = [
     adminAPI,
+    audioAPI,
     authAPI,
     issueAPI,
     fontAPI,
