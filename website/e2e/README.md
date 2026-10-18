@@ -104,10 +104,12 @@ and its `CYPRESS_baseUrl` (`http://api/`) disagreed with `cypress.json`'s
 
 ## Verification status
 
-`./al test` on `integrate/wave-3`: **381 passed, 1 skipped, in about 4
-minutes**, across the `chromium` (workspace) and `phone` (stage flow)
-projects, including the `@slow` specs that wait on a real encode. The skip is
-data-dependent: the project filter test needs more than three projects.
+`./al test` on `fix/workspace-and-test-races`: **386 passed, 1 skipped, in
+five to six minutes**, across the `chromium` (workspace) and `phone` (stage
+flow) projects, including the `@slow` specs that wait on a real encode -- two
+runs, neither with a test passed only on retry, on a machine running other
+suites. The skip is data-dependent: the project filter test needs more than
+three projects.
 
 The three image breaks recorded when this suite replaced Cypress -- `FROM
 python` reaching 3.14, the ImageMagick 6 policy path on an ImageMagick 7 base,
