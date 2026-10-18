@@ -82,12 +82,24 @@ async function saveCaptions(request, token, project, body) {
   return res.json()
 }
 
-/** Open the project on the Edit stage, with the Captions panel open. */
+/** Bring the Captions panel into view, in either layout.
+ *
+ * On a wide screen it is a workspace tab beside Render and Deliver, mounted
+ * only while shown, so its tab is chosen; on a phone it is part of the Edit
+ * stage already. The timeline is in both layouts, so waiting for it first
+ * means the workspace has been built before its tabs are looked for.
+ */
+async function showCaptions(page) {
+  await expect(page.locator('#timeline .clip').first()).toBeVisible()
+  const tab = page.locator('#paneltab-captions')
+  if (await tab.count()) await tab.click()
+  await expect(page.locator('#panel-captions')).toBeVisible()
+}
+
+/** Open the project on the Edit stage, with the Captions panel in view. */
 async function openCaptions(page, project) {
   await page.goto(`/#!/?project=${project._id}&stage=edit`)
-  await expect(page.locator('#timeline .clip').first()).toBeVisible()
-  await page.locator('#captions-toggle').click()
-  await expect(page.locator('#panel-captions')).toBeVisible()
+  await showCaptions(page)
   await expect(page.locator('#caption-add')).toBeEnabled()
 }
 
@@ -153,7 +165,7 @@ test.describe('captions by hand', () => {
       ])
 
       await authedPage.reload()
-      await authedPage.locator('#captions-toggle').click()
+      await showCaptions(authedPage)
       await expect(rows(authedPage)).toHaveCount(2)
       await expect(rows(authedPage).first().locator('.caption-text')).toHaveValue(
         'Said first'
@@ -427,7 +439,7 @@ test.describe('transcribing the timeline', () => {
 
       engine = { configured: true, ok: false, detail: 'the audio engine at http://e: refused' }
       await authedPage.reload()
-      await authedPage.locator('#captions-toggle').click()
+      await showCaptions(authedPage)
       await expect(reason).toContainText('cannot be reached: the audio engine at http://e: refused')
       await expect(button).toBeDisabled()
     })
