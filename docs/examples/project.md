@@ -15,6 +15,9 @@ The following is a complete example of a `Project` which makes a 10 second comme
 
 ??? abstract "Layer order"
     All media items are rendered from first to last, meaning the final media listed will appear above all others.
+
+The image fields are media names like any clip's: `videos/<file>` from the server's library, or a URL on a host `ALFRED_REMOTE_MEDIA_HOSTS` lists. See the [usage notes](index.md).
+
 ## Project Data
 ``` json title="data.json"
 --8<-- "docs/examples/project.json"
@@ -32,13 +35,13 @@ The following is a complete example of a `Project` which makes a 10 second comme
       https://alfred.quaternion.media/project
     ```
 
-      A successful request returns the object, with it's `id` number.
+    A successful request answers the project as stored, with the `_id` the server gave it.
 
     ``` json title="response"
     {"_id":"61db4127e2ab4bf1fd587ddc","logic":{...}...}
     ```
 === "Read All"
-    To read a list of all projects, issue a **GET** request.
+    To read a list of your projects, issue a **GET** request. A superuser gets every project.
     ``` bash title="Get all projects"
     curl -H "Authorization: Bearer $TOKEN" \
       https://alfred.quaternion.media/project
@@ -56,14 +59,14 @@ The following is a complete example of a `Project` which makes a 10 second comme
       -H "Authorization: Bearer $TOKEN" \
       -H "Content-Type: application/json" \
       -d @data.json \
-      https://alfred.quaternion.media/project
-    ```
-=== "Delete"
-    To delete a Project, issue a **DELETE** request with the id of the project to delete.
-    ``` bash title="Update project"
-    curl -X PUT \
-      -H "Authorization: Bearer $TOKEN" \
-      -H "Content-Type: application/json" \
-      -d @data.json \
       https://alfred.quaternion.media/project/$PROJECT_ID
     ```
+    The body replaces the project: a field it leaves out is emptied. The project's owner and captions are kept as they are. `PUT /project/$PROJECT_ID/timeline` writes the timeline alone, and `PUT /project/$PROJECT_ID/settings` its render settings and destination alone.
+=== "Delete"
+    To delete a Project, issue a **DELETE** request with the id of the project to delete.
+    ``` bash title="Delete project"
+    curl -X DELETE \
+      -H "Authorization: Bearer $TOKEN" \
+      https://alfred.quaternion.media/project/$PROJECT_ID
+    ```
+    This answers the project as it was.
