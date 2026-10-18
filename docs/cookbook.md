@@ -238,15 +238,6 @@ buttons.
   actually shown, rather than a list of names kept by hand. The text is
   measured, not the element, so padding cannot count.
 
-- **the move tool asks for `swap_horizontal`, which the font does not have**
-
-  A defect, pinned rather than hidden. Material Icons calls the icon
-  `swap_horiz`. The font draws that glyph for the first ten letters of
-  TimelineTools.js's name and blank space for the last five, so the button
-  looks right while its text is six ems wide in a one-em box -- with the
-  CDN font as with this one. Fixing the name fails this test; then delete
-  it, and the name from NOT_IN_THE_FONT.
-
 
 ## auth
 
