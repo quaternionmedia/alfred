@@ -35,7 +35,7 @@ class Render:
 ## `quality`
 : `#!python str = 'standard'`
 
-    How the video is encoded, as one of the server's presets: `draft` encodes fastest and smallest, `high` slowest and best, and `standard` sits between them. The preset decides the encoder's settings, and a request carrying `bitrate` or `ffmpeg_params` is refused with a 422.
+    How the video is encoded, as one of the server's presets: `draft` encodes fastest at the lowest quality, `high` slowest at the highest, and `standard` sits between them. The preset decides the encoder's settings, and a request carrying `bitrate` or `ffmpeg_params` is refused with a 422.
 
 ## `name`, `project`, `project_id`, `description`
 : `#!python str`
@@ -45,7 +45,7 @@ class Render:
 ## `duration`
 : `#!python float`
 
-    Kept with the render as sent; it does not change the video. The `Edl`'s own `duration`, or else the end of its last clip, decides how long the video runs.
+    Kept with the render as sent; it does not change the video. The `Edl`'s own `duration`, or else the end of whichever clip ends last, decides how long the video runs.
 
 ## `captions`, `caption_style`
 : `#!python List[Caption]`, `#!python CaptionStyle`
