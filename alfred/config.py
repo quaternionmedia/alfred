@@ -292,3 +292,12 @@ class CeleryConfig:
     event_serializer = 'json'
     accept_content = ['json']
     result_accept_content = ['json']
+
+    # How often a process waiting on the MongoDB broker looks for a message,
+    # in seconds; kombu's default is 1. `GET /health` counts workers with a
+    # Celery ping, and a worker hears a ping the next time it looks -- so at
+    # 1 s a reply could take longer than the ping's own one-second timeout,
+    # and a running renderer would intermittently be reported missing. Half a
+    # second answers well inside it, for one cheap query a second per queue
+    # on an idle worker. Queued renders are picked up sooner as well.
+    broker_transport_options = {'polling_interval': 0.5}

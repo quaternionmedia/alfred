@@ -2,6 +2,7 @@ from .admin import adminAPI
 from .auth import auth as authAPI
 from .demo import demoAPI
 from .fonts import fontAPI
+from .health import healthAPI
 from .issue import issueAPI
 from .media import mediaAPI
 from .preview import previewAPI, previewFrameAPI
@@ -15,6 +16,7 @@ __all__ = [
     authAPI,
     issueAPI,
     fontAPI,
+    healthAPI,
     mediaAPI,
     videoAPI,
     videoFileAPI,

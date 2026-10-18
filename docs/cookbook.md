@@ -610,6 +610,28 @@ waiting for the encode.
 - **an unknown destination is refused**
 - **delivery requires authentication**
 
+## health
+
+Whether the stack can do its work.
+
+# Recipe: is a renderer running?
+
+A render waits in `queued` until a worker takes it. On a stack with no
+worker -- the thin stack runs none -- it waited for ever, and nothing could
+say why. `GET /health` says how many render workers answer and how many
+jobs are waiting (contract M3); `GET /healthz` answers container health
+checks with no session and nothing behind it.
+
+This stack runs a worker against a database that starts empty, which is
+also the case where a worker used to be deaf to pings until it restarted.
+
+### health
+
+- **GET /healthz answers with no session**
+- **GET /health needs a session**
+- **GET /health has the contract fields**
+- **the running worker answers, so the renderer is ok**
+
 ## login
 
 ### login UI

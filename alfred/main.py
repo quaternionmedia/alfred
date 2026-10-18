@@ -25,6 +25,7 @@ from alfred.core.routes import (
     authAPI,
     demoAPI,
     fontAPI,
+    healthAPI,
     issueAPI,
     mediaAPI,
     previewAPI,
@@ -174,6 +175,10 @@ def _isIdentifierParseError(exc):
 
 
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
+
+# `/healthz` answers without a session, for container health checks; `/health`
+# requires one, and says whether a renderer is running (contract M3).
+app.include_router(healthAPI, tags=['health'])
 
 if DEV_SKIP_AUTH:
     # Registered before the fastapi-users router so this match wins; FastAPI
