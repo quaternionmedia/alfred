@@ -319,6 +319,26 @@ class TestRunsInAThread:
         assert res.status_code == 202, res.text
         assert queue.on_the_loop == [False]
 
+    def test_reading_a_subtitle_file(self, transcribable, monkeypatch):
+        from alfred.core.routes import captions
+
+        project, _ = transcribable
+        seen = []
+        real = captions.parse
+
+        def parse(format, text):
+            seen.append(on_the_loop())
+            return real(format, text)
+
+        monkeypatch.setattr(captions, 'parse', parse)
+        res = TestClient(app).post(
+            f'/project/{project["_id"]}/captions/import',
+            json={'format': 'srt', 'text': '1\n00:00:01,000 --> 00:00:02,500\nHello\n'},
+        )
+        assert res.status_code == 200, res.text
+        assert res.json()['captions'] == [{'start': 1.0, 'end': 2.5, 'text': 'Hello'}]
+        assert seen == [False]
+
     def test_mailing_an_issue_with_a_render(self, renders, monkeypatch):
         from alfred.core.routes import issue
 

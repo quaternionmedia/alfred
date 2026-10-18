@@ -237,7 +237,11 @@ async def importProjectCaptions(
     """
     await owned(store, item_id, user)
     try:
-        parsed = parse(upload.format, upload.text)
+        # In the thread pool: a file at MAX_IMPORT_CHARS takes most of a second
+        # to read, and on the loop that was a second in which the api answered
+        # nothing else, for any signed-in caller to ask for as often as they
+        # liked.
+        parsed = await run_in_threadpool(parse, upload.format, upload.text)
     except CaptionFormatError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return ImportedCaptions(captions=parsed.captions, skipped=parsed.skipped)
