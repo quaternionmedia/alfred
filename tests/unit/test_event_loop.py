@@ -45,6 +45,7 @@ from alfred.core.routes import demo, preview
 from alfred.core.utils.media import is_library_filename
 from alfred.main import app
 from tests.unit.render_harness import (
+    ADMIN,
     OWNER,
     TEMPLATE_EDL,
     FakeQueue,
@@ -317,6 +318,49 @@ class TestRunsInAThread:
         res = TestClient(app).post(f'/project/{project["_id"]}/captions/transcribe')
         assert res.status_code == 202, res.text
         assert queue.on_the_loop == [False]
+
+    def test_mailing_an_issue_with_a_render(self, renders, monkeypatch):
+        from alfred.core.routes import issue
+
+        store, _ = renders
+        render = make_render(username=OWNER.email)
+        store.renders[render.id] = render
+        seen = []
+
+        def send(**message):
+            seen.append(on_the_loop())
+            return True
+
+        monkeypatch.setattr(issue, 'sendMail', send)
+        res = TestClient(app).post(f'/render/{render.id}/report', json='it went dark')
+        assert res.status_code == 200, res.text
+        assert seen == [False]
+
+    def test_making_and_mailing_an_invoice(self, monkeypatch):
+        from alfred.core.routes import admin
+
+        seen = []
+
+        def generate(client, start, end):
+            seen.append(('invoice', on_the_loop()))
+            return []
+
+        def send(**message):
+            seen.append(('mail', on_the_loop()))
+            return True
+
+        monkeypatch.setattr(admin, 'generate_invoice', generate)
+        monkeypatch.setattr(admin, 'sendMail', send)
+        overrides = as_user(app, ADMIN)
+        try:
+            res = TestClient(app).post(
+                '/invoice?client=c@example.com&startDate=2026-09-01&endDate=2026-10-01'
+            )
+        finally:
+            for dependency in overrides:
+                app.dependency_overrides.pop(dependency, None)
+        assert res.status_code == 200, res.text
+        assert seen == [('invoice', False), ('mail', False)]
 
 
 class TestDemoMediaWhileOtherRequestsRun:
