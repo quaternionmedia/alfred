@@ -314,12 +314,13 @@ not require a broker.
    refused. Nothing currently tests any authorization boundary.
 4. `GET /render` requires authentication.
 
-**Where it stands.** Covered without a database, as the status above says,
-and two items read differently now. The task carries the name of a quality
-preset rather than `ffmpeg_params`, which a request may no longer send
-(`unit/test_render_requests.py`). And a render's owner may re-queue it while
-anyone else gets a 404, which `unit/test_render_ownership.py` tests along
-with every other render route's boundary.
+**Where it stands.** Covered without a database, as the status above says.
+Items 2 and 3 describe the API the plan was written against. The task
+carries the name of a quality preset, not `ffmpeg_params`, which a request
+may not send (`unit/test_render_requests.py`). A render's owner or a
+superuser may re-queue it, and anyone else gets a 404, which
+`unit/test_render_ownership.py` tests along with every other render route's
+boundary.
 
 ---
 
