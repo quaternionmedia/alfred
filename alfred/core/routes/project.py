@@ -12,23 +12,13 @@ from alfred.config import DB_NAME, DB_URL
 from ..models import Project, ProjectUpdate, RenderSettings
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
 from ..utils.db import User, get_client
+from ..utils.ownership import owner_filter, owner_key
 from .users import current_active_user
 
-
-def visible_to(user):
-    """The query that restricts projects to the ones `user` may touch.
-
-    Superusers see everything, including projects stored before ownership
-    existed. Everybody else sees the projects they own, and a project without
-    an owner matches no email, so it is superuser-only by construction rather
-    than by a separate rule someone could forget.
-
-    One function for listing and for every single-project route, so "can I
-    see it in the list" and "can I open it" cannot disagree.
-    """
-    if user.is_superuser:
-        return {}
-    return {'owner': user.email}
+# Where a project keeps its owner key. Every query below scopes itself with
+# `owner_filter(user, OWNER)`, the same rule the renders use, so "can I see it
+# in the list" and "can I open it" cannot disagree -- here or across the two.
+OWNER = 'owner'
 
 
 class ProjectSettings(BaseModel):
@@ -150,7 +140,7 @@ class ProjectAPI(MotorCRUDRouter):
             # traceback with every request (see `bucket.fresh`).
             raise fresh(INVALID_ID)
         project = await self.schema.find_one(
-            {'_id': ObjectId(item_id), **visible_to(user)}
+            {'_id': ObjectId(item_id), **owner_filter(user, OWNER)}
         )
         if project is None:
             raise fresh(NOT_FOUND)
@@ -167,7 +157,7 @@ class ProjectAPI(MotorCRUDRouter):
             user: User = Depends(current_active_user),
         ):
             skip, limit = pagination.get('skip'), pagination.get('limit')
-            query = self.schema.find(visible_to(user)).skip(skip or 0)
+            query = self.schema.find(owner_filter(user, OWNER)).skip(skip or 0)
             return await query.to_list(limit or 100)
 
         return route
@@ -187,7 +177,7 @@ class ProjectAPI(MotorCRUDRouter):
             # with a project the caller cannot see, and the duplicate-key
             # error would confirm that it exists.
             model.id = None
-            model.owner = user.email
+            model.owner = owner_key(user)
             return await model.create()
 
         return route

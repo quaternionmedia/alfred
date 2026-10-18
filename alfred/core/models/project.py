@@ -24,8 +24,10 @@ class Project(Document):
     logic: dict
     fields: Optional[List]
     name: Optional[str]
-    # Whose project this is: the email of the account that created it, the
-    # same identity a render records in `username`.
+    # Whose project this is: the owner key of the account that created it --
+    # its email, today -- the same identity a render records in `username`.
+    # `utils.ownership` decides both, and docs/ownership.md is why the email
+    # is a key on its way out.
     #
     # Set by the server on every path that creates a project, and never taken
     # from a request -- a body that names an owner has it replaced on create

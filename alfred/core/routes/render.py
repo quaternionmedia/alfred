@@ -30,6 +30,7 @@ from ..utils.destinations import (
 )
 from ..utils.encoding import QUALITIES, UnknownQuality, preset_for
 from ..utils.media import RefusedEdl, check_edl, output_path
+from ..utils.ownership import may_access, owner_filter, owner_key
 from ..utils.tasks import renderRemote
 from .templates import TEMPLATE_NAMES
 from .users import current_active_user
@@ -47,9 +48,8 @@ class RenderStore:
     async def get(self, render_id) -> Optional[Render]:
         return await Render.get(PydanticObjectId(render_id))
 
-    async def list(self, owner: Optional[str], skip: int, limit: int) -> list:
-        """Newest first; only `owner`'s renders, unless `owner` is None."""
-        query = {} if owner is None else {'username': owner}
+    async def list(self, query: dict, skip: int, limit: int) -> list:
+        """Newest first; the renders matching `query`, an `owner_filter`."""
         return await Render.find(query).sort('-_id').skip(skip).to_list(limit)
 
     async def insert(self, render: Render) -> None:
@@ -89,13 +89,12 @@ async def load_render(store: RenderStore, item_id: str) -> Render:
 def can_access(render: Render, user) -> bool:
     """Whether `user` may see and act on `render` (contract C6).
 
-    Its owner -- `render.username`, the creating user's email -- or a
+    Its owner -- `render.username`, the creating user's owner key -- or a
     superuser. A render stored without an owner is a superuser's alone:
-    there is nobody else it can be attributed to.
+    there is nobody else it can be attributed to. The rule is the projects'
+    too, and lives in `utils.ownership`.
     """
-    if getattr(user, 'is_superuser', False):
-        return True
-    return render.username is not None and render.username == user.email
+    return may_access(render.username, user)
 
 
 async def load_owned_render(store: RenderStore, item_id: str, user) -> Render:
@@ -302,8 +301,8 @@ class RenderAPI(MotorCRUDRouter):
             The caller's renders, newest first; every render for a superuser.
             This listed every user's renders to anyone signed in.
             """
-            owner = None if user.is_superuser else user.email
-            return await store.list(owner, skip or 0, limit or 100)
+            visible = owner_filter(user, 'username')
+            return await store.list(visible, skip or 0, limit or 100)
 
         @self.post('', *args, **kwargs)
         async def queueRender(
@@ -320,7 +319,7 @@ class RenderAPI(MotorCRUDRouter):
             # that depends on it is written with the document instead of by a
             # second update a moment later.
             render.id = PydanticObjectId()
-            render.username = user.email
+            render.username = owner_key(user)
             render.quality = quality
             # The id alone names the file. It was project, description, size,
             # quality, duration and a timestamp -- every part but the id taken

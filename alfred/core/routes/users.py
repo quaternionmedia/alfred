@@ -2,7 +2,7 @@ from time import time
 from typing import Optional
 
 from beanie import PydanticObjectId
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request
 from fastapi_users import BaseUserManager, FastAPIUsers
 from fastapi_users.authentication import (
     AuthenticationBackend,
@@ -16,6 +16,12 @@ from alfred import config
 from alfred.config import DEV_SKIP_AUTH, DEV_USER_EMAIL, SECRET_KEY
 
 from ..utils.db import User, get_user_db
+from ..utils.ownership import changes_owner_key
+
+EMAIL_IS_THE_OWNER_KEY = (
+    "An account's email address cannot be changed: its projects and renders "
+    'are recorded against it, and changing it would leave them behind.'
+)
 
 
 def announce_token(purpose, user, token):
@@ -50,6 +56,24 @@ class UserManager(
 ):
     reset_password_token_secret = SECRET_KEY
     verification_token_secret = SECRET_KEY
+
+    async def update(self, user_update, user, safe=False, request=None):
+        """Change an account -- but never its owner key (contract M5).
+
+        Projects and renders record their owner by email, so an email change
+        was an ownership change nobody asked for: the account kept its id and
+        lost every project and render recorded against the old address, which
+        went on matching nobody. Refused with 422, for superusers editing
+        anyone too, until the key is the user id (docs/ownership.md).
+
+        Here rather than on a route because both `PATCH /users/me` and
+        `PATCH /users/{id}` arrive through this method, and neither route is
+        ours to edit. Sending the address the account already has is not a
+        change, and passes.
+        """
+        if changes_owner_key(user, user_update.create_update_dict_superuser()):
+            raise HTTPException(status_code=422, detail=EMAIL_IS_THE_OWNER_KEY)
+        return await super().update(user_update, user, safe=safe, request=request)
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")

@@ -27,6 +27,7 @@ from pydantic import BaseModel
 from alfred.config import VIDEO_DIR
 
 from ..utils.db import User
+from ..utils.ownership import owner_key
 from .users import current_active_user
 
 demoAPI = APIRouter()
@@ -156,13 +157,13 @@ async def generateDemoProject(user: User = Depends(current_active_user)):
     # e2e suite raced it immediately and ended up with two projects called
     # Demo. An upsert with $setOnInsert leaves the decision to MongoDB.
     collection = Project.get_motor_collection()
-    mine = {'name': DEMO_PROJECT_NAME, 'owner': user.email}
+    mine = {'name': DEMO_PROJECT_NAME, 'owner': owner_key(user)}
     # The document *before* the update, so None means this call is the one that
     # created it. Asking for the document after would return one either way and
     # make `created` permanently false.
     previous = await collection.find_one_and_update(
         mine,
-        {'$setOnInsert': _demo_project_document(owner=user.email)},
+        {'$setOnInsert': _demo_project_document(owner=owner_key(user))},
         upsert=True,
         return_document=False,
     )

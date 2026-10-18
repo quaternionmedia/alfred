@@ -1,22 +1,21 @@
-"""Every project route, the rule they share, and who owns the seeded projects.
+"""Every project route, the field they share, and who owns the seeded projects.
 
 The behaviour -- your projects and nobody else's, superusers see all, legacy
 projects are superuser-only -- is asserted against a database in
-`integration/test_project_ownership.py`. What is pinned here needs no
-database: the complete list of project routes, so one added later has to be
-looked at rather than slipping past ownership because the crud router made it
-easy; the visibility rule itself; and the seed owner setting.
+`integration/test_project_ownership.py`, and the rule itself, shared with the
+renders, in `test_ownership.py`. What is pinned here needs no database: the
+complete list of project routes, so one added later has to be looked at rather
+than slipping past ownership because the crud router made it easy; the owner
+field; and the seed owner setting.
 """
 
 import inspect
-from types import SimpleNamespace
 
 import pytest
 from fastapi import params
 
 from alfred.config import DEFAULT_DEV_USER_EMAIL, resolve_seed_owner
 from alfred.core.models import Project
-from alfred.core.routes.project import visible_to
 from alfred.core.routes.users import current_active_user
 
 # The whole surface. A route added here is a decision about who may use it;
@@ -79,15 +78,7 @@ class TestTheRoutes:
         ), f'{method} {path} does not receive the calling user'
 
 
-class TestTheRule:
-    def test_a_superuser_is_not_filtered(self):
-        root = SimpleNamespace(is_superuser=True, email='root@example.com')
-        assert visible_to(root) == {}
-
-    def test_anyone_else_is_filtered_to_their_own(self):
-        alice = SimpleNamespace(is_superuser=False, email='alice@example.com')
-        assert visible_to(alice) == {'owner': 'alice@example.com'}
-
+class TestTheOwnerField:
     def test_ownership_is_optional_on_the_model(self):
         """Projects stored before ownership must still load.
 

@@ -94,10 +94,12 @@ class FakeRenderStore:
     async def get(self, render_id) -> Optional[object]:
         return self.renders.get(PydanticObjectId(render_id))
 
-    async def list(self, owner, skip, limit):
+    async def list(self, query, skip, limit):
+        """The route hands over an `owner_filter`: field equality, or nothing."""
         renders = sorted(self.renders.values(), key=lambda r: r.id, reverse=True)
-        if owner is not None:
-            renders = [r for r in renders if r.username == owner]
+        renders = [
+            r for r in renders if all(getattr(r, k) == v for k, v in query.items())
+        ]
         return renders[skip : skip + limit]
 
     async def insert(self, render):
