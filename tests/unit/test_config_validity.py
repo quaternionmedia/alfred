@@ -270,7 +270,7 @@ def test_what_the_model_accepts_the_engine_refuses_at_render_time(overrides, fie
     """
     template = dict(type='template', name='makeColor', data={'color': '#000000'})
     clip = Clip.parse_obj(clip_dict(**template, **overrides))
-    with pytest.raises(EdlException, match=rf"clip 0 \('makeColor'\): .*{field}"):
+    with pytest.raises(EdlException, match=rf"clip 1 \('makeColor'\): .*{field}"):
         generateEdl(Edl(clips=[clip]), moviesize=(64, 48))
 
 

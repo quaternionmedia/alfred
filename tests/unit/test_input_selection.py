@@ -119,7 +119,7 @@ def test_a_refused_download_stops_the_render_at_its_clip(
     with pytest.raises(EdlException, match='not allowed') as refused:
         generateEdl(Edl(clips=[clip]), moviesize=(64, 48))
 
-    assert "clip 0 ('https://example.test/bad')" in str(refused.value)
+    assert "clip 1 ('https://example.test/bad')" in str(refused.value)
     assert clip.name == 'https://example.test/bad'
 
 
@@ -141,7 +141,7 @@ def _template_clip(duration=1.0, color='#ff0000'):
 
 
 def test_an_unknown_clip_type_is_refused_naming_the_clip():
-    with pytest.raises(EdlException, match=r"clip 0 \('x'\): unknown clip type"):
+    with pytest.raises(EdlException, match=r"clip 1 \('x'\): unknown clip type"):
         generateEdl(Edl(clips=[Clip(type='bogus', name='x', duration=1)]))
 
 
@@ -158,7 +158,7 @@ def test_an_unknown_clip_type_after_a_valid_clip_is_refused_not_duplicated():
             Clip(type='bogus', name='x', duration=4.0),
         ]
     )
-    with pytest.raises(EdlException, match=r"clip 1 \('x'\): unknown clip type"):
+    with pytest.raises(EdlException, match=r"clip 2 \('x'\): unknown clip type"):
         generateEdl(edl, moviesize=(64, 48))
 
 
@@ -181,7 +181,7 @@ def test_an_unknown_template_name_is_refused_naming_the_clip():
         type='template', name='no_such_template', duration=1, data=TemplateData()
     )
     with pytest.raises(
-        EdlException, match=r"clip 0 \('no_such_template'\): no template is named"
+        EdlException, match=r"clip 1 \('no_such_template'\): no template is named"
     ):
         generateEdl(Edl(clips=[clip]), moviesize=(64, 48))
 

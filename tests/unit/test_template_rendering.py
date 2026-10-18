@@ -43,7 +43,7 @@ class TestTheContractWithoutRendering:
         no ImageMagick.
         """
         clip = Clip(type='template', name='title', duration=1, data=TemplateData())
-        with pytest.raises(EdlException, match=r"clip 0 \('title'\)") as refused:
+        with pytest.raises(EdlException, match=r"clip 1 \('title'\)") as refused:
             generateEdl(Edl(clips=[clip]), moviesize=(64, 48))
 
         assert "template 'title' could not be built" in str(refused.value)
