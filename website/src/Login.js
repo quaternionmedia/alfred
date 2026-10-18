@@ -228,9 +228,11 @@ export function askForReset(email) {
     .request('/auth/forgot-password', { method: 'POST', body: { email } })
     .then(
       () => {
+        // Not the address itself: alertify draws its messages as HTML, and
+        // this one would draw whatever was typed into the field.
         message(
-          `If ${email} has an account, a link to choose a new password is on ` +
-            'its way to it. If nothing arrives, ask an administrator.',
+          'If that address has an account, a link to choose a new password ' +
+            'is on its way to it. If nothing arrives, ask an administrator.',
           12
         )
         return true
