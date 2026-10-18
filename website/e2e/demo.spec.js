@@ -148,6 +148,14 @@ test.describe('the empty state offers a way out', () => {
         ? route.fulfill({ status: 200, body: '[]' })
         : route.continue()
     )
+    // The library is read from `GET /media` (lengths, kinds, signed URLs),
+    // and `/videos` only where that route is missing -- so an empty install is
+    // empty at both, or the panel shows the real library from `/media`.
+    await page.route('**/media', route =>
+      route.request().method() === 'GET'
+        ? route.fulfill({ status: 200, contentType: 'application/json', body: '[]' })
+        : route.continue()
+    )
 
     // Navigate, then reload.
     //
