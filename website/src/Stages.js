@@ -6,7 +6,8 @@ import { Edl } from './Video'
 import { TemplateEditor } from './TemplateEditor'
 import { Magnussens } from './Magnussens'
 import { queueRender, renderSize, timelineRender } from './RenderRequest'
-import { RenderStatus, isSettled, renderState } from './RenderStatus'
+import { OFFLINE_DELAY, RenderStatus, isSettled, renderState } from './RenderStatus'
+import { Health, RendererNotice } from './Health'
 import { blobProblem, downloadRender } from './Download'
 import { requestProblem } from './Problem'
 import { addClip, mediaClip, templateClip } from './Clips'
@@ -235,12 +236,28 @@ const LiveList = {
     const waiting = LiveList.waiting()
     if (!waiting.length) return
     const seen = waiting.map(r => `${r._id}:${r.status}:${r.progress}`).join('|')
-    LiveList.delay = seen === LiveList.seen ? Math.min(LiveList.delay * 1.6, 15000) : 2000
+    // Nothing queued can move while no renderer runs, so the list is asked
+    // for rarely then -- and quickly again once one starts (see below).
+    const stuck =
+      Health.rendererDown() && waiting.every(r => renderState(current(r)) === 'queued')
+    LiveList.delay = stuck
+      ? OFFLINE_DELAY
+      : seen === LiveList.seen
+        ? Math.min(LiveList.delay * 1.6, 15000)
+        : 2000
     LiveList.seen = seen
     LiveList.timer = setTimeout(() => {
       LiveList.timer = null
       if (LiveList.active && User.loggedIn) Flow.loadRenders()
     }, LiveList.delay)
+  },
+
+  /** Refresh soon, at the quick pace again. */
+  hurry: () => {
+    clearTimeout(LiveList.timer)
+    LiveList.timer = null
+    LiveList.seen = null
+    LiveList.kick()
   },
 
   start: () => {
@@ -254,6 +271,11 @@ const LiveList = {
     LiveList.timer = null
   },
 }
+
+// A renderer has started: whatever was queued can move now.
+Health.listen(down => {
+  if (!down) LiveList.hurry()
+})
 
 // A watched render that settles changes the list (a filename, a status), and
 // a watcher that fell back to reading the list has the whole of it in hand.
@@ -669,6 +691,10 @@ const ProjectCard = () => ({
 
 /** Stage 3 -- queue a render of what is on the timeline. */
 const RenderPanel = {
+  // Whether anything is there to render the timeline, while it is on offer.
+  oninit: () => Health.watch('render'),
+  onupdate: () => Health.catchUp(),
+  onremove: () => Health.unwatch('render'),
   view: () => {
     const project = Flow.project()
 
@@ -684,6 +710,7 @@ const RenderPanel = {
     if (formDriven) {
       return m('.stagepanel#panel-render', [
         m('h3', 'Render from the project form'),
+        m(RendererNotice),
         m('p.stagenote', [
           'This project builds its clips from a form rather than from the ',
           'timeline. ',
@@ -721,6 +748,9 @@ const RenderPanel = {
 
     return m('.stagepanel#panel-render', [
       m('h3', 'Render'),
+      // Said before the button, not after the render has sat queued for a
+      // while: a render queued now will wait for a renderer to start.
+      m(RendererNotice),
       m('.renderfields', [
         m('label', ['Width', m('input#render-width', sizeInput('width'))]),
         m('label', ['Height', m('input#render-height', sizeInput('height'))]),
@@ -783,8 +813,13 @@ const DeliverPanel = {
   oninit: () => {
     LiveList.start()
     Flow.loadRenders()
+    Health.watch('deliver')
   },
-  onremove: () => LiveList.stop(),
+  onupdate: () => Health.catchUp(),
+  onremove: () => {
+    LiveList.stop()
+    Health.unwatch('deliver')
+  },
   view: () =>
     m('.stagepanel#panel-deliver', [
       m('.panelhead', [
@@ -799,6 +834,9 @@ const DeliverPanel = {
           ),
         ]),
       ]),
+
+      // Why a queued render is not moving, where the queued renders are.
+      m(RendererNotice),
 
       Flow.renders.length
         ? m(

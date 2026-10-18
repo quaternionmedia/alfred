@@ -268,6 +268,20 @@ enabled. Once it has settled nothing goes on asking about it.
   so nothing is watching it by id. The stage refreshes its list while
   anything on it is unfinished.
 
+### when no renderer is running
+
+# Recipe: knowing why a render is not moving
+
+With no render worker running, a queued render stays queued. The Render
+and Deliver stages say so -- "No renderer is running -- renders stay
+queued" -- from the server's own health check (`GET /health`), and the
+page asks about a queued render rarely until a renderer starts, then
+promptly again. A server that cannot say leaves the stages as they were.
+
+- **the Render and Deliver stages say so**
+- **with a renderer running, nothing is said**
+- **a server without the health check is asked once, and nothing is said**
+- **a queued render is asked about rarely, and promptly once a renderer starts**
 ### a finished render can be downloaded
 
 # Recipe: getting the video back
