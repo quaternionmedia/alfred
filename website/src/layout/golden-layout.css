@@ -1,0 +1,13 @@
+/*
+ * Golden Layout's own stylesheets, bundled with the app like everything else
+ * it shows (assets.spec.js holds every stylesheet to the app's origin): the
+ * structure, then the dark theme. workspace.scss, imported after this,
+ * adjusts the theme to alfred's palette.
+ *
+ * Imported from a stylesheet rather than from JavaScript: golden-layout's
+ * package declares `"sideEffects": false`, which entitles a bundler to drop a
+ * bare `import 'golden-layout/...css'` from a script, and parcel's `npm:`
+ * scheme is how a stylesheet names a file in node_modules.
+ */
+@import 'npm:golden-layout/dist/css/goldenlayout-base.css';
+@import 'npm:golden-layout/dist/css/themes/goldenlayout-dark-theme.css';

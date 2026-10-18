@@ -4,6 +4,21 @@ var state = require("./Globals").state
 import { Video, Edl } from './Video'
 import { Player } from './Player'
 
+/**
+ * Where along a bar the pointer is, from 0 to 1, measured on the bar's own box.
+ *
+ * It was `pageX` less `offsetLeft`: one measured from the page, the other
+ * from the nearest positioned ancestor, which agree only while the bar sits
+ * in no positioned box. A workspace panel is one, and a scrub landed as far
+ * from the pointer as the panel was from the page's edge. The zoom bar
+ * (Scale.js) measures the same way.
+ */
+const along = event => {
+  const box = event.target.getBoundingClientRect()
+  if (!(box.width > 0)) return 0
+  return Math.min(1, Math.max(0, (event.clientX - box.left) / box.width))
+}
+
 module.exports = {
   formatTime: (seconds) => {
     const h = Math.floor(seconds / 3600);
@@ -34,16 +49,13 @@ module.exports = {
         ]
       })
       .on('dragmove',  (event) => {
-        const sliderWidth = event.target.offsetWidth - event.target.offsetLeft
-        const value = Math.max((event.pageX - event.target.offsetLeft) / sliderWidth, 0)
+        const value = along(event)
         const t = (value*Edl.duration()).toFixed(2)
-        console.log('sliding to', t, value, event, event.pageX, sliderWidth, event.target.offsetLeft)
         event.target.style.paddingLeft = 100*value.toFixed(4) + '%'
         event.target.setAttribute('data-value', t)
     })
     .on('dragend', (event) => {
-      const sliderWidth = event.target.offsetWidth - event.target.offsetLeft
-      const value = Math.max((event.pageX - event.target.offsetLeft) / sliderWidth, 0)
+      const value = along(event)
       const t = (value*Edl.duration()).toFixed(2)
       // Through the transport, so the video element follows the scrub rather
       // than staying where it was until the next clip boundary.

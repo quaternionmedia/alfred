@@ -1,6 +1,7 @@
 // The captions panel and the caption overlay. Everything here is scoped to
-// their own classes, so the panel can sit wherever the page puts it -- the
-// Edit stage today, a workspace panel tomorrow -- and style nothing else.
+// their own classes, so the panel can sit wherever the layout puts it -- a
+// workspace tab on a wide screen, the Edit stage on a phone -- and style
+// nothing else.
 
 $rule: 1px solid #2e2e2e;
 $muted: #8f8f8f;
@@ -11,35 +12,6 @@ $problem: #e57373;
 // The viewer, made the box the overlay lies over.
 .head.captioned {
   position: relative;
-}
-
-// The Edit stage's placement: one line until opened.
-.captionsdrawer {
-  padding: 0 0.75rem;
-  background: #161616;
-  border-bottom: $rule;
-  color: $text;
-
-  .disclosure {
-    margin: 0.2rem 0;
-    padding: 0.2rem 0.4rem;
-    border: 0;
-    background: transparent;
-    color: $muted;
-    font: inherit;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    cursor: pointer;
-
-    &:hover {
-      color: $text;
-    }
-  }
-
-  .captionsdrawerbody {
-    border-top: $rule;
-  }
 }
 
 #caption-overlay {

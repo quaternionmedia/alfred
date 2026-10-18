@@ -40,13 +40,13 @@ export function ScaleBar() {
           ]
         })
         .on('dragmove',  (event) => {
-          // const sliderWidth = interact.getElementRect(event.target.parentNode).width
-          let sliderWidth = event.target.offsetWidth
-          let p = Math.max(event.pageX - event.target.offsetLeft, 0) / sliderWidth
-          // event.target.style.paddingLeft = p*100 + '%'
+          // Measured on the bar's own box, as the transport's bar is
+          // (Slider.js): `pageX` less `offsetLeft` mixed the page's origin
+          // with the nearest positioned ancestor's, and the timeline's tools
+          // sit in one (`position: sticky`), as does every workspace panel.
+          const box = event.target.getBoundingClientRect()
+          const p = box.width > 0 ? Math.min(1, Math.max(0, (event.clientX - box.left) / box.width)) : 0
           const value = logslider(p).toFixed(4)
-          console.log('scale:', value, 'padding:', p)
-          // event.target.setAttribute('data-value', value)
           state.scale(value)
           m.redraw()
       })

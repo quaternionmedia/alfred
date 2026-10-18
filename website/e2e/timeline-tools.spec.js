@@ -157,6 +157,9 @@ test.describe('trim, by mouse', () => {
 
     await authedPage.locator('#TTools [data-tool="trim"]').click()
     const clip = authedPage.locator('#timeline .clip').first()
+    // On screen first, as onClip below does: a drag is pointer events at a
+    // point, and on a phone the clip can be scrolled out of its region.
+    await clip.scrollIntoViewIfNeeded()
     const box = await clip.boundingBox()
 
     // Grabbed near its end and dragged well past it, over the next clip: the
@@ -190,6 +193,7 @@ test.describe('by touch', () => {
     await authedPage.locator('#TTools [data-tool="trim"]').click()
 
     const clip = authedPage.locator('#timeline .clip').first()
+    await clip.scrollIntoViewIfNeeded()
     const box = await clip.boundingBox()
     const y = box.y + box.height / 2
     await touchDrag(authedPage, { x: box.x + box.width - 6, y }, { x: box.x + box.width + 94, y })
@@ -210,6 +214,7 @@ test.describe('by touch', () => {
     const [a, b] = project.edl.clips
     expect(await seconds(authedPage)).toBe(0)
 
+    await authedPage.locator('#timeline .clip').nth(1).scrollIntoViewIfNeeded()
     const second = await authedPage.locator('#timeline .clip').nth(1).boundingBox()
     await authedPage.touchscreen.tap(second.x + second.width / 2, second.y + second.height / 2)
 
@@ -226,6 +231,8 @@ test.describe('by touch', () => {
      * press would jump the playhead every time someone scrolled.
      */
     await openMediaProject(authedPage, request, token)
+    // On screen, or the swipe lands on nothing and proves nothing.
+    await authedPage.locator('#timeline .clip').nth(1).scrollIntoViewIfNeeded()
     const second = await authedPage.locator('#timeline .clip').nth(1).boundingBox()
     const y = second.y + second.height / 2
     await touchDrag(authedPage, { x: second.x + second.width - 4, y }, { x: second.x - 60, y })

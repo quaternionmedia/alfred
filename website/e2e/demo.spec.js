@@ -199,10 +199,12 @@ test.describe('the empty state offers a way out', () => {
      */
     await asEmptyInstall(authedPage, '/#!/?stage=source')
 
-    const empties = authedPage.locator('#panel-source .stageempty')
-    const count = await empties.count()
-    expect(count).toBeGreaterThan(0)
-    for (let i = 0; i < count; i++) {
+    // The Source stage is two panels -- the projects, and the media and
+    // templates -- and on an empty install each says it is empty: both,
+    // once both lists have answered.
+    const empties = authedPage.locator('#panel-source .stageempty, #panel-media .stageempty')
+    await expect(empties).toHaveCount(2)
+    for (let i = 0; i < 2; i++) {
       await expect(empties.nth(i).locator('button')).toBeVisible()
     }
   })
@@ -211,8 +213,12 @@ test.describe('the empty state offers a way out', () => {
     // Local generation is the point. If this ever starts telling people to
     // fetch files, the first-run path has grown a network dependency again.
     await asEmptyInstall(authedPage, '/#!/?stage=source')
+    await expect(authedPage.getByRole('button', { name: /generate demo media/i })).toBeVisible()
 
-    const text = await authedPage.locator('#panel-source').innerText()
+    const text = [
+      await authedPage.locator('#panel-source').innerText(),
+      await authedPage.locator('#panel-media').innerText(),
+    ].join('\n')
     expect(text.toLowerCase()).not.toContain('download')
     expect(text).not.toContain('./al demo')
   })
