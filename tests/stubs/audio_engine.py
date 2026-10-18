@@ -5,7 +5,16 @@ the browser suite can caption a real timeline through the real worker -- and
 through vox -- without a speech model, a download or a running joe. It answers
 the routes joe's media API answers (`POST /api/media`, `.../transcribe`,
 `.../analyze`, `GET /api/media/capabilities`, `DELETE /api/media/{id}`,
-`GET /api/health`) in joe's shapes.
+`GET /api/health`) in joe's shapes, and takes what joe takes: the content
+types joe names, joe's default limits on an upload's bytes and its sound's
+length, refused as joe refuses them -- the same statuses, `{"detail": str}`
+in joe's words. The reference is joe's `docs/media.md` and `Modules/Media.py`
+(feat/video-audio-engine).
+
+Where a stub must, it differs: no model, so any `language` is taken and the
+transcript is `SCRIPT`; the analysis is measured simply (tempo 120, no LUFS);
+and an upload is kept until it is deleted or the stub stops, where joe sweeps
+it an hour after it was last used.
 
 What it "hears" comes from the sound it is sent, not from a script it plays
 back regardless: every stretch of sound louder than a whisper becomes one
@@ -33,7 +42,8 @@ import uuid
 import wave
 from array import array
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, Response
 
 RATE = 16000
@@ -44,11 +54,12 @@ THRESHOLD = 500
 GAP = 0.2
 # Shorter stretches than this are not speech.
 SHORTEST = 0.1
-MAX_BYTES = 100 * 1024 * 1024
-# What joe's capabilities say besides: the longest media it takes, and how
-# long an upload is kept. The stub enforces neither; it says them.
-MAX_SECONDS = 4 * 3600
-TTL_SECONDS = 3600
+# joe's defaults for JOE_MEDIA_MAX_BYTES, JOE_MEDIA_MAX_SECONDS and
+# JOE_MEDIA_TTL, stated as joe states them. The first two are held to as joe
+# holds to them (`upload`); the third is only stated.
+MAX_BYTES = 1024**3
+MAX_SECONDS = 7200.0
+TTL_SECONDS = 3600.0
 
 SCRIPT = (
     'the first thing said',
@@ -57,20 +68,29 @@ SCRIPT = (
 )
 
 FEATURES = ('tempo', 'beats', 'onsets', 'loudness', 'silence', 'peaks')
+# The content types joe takes, each format under every name joe gives it
+# (joe's `FORMATS`), and the extension the upload is decoded as.
 TYPES = {
     'audio/wav': 'wav',
     'audio/x-wav': 'wav',
     'audio/wave': 'wav',
+    'audio/vnd.wave': 'wav',
     'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
     'audio/ogg': 'ogg',
     'audio/flac': 'flac',
+    'audio/x-flac': 'flac',
     'audio/mp4': 'm4a',
+    'audio/m4a': 'm4a',
+    'audio/x-m4a': 'm4a',
     'audio/aac': 'aac',
+    'audio/x-aac': 'aac',
     'audio/webm': 'webm',
     'video/mp4': 'mp4',
     'video/quicktime': 'mov',
     'video/webm': 'webm',
     'video/x-matroska': 'mkv',
+    'video/matroska': 'mkv',
 }
 
 FIXTURE = 'e2e-speech.wav'
@@ -80,6 +100,18 @@ FIXTURE_SECONDS = 4.0
 app = FastAPI(title='Stub audio engine')
 media = {}
 uploads = []
+
+
+@app.exception_handler(RequestValidationError)
+async def refused(request: Request, exc: RequestValidationError):
+    """A refused parameter in joe's one error shape, `{"detail": str}`: each
+    `where: what`, joined -- where FastAPI would answer a list."""
+    said = []
+    for error in exc.errors():
+        where = '.'.join(str(part) for part in tuple(error.get('loc', ()))[1:])
+        said.append(f"{where or 'request'}: {error.get('msg', 'is not valid')}")
+    detail = '; '.join(said) or 'the request is not valid'
+    return JSONResponse(status_code=422, content={'detail': detail})
 
 
 def ffmpeg():
@@ -93,8 +125,9 @@ class NoSound(Exception):
 
 
 def decode(body: bytes, extension: str) -> array:
-    """The sound in `body` as 16 kHz mono 16-bit samples. NoSound, in joe's
-    words, when there is none to have."""
+    """The sound in `body` as 16 kHz mono 16-bit samples, stopped just past
+    MAX_SECONDS as joe's decode is, so an over-long file costs little.
+    NoSound, in joe's words, when there is none to have."""
     with tempfile.TemporaryDirectory() as folder:
         source = os.path.join(folder, f'upload.{extension}')
         with open(source, 'wb') as handle:
@@ -114,6 +147,8 @@ def decode(body: bytes, extension: str) -> array:
                 'error',
                 '-i',
                 source,
+                '-t',
+                f'{MAX_SECONDS + 1:.3f}',
                 '-vn',
                 '-ac',
                 '1',
@@ -133,7 +168,7 @@ def decode(body: bytes, extension: str) -> array:
     samples = array('h')
     samples.frombytes(result.stdout[: len(result.stdout) // 2 * 2])
     if not samples:
-        raise NoSound('this media has no audio stream')
+        raise NoSound("this media's audio stream holds no samples")
     return samples
 
 
@@ -235,20 +270,38 @@ def capabilities():
 
 @app.post('/api/media', status_code=201)
 async def upload(request: Request):
-    body = await request.body()
-    if len(body) > MAX_BYTES:
-        raise HTTPException(status_code=413, detail='too large')
+    """Judged in joe's order: the type and the declared length before a byte
+    is read (415, 413), the length again as the body arrives (413), then the
+    sound -- none to decode is 422, longer than MAX_SECONDS 413."""
     content_type = request.headers.get('content-type', '').split(';')[0].strip().lower()
     extension = TYPES.get(content_type)
     if extension is None:
         raise HTTPException(
-            status_code=415, detail=f'unsupported type {content_type!r}'
+            status_code=415,
+            detail=f"unsupported media type '{content_type or 'none'}'; "
+            f"joe takes {', '.join(sorted(TYPES))}",
         )
+    too_large = f'media larger than {MAX_BYTES} bytes (JOE_MEDIA_MAX_BYTES)'
+    declared = request.headers.get('content-length', '')
+    if declared.isdigit() and int(declared) > MAX_BYTES:
+        raise HTTPException(status_code=413, detail=too_large)
+    body = bytearray()
+    async for chunk in request.stream():
+        body += chunk
+        if len(body) > MAX_BYTES:
+            raise HTTPException(status_code=413, detail=too_large)
+    body = bytes(body)
     uploads.append(described(body, content_type))
     try:
         samples = decode(body, extension)
     except NoSound as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if len(samples) / RATE > MAX_SECONDS:
+        raise HTTPException(
+            status_code=413,
+            detail=f"this media's sound is longer than {MAX_SECONDS:g} seconds "
+            '(JOE_MEDIA_MAX_SECONDS)',
+        )
     media_id = uuid.uuid4().hex
     media[media_id] = samples
     return {
@@ -286,25 +339,24 @@ def transcribe(media_id: str, language: str = None, words: bool = True):
 @app.post('/api/media/{media_id}/analyze')
 def analyze(
     media_id: str,
-    features: str = ','.join(FEATURES),
-    peaks_rate: float = 50,
-    silence_db: float = -40,
-    silence_min: float = 0.5,
+    features: str = None,
+    peaks_rate: int = Query(50, ge=1, le=1000),
+    silence_db: float = Query(-40.0, ge=-120.0, le=0.0),
+    silence_min: float = Query(0.5, gt=0.0, le=3600.0),
 ):
-    """joe's analysis, measured from the sound. `peaks_rate` is envelope
-    values a second; `silence_db`, how quiet silence is (dBFS); `silence_min`,
-    the shortest silence reported, in seconds."""
-    samples = known(media_id)
-    wanted = [f for f in features.split(',') if f]
-    unknown = [f for f in wanted if f not in FEATURES]
+    """joe's analysis, measured from the sound. `features` is comma-separated,
+    every one when absent or empty; `peaks_rate` is envelope values a second;
+    `silence_db`, how quiet silence is (dBFS); `silence_min`, the shortest
+    silence reported, in seconds -- each with joe's default and bounds."""
+    names = [name.strip().lower() for name in (features or '').split(',')]
+    wanted = [name for name in names if name] or list(FEATURES)
+    unknown = [name for name in wanted if name not in FEATURES]
     if unknown:
-        raise HTTPException(status_code=422, detail=f'unknown features {unknown}')
-    if not 1 <= peaks_rate <= 1000 or not 0 < silence_min <= 3600:
         raise HTTPException(
-            status_code=422, detail='peaks_rate or silence_min out of bounds'
+            status_code=422,
+            detail=f"unknown feature '{unknown[0]}'; joe measures {', '.join(FEATURES)}",
         )
-    if not -120 <= silence_db <= 0:
-        raise HTTPException(status_code=422, detail='silence_db out of bounds')
+    samples = known(media_id)
     duration = round(len(samples) / RATE, 3)
     threshold = 32768 * 10 ** (silence_db / 20)
     sound = stretches(samples, threshold=threshold)
