@@ -35,14 +35,26 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from bson import ObjectId
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
 from alfred import config
 from alfred.core.models.render import Render
 from alfred.core.routes import demo, preview
 from alfred.core.utils.media import is_library_filename
 from alfred.main import app
-from tests.unit.render_harness import OWNER, TEMPLATE_EDL, as_user, offline_documents
+from tests.unit.render_harness import (
+    OWNER,
+    TEMPLATE_EDL,
+    FakeQueue,
+    FakeRenderStore,
+    as_user,
+    make_render,
+    offline_documents,
+    render_request,
+    use_fakes,
+)
 
 # The longest the stand-in for heavy work holds its thread. Reached only when
 # that work runs on the event loop; otherwise the test lets it go as soon as
@@ -212,6 +224,68 @@ def on_the_loop():
     return True
 
 
+class SendsFrom(FakeQueue):
+    """A queue that records, for each send, whether it ran on the event loop."""
+
+    def __init__(self):
+        super().__init__()
+        self.on_the_loop = []
+
+    def __call__(self, **kwargs):
+        self.on_the_loop.append(on_the_loop())
+        super().__call__(**kwargs)
+
+
+@pytest.fixture
+def renders(signed_in):
+    """The render routes on an in-memory store and a queue that says where
+    each send ran."""
+    store, queue = FakeRenderStore(), SendsFrom()
+    overrides = use_fakes(app, store, queue)
+    yield store, queue
+    for dependency in overrides:
+        app.dependency_overrides.pop(dependency, None)
+
+
+class OneProject:
+    """The captions routes' store, holding one project."""
+
+    def __init__(self, document):
+        self.document = document
+
+    async def find(self, query):
+        if query['_id'] != self.document['_id']:
+            return None
+        return dict(self.document)
+
+    async def set(self, project_id, fields):
+        self.document.update(fields)
+
+    async def claim(self, project_id, job, stale_before):
+        return True
+
+
+@pytest.fixture
+def transcribable(signed_in, tmp_path, monkeypatch):
+    """A project of OWNER's with something to hear, an engine to hear it,
+    and a queue that says where each send ran."""
+    from alfred.core.routes import captions
+    from alfred.core.utils import audio_engine
+
+    (tmp_path / 'talk.mp4').write_bytes(b'not really a video')
+    monkeypatch.setattr(config, 'VIDEO_DIR', str(tmp_path))
+    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:8010')
+    monkeypatch.setattr(audio_engine, 'problem', lambda: None)
+    clip = {'type': 'video', 'name': 'videos/talk.mp4', 'duration': 4, 'start': 0}
+    project = {'_id': ObjectId(), 'owner': OWNER.email, 'edl': {'clips': [clip]}}
+    queue = SendsFrom()
+    app.dependency_overrides[captions.get_captions_store] = lambda: OneProject(project)
+    app.dependency_overrides[captions.get_captions_queue] = lambda: queue
+    yield project, queue
+    for dependency in (captions.get_captions_store, captions.get_captions_queue):
+        app.dependency_overrides.pop(dependency, None)
+
+
 class TestRunsInAThread:
     def test_the_preview_frame_sweep_at_startup(self, monkeypatch):
         seen = []
@@ -223,6 +297,26 @@ class TestRunsInAThread:
         monkeypatch.setattr(preview, 'sweep_frames', sweep)
         asyncio.run(preview.sweep_frames_at_startup())
         assert seen == [False]
+
+    def test_sending_a_render_to_the_worker(self, renders):
+        _, queue = renders
+        res = TestClient(app).post('/render', json=render_request())
+        assert res.status_code == 200, res.text
+        assert queue.on_the_loop == [False]
+
+    def test_sending_one_again(self, renders):
+        store, queue = renders
+        render = make_render(username=OWNER.email)
+        store.renders[render.id] = render
+        res = TestClient(app).post(f'/render/rerender/{render.id}')
+        assert res.status_code == 200, res.text
+        assert queue.on_the_loop == [False]
+
+    def test_sending_a_transcription_to_the_worker(self, transcribable):
+        project, queue = transcribable
+        res = TestClient(app).post(f'/project/{project["_id"]}/captions/transcribe')
+        assert res.status_code == 202, res.text
+        assert queue.on_the_loop == [False]
 
 
 class TestDemoMediaWhileOtherRequestsRun:

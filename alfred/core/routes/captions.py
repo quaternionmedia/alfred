@@ -15,6 +15,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
 from otto.models import Edl
 from pydantic import BaseModel, ValidationError, constr
+from starlette.concurrency import run_in_threadpool
 
 from alfred import config
 
@@ -321,7 +322,8 @@ async def transcribeProjectCaptions(
             ),
         )
     try:
-        queue(projectId=str(project['_id']))
+        # Off the event loop, as a render is queued (routes.render).
+        await run_in_threadpool(queue, projectId=str(project['_id']))
     except Exception as exc:  # noqa: BLE001 - the broker is down, or worse
         failed = {
             **job,
