@@ -99,3 +99,18 @@ module.exports = { test, expect, login, apiLogin, CREDENTIALS, SELECTORS }
  * copies and broke a spec that counts project rows.
  */
 module.exports.MEDIA_PROJECT = 'Tool test'
+
+/** The panels the workspace has, by registry id (src/layout/registry.js). */
+module.exports.PANEL_IDS = [
+  'projects',
+  'media',
+  'viewer',
+  'timeline',
+  'template',
+  'render',
+  'deliver',
+  'captions',
+]
+
+/** Where a viewer's arrangement of the workspace is kept (src/layout/saved_layout.js). */
+module.exports.LAYOUT_KEY = 'alfred.layout.v1'

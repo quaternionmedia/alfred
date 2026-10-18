@@ -149,10 +149,11 @@ height.
 - **panel headings share one type treatment**
 - **every panel aligns to the same left edge**
 
-  The render button is disabled with an empty timeline. It has to remain
-  visible and legible -- an action that vanishes when unavailable reads as
-  a broken page rather than a missing prerequisite, and the panel already
-  says which step is missing.
+  The two below are about the phone flow, where one stage's panels are
+  stacked under the rail, and run at a phone's size. In the desktop
+  workspace panels sit side by side by design, and the first `.stagepanel`
+  is the project list's wherever the stage is -- these would pass there
+  without measuring anything they mean.
 
 - **the rail and the panel below it share an edge**
 
@@ -170,7 +171,13 @@ height.
 
 ### the rail works as navigation
 
-- **clicking each stage shows its panel**
+In the phone flow, one stage at a time: choosing one shows its panel
+and not the others'. Edit shows none of theirs -- it is the timeline,
+which is always there -- only the captions, which are edited with it.
+The workspace brings a stage's panel forward instead
+(workspace.spec.js).
+
+- **clicking each stage shows its panel, and only its panel**
 - **the stages are reachable by keyboard**
 
   The point of stages-of-one-view. Whichever stage is open, the timeline
@@ -1382,6 +1389,47 @@ surface, which is the kind of thing that is only noticed deliberately.
 - **a token from one login works across every gated route**
 - **the admin surface needs more than an ordinary session**
 
+## stacked
+
+The phone flow: the editor's panels stacked one stage at a time.
+
+Below 1024 pixels the editor is not a workspace. The rail chooses a stage,
+the stage's panels sit under it, and the viewer and the timeline are always
+below them -- built from the same panel modules the workspace docks
+(workspace.spec.js). Run by the `phone` project, at 390x844, with the
+flow, editor, timeline-tools and deliver specs.
+
+### the phone flow
+
+Below 1024 pixels there is no dock and no Panels menu: the rail, and the
+regions under it.
+
+- **is a stack, not a dock**
+- **a stage's panels sit between the rail and the viewer**
+
+  Choosing Source puts the project list and the library under the rail,
+  and the viewer and the timeline under them.
+
+- **a long project list scrolls inside its panel, and the timeline stays on screen**
+
+  The stage's panels keep their height up to a share of the screen and
+  scroll inside themselves past it. Unbounded, a long list took the whole
+  column and squeezed the viewer and the timeline out of it.
+
+- **the viewer and the transport fit the screen**
+
+  The frame is the output's shape and no wider than the screen, and the
+  playback and speed buttons wrap rather than run past its edges. Both
+  did: every `section` is a column, which sized the frame's room by the
+  frame, and the two button groups could not wrap.
+
+- **the selected template clip's settings are beside the output settings**
+
+  Not a panel of their own on a phone: beside the aspect and the
+  resolution, where they always were, and nothing at all while no template
+  clip is selected.
+
+
 ## templates
 
 Template clips: adding them, and changing what they say.
@@ -1779,6 +1827,140 @@ spinner and `aria-busy` while their request is in flight.
 - **a reload keeps the session**
 - **logging out survives a reload too**
 - **a session does not leak into a fresh browser context**
+
+## workspace
+
+The desktop workspace: the editor's panels docked with Golden Layout.
+
+# Recipe: arranging the workspace
+
+On a screen 1024 pixels wide or more the editor is a workspace of panels:
+projects and the library on the left, the viewer above the timeline in the
+middle, the selected clip's settings and the Render, Deliver and Captions
+tabs on the right. Drag a tab to move a panel, drag the gaps to resize
+them, close what you do not need. The arrangement is kept in this browser
+and comes back on the next visit. The Panels menu brings back a closed
+panel, in its place, and Reset layout restores the arrangement above.
+
+Every panel here is the panel the phone flow stacks (stacked.spec.js);
+these are about the dock around them.
+
+### the default workspace
+
+`findFirstComponentItemById` is how a panel is brought forward, or
+known to be open rather than opened a second time. A default-layout
+entry without its id is invisible to it -- in codecartographer that
+made bringing the canvas forward a no-op and reopening it add a
+second. Read from what Golden Layout itself saves of the layout it
+loaded, so it is the layout in use, not a file that could disagree.
+
+- **every panel is in it, once, under its registry id**
+- **the material is on the left, the work in the middle, the rest on the right**
+
+  Where each panel opens on a first visit: the default layout's columns
+  and stacks, measured on the page, not read from the configuration.
+
+- **the workspace loads without an error in the console**
+
+  Counted from the first load with a session: before it, the page asks
+  the server whether auth is disabled (`GET /users/me`, a 401 when it is
+  not), and the browser reports that refusal in the console whatever the
+  layout. Then a deep link to each stage, and a reload -- a full load of
+  the workspace, saved arrangement and all.
+
+### ?stage= in the workspace
+
+The stage flow's links -- bookmarks, the rail, the old #!/renders --
+still land: in the workspace a stage is a panel brought forward, with
+`Stack.setActiveComponentItem`. (`ComponentItem.focus()` marks an item
+focused and leaves its stack showing whichever tab it showed.)
+
+- **each stage brings its panel to the front**
+- **the rail brings a stage forward again, even the stage already chosen**
+
+  Choosing the stage already in the address changes nothing in it, and
+  still brings its panel to the front: it may have been put behind another
+  since.
+
+- **choosing a tab says which stage you are on**
+
+  A tab chosen writes its panel's stage into the address, replacing the
+  entry rather than adding one, so the rail follows and Back does not walk
+  through every tab chosen.
+
+### the arrangement is kept
+
+Closing a panel and choosing a tab are kept in this browser
+(localStorage, `alfred.layout.v1`), and are what the next visit opens
+with.
+
+- **a closed panel and a chosen tab survive a reload**
+- **a panel dragged by its tab to another stack stays there**
+
+  Golden Layout's own move: the Captions tab dragged onto the Projects
+  stack's tab strip joins it, comes to the front there, draws, and is
+  there after a reload.
+
+- **a resized panel keeps its size across a reload**
+
+  Dragging the gap between two panels resizes them, and the sizes are kept
+  with the arrangement.
+
+- **a saved arrangement holding <name> gives way to the default**
+
+  Golden Layout throws on a panel nobody registered, and a panel without
+  its id, or shown twice, breaks finding a panel by id. Each is caught
+  before Golden Layout sees it: the default loads instead, and the
+  viewer is told why.
+
+- **a saved arrangement naming only its own panels is loaded as saved**
+
+  The check refuses only what cannot be used: a valid arrangement, however
+  unlike the default, is the one that opens.
+
+### the Panels menu
+
+The Panels menu says which panels are closed. Choosing one brings it
+back beside the panels it shares a stack with by default; choosing it
+again, or its stage, brings it forward -- found by its id -- and never
+adds a second.
+
+- **a closed panel comes back once, in its place**
+- **a stage whose panel was closed opens it again**
+
+  A rail click or a stage link whose panel is closed reopens it in its
+  place: the project list over the library, though closing it had folded
+  their column away.
+
+- **Reset layout restores the default, and keeps the work**
+
+  Golden Layout builds every panel again when it loads a layout. The
+  panels are drawn in boxes the layout moves, so the timeline is not
+  fetched again: a clip added and not saved is still there afterwards,
+  and no draft is offered back.
+
+- **the menu and the tabs work from the keyboard**
+
+  The Panels menu is a menu button: Enter or the arrow keys open it on an
+  item, the arrow keys move along it, Escape closes it and returns the
+  focus. Golden Layout's tabs are given roles: a tablist per stack, tabs
+  named for their panels, one tab stop per strip, the arrow keys along it,
+  Enter to show a panel and Delete to close it.
+
+### the viewer keeps its shape
+
+The frame is the largest rectangle of the output's aspect that fits its
+panel: a larger window makes it larger and the same shape, and an
+upright output makes it upright.
+
+- **resizing the panel resizes the picture, never reshapes it**
+### the workspace and the phone flow
+
+Below 1024 pixels the workspace gives way to the phone flow, and comes
+back above it, with the same panels: an unsaved clip is still on the
+timeline either way, and nothing is offered back as a draft.
+
+- **narrowing the window swaps one for the other, and the work stays**
 
 ---
 

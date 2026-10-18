@@ -12,7 +12,7 @@
   "scripts": {
     "build": "parcel build src/index.html",
     "dev": "node dev-watch.js",
-    "e2e": "playwright test --project=chromium",
+    "e2e": "playwright test --project=chromium --project=phone",
     "e2e:ui": "playwright test --project=chromium --ui",
     "e2e:perf": "playwright test --project=perf",
     "e2e:report": "playwright show-report",

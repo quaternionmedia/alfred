@@ -53,10 +53,14 @@ services:
     # hosted service in the test path, holding a key in CI secrets. Reports
     # are written to website/playwright-report/ and uploaded by the workflow
     # as an artifact instead.
+    #
+    # Both layouts: `chromium` runs everything against the desktop workspace,
+    # `phone` the stage-walking specs against the stacked phone flow
+    # (website/playwright.config.js).
     command: >-
       sh -c "mkdir -p /tmp/deps && cp package.json yarn.lock /tmp/deps/ &&
       npm install --prefix /tmp/deps --no-audit --no-fund &&
-      /tmp/deps/node_modules/.bin/playwright test --project=chromium"
+      /tmp/deps/node_modules/.bin/playwright test --project=chromium --project=phone"
 
   # The SPA the api serves, built from the committed lockfile.
   #
