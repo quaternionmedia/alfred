@@ -26,6 +26,13 @@ $rule: 1px solid #2e2e2e;
   gap: $gutter;
   padding-top: $gutter;
 
+  // The frame's room, which takes what the row leaves the settings.
+  .viewerframe {
+    display: flex;
+    flex: 1 1 24rem;
+    min-width: 0;
+  }
+
   #head,
   .head {
     flex: 1 1 24rem;

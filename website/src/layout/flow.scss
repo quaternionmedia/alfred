@@ -1,0 +1,38 @@
+// The phone flow's boxes (flow.js).
+
+// The viewer and the timeline keep the page's own shape. Their sections are
+// regions of the page column (style.css, editor.scss) -- each shrinks to fit
+// and scrolls inside itself -- so the boxes the flow wraps them in take no
+// part in the layout.
+.flowpanel--viewer,
+.flowpanel--viewer > .viewerpanel,
+.flowpanel--timeline {
+  display: contents;
+}
+
+// The stage's own panels: as tall as they need, up to a share of the screen,
+// and past that they scroll inside themselves. They are what the stage is
+// for, so they keep their height and the viewer and the timeline give way --
+// but only so far: unbounded, a long project list took the whole column and
+// squeezed the viewer and the timeline out of it.
+.flowstage {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  max-height: 45vh;
+}
+
+.flowstage > .flowpanel {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  min-height: 0;
+}
+
+// The panel is the scroller, not its box, so the panel keeps its full width
+// and the scrollbar is drawn inside it.
+.flowstage > .flowpanel > * {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
