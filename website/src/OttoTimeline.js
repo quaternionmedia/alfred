@@ -9,18 +9,41 @@ import { Player } from './Player'
 import { message } from 'alertifyjs'
 import { auth } from './Login'
 import { cutAtPlayhead } from './TimelineTools'
-import { clipSeconds, trim } from './Timing'
+import { clipSeconds, roll, slide, slip, trim } from './Timing'
 
 // How far a press may wander and still count as a tap. Past this it is a drag
 // -- on a touch screen, usually the start of scrolling the timeline -- and
 // must not seek.
 const TAP_SLOP = 8
 
-/** The edits a press on a clip can begin, by tool: each returns a gesture
- * (Timing.js), or `{refusal}` saying why it cannot begin there. */
+/**
+ * The edits a press on a clip can begin, by tool: each returns a gesture
+ * (Timing.js), or `{refusal}` saying why it cannot begin there. `along` is
+ * where on the clip the press landed, 0 at its start and 1 at its end.
+ */
 const EDITS = {
+  // The clip's end follows the pointer.
   trim: ({ index }) => trim(Edl.edl[index]),
+  // The clip's picture follows the pointer; its length and place do not move.
+  slip: ({ index }) => slip(Edl.edl[index]),
+  // The clip follows the pointer, between its neighbours.
+  slide: ({ index }) => slide(Edl.edl, index),
+  // The cut nearest the press follows the pointer: the one at this clip's
+  // start when pressed on its first half, at its end when on its second --
+  // or the only one there is, at either end of the timeline.
+  'dual roller': ({ index, along }) => {
+    const before = index - 1
+    const after = index
+    const nearest = along < 0.5 ? before : after
+    const other = nearest === before ? after : before
+    const exists = at => at >= 0 && at + 1 < Edl.edl.length
+    return roll(Edl.edl, exists(nearest) ? nearest : other)
+  },
 }
+
+// A slip changes what the viewer should show under a still playhead, so the
+// picture is kept up to date while dragging rather than on release.
+const FOLLOWS = new Set(['slip'])
 
 /**
  * One clip on the timeline, and what the timeline tools do to it.
@@ -31,12 +54,13 @@ const EDITS = {
  * on the phones and tablets the README promises, trimming did nothing at all.
  * Pointer events are one stream for mouse, pen and touch.
  *
- * An edit -- a trim -- captures the pointer (`setPointerCapture`), so the drag
- * keeps arriving at this clip when it leaves the clip's edge -- which is the
- * whole gesture, since the point is to make it wider -- and the release
- * arrives wherever it happens. That replaces listeners on `document`, which
- * had to be added and removed by hand; when they were bound to the clip
- * instead, every press leaked one, and clips resized without being dragged.
+ * An edit -- trim, slip, slide, roll -- captures the pointer
+ * (`setPointerCapture`), so the drag keeps arriving at this clip when it
+ * leaves the clip's edge -- which is most of the gesture, since the point is
+ * usually to move something past it -- and the release arrives wherever it
+ * happens. That replaces listeners on `document`, which had to be added and
+ * removed by hand; when they were bound to the clip instead, every press
+ * leaked one, and clips resized without being dragged.
  *
  * What an edit does to the clips is Timing.js's business: this turns pointer
  * movement into timeline seconds and hands them over. The clips change as the
@@ -96,7 +120,7 @@ export function Clip() {
             return
           }
           e.preventDefault()
-          gesture = { kind: 'edit', edit, id: e.pointerId, startX: e.clientX }
+          gesture = { kind: 'edit', tool, edit, id: e.pointerId, startX: e.clientX }
           capture(e.pointerId)
         } else if (tool === 'time' || tool === 'cut') {
           gesture = { kind: 'tap', tool, id: e.pointerId, x: e.clientX, y: e.clientY }
@@ -111,6 +135,7 @@ export function Clip() {
           // Keep the playhead's clip and the viewer's position honest while
           // lengths change under them; the viewer catches up on release.
           Edl.seek(Edl.time)
+          if (FOLLOWS.has(gesture.tool)) Player.syncElement(true)
           m.redraw()
         } else if (
           Math.abs(e.clientX - gesture.x) > TAP_SLOP ||

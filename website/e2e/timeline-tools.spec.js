@@ -36,11 +36,19 @@ async function captureRenders(page) {
   return sent
 }
 
-/** What the timeline holds, by way of the request a render would send. */
+/**
+ * What the timeline holds, by way of the request a render would send.
+ *
+ * The toolbar's Render moves on to the Deliver stage, whose list takes the
+ * room the timeline had; the page is brought back to Edit, so a test can go
+ * on editing.
+ */
 async function sentTimeline(page, sent) {
   const before = sent.length
   await page.locator('#render-timeline').click()
   await expect.poll(() => sent.length).toBe(before + 1)
+  await expect(page).toHaveURL(/stage=deliver/)
+  await page.locator('#stage-edit').click()
   return sent[before].edl
 }
 
@@ -400,6 +408,389 @@ test.describe('cut', () => {
       authedPage.locator('.ajs-message').filter({ hasText: /too close/i }).first()
     ).toBeVisible()
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(project.edl.clips.length)
+  })
+})
+
+/** The library's name for the demo file whose name contains `part`. */
+async function libraryFile(request, token, part) {
+  const names = await (
+    await request.get('/videos', { headers: { Authorization: token } })
+  ).json()
+  const name = names.find(n => n.includes(part))
+  expect(name, `no ${part} in the media library; global-setup.js generates it`).toBeTruthy()
+  return name
+}
+
+/** A clip of a library file playing `from` to `to` seconds of it. */
+const media = (name, from, to) => ({
+  type: 'video',
+  name,
+  inpoint: from,
+  outpoint: to,
+  duration: to - from,
+})
+
+const colour = seconds => ({
+  type: 'template',
+  name: 'makeColor',
+  duration: seconds,
+  data: { color: '#f2aa4c' },
+})
+
+/** Drag from `from` to `to` (page coordinates) with the mouse. */
+async function mouseDrag(page, from, to) {
+  await page.mouse.move(from.x, from.y)
+  await page.mouse.down()
+  await page.mouse.move(to.x, to.y, { steps: 10 })
+  await page.mouse.up()
+}
+
+/**
+ * Where the pointer should be, `along` a clip (0..1) -- with the clip on
+ * screen. Pointer events go to whatever is at the point, so a clip scrolled
+ * out of its region, under the footer, would not receive them.
+ */
+async function onClip(page, index, along = 0.5) {
+  const clip = page.locator('#timeline .clip').nth(index)
+  await clip.scrollIntoViewIfNeeded()
+  const box = await clip.boundingBox()
+  return { x: box.x + box.width * along, y: box.y + box.height / 2, box }
+}
+
+const timings = edl => edl.clips.map(c => [c.start, c.inpoint, c.outpoint, c.duration])
+const FIELDS = ['start', 'inpoint', 'outpoint', 'duration']
+
+/**
+ * Each clip's `[start, inpoint, outpoint, duration]`, to a twentieth of a
+ * second -- a drag moves whole pixels, and a pixel is a fiftieth of a second
+ * at the default zoom. `undefined` where a clip has no such field.
+ */
+function expectTimings(edl, expected) {
+  const actual = timings(edl)
+  expect(actual.length, `clips: ${JSON.stringify(actual)}`).toBe(expected.length)
+  actual.forEach((row, i) =>
+    row.forEach((value, j) => {
+      const what = `clip ${i + 1} ${FIELDS[j]} in ${JSON.stringify(actual)}`
+      if (expected[i][j] === undefined) expect(value, what).toBeUndefined()
+      else expect(value, what).toBeCloseTo(expected[i][j], 1)
+    })
+  )
+}
+
+// Tall enough that the timeline is not squeezed under the footer: these are
+// drags, and a drag cannot start on something scrolled out of sight.
+const ROOM = { width: 1280, height: 1000 }
+
+test.describe('slip', () => {
+  /**
+   * # Recipe: choosing which part of a clip plays
+   *
+   * Choose **Slip** and drag a clip: it keeps its length and its place, and
+   * the part of its file it shows moves under it. The picture follows the
+   * pointer, as in other editors -- drag right to bring in earlier material,
+   * left for later -- stopping at the start and the end of the file.
+   */
+  test.use({ viewport: ROOM })
+
+  test('by mouse, the window moves along the file and nothing else does', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const bars = await libraryFile(request, token, 'demo-bars')
+    await openMediaProject(authedPage, request, token, {
+      clips: [media(bars, 2, 5), colour(2)],
+      lengths: { [basename(bars)]: 10 },
+    })
+    const sent = await captureRenders(authedPage)
+    await authedPage.locator('#TTools [data-tool="slip"]').click()
+
+    // 3 seconds drawn across the clip's width: a second is a third of it.
+    const at = await onClip(authedPage, 0)
+    const second = at.box.width / 3
+    await mouseDrag(authedPage, at, { x: at.x - second, y: at.y })
+
+    const edl = await sentTimeline(authedPage, sent)
+    expectTimings(edl, [
+      // Later material, by a second: in 3, out 6, still three seconds long...
+      [0, 3, 6, 3],
+      // ...and the next clip has not moved.
+      [3, undefined, undefined, 2],
+    ])
+    expect(edl.duration).toBe(5)
+  })
+
+  test('it stops at the start and at the end of the file', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const bars = await libraryFile(request, token, 'demo-bars')
+    await openMediaProject(authedPage, request, token, {
+      clips: [media(bars, 2, 5), colour(2)],
+      lengths: { [basename(bars)]: 10 },
+    })
+    const sent = await captureRenders(authedPage)
+    await authedPage.locator('#TTools [data-tool="slip"]').click()
+
+    // Far to the right: as early as the file goes.
+    let at = await onClip(authedPage, 0)
+    await mouseDrag(authedPage, at, { x: at.x + at.box.width * 4, y: at.y })
+    expectTimings(await sentTimeline(authedPage, sent), [
+      [0, 0, 3, 3],
+      [3, undefined, undefined, 2],
+    ])
+
+    // Far to the left: as late as the file goes, ending at its end.
+    at = await onClip(authedPage, 0)
+    await mouseDrag(authedPage, at, { x: at.x - at.box.width * 6, y: at.y })
+    expectTimings(await sentTimeline(authedPage, sent), [
+      [0, 7, 10, 3],
+      [3, undefined, undefined, 2],
+    ])
+  })
+
+  test('a template slips through its animation', async ({ authedPage, request, token }) => {
+    /**
+     * A template is drawn on demand from its own second 0, so it can show
+     * any stretch of its animation -- but nothing before its start.
+     */
+    await openMediaProject(authedPage, request, token, { clips: [colour(4), colour(2)] })
+    const sent = await captureRenders(authedPage)
+    await authedPage.locator('#TTools [data-tool="slip"]').click()
+
+    const at = await onClip(authedPage, 0)
+    const second = at.box.width / 4
+    await mouseDrag(authedPage, at, { x: at.x - 1.5 * second, y: at.y })
+    expectTimings(await sentTimeline(authedPage, sent), [
+      [0, 1.5, 5.5, 4],
+      [4, undefined, undefined, 2],
+    ])
+  })
+
+  test('a clip showing the whole of its file says there is nothing to slip', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const bars = await libraryFile(request, token, 'demo-bars')
+    await openMediaProject(authedPage, request, token, {
+      clips: [media(bars, 0, 3), colour(2)],
+      lengths: { [basename(bars)]: 3 },
+    })
+    await authedPage.locator('#TTools [data-tool="slip"]').click()
+    const at = await onClip(authedPage, 0)
+    await mouseDrag(authedPage, at, { x: at.x - 40, y: at.y })
+    await expect(
+      authedPage.locator('.ajs-message').filter({ hasText: /nothing to slip/i }).first()
+    ).toBeVisible()
+  })
+})
+
+test.describe('slide', () => {
+  /**
+   * # Recipe: moving a clip between its neighbours
+   *
+   * Choose **Slide** and drag a clip along the timeline. It keeps what it
+   * shows; its neighbours give and take the time -- the clip before it ends
+   * later or sooner, the clip after it starts later or sooner in its file --
+   * so the timeline keeps its length.
+   */
+  test.use({ viewport: ROOM })
+
+  test('by mouse, the neighbours give and take the time', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const bars = await libraryFile(request, token, 'demo-bars')
+    const card = await libraryFile(request, token, 'demo-testcard')
+    await openMediaProject(authedPage, request, token, {
+      clips: [media(bars, 0, 3), colour(2), media(card, 1, 4)],
+      lengths: { [basename(bars)]: 10, [basename(card)]: 10 },
+    })
+    const sent = await captureRenders(authedPage)
+    await authedPage.locator('#TTools [data-tool="slide"]').click()
+
+    const at = await onClip(authedPage, 1)
+    const second = at.box.width / 2
+    await mouseDrag(authedPage, at, { x: at.x + second, y: at.y })
+
+    const edl = await sentTimeline(authedPage, sent)
+    expectTimings(edl, [
+      // The clip before it ends a second later in its file...
+      [0, 0, 4, 4],
+      // ...the slid clip is unchanged, a second later on the timeline...
+      [4, undefined, undefined, 2],
+      // ...and the clip after it starts a second later in its file.
+      [6, 2, 4, 2],
+    ])
+    expect(edl.duration).toBe(8)
+  })
+
+  test('the first clip has nothing before it to slide against, and says so', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    await openMediaProject(authedPage, request, token)
+    await authedPage.locator('#TTools [data-tool="slide"]').click()
+    const at = await onClip(authedPage, 0)
+    await mouseDrag(authedPage, at, { x: at.x + 40, y: at.y })
+    await expect(
+      authedPage.locator('.ajs-message').filter({ hasText: /none before it/i }).first()
+    ).toBeVisible()
+  })
+})
+
+test.describe('dual roller', () => {
+  /**
+   * # Recipe: moving a cut
+   *
+   * Choose the **dual roller** and drag near a cut: the cut moves, the clip
+   * before it ending where the clip after it now starts in its file. Pressed
+   * on a clip's first half, the roller takes the cut at its start; on its
+   * second half, the cut at its end.
+   */
+  test.use({ viewport: ROOM })
+
+  test('by mouse, one clip ends where the next now starts', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const bars = await libraryFile(request, token, 'demo-bars')
+    const card = await libraryFile(request, token, 'demo-testcard')
+    await openMediaProject(authedPage, request, token, {
+      clips: [media(bars, 0, 3), media(card, 1, 4)],
+      lengths: { [basename(bars)]: 10, [basename(card)]: 10 },
+    })
+    const sent = await captureRenders(authedPage)
+    await authedPage.locator('#TTools [data-tool="dual roller"]').click()
+
+    // On the first clip's second half: the cut at its end.
+    const at = await onClip(authedPage, 0, 0.8)
+    const second = at.box.width / 3
+    await mouseDrag(authedPage, at, { x: at.x - second, y: at.y })
+
+    const edl = await sentTimeline(authedPage, sent)
+    expectTimings(edl, [
+      [0, 0, 2, 2],
+      [2, 0, 4, 4],
+    ])
+    expect(edl.duration).toBe(6)
+  })
+
+  test('the cut moves only as far as both clips allow', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * Rolled right, the second clip gives up all but a tenth of a second:
+     * the shortest a clip may be. Rolled left, the second clip can start no
+     * earlier than its file does.
+     */
+    const bars = await libraryFile(request, token, 'demo-bars')
+    const card = await libraryFile(request, token, 'demo-testcard')
+    await openMediaProject(authedPage, request, token, {
+      clips: [media(bars, 0, 3), media(card, 1, 4)],
+      lengths: { [basename(bars)]: 10, [basename(card)]: 10 },
+    })
+    const sent = await captureRenders(authedPage)
+    await authedPage.locator('#TTools [data-tool="dual roller"]').click()
+
+    // On the second clip's first half: the cut at its start.
+    let at = await onClip(authedPage, 1, 0.2)
+    await mouseDrag(authedPage, at, { x: at.x + at.box.width * 3, y: at.y })
+    expectTimings(await sentTimeline(authedPage, sent), [
+      [0, 0, 5.9, 5.9],
+      [5.9, 3.9, 4, 0.1],
+    ])
+
+    // Back the other way, past where the second clip's file begins.
+    at = await onClip(authedPage, 0, 0.9)
+    await mouseDrag(authedPage, at, { x: at.x - at.box.width, y: at.y })
+    expectTimings(await sentTimeline(authedPage, sent), [
+      [0, 0, 2, 2],
+      [2, 0, 4, 4],
+    ])
+  })
+
+  test('a single clip has no cut to roll, and says so', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const bars = await libraryFile(request, token, 'demo-bars')
+    await openMediaProject(authedPage, request, token, { clips: [media(bars, 0, 3)] })
+    await authedPage.locator('#TTools [data-tool="dual roller"]').click()
+    const at = await onClip(authedPage, 0)
+    await mouseDrag(authedPage, at, { x: at.x + 40, y: at.y })
+    await expect(
+      authedPage.locator('.ajs-message').filter({ hasText: /no clip on the other side/i }).first()
+    ).toBeVisible()
+  })
+})
+
+test.describe('slip, slide and roll by touch', () => {
+  test.use({ hasTouch: true, viewport: ROOM })
+
+  test('a finger slips a clip', async ({ authedPage, request, token }) => {
+    const bars = await libraryFile(request, token, 'demo-bars')
+    await openMediaProject(authedPage, request, token, {
+      clips: [media(bars, 2, 5), colour(2)],
+      lengths: { [basename(bars)]: 10 },
+    })
+    const sent = await captureRenders(authedPage)
+    await authedPage.locator('#TTools [data-tool="slip"]').click()
+
+    const at = await onClip(authedPage, 0)
+    await touchDrag(authedPage, at, { x: at.x + at.box.width / 3, y: at.y })
+    // Earlier material, by a second.
+    expectTimings(await sentTimeline(authedPage, sent), [
+      [0, 1, 4, 3],
+      [3, undefined, undefined, 2],
+    ])
+  })
+
+  test('a finger slides a clip', async ({ authedPage, request, token }) => {
+    const bars = await libraryFile(request, token, 'demo-bars')
+    const card = await libraryFile(request, token, 'demo-testcard')
+    await openMediaProject(authedPage, request, token, {
+      clips: [media(bars, 0, 3), colour(2), media(card, 1, 4)],
+      lengths: { [basename(bars)]: 10, [basename(card)]: 10 },
+    })
+    const sent = await captureRenders(authedPage)
+    await authedPage.locator('#TTools [data-tool="slide"]').click()
+
+    const at = await onClip(authedPage, 1)
+    await touchDrag(authedPage, at, { x: at.x - at.box.width / 2, y: at.y })
+    // A second earlier: the clip before it gives a second up, and the clip
+    // after it starts a second earlier in its file.
+    expectTimings(await sentTimeline(authedPage, sent), [
+      [0, 0, 2, 2],
+      [2, undefined, undefined, 2],
+      [4, 0, 4, 4],
+    ])
+  })
+
+  test('a finger rolls a cut', async ({ authedPage, request, token }) => {
+    const bars = await libraryFile(request, token, 'demo-bars')
+    const card = await libraryFile(request, token, 'demo-testcard')
+    await openMediaProject(authedPage, request, token, {
+      clips: [media(bars, 0, 3), media(card, 1, 4)],
+      lengths: { [basename(bars)]: 10, [basename(card)]: 10 },
+    })
+    const sent = await captureRenders(authedPage)
+    await authedPage.locator('#TTools [data-tool="dual roller"]').click()
+
+    const at = await onClip(authedPage, 1, 0.2)
+    await touchDrag(authedPage, at, { x: at.x + at.box.width / 3, y: at.y })
+    expectTimings(await sentTimeline(authedPage, sent), [
+      [0, 0, 4, 4],
+      [4, 2, 4, 2],
+    ])
   })
 })
 

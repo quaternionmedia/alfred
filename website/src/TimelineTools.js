@@ -13,9 +13,11 @@ var state = require("./Globals").state
  * and move was Sortable's. Choosing one highlighted it and then every press
  * on a clip did nothing, which is the worst way for a control to fail.
  *
- * Cut works now. Slip, slide and dual roller are shown disabled, saying so:
- * they are on the way, and hiding them would hide that. Nothing here is a
- * control that silently does nothing.
+ * All seven work now. The four that change clips -- trim, slip, slide, roll --
+ * are drags on a clip, by mouse or by touch, with otto's meaning of a clip: a
+ * window from its in-point to its out-point onto a source (Timing.js). A tool
+ * that cannot act where it was pressed -- a slide with nothing on one side --
+ * says why rather than doing nothing.
  */
 
 /** Split the clip under the playhead, or say why not. */
@@ -53,14 +55,23 @@ const TOOLS = [
     title: 'cut: click a clip to split it there, or press S to split at the playhead',
     icon: 'content_cut',
   },
-  { id: 'slip', label: 'Slip', title: 'slip (not yet available)', icon: 'swap_calls', later: true },
-  { id: 'slide', label: 'Slide', title: 'slide (not yet available)', icon: 'sync_alt', later: true },
+  {
+    id: 'slip',
+    label: 'Slip',
+    title: 'slip: drag a clip to change which part of its source it shows, keeping its length and place',
+    icon: 'swap_calls',
+  },
+  {
+    id: 'slide',
+    label: 'Slide',
+    title: 'slide: drag a clip along the timeline between its neighbours, which give and take the time',
+    icon: 'sync_alt',
+  },
   {
     id: 'dual roller',
     label: 'Dual roller',
-    title: 'dual roller (not yet available)',
+    title: 'dual roller: drag near a cut to move it, ending one clip and starting the next together',
     icon: 'compare_arrows',
-    later: true,
   },
 ]
 
@@ -75,14 +86,10 @@ const TOOLS = [
  * Its name is the tool's (`aria-label`); the icon is decoration, hidden from
  * assistive technology, so it does not announce itself as "content_cut". The
  * title stays as the tooltip, which is where a tool explains how to use it.
- *
- * A tool that is not built yet is `aria-disabled`, not `disabled`: still in
- * the tab order and still pressable, so activating it -- by any means -- says
- * why nothing happened rather than doing nothing silently.
  */
 const ToolButton = {
   view: ({ attrs: { tool } }) => {
-    const active = !tool.later && state.tool() === tool.id
+    const active = state.tool() === tool.id
     return m(
       'button.tool',
       {
@@ -90,16 +97,9 @@ const ToolButton = {
         title: tool.title,
         'aria-label': tool.label,
         'data-tool': tool.id,
-        class: [tool.later ? 'disabled' : '', active ? 'active' : ''].join(' ').trim(),
-        'aria-disabled': tool.later ? 'true' : undefined,
-        'aria-pressed': tool.later ? undefined : active ? 'true' : 'false',
-        onclick: () => {
-          if (tool.later) {
-            message(`${tool.label} is not available yet`, 3)
-            return
-          }
-          state.tool(tool.id)
-        },
+        class: active ? 'active' : '',
+        'aria-pressed': active ? 'true' : 'false',
+        onclick: () => state.tool(tool.id),
       },
       tool.icon
         ? m('i.material-icons', { 'aria-hidden': 'true' }, tool.icon)

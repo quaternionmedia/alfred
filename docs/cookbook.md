@@ -840,11 +840,12 @@ registers its own user and needs registration open to do it.
 ### otto editor
 
 Slip, slide and dual roller could be chosen -- they lit up like the
-others -- and then did nothing to any clip. They are visibly disabled
-now, with a title saying why, and choosing one says so too.
+others -- and then did nothing to any clip, so for a while they were
+shown disabled. They work now (timeline-tools.spec.js drives each), and
+each says in its title how it is used.
 
 - **edit tools are present**
-- **tools that are not built yet say so, and do not pretend**
+- **every tool can be chosen, and is the only one chosen**
 - **<group> are present**
 - **action buttons are present**
 - **the play control is present**
@@ -1308,6 +1309,86 @@ press S. Either half can then be trimmed, moved or deleted on its own.
 
   At 0 the playhead is at the very start of the first clip, so a cut
   there would leave nothing on one side. It is refused, and says so.
+
+### slip
+
+# Recipe: choosing which part of a clip plays
+
+Choose **Slip** and drag a clip: it keeps its length and its place, and
+the part of its file it shows moves under it. The picture follows the
+pointer, as in other editors -- drag right to bring in earlier material,
+left for later -- stopping at the start and the end of the file.
+
+- **by mouse, the window moves along the file and nothing else does**
+- **it stops at the start and at the end of the file**
+
+  A template is drawn on demand from its own second 0, so it can show
+  any stretch of its animation -- but nothing before its start.
+
+- **a template slips through its animation**
+
+  A template is drawn on demand from its own second 0, so it can show
+  any stretch of its animation -- but nothing before its start.
+
+- **a clip showing the whole of its file says there is nothing to slip**
+
+  # Recipe: moving a clip between its neighbours
+
+  Choose **Slide** and drag a clip along the timeline. It keeps what it
+  shows; its neighbours give and take the time -- the clip before it ends
+  later or sooner, the clip after it starts later or sooner in its file --
+  so the timeline keeps its length.
+
+### slide
+
+# Recipe: moving a clip between its neighbours
+
+Choose **Slide** and drag a clip along the timeline. It keeps what it
+shows; its neighbours give and take the time -- the clip before it ends
+later or sooner, the clip after it starts later or sooner in its file --
+so the timeline keeps its length.
+
+- **by mouse, the neighbours give and take the time**
+- **the first clip has nothing before it to slide against, and says so**
+
+  # Recipe: moving a cut
+
+  Choose the **dual roller** and drag near a cut: the cut moves, the clip
+  before it ending where the clip after it now starts in its file. Pressed
+  on a clip's first half, the roller takes the cut at its start; on its
+  second half, the cut at its end.
+
+### dual roller
+
+# Recipe: moving a cut
+
+Choose the **dual roller** and drag near a cut: the cut moves, the clip
+before it ending where the clip after it now starts in its file. Pressed
+on a clip's first half, the roller takes the cut at its start; on its
+second half, the cut at its end.
+
+- **by mouse, one clip ends where the next now starts**
+
+  Rolled right, the second clip gives up all but a tenth of a second:
+  the shortest a clip may be. Rolled left, the second clip can start no
+  earlier than its file does.
+
+- **the cut moves only as far as both clips allow**
+
+  Rolled right, the second clip gives up all but a tenth of a second:
+  the shortest a clip may be. Rolled left, the second clip can start no
+  earlier than its file does.
+
+- **a single clip has no cut to roll, and says so**
+### slip, slide and roll by touch
+
+- **a finger slips a clip**
+- **a finger slides a clip**
+- **a finger rolls a cut**
+
+  There was no doctype, so every browser laid the page out in quirks
+  mode; and the viewport carried `maximum-scale=1`, which stops a phone
+  from zooming -- the one tool someone who needs larger controls has.
 
 ### on a phone
 

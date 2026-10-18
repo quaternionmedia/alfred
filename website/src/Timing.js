@@ -123,6 +123,22 @@ function endRange(clip) {
   return room(SHORTEST - length, Number.isFinite(end) ? end - inpoint - length : Infinity)
 }
 
+/** How far a clip's start may move into its source, keeping its end: [earlier, later]. */
+function startRange(clip) {
+  const { inpoint, length } = measure(clip)
+  // A still has no position in a source to run out of; only its length binds.
+  return room(source(clip).still ? -Infinity : -inpoint, length - SHORTEST)
+}
+
+/** How far a clip's window may move along its source, keeping its length. */
+function slipRange(clip) {
+  const { inpoint, length } = measure(clip)
+  const { end } = source(clip)
+  return room(-inpoint, Number.isFinite(end) ? end - inpoint - length : Infinity)
+}
+
+const intersect = ([a, b], [c, d]) => [Math.max(a, c), Math.min(b, d)]
+
 /** A gesture on `clips`, applied by `edit(seconds)` from where they started. */
 function gesture(clips, range, edit) {
   const kept = clips.map(remember)
@@ -146,6 +162,80 @@ function gesture(clips, range, edit) {
 export function trim(clip) {
   const { inpoint, length } = measure(clip)
   return gesture([clip], endRange(clip), moved => place(clip, inpoint, length + moved))
+}
+
+/**
+ * Slip: change which part of its source `clip` shows, keeping its length and
+ * its place -- the in-point and out-point move together.
+ *
+ * The picture follows the pointer, as in other editors: dragging right brings
+ * in earlier material (both points move back), dragging left later material.
+ * Bounded by the start of the source and, when its length is known, by its
+ * end. A template slips through its animation; a still has nothing to slip.
+ */
+export function slip(clip) {
+  if (source(clip).still) {
+    return { refusal: 'A still image shows the same picture throughout: there is nothing to slip.' }
+  }
+  const range = slipRange(clip)
+  if (range[0] === 0 && range[1] === 0) {
+    return { refusal: 'Nothing to slip: this clip already shows the whole of its file.' }
+  }
+  const { inpoint, length } = measure(clip)
+  // The window moves the other way from the pointer, so the range is turned
+  // around for the pointer's distance and back for the window's.
+  const pointer = [-range[1], -range[0]]
+  return gesture([clip], pointer, moved => place(clip, inpoint - moved, length))
+}
+
+/**
+ * Move the cut between two adjacent clips: `left` ends `seconds` later and
+ * `right` starts `seconds` later in its source, keeping where it ends. What
+ * is between them on the timeline is unchanged; the edit point moves.
+ */
+function moveCut(left, right) {
+  const l = measure(left)
+  const r = measure(right)
+  return gesture(
+    [left, right],
+    intersect(endRange(left), startRange(right)),
+    moved => {
+      place(left, l.inpoint, l.length + moved)
+      place(right, source(right).still ? r.inpoint : r.inpoint + moved, r.length - moved)
+    }
+  )
+}
+
+/**
+ * Dual roller: move the cut between `clips[at]` and `clips[at + 1]`. The
+ * first clip's out-point and the second's in-point move together, so the
+ * timeline keeps its length and everything after the pair stays put.
+ */
+export function roll(clips, at) {
+  const left = clips[at]
+  const right = clips[at + 1]
+  if (!left || !right) {
+    return { refusal: 'Roll moves the cut between two clips; there is no clip on the other side.' }
+  }
+  return moveCut(left, right)
+}
+
+/**
+ * Slide: move `clips[at]` along the timeline without changing what it shows,
+ * by changing its neighbours -- the clip before it ends later (its out-point
+ * moves) and the clip after it starts later in its source (its in-point
+ * moves). The timeline keeps its length. It needs a clip on both sides.
+ */
+export function slide(clips, at) {
+  const before = clips[at - 1]
+  const after = clips[at + 1]
+  if (!before || !after) {
+    const side = !before && !after ? 'on either side' : !before ? 'before it' : 'after it'
+    return {
+      refusal: `Slide moves a clip between its neighbours, and this one has none ${side}.`,
+    }
+  }
+  return moveCut(before, after)
 }
 
 /**
