@@ -659,10 +659,8 @@ registers its own user and needs registration open to do it.
 - **a server that does not take registrations says so**
 - **an address that already has an account says so**
 
-  The auth bypass acts as dev@example.com, and that account owns the
-  seeded projects. It is made the first time the bypass runs, so on a
-  server where it never had, whoever registered the address owned them.
-  The server refuses it in any case, and says why.
+  fastapi-users answers with a code, REGISTER_USER_ALREADY_EXISTS; the
+  register button says it in words, and what to do instead.
 
 - **the address of the development login cannot be registered**
 
@@ -671,6 +669,33 @@ registers its own user and needs registration open to do it.
   server where it never had, whoever registered the address owned them.
   The server refuses it in any case, and says why.
 
+### the links the server mails
+
+# Recipe: a forgotten password
+
+The login screen's "forgot password" asks the server to mail a reset link
+to the address in the email field. The link opens an account page, which
+takes the new password twice, sets it, and goes to the login screen. A
+confirmation link opens the same page, which confirms the address as it
+opens. Both work for somebody who is not logged in -- which is the point,
+and which the session guard used to prevent, sending the page, its token
+and all, to the login screen.
+
+The server answers a reset request the same whether or not the address
+has an account, so asking says nothing about who has one; a server with
+no mail configured sends nothing, which only an administrator can change.
+
+The pages' requests are answered here rather than by the server: the
+token in a real link only ever reaches a mailbox, and this suite has
+none. The API side, from the request to logging in with the new password,
+is `tests/integration/test_password_reset_api.py`.
+
+- **forgot password asks for a reset link for the address typed in**
+- **the reset link sets the new password, then goes to log in**
+- **a reset link that has expired or been used says so**
+- **the new password has to be typed the same twice**
+- **the confirmation link confirms the address as the page opens**
+- **the account page without its link says where to get one**
 
 ## navigation
 

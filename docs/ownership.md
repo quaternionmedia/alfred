@@ -76,7 +76,8 @@ line either way, and it is not quite:
   so `is_verified` is not a boundary for superusers anywhere today.
 - Requiring it in `sees_everything` would hide every other account's projects,
   and every ownerless one, from an existing unverified superuser, without a
-  word -- and production has had no way to deliver a verification token.
+  word -- and confirmation links reach anybody only where account mail is
+  configured (docs/api/auth.md).
 - Dropping it from the admin router removes a check, however nominal.
 
 It is left as it is, and listed as an open decision. Whichever way it goes,

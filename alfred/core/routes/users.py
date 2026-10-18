@@ -15,6 +15,8 @@ from fastapi_users.jwt import generate_jwt
 from alfred import config
 from alfred.config import DEV_SKIP_AUTH, DEV_USER_EMAIL, SECRET_KEY
 
+from ..models import UserRead
+from ..utils import account_mail
 from ..utils.db import User, get_user_db
 from ..utils.ownership import changes_owner_key
 
@@ -43,30 +45,40 @@ def is_dev_address(email):
     return bool(email) and email.casefold() == config.DEV_USER_EMAIL.casefold()
 
 
-def announce_token(purpose, user, token):
+NOT_MAILED = (
+    'no mail was sent: that needs EMAIL_SERVER, EMAIL_USERNAME and ' 'ALFRED_PUBLIC_URL'
+)
+
+
+def announce_token(purpose, user, token, mailed=False):
     """Note that a single-use token was issued -- and, outside production, show it.
 
     Both of these printed the token itself, every time. A password-reset
     token is a credential: whoever holds it can set the account's password,
     so a production log that recorded them made reading the logs equivalent
     to taking over any account that asked for a reset. Under
-    ALFRED_PRODUCTION the event is logged and the token is not.
+    ALFRED_PRODUCTION the event is logged, with whether the link was mailed
+    and why not, and the token is not.
 
-    In development the token stays in the log on purpose. Nothing here sends
-    email, so the log is the only way to finish a reset or a verification on
-    a development stack, and that is exactly where somebody needs to.
+    In development the token stays in the log on purpose: a development stack
+    rarely has mail configured, and then the log is the only way to finish a
+    reset or a verification.
 
     Read through the module at call time, so the tests can switch modes
     without re-importing.
     """
+    delivery = 'a link was mailed to the account' if mailed else NOT_MAILED
     if config.PRODUCTION:
         print(
-            f'{purpose} requested for user {user.id}. The token is not logged '
-            'in production.',
+            f'{purpose} requested for user {user.id}; {delivery}. The token is '
+            'not logged in production.',
             flush=True,
         )
     else:
-        print(f'{purpose} requested for user {user.id}. Token: {token}', flush=True)
+        print(
+            f'{purpose} requested for user {user.id}; {delivery}. Token: {token}',
+            flush=True,
+        )
 
 
 class UserManager(
@@ -148,18 +160,48 @@ class UserManager(
             return
         return await super().forgot_password(user, request)
 
+    async def verify(self, token, request=None):
+        """Confirm an address -- and answer with the account as the API shows it.
+
+        fastapi-users' `POST /auth/verify` returns what this returns, under
+        `response_model=UserRead`. Given the beanie document, FastAPI dumps it
+        by alias, its id comes out as `_id`, and `UserRead` has no `id`: every
+        confirmation that succeeded answered 500, after confirming. Nothing
+        called it until the confirmation link was mailed.
+        """
+        return UserRead.from_orm(await super().verify(token, request))
+
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
 
     async def on_after_forgot_password(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        announce_token('Password reset', user, token)
+        """Mail the reset link, when mail is configured; and say so in the log.
+
+        Nothing delivered these tokens, so outside development -- where the
+        log is not somewhere the person asking can read -- a reset could be
+        asked for and never finished. See `utils.account_mail`.
+        """
+        mailed = account_mail.deliver(
+            account_mail.RESET,
+            user.email,
+            token,
+            self.reset_password_token_lifetime_seconds,
+        )
+        announce_token('Password reset', user, token, mailed)
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        announce_token('Verification', user, token)
+        """Mail the confirmation link, as a reset link is mailed."""
+        mailed = account_mail.deliver(
+            account_mail.VERIFY,
+            user.email,
+            token,
+            self.verification_token_lifetime_seconds,
+        )
+        announce_token('Verification', user, token, mailed)
 
 
 async def get_user_manager(user_db: BeanieUserDatabase = Depends(get_user_db)):

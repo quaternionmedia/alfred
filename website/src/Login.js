@@ -195,12 +195,181 @@ export const Login = () => {
                 })
               }
             },
-          }, 'register')
+          }, 'register'),
+          m('button#forgot', {
+            style: {
+              display: User.username ? 'none' : ''
+            },
+            onclick: e => {
+              e.preventDefault()
+              askForReset(document.getElementById('username').value.trim())
+            },
+          }, 'forgot password')
         ]
       )
     ]
   }
 }
+}
+
+/** Ask for a password-reset link to be mailed to `email`.
+ *
+ * The server answers the same whether or not the address has an account, so
+ * that asking is no way to find out who has one; the message says so rather
+ * than promising a mail. A server without mail sends nothing at all, which
+ * only an administrator can change.
+ */
+export function askForReset(email) {
+  if (!email) {
+    error('Enter your email address, then ask again.', 5)
+    return Promise.resolve(false)
+  }
+  return m
+    .request('/auth/forgot-password', { method: 'POST', body: { email } })
+    .then(
+      () => {
+        message(
+          `If ${email} has an account, a link to choose a new password is on ` +
+            'its way to it. If nothing arrives, ask an administrator.',
+          12
+        )
+        return true
+      },
+      err => {
+        error(
+          err && err.code == 422
+            ? 'That does not look like an email address.'
+            : 'The reset could not be asked for. Try again.',
+          6
+        )
+        return false
+      }
+    )
+}
+
+/** What to tell someone whose reset or confirmation link was refused. */
+export function linkFailure(err) {
+  const detail = err && err.response && err.response.detail
+  if (detail == 'RESET_PASSWORD_BAD_TOKEN' || detail == 'VERIFY_USER_BAD_TOKEN') {
+    return 'This link has expired or has been used already. Ask for a new one from the login screen.'
+  }
+  if (detail == 'VERIFY_USER_ALREADY_VERIFIED') {
+    return 'This address is confirmed already.'
+  }
+  if (detail && detail.code == 'RESET_PASSWORD_INVALID_PASSWORD') {
+    return `That password was refused: ${detail.reason}`
+  }
+  if (isSentence(detail)) return detail
+  return 'That did not work. Open the link again, or ask for a new one.'
+}
+
+/** The page a mailed link opens: `#!/account/reset` or `#!/account/verify`.
+ *
+ * A password-reset or confirmation token used to be printed to the server's
+ * log and go nowhere else, so outside development nobody could finish either.
+ * The server mails them now, as a link here carrying the token, and this page
+ * finishes the job: a new password for a reset, which then goes to the login
+ * screen; the confirmation itself for a verify, as soon as the page opens.
+ *
+ * Open to anybody -- the person following the link is not logged in, which is
+ * the point -- so the session guard leaves `/account/` alone (`User.js`).
+ */
+export const Account = () => {
+  let sending = false
+  let confirmed = null
+  const token = () => m.route.param('token')
+  const action = () => m.route.param('action')
+
+  const confirm = () => {
+    sending = true
+    m.request('/auth/verify', { method: 'POST', body: { token: token() } })
+      .then(
+        () => {
+          confirmed = 'Your address is confirmed.'
+        },
+        err => {
+          confirmed = linkFailure(err)
+        }
+      )
+      .finally(() => {
+        sending = false
+        m.redraw()
+      })
+  }
+
+  const reset = e => {
+    e.preventDefault()
+    const password = document.getElementById('new-password').value
+    const again = document.getElementById('confirm-password').value
+    if (password.length < 8) {
+      error('A password must be at least 8 characters.', 5)
+      return
+    }
+    if (password != again) {
+      error('The two passwords are not the same.', 5)
+      return
+    }
+    sending = true
+    m.request('/auth/reset-password', {
+      method: 'POST',
+      body: { token: token(), password },
+    })
+      .then(
+        () => {
+          success('Your password is set. Log in with it.', 8)
+          m.route.set('/login')
+        },
+        err => error(linkFailure(err), 10)
+      )
+      .finally(() => {
+        sending = false
+        m.redraw()
+      })
+  }
+
+  return {
+    oninit: () => {
+      if (action() == 'verify' && token()) confirm()
+    },
+    view: () => {
+      if (!token() || !['reset', 'verify'].includes(action())) {
+        return [
+          m('h2', 'account'),
+          m(
+            'p#account-missing',
+            'This page opens from the link in an email from this server, and ' +
+              'that link is not here. Ask for a new one from the login screen.'
+          ),
+          m('a', { href: '#!/login' }, 'to the login screen'),
+        ]
+      }
+      if (action() == 'verify') {
+        return [
+          m('h2', 'confirm your address'),
+          m('p#account-outcome', confirmed || 'Confirming your address...'),
+        ]
+      }
+      return [
+        m('h2', 'choose a new password'),
+        m('form#reset', { onsubmit: reset }, [
+          m('label[for=new-password]', 'new password:'),
+          m('input#new-password', { type: 'password', autocomplete: 'new-password' }),
+          m('br'),
+          m('label[for=confirm-password]', 'again:'),
+          m('input#confirm-password', {
+            type: 'password',
+            autocomplete: 'new-password',
+          }),
+          m('br'),
+          m('input#reset-submit', {
+            type: 'submit',
+            value: 'set password',
+            disabled: sending,
+          }),
+        ]),
+      ]
+    },
+  }
 }
 
 /** The /logout route: end the session once, on arrival.

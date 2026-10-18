@@ -1,5 +1,6 @@
 from os import environ
 from os.path import join
+from urllib.parse import urlsplit
 
 PRODUCTION = environ.get('ALFRED_PRODUCTION')
 
@@ -157,6 +158,28 @@ def resolve_seed_owner(env):
 
 
 SEED_OWNER = resolve_seed_owner(environ)
+
+
+def resolve_public_url(env):
+    """Where people reach this server, for the links in account mail.
+
+    A password-reset mail carries a link into the app, and the link needs the
+    app's address. It comes from ALFRED_PUBLIC_URL (`https://alfred.example`),
+    never from the request that asked for the reset: its Host header is
+    whatever the asker sent, and a reset link built on it would carry somebody
+    else's token to the asker's own host.
+
+    An `http` or `https` URL with a host, without a trailing slash; anything
+    else is treated as unset, and no mail with a link is sent.
+    """
+    value = (env.get('ALFRED_PUBLIC_URL') or '').strip().rstrip('/')
+    parts = urlsplit(value)
+    if parts.scheme not in ('http', 'https') or not parts.netloc:
+        return None
+    return value
+
+
+PUBLIC_URL = resolve_public_url(environ)
 
 DATA_DIR = environ.get('DATA_DIR', 'data')
 # The media library: what `GET /videos` lists and clips name as

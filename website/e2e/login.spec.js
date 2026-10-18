@@ -94,6 +94,10 @@ test.describe('registering', () => {
   })
 
   test('an address that already has an account says so', async ({ page }) => {
+    /**
+     * fastapi-users answers with a code, REGISTER_USER_ALREADY_EXISTS; the
+     * register button says it in words, and what to do instead.
+     */
     await register(page, CREDENTIALS.username, CREDENTIALS.password)
 
     await expect(page.locator('.ajs-message')).toContainText(/already has an account/i)
@@ -110,5 +114,116 @@ test.describe('registering', () => {
 
     await expect(page.locator('.ajs-message')).toContainText(/development login/i)
     await expect(page.locator(SELECTORS.login)).toHaveText(/login/i)
+  })
+})
+
+test.describe('the links the server mails', () => {
+  /**
+   * # Recipe: a forgotten password
+   *
+   * The login screen's "forgot password" asks the server to mail a reset link
+   * to the address in the email field. The link opens an account page, which
+   * takes the new password twice, sets it, and goes to the login screen. A
+   * confirmation link opens the same page, which confirms the address as it
+   * opens. Both work for somebody who is not logged in -- which is the point,
+   * and which the session guard used to prevent, sending the page, its token
+   * and all, to the login screen.
+   *
+   * The server answers a reset request the same whether or not the address
+   * has an account, so asking says nothing about who has one; a server with
+   * no mail configured sends nothing, which only an administrator can change.
+   *
+   * The pages' requests are answered here rather than by the server: the
+   * token in a real link only ever reaches a mailbox, and this suite has
+   * none. The API side, from the request to logging in with the new password,
+   * is `tests/integration/test_password_reset_api.py`.
+   */
+
+  test('forgot password asks for a reset link for the address typed in', async ({
+    page,
+  }) => {
+    await page.goto('/#!/login')
+    await page.locator('#username').fill(CREDENTIALS.username)
+    const asked = page.waitForRequest(
+      r => new URL(r.url()).pathname == '/auth/forgot-password'
+    )
+
+    await page.locator('#forgot').click()
+
+    expect((await asked).postDataJSON()).toEqual({ email: CREDENTIALS.username })
+    await expect(page.locator('.ajs-message')).toContainText(/link to choose a new password/i)
+  })
+
+  test('the reset link sets the new password, then goes to log in', async ({ page }) => {
+    const sent = []
+    await page.route('**/auth/reset-password', route => {
+      sent.push(route.request().postDataJSON())
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+    })
+
+    await page.goto('/#!/account/reset?token=the-token-from-the-mail')
+    await page.locator('#new-password').fill('a brand new password')
+    await page.locator('#confirm-password').fill('a brand new password')
+    await page.locator('#reset-submit').click()
+
+    await expect(page).toHaveURL(/#!\/login/)
+    expect(sent).toEqual([
+      { token: 'the-token-from-the-mail', password: 'a brand new password' },
+    ])
+    await expect(page.locator('.ajs-message')).toContainText(/password is set/i)
+  })
+
+  test('a reset link that has expired or been used says so', async ({ page }) => {
+    await page.route('**/auth/reset-password', route =>
+      route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: 'RESET_PASSWORD_BAD_TOKEN' }),
+      })
+    )
+
+    await page.goto('/#!/account/reset?token=an-old-token')
+    await page.locator('#new-password').fill('a brand new password')
+    await page.locator('#confirm-password').fill('a brand new password')
+    await page.locator('#reset-submit').click()
+
+    await expect(page.locator('.ajs-message')).toContainText(/expired or has been used/i)
+    await expect(page).toHaveURL(/#!\/account\/reset/)
+  })
+
+  test('the new password has to be typed the same twice', async ({ page }) => {
+    // Checked before anything is sent.
+    const sent = []
+    page.on('request', r => {
+      if (new URL(r.url()).pathname == '/auth/reset-password') sent.push(r)
+    })
+
+    await page.goto('/#!/account/reset?token=the-token-from-the-mail')
+    await page.locator('#new-password').fill('a brand new password')
+    await page.locator('#confirm-password').fill('a different password')
+    await page.locator('#reset-submit').click()
+
+    await expect(page.locator('.ajs-message')).toContainText(/not the same/i)
+    expect(sent).toEqual([])
+  })
+
+  test('the confirmation link confirms the address as the page opens', async ({
+    page,
+  }) => {
+    const sent = []
+    await page.route('**/auth/verify', route => {
+      sent.push(route.request().postDataJSON())
+      return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
+    })
+
+    await page.goto('/#!/account/verify?token=the-token-from-the-mail')
+
+    await expect(page.locator('#account-outcome')).toHaveText(/address is confirmed/i)
+    expect(sent).toEqual([{ token: 'the-token-from-the-mail' }])
+  })
+
+  test('the account page without its link says where to get one', async ({ page }) => {
+    await page.goto('/#!/account/reset')
+    await expect(page.locator('#account-missing')).toBeVisible()
   })
 })

@@ -5,8 +5,11 @@ account's password. Both the reset and the verification hooks printed the
 token itself, so in production, reading the log was as good as taking over
 any account that asked for a reset. Under ALFRED_PRODUCTION the event is
 logged and the token is not. In development the token stays in the log on
-purpose -- nothing sends email, so the log is the only way to finish a reset
+purpose -- without mail configured, the log is the only way to finish a reset
 on a development stack.
+
+The mail itself is `test_account_mail.py`'s. These run with it unconfigured,
+whatever the environment says, and with it delivered nowhere when it is.
 """
 
 import asyncio
@@ -16,11 +19,25 @@ import pytest
 
 from alfred import config
 from alfred.core.routes.users import UserManager
+from alfred.core.utils import account_mail
 
 TOKEN = 'eyJ.this-is-the-credential.sig'
-USER = SimpleNamespace(id='6a76a53effdcf46c9c285cf5')
+USER = SimpleNamespace(id='6a76a53effdcf46c9c285cf5', email='someone@example.com')
 
 HOOKS = ['on_after_forgot_password', 'on_after_request_verify']
+
+
+@pytest.fixture(autouse=True)
+def no_mail(monkeypatch):
+    monkeypatch.setattr(config, 'PUBLIC_URL', None)
+    monkeypatch.setattr(account_mail, 'dispatch', lambda send: None)
+
+
+@pytest.fixture
+def mail_configured(monkeypatch):
+    monkeypatch.setattr(config, 'EMAIL_SERVER', 'smtp.example.com')
+    monkeypatch.setattr(config, 'EMAIL_USERNAME', 'alfred@example.com')
+    monkeypatch.setattr(config, 'PUBLIC_URL', 'https://alfred.example.com')
 
 
 def run(hook):
@@ -35,6 +52,13 @@ class TestInProduction:
         run(hook)
         assert TOKEN not in capsys.readouterr().out
 
+    def test_nor_when_it_is_mailed(self, hook, monkeypatch, capsys, mail_configured):
+        monkeypatch.setattr(config, 'PRODUCTION', 'true')
+        run(hook)
+        out = capsys.readouterr().out
+        assert TOKEN not in out
+        assert 'mailed' in out
+
     def test_the_event_still_is(self, hook, monkeypatch, capsys):
         """An operator can still see that a reset or verification happened."""
         monkeypatch.setattr(config, 'PRODUCTION', 'true')
@@ -42,6 +66,12 @@ class TestInProduction:
         out = capsys.readouterr().out
         assert USER.id in out
         assert 'not logged' in out
+
+    def test_and_why_nothing_was_mailed(self, hook, monkeypatch, capsys):
+        """Otherwise a reset that never arrives says nothing anywhere."""
+        monkeypatch.setattr(config, 'PRODUCTION', 'true')
+        run(hook)
+        assert 'ALFRED_PUBLIC_URL' in capsys.readouterr().out
 
 
 @pytest.mark.parametrize('hook', HOOKS)
