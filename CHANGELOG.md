@@ -71,12 +71,16 @@ production stack needs its own signing key.
 
 ### Changed
 
-- **The engine is otto a387666.** Renders come out at the requested size, with
-  media fitted inside it and centred; `outpoint` trims; `fps` is honoured; a
-  clip's own `fadeIn`/`fadeOut` are its only fades and `0` means none;
-  `opacity: 0` is invisible; audio clips are mixed into the sound instead of
-  crashing the render. A clip the engine cannot render is refused with a
-  message naming it -- a 422 from the preview, the render's `error` otherwise.
+- **The engine is otto's `fix/engine-contract`, then `fix/engine-wave2`.**
+  Renders come out at the requested size, with media fitted inside it and
+  centred; `outpoint` trims; `fps` is honoured; a clip's own
+  `fadeIn`/`fadeOut` are its only fades, `0` means none, and a video clip's
+  sound fades with its picture; `opacity: 0` is invisible; audio clips are
+  mixed into the sound instead of crashing the render. A clip the engine
+  cannot render, a position it cannot place a clip at among them, is refused
+  when the clip is built, with a message that names it, counting clips from
+  1: a 422 from the preview, the render's `error` otherwise. Each video is
+  probed once per version of its file, and otto installs without bezier.
 - **The editor renders what it plays.** Every clip goes out with an explicit
   `start` and without fades nobody chose, so three 5-second clips render as 15
   seconds of hard cuts rather than all three overlapping for 5 seconds and
@@ -89,10 +93,6 @@ production stack needs its own signing key.
   as media again.
 - **Seeds and demos have owners.** `ALFRED_SEED_OWNER` names it; in development
   it is the dev user. Each account gets its own demo project.
-- **The engine is otto e050396.** Refusals count clips from 1; a video
-  clip's sound fades with its picture; a position the engine cannot place a
-  clip at is refused when the clip is built (a 422 naming the clip); each video
-  is probed once per version of its file; otto installs without bezier.
 - **Library clips arrive at their own length and kind** (`GET /media`),
   previews stream from signed URLs, and downloads use `download_url`.
 - **A saved timeline holds what the editor sent.** Projects store and serve
@@ -115,11 +115,13 @@ production stack needs its own signing key.
   client).
 - **The viewer's frame takes the output's shape at any size**, the transport is
   two rows, and on a phone a stage's panels scroll inside themselves.
-- **Front-end dependencies are current**, matching codecartographer's:
-  golden-layout 2.6.0, mithril 2.3.8, parcel 2.16.4, sass 1.105, jwt-decode 4,
-  Playwright 1.64.1 and its runner image. json-logic-engine stays at 1.3.9 (its
-  2.x changes how stored project logic evaluates); unused babel and cssnano
-  packages are gone.
+- **Front-end dependencies are current**: golden-layout 2.6.0, mithril 2.3.8,
+  parcel 2.16.4, sass 1.105, jwt-decode 4, Playwright 1.64.1 and its runner
+  image. Those codecartographer also uses -- golden-layout, mithril and
+  Playwright -- match its `chore/deps-current` branch, which is not merged;
+  its main has mithril 2.2 and Playwright 1.61. json-logic-engine stays at
+  1.3.9 (its 2.x changes how stored project logic evaluates); unused babel and
+  cssnano packages are gone.
 
 ### Fixed
 
@@ -189,7 +191,10 @@ production stack needs its own signing key.
 - **qmcp can drive alfred over its HTTP API** (qmcp branch
   `feat/alfred-tools`): tools that list projects and templates, queue a render
   and follow it, and a flow that puts a finished render to a person for
-  approval.
+  approval. qmcp's `feat/alfred-captions`, built on it, adds tools that
+  transcribe a project's captions, read and correct them, burn them into a
+  render and deliver it, and a flow that puts the transcript to a person
+  before the captioned render, and the render before it is delivered.
 - **Captions.** A project's captions can be typed in the Captions panel,
   imported from SubRip, WebVTT or JSON with a review step, or transcribed from
   the timeline's own sound by an audio engine; renders draw them as textBox
@@ -219,14 +224,19 @@ production stack needs its own signing key.
 
 - **CI tests on Python 3.11, against the vendored engine and the lockfile.**
   This needs quaternionmedia/.github's `fix/ruff-check-and-python-input`
-  (`ruff check`, a `python_version` input, and `submodules` and
-  `requirements` inputs for the pytest workflow) merged first.
+  merged first, for `ruff check` and the pytest workflow's `python_version`
+  and `submodules` inputs. That branch also adds a `requirements` input,
+  which alfred does not use.
 - **Publishing needs a `v*` tag that names the version** in
   `alfred/_version.py`, and the backend suite passing at that commit. Every
-  workflow runs on actions that target Node 24.
+  workflow but three runs on actions that target Node 24 -- CI's and CD's
+  through the org workflows, once that branch is merged. `adr-lint.yml`,
+  `reuse-lint.yml` and `submodule-check.yml` are copied verbatim from
+  governance and keep the action versions it ships them with, checkout v4
+  and setup-python v5, which target Node 20.
 - **The api test jobs install the lockfiles with `--no-deps`**
   (`requirements.lock`, `requirements-test.lock`, then the project and the
-  vendored engine) and no longer use the org workflow's `requirements` input.
+  vendored engine), all through the pytest workflow's `pip_args`.
 - **CI installs `alfred/vox` editable** beside the engine; the e2e stack runs a
   deterministic stub audio engine, and both browser projects.
 

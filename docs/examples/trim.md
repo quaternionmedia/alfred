@@ -7,7 +7,7 @@ Selecting a portion of a video is as simple as defining an `inpoint`.
     "clips": [
       {
         "type": "video",
-        "name": "https://storage.googleapis.com/tower-bucket/moon.mp4",
+        "name": "videos/moon.mp4",
         "inpoint": 5,
         "duration": 5
       }

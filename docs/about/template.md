@@ -1,82 +1,106 @@
 # Template
 
-A `Template` is a `Clip` designed to render text.
+A `Template` is a `Clip` whose picture is drawn rather than read from a file: text, or a colour. Its `name` is the template to draw, and its `data` what to draw with it.
 
-Each template can have unique properties, `fxs`, and values, according to each template schema.
+``` json title="A template clip"
+{
+  "type": "template",
+  "name": "textBox",
+  "duration": 5,
+  "data": {
+    "text": "Drama is life with the dull bits cut out.",
+    "color": "#f2aa4c"
+  }
+}
+```
+
+A template clip needs `data`, and is otherwise placed and timed like any [Clip](clip.md): `start`, `duration`, `inpoint` and `outpoint`, `fadeIn` and `fadeOut`, `opacity`, `position`, and `clipsize`, the size the template is drawn at, which is the frame unless it says otherwise.
 
 !!! info
-    Full list of values available from the API, at `/otto/templates`
-
-``` python
-class Template:
-    name: str
-    text: str
-    data: dict = None
-    color: str = None
-    themecolor: str = None
-    fontsize: float = None
-    clipsize: tuple[int] = (1920,1080)
-    textsize: tuple[int] = None
-    font: str = 'Segoe-UI-Black'
-    method: str = 'caption'
-    duration: float = 5
-    position: str = 'center'
-    opacity: float = .4
-    fps: float = 30
-    bg: str = None
-```
-Available properties:
+    `GET /templates` lists the templates this server offers, each with a `description`, the `parameters` its template takes, and whether it is `deprecated`.
 
 ## `name`
 : `#!python str`
     
-    The name of the base template to use. Available options:
+    The template to draw. This server offers:
     
-    - title
-    - initial
-    - bullets
-    - final
-    - textBox
+    - `title`: a large title, with a box in `themecolor` revealed beside it
+    - `textBox`: a block of text, with a box in `bg` behind it when one is given
+    - `bullets` (deprecated): bullet points separated by `•`, one after another
+    - `initial` (deprecated): the sentences of `text`, one after another
+    - `makeColor`: the clip filled with one colour
 
-    
-## `text`
-: `#!python str`
+    Any other name is refused: a render or a preview naming it is a 422, and `GET /preview/template/{name}` a 404. That includes `final`, which otto draws but this server does not offer: the address, website and phone it shows come from otto's own defaults, and nothing in `data` can change them.
 
 ## `data`
-: `#!python dict = None`
+`data` holds the fields below. Any other key is dropped without an error, which is why some of the `parameters` `GET /templates` lists for a template, such as `opacity`, `fps` and `start`, cannot be set through it: the template keeps its own value.
 
-## `color`
-: `#!python str = None`
+``` python
+class TemplateData:
+    text: str
+    color: str
+    themecolor: str
+    bg: str
+    fontsize: float
+    textsize: tuple
+    font: str
+    method: str = 'label'
+    align: str
+    position: tuple | str
+    fxs: List[FX]
+```
 
-## `themecolor`
-: `#!python str = None`
+### `text`
+: `#!python str`
 
-## `fontsize`
-: `#!python float = None`
+    The words to draw. Every template but `makeColor` needs it: a preview without it is a 422, and a render fails, with the reason in its `error`.
 
-## `clipsize`
-: `#!python tuple[int] = (1920,1080)`
+### `color`
+: `#!python str`
 
-## `textsize`
-: `#!python tuple[int] = None`
+    The text's colour, as `#rrggbb`; white by default. For `makeColor`, the colour it fills the clip with.
 
-## `font`
-: `#!python str = 'Segoe-UI-Black'`
+### `themecolor`
+: `#!python str`
 
-## `method`
-: `#!python str = 'caption'`
+    The colour of `title`'s box and of `bullets`' bar; yellow by default.
 
-## `duration`
-: `#!python float = 5`
+### `bg`
+: `#!python str`
 
-## `position`
-: `#!python str = 'center'`
+    A box of this colour behind the text, drawn at 40% opacity, for `title`, `textBox` and `initial`.
 
-## `opacity`
-: `#!python float = .4`
+### `fontsize`
+: `#!python float`
 
-## `fps`
-: `#!python float = 30`
+    The text's size. Without one, the text is sized to fill `textsize`.
 
-## `bg`
-: `#!python str = None`
+### `textsize`
+: `#!python tuple`
+
+    The (width, height) of the box the text is set in; half the frame each way by default.
+
+### `font`
+: `#!python str`
+
+    A font name as ImageMagick lists it on the server (`convert -list font`), such as `DejaVu-Sans`. A name it does not know is drawn in its default font, without an error.
+
+### `method`
+: `#!python str = 'label'`
+
+    How the text is set: `label` keeps the lines it is given, and `caption` wraps it to the width of `textsize`.
+
+### `align`
+: `#!python str`
+
+    For `textBox`, how its lines line up: `center` by default, or `west` or `east`.
+
+### `position`
+: `#!python tuple | str`
+
+    Where the text sits in the template's frame, as a clip's [`position`](clip.md#position) is given.
+
+### `fxs`
+: `#!python List[FX]`
+
+    Movements for `textBox`, `initial` and `bullets`, each `{"name": "bezier2", "data": {...}}`: the clip moves along a curve over its first second. See [Animate text](../examples/animation.md). Any other name is a 422.

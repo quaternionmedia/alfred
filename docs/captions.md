@@ -14,8 +14,10 @@ video work itself.
 
 ## In the editor
 
-The **Captions** panel sits under the stage rail on the Edit stage, folded to
-one line until opened.
+On a wide screen, 1024 CSS pixels and up, **Captions** is a tab in the
+workspace's right-hand column, beside Render and Deliver. On a phone, or
+anything narrower, it is the Edit stage's panel, above the viewer and the
+timeline.
 
 - **Add at playhead** adds a two-second caption where the playhead is. Each row
   has a start and an end in seconds -- set by typing, or from the playhead with
@@ -195,9 +197,13 @@ ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010 ./al dev
 ```
 
 Docker Desktop resolves `host.docker.internal` itself; on a Linux host,
-`dev.yml` maps it to the host's gateway. Then `GET /health` should answer
-`audio_engine: {configured: true, ok: true}` -- and, as with any port, check
-what is answering there before trusting it.
+`dev.yml` maps it to the host's gateway, and joe has to listen on an address
+the containers can reach: see [Configuration](configuration.md). Then
+`GET /health` should answer `audio_engine: {configured: true, ok: true}`. It
+needs a session: send a token, or start the stack with
+`ALFRED_DEV_SKIP_AUTH=1`. `GET /healthz` needs none, and says only that the
+api is up. And, as with any port, check what is answering there before
+trusting it.
 
 ### Analysing library media
 

@@ -5,7 +5,7 @@
       {
         "eachKey": {
           "type": "video",
-          "name": "https://storage.googleapis.com/tower-bucket/alfred/qm/Harpo-reel2.mp4",
+          "name": "videos/moon.mp4",
           "duration": 10,
           "inpoint": 4
         }

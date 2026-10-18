@@ -107,10 +107,10 @@ any commit already belongs to another open PR.
 
 ### If you changed a submodule
 
-`alfred/otto` and `governance/qm` are submodules. **Push the submodule branch
-and get it merged before bumping the pointer here.** A pointer bump to an
-unpushed commit is internally consistent, passes every local check, and fails
-in CI as:
+`alfred/otto`, `alfred/vox` and `governance/qm` are submodules. **Push the
+submodule branch and get it merged before bumping the pointer here.** A
+pointer bump to an unpushed commit is internally consistent, passes every
+local check, and fails in CI as:
 
 ```
 fatal: remote error: upload-pack: not our ref <sha>
