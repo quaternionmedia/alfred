@@ -24,6 +24,7 @@ from alfred.core.routes import (
     adminAPI,
     audioAPI,
     authAPI,
+    captionsAPI,
     demoAPI,
     fontAPI,
     healthAPI,
@@ -233,6 +234,10 @@ app.include_router(
 projects = ProjectAPI()
 app.include_router(
     projects, dependencies=[Depends(current_active_user)], tags=['project']
+)
+# A project's captions (contract K2), scoped to the caller like the project.
+app.include_router(
+    captionsAPI, dependencies=[Depends(current_active_user)], tags=['captions']
 )
 
 app.include_router(fontAPI, dependencies=[Depends(current_active_user)], tags=['font'])

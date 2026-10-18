@@ -6,6 +6,8 @@ from beanie import Document, PydanticObjectId
 from otto.models import Edl
 from pydantic import BaseModel
 
+from .captions import Caption, CaptionStyle
+
 
 class Render(Document):
     edl: Edl
@@ -46,6 +48,13 @@ class Render(Document):
     # resulting URL or path; this records which transport produced it, so a
     # link can be interpreted without guessing from its shape.
     destination: Optional[str]
+    # Captions to draw over the timeline, in its seconds, and how (contract
+    # K2). Kept beside `edl` rather than written into it: the timeline stays
+    # what was sent, and the caption clips are made each time the render is
+    # queued -- so a rerender draws them too, at the render's own size. None,
+    # or a style with `enabled: false`, draws none.
+    captions: Optional[List[Caption]]
+    caption_style: Optional[CaptionStyle]
 
     # class Config:
     #     title = 'Alfred Render'

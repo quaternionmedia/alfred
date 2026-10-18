@@ -1,6 +1,7 @@
 from .admin import adminAPI
 from .audio import audioAPI
 from .auth import auth as authAPI
+from .captions import captionsAPI
 from .demo import demoAPI
 from .fonts import fontAPI
 from .health import healthAPI
@@ -16,6 +17,7 @@ __all__ = [
     adminAPI,
     audioAPI,
     authAPI,
+    captionsAPI,
     issueAPI,
     fontAPI,
     healthAPI,
