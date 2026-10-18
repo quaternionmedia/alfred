@@ -92,6 +92,12 @@ render = [
 # An override replaces every requirement on a package, its dependents'
 # included. pdm honours it; pip has no such thing, so the image, nox and CI
 # install the exported lockfiles with --no-deps (the Dockerfile says more).
+#
+# Relock with pdm 2.29 or later. pdm 2.22, with this override locked, fails
+# `pdm add`, `pdm update <pkg>` and `pdm lock --update-reuse` with
+# CandidateNotFound for python-multipart, and its full `pdm lock` had not
+# finished after 49 minutes; only `pdm update python-multipart` worked. 2.29
+# relocks everything in under two minutes.
 [tool.pdm.resolution.overrides]
 # fastapi-users 10.4 pins python-multipart==0.0.6, which has nine advisories
 # against it (CVE-2024-24762 and CVE-2024-53981 among them). Every
