@@ -10,6 +10,7 @@ import { message } from 'alertifyjs'
 import { auth } from './Login'
 import { cutAtPlayhead } from './TimelineTools'
 import { clipSeconds, roll, slide, slip, trim } from './Timing'
+import { Draft } from './Draft'
 
 // How far a press may wander and still count as a tap. Past this it is a drag
 // -- on a touch screen, usually the start of scrolling the timeline -- and
@@ -295,6 +296,10 @@ export function OttoTimeline() {
     loaded = projectId
     const mine = ++ticket
 
+    // What is on screen belongs to the project before; anything unsaved in
+    // it is kept for that project before it goes (Draft.js).
+    Draft.opening()
+
     // Empty now, not when the response lands. The previous project's clips
     // are not this one's, and leaving them up while the request is in flight
     // made anything added meanwhile land on the wrong timeline. Not
@@ -327,7 +332,12 @@ export function OttoTimeline() {
         // add a clip before the fetch returned, and the clip vanished when it
         // did -- then Save, finding nothing on the timeline, saved nothing.
         // That was the save test failing on most runs.
-        Edl.edl = ((e.edl && e.edl.clips) || []).concat(Edl.edl)
+        const saved = (e.edl && e.edl.clips) || []
+        // What is saved is what an unsaved timeline differs from -- and a
+        // timeline kept from before a reload or a new login, if it differs,
+        // is offered back.
+        Draft.opened(projectId, saved)
+        Edl.edl = saved.concat(Edl.edl)
         Edl.current = 0
         Edl.time = 0
         Edl.update()
@@ -352,7 +362,16 @@ export function OttoTimeline() {
 
   return {
     oninit: open,
-    onupdate: open,
+    onupdate: () => {
+      open()
+      // Every change to the timeline ends in a draw of it, whatever made the
+      // change -- a tool, a setting beside the viewer, a drag from the bin --
+      // so this is where an unsaved timeline is kept up to date.
+      Draft.observe()
+    },
+    // The page is leaving the editor -- to log in again, say -- so what is
+    // unsaved is kept now rather than at the next throttled write.
+    onremove: () => Draft.flush(),
     oncreate: (vnode) => {
       new Sortable(vnode.dom, {
         multiDrag: true,

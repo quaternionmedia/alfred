@@ -8,6 +8,7 @@ import { Resolution, Aspect } from './Resolution'
 import { queueRender, renderSize, timelineEdl, timelineRender } from './RenderRequest'
 import { requestProblem } from './Problem'
 import { Flow } from './Stages'
+import { Draft } from './Draft'
 
 // `downloadFile(url)` lived here and was never called: an anchor pointed at a
 // protected URL cannot carry the session's Authorization header, so it could
@@ -163,6 +164,8 @@ export function ProjectTools() {
                   if (updated && updated._id) {
                     Flow.projects = Flow.projects.map(p => (p._id === updated._id ? updated : p))
                   }
+                  // What was saved is no longer a draft (Draft.js).
+                  Draft.saved(project, edl.clips)
                   success(`Saved ${edl.clips.length} clips to the project`)
                   m.redraw()
                 })

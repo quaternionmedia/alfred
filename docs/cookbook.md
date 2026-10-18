@@ -448,6 +448,55 @@ Two bare anchors side by side read "User documentationAPI reference".
 
 - **its links are separated, to the eye and in the text**
 
+## editor draft
+
+An unsaved timeline outlives the page that made it.
+
+# Recipe: getting unsaved edits back
+
+Edits to a project's timeline are kept in the tab until they are saved. If
+the page is reloaded, or the session runs out and you log in again, opening
+the project offers them back: **Restore them** puts the unsaved timeline on
+screen, **Discard** keeps the saved one. Saving clears what was kept. It is
+the tab's own, and goes when the tab does.
+
+Every edit since the last save used to be lost, with no warning, whenever
+the page went away.
+
+These open the shared media project and never save it: what a test keeps
+stays in its own browser, and the one test that saves brings its own
+project.
+
+### an unsaved timeline outlives a reload
+
+- **after a reload the unsaved timeline is offered back, and restored**
+- **discarded, it is gone, and the saved timeline stays**
+
+  Opening a project, selecting clips and playing them changes nothing,
+  so nothing is kept -- and a stored `start` or fade, which the editor
+  would send differently, is not counted as a change.
+
+- **a timeline that was only looked at offers nothing**
+
+  Opening a project, selecting clips and playing them changes nothing,
+  so nothing is kept -- and a stored `start` or fade, which the editor
+  would send differently, is not counted as a change.
+
+- **saving clears what was kept**
+### an unsaved timeline outlives the session
+
+The server refusing the session sends the page to log in, carrying
+where it was; the timeline goes with the page. Logging in again comes
+back to the project, and offers what was unsaved.
+
+- **when the session ends, logging in again offers it back**
+### storage that refuses
+
+Private browsing and full quotas refuse storage outright. The editor
+goes on working; there is simply nothing to offer back.
+
+- **a browser that will not keep the timeline still edits it**
+
 ## editor media
 
 Media in the editor: how long it runs, and how the browser fetches it.

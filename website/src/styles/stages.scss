@@ -485,3 +485,51 @@
   color: #d98a8a;
   font-size: 0.85rem;
 }
+
+// An unsaved timeline offered back after a reload or a new login (Draft.js).
+// Under the rail and above every panel, so it is seen whichever stage is
+// open; amber, like the other notices that need an answer, not red: nothing
+// has gone wrong.
+.draftoffer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.5rem 1rem;
+  background: #2a2414;
+  border-bottom: 1px solid #4a3f22;
+  color: #e6d3a3;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+
+  i {
+    font-size: 1.2rem;
+    color: #f2aa4c;
+  }
+
+  .draftmessage {
+    flex: 1 1 20rem;
+  }
+
+  button {
+    min-height: 2rem;
+    padding: 0.35rem 0.8rem;
+    border: 1px solid #4a3f22;
+    border-radius: 3px;
+    background: #222;
+    color: #e6e6e6;
+    font: inherit;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      border-color: #f2aa4c;
+    }
+  }
+
+  #draft-restore {
+    background: #f2aa4c;
+    border-color: #f2aa4c;
+    color: #101820;
+  }
+}

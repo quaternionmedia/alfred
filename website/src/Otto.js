@@ -17,6 +17,7 @@ import TimelineTools from './TimelineTools'
 import { Scale } from './Scale'
 import { StageRail, StagePanel, Flow } from './Stages'
 import { TemplateParams } from './TemplateParams'
+import { DraftOffer } from './Draft'
 
 export var Otto = {
   // Re-checked on every mount, not only at boot.
@@ -49,6 +50,9 @@ export var Otto = {
     return [
       m(Menu),
       m(StageRail),
+      // An unsaved timeline kept from before a reload or a new login, offered
+      // back -- under the rail, so it is seen whichever stage is open.
+      m(DraftOffer),
       m(StagePanel),
 
       m('section.viewer', [
