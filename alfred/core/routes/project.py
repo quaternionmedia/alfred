@@ -93,14 +93,17 @@ class ProjectAPI(MotorCRUDRouter):
             arrives with `logic` unset, and `logic` is required, so saving one
             preference meant sending the entire project back and racing anyone
             else editing it. This writes only the fields it is given.
+
+            Only those, at the database too. It loaded the project, changed
+            the fields and saved the whole document back, so a timeline saved
+            in between was overwritten with the one this request had loaded.
             """
             project = await self._owned(item_id, user)
 
             patch = settings.dict(exclude_none=True)
-            for field, value in patch.items():
-                setattr(project, field, value)
-            await project.save()
-            return project
+            if patch:
+                await project.set(patch)
+            return await self._as_stored(project)
 
         @self.put('/{item_id}/timeline', *args, **kwargs)
         async def saveProjectTimeline(
@@ -121,12 +124,28 @@ class ProjectAPI(MotorCRUDRouter):
             hypothetical; it happened, and every subsequent GET answered 500.
 
             So this writes one field, for the same reason `/settings` does.
+
+            Each clip is validated against otto's `Clip` and stored as sent
+            (contract M4): the fields the editor set and no others, so a
+            saved timeline renders exactly as the editor renders it. It used
+            to come back with otto's defaults written in -- `fadeIn: 1` and
+            `fadeOut: 1` on every clip -- which rendered as fades nobody
+            chose. The answer is the project as stored.
             """
             project = await self._owned(item_id, user)
 
-            project.edl = edl
-            await project.save()
-            return project
+            await project.set({'edl': edl})
+            return await self._as_stored(project)
+
+    async def _as_stored(self, project):
+        """`project` read back after a write: what the next GET will answer.
+
+        Not the object just written. beanie merges the stored document into
+        it field by field after an update, which marks the EDL's `duration`
+        as sent even where it was not, and the answer would say `null` for
+        something the project does not hold.
+        """
+        return await self.schema.get(project.id)
 
     async def _owned(self, item_id, user):
         """The project `item_id`, if `user` may touch it; otherwise 404.
@@ -201,7 +220,8 @@ class ProjectAPI(MotorCRUDRouter):
             model.owner = project.owner
             model.demo = project.demo
             del model.id
-            return await project.update(Set(model))
+            await project.update(Set(model))
+            return await self._as_stored(project)
 
         return route
 

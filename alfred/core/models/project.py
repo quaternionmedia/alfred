@@ -22,6 +22,24 @@ ONE_DEMO_PER_OWNER = IndexModel(
 )
 
 
+def as_sent(edl: Edl) -> dict:
+    """An EDL as its sender wrote it: the fields they set, and only those.
+
+    Validated against otto's models on the way in, which fill in what was not
+    sent -- every clip gains `fadeIn: 1`, `fadeOut: 1`, `duration: 5`,
+    `relative: true` and a null for each other field. Stored like that, a
+    saved timeline said more than the editor did: a clip nobody gave a fade
+    came back carrying a one-second one, indistinguishable from a chosen fade,
+    and rendered with it. So a project keeps exactly what it was sent (contract
+    M4), and the engine applies its own defaults when it renders. Clips stored
+    before this keep the defaults written into them.
+
+    Anything a model does not declare -- the editor's view index `i` on each
+    clip -- is gone either way: validation drops it.
+    """
+    return edl.dict(exclude_unset=True)
+
+
 class RenderSettings(BaseModel):
     """What a project renders at, when nobody says otherwise.
 
@@ -85,6 +103,30 @@ class Project(Document):
 
     class Config:
         title = 'Alfred Project'
+
+    class Settings:
+        # Every write of a project -- create, update, save, set -- stores its
+        # EDL as sent: beanie encodes a document's fields through these.
+        bson_encoders = {Edl: as_sent}
+
+    def dict(self, **kwargs):
+        """The project, its EDL as stored rather than as otto would fill it in.
+
+        Storing what was sent is half of it. Read back, the stored clips are
+        validated into otto's models again, which fill the defaults straight
+        back in -- so `GET /project/{id}` would still answer `fadeIn: 1` for a
+        clip saved without one, and a client rendering what it read would get
+        the fade nobody chose. FastAPI serialises a response model through
+        this method, so every project route answers with the EDL as stored.
+        """
+        data = super().dict(**kwargs)
+        if self.edl is not None and isinstance(data.get('edl'), dict):
+            data['edl'] = self.edl.dict(
+                exclude_unset=True,
+                by_alias=kwargs.get('by_alias', False),
+                exclude_none=kwargs.get('exclude_none', False),
+            )
+        return data
 
 
 class ProjectUpdate(Project):
