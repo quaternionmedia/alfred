@@ -216,7 +216,8 @@ elif [ $1 = "cookbook" ]; then
 elif [ $1 = "flower" ]; then
   shift
   # Celery monitoring on http://localhost:5555. Needs the dev stack up for the
-  # broker; flower.yml only brings up flower itself.
+  # broker; flower.yml only brings up flower itself. On loopback unless
+  # ALFRED_BIND says otherwise, like the dev stack (flower.yml says why).
   docker compose -f flower.yml up "$@"
 
 elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
@@ -349,9 +350,12 @@ elif [ $1 = "g" -o $1 = "git" ]; then
   git pull && git submodule update
 
 elif [ $1 = "docs" -o $1 = "doc" ]; then
-  # build documentation and serve locally, with hot reloader
+  # Build the documentation and serve it, reloading as it changes, on
+  # http://localhost:4000. Loopback unless ALFRED_BIND says otherwise, like the
+  # dev stack: on 0.0.0.0 it served this checkout's docs -- drafts included --
+  # to the whole network by default. ALFRED_BIND=0.0.0.0 ./al docs opens it.
   shift
-  mkdocs serve -a 0.0.0.0:4000
+  mkdocs serve -a "${ALFRED_BIND:-127.0.0.1}:4000"
 
 elif [ $1 = "docker" -o $1 = "dock" ]; then
   shift

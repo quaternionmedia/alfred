@@ -314,3 +314,69 @@ def test_the_documented_engine_address_resolves_on_a_linux_host(name, service):
         f'The {name} {service} does not map host.docker.internal to the host '
         '(extra_hosts: host.docker.internal:host-gateway).'
     )
+
+
+# --- where the stacks listen ----------------------------------------------
+
+COMPOSE_FILES = [
+    'docker-compose.yml',
+    'dev.yml',
+    'thin.yml',
+    'production.yml',
+    'pytest.yml',
+    'flower.yml',
+    'test_e2e.yml',
+]
+
+# A published port's address: loopback, or what ALFRED_BIND (ALFRED_DB_BIND
+# for the database) says, defaulting to loopback.
+LOOPBACK_BY_DEFAULT = re.compile(
+    r'^(?:127\.0\.0\.1|\$\{ALFRED_(?:DB_)?BIND:-127\.0\.0\.1\}):'
+)
+
+
+@pytest.mark.parametrize('filename', COMPOSE_FILES)
+def test_nothing_is_published_beyond_this_machine_by_default(filename):
+    """Every published port names its address, and it is loopback unless the
+    person starting the stack says otherwise.
+
+    A port written as `5555:5555` is published on every interface. flower.yml
+    did that, and flower asks for no login and can shut workers down; the
+    dev stack did it too, until ALFRED_BIND, and with the auth bypass on that
+    served every request on the network as a superuser.
+    """
+    published = [
+        (service, port)
+        for service, definition in (
+            compose_file(filename).get('services') or {}
+        ).items()
+        for port in (definition or {}).get('ports') or []
+    ]
+    open_ = [
+        f'{service}: {port!r}'
+        for service, port in published
+        if not (isinstance(port, str) and LOOPBACK_BY_DEFAULT.match(port))
+    ]
+    assert not open_, (
+        f'{filename} publishes {open_} beyond this machine by default. Name the '
+        "address: '${ALFRED_BIND:-127.0.0.1}:<port>:<port>'."
+    )
+
+
+def test_the_docs_server_listens_on_loopback_by_default():
+    """`./al docs` serves on loopback unless ALFRED_BIND says otherwise.
+
+    It ran `mkdocs serve -a 0.0.0.0:4000`, so the checkout's docs, drafts
+    included, were on the network whenever they were being written.
+    """
+    lines = [
+        line.strip()
+        for line in (REPO / 'al').read_text(encoding='utf-8').splitlines()
+        if 'mkdocs serve' in line and not line.strip().startswith('#')
+    ]
+    assert lines, './al no longer runs `mkdocs serve`; update this test'
+    for line in lines:
+        assert '"${ALFRED_BIND:-127.0.0.1}:' in line, (
+            f'./al serves the docs with {line!r}: bind '
+            '"${ALFRED_BIND:-127.0.0.1}:4000"'
+        )
