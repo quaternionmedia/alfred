@@ -264,6 +264,33 @@ class TestTheTemplatePreviewShowsTheTemplateMidClip:
         assert 'fadeIn' not in clip.data.dict(exclude_none=True)
 
 
+class TestTheTemplatePreviewIsBuiltAtTheClipsLength:
+    """A render builds a template clip to its outpoint (or duration); the
+    preview built it one second past `t`. A template paced by its length --
+    title's box reveal -- drew a different frame at the same `t` when cut or
+    slipped, so the editor now says how long the clip is."""
+
+    def test_the_clip_is_built_at_the_length_given(self, client, built):
+        client.get('/preview/template/makeColor?color=%23f2aa4c&t=1.5&length=6')
+        (clip,) = built[0].clips
+        assert clip.duration == 6
+
+    def test_without_a_length_it_is_built_one_second_past_t(self, client, built):
+        client.get('/preview/template/makeColor?color=%23f2aa4c&t=1.5')
+        (clip,) = built[0].clips
+        assert clip.duration == 2.5
+
+    def test_a_length_shorter_than_t_still_reaches_t(self, client, built):
+        client.get('/preview/template/makeColor?color=%23f2aa4c&t=3&length=2')
+        (clip,) = built[0].clips
+        assert clip.duration > 3
+
+    def test_the_length_is_not_passed_to_the_template_as_data(self, client, built):
+        client.get('/preview/template/makeColor?color=%23f2aa4c&length=6')
+        (clip,) = built[0].clips
+        assert 'length' not in clip.data.dict(exclude_none=True)
+
+
 class TestFramesExpire:
     """Every playhead move left a frame behind, for good."""
 

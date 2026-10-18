@@ -12,11 +12,27 @@ const urlfy = obj => Object
     .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]))
     .join('&');
 
+/** The length a render builds a template clip to: its outpoint, else its
+ * duration. Sent with the preview so the server builds the template the same
+ * way; a template paced by its length draws a different frame at the same `t`
+ * when it is built shorter. */
+const builtLength = clip => {
+  const outpoint = Number(clip.outpoint)
+  if (outpoint > 0) return outpoint
+  const duration = Number(clip.duration)
+  return duration > 0 ? duration : null
+}
+
 /** The frame of a template clip at the playhead, at the viewer's size. */
-export const templatePreviewUrl = clip =>
-  `preview/template/${encodeURIComponent(clip['name'])}?${urlfy(
-    clip.data
-  )}&width=${state.width()}&height=${state.height()}&t=${Video.time()}`
+export const templatePreviewUrl = clip => {
+  const length = builtLength(clip)
+  return (
+    `preview/template/${encodeURIComponent(clip['name'])}?${urlfy(
+      clip.data
+    )}&width=${state.width()}&height=${state.height()}&t=${Video.time()}` +
+    (length ? `&length=${length}` : '')
+  )
+}
 
 /** The latest verdict on the template frame in the viewer.
  *

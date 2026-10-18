@@ -4,6 +4,7 @@ from os import makedirs
 from os.path import basename, isfile, join
 from tempfile import mkstemp
 from time import time
+from typing import Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -113,7 +114,7 @@ def remove_quietly(path):
 
 # Query parameters that describe the frame, or the clip around the template,
 # rather than the template's own data.
-_FRAME_PARAMS = frozenset({'width', 'height', 't', 'fadeIn', 'fadeOut'})
+_FRAME_PARAMS = frozenset({'width', 'height', 't', 'fadeIn', 'fadeOut', 'length'})
 
 
 @previewAPI.post('/')
@@ -191,6 +192,7 @@ async def previewTemplate(
     t: float = 0,
     fadeIn: float = 0,
     fadeOut: float = 0,
+    length: Optional[float] = None,
 ):
     """# Preview a single template
 
@@ -225,10 +227,18 @@ async def previewTemplate(
     # first second by default, so a preview sampled near the start -- which is
     # where the editor samples a template it has just placed -- came out dimmed
     # or black, rather than showing the template as it looks on screen.
+    # Built at the clip's own length when the editor says what it is (`length`:
+    # its outpoint, or its duration), the way a render builds it. A template
+    # paced by its length -- title's box reveal -- drew a different frame at the
+    # same `t` when it was built one second past `t`, which is what the second
+    # half of a cut or a slipped template showed.
+    duration = max(t, 0) + 1
+    if length is not None and length > 0:
+        duration = max(length, max(t, 0) + 0.04)
     clip = Clip(
         type='template',
         name=name,
-        duration=max(t, 0) + 1,
+        duration=duration,
         data=TemplateData(**data),
         fadeIn=fadeIn,
         fadeOut=fadeOut,
