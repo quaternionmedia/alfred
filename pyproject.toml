@@ -21,6 +21,12 @@ dependencies = [
     "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate",
     "ujson>=5.7.0",
     "pillow==9.5.0",
+    # A constraint more than a dependency: nothing here imports numpy, but
+    # moviepy and the engine do, and neither bounds it. The lock held 1.24, the
+    # newest numpy that still installed on Python 3.8; 1.26 is the last 1.x.
+    # Below 2, which removed APIs, until the encode path (moviepy 1.0.3) has
+    # been run on 2.x in the image.
+    "numpy>=1.26.4,<2",
     # Capped, not merely floored, and the cap is the load-bearing half.
     #
     # `passlib.pwd` imports `pkg_resources` at module scope, and setuptools

@@ -57,7 +57,7 @@ lazy-model==0.2.0
 makefun==1.16.0
 motor==3.6.1
 moviepy==1.0.3
-numpy==1.24.4
+numpy==1.26.4
 packaging==26.2
 passlib[bcrypt]==1.7.4
 pdfrw==0.4
