@@ -5,7 +5,7 @@
 groups = ["default", "dev", "render", "test"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:843aff4baac442ae3d22bb1dd400a0674350b413f3a6577b2be41cf0459d6816"
+content_hash = "sha256:0019c96b71ad938c05421f63a05d3d1c86232d8d05b3e344735ac9c90536667b"
 
 [[metadata.targets]]
 requires_python = ">=3.11,<3.12"
@@ -769,20 +769,6 @@ groups = ["default"]
 files = [
     {file = "dnspython-2.6.1-py3-none-any.whl", hash = "sha256:5ef3b9680161f6fa89daf8ad451b5f1a33b18ae8a1c6778cdf4b43f08c0a6e50"},
     {file = "dnspython-2.6.1.tar.gz", hash = "sha256:e8f0f9c23a7b7cb99ded64e6c3a6f3e701d78f50c55e002b839dea7225cff7cc"},
-]
-
-[[package]]
-name = "ecdsa"
-version = "0.19.2"
-requires_python = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,>=2.6"
-summary = "ECDSA cryptographic signature library (pure python)"
-groups = ["default"]
-dependencies = [
-    "six>=1.9.0",
-]
-files = [
-    {file = "ecdsa-0.19.2-py2.py3-none-any.whl", hash = "sha256:840f5dc5e375c68f36c1a7a5b9caad28f95daa65185c9253c0c08dd952bb7399"},
-    {file = "ecdsa-0.19.2.tar.gz", hash = "sha256:62635b0ac1ca2e027f82122b5b81cb706edc38cd91c63dda28e4f3455a2bf930"},
 ]
 
 [[package]]
@@ -1698,21 +1684,6 @@ files = [
 ]
 
 [[package]]
-name = "python-jose"
-version = "3.4.0"
-summary = "JOSE implementation in Python"
-groups = ["default"]
-dependencies = [
-    "ecdsa!=0.15",
-    "pyasn1<0.5.0,>=0.4.1",
-    "rsa!=4.1.1,!=4.4,<5.0,>=4.0",
-]
-files = [
-    {file = "python-jose-3.4.0.tar.gz", hash = "sha256:9a9a40f418ced8ecaf7e3b28d69887ceaa76adad3bcaa6dae0d9e596fec1d680"},
-    {file = "python_jose-3.4.0-py2.py3-none-any.whl", hash = "sha256:9c9f616819652d109bd889ecd1e15e9a162b9b94d682534c9c2146092945b78f"},
-]
-
-[[package]]
 name = "python-multipart"
 version = "0.0.6"
 requires_python = ">=3.7"
@@ -1869,20 +1840,6 @@ dependencies = [
 files = [
     {file = "requests-2.32.4-py3-none-any.whl", hash = "sha256:27babd3cda2a6d50b30443204ee89830707d396671944c998b5975b031ac2b2c"},
     {file = "requests-2.32.4.tar.gz", hash = "sha256:27d0316682c8a29834d3264820024b62a36942083d52caf2f14c0591336d3422"},
-]
-
-[[package]]
-name = "rsa"
-version = "4.9.1"
-requires_python = "<4,>=3.6"
-summary = "Pure-Python RSA implementation"
-groups = ["default"]
-dependencies = [
-    "pyasn1>=0.1.3",
-]
-files = [
-    {file = "rsa-4.9.1-py3-none-any.whl", hash = "sha256:68635866661c6836b8d39430f97a996acbd61bfa49406748ea243539fe239762"},
-    {file = "rsa-4.9.1.tar.gz", hash = "sha256:e7bdbfdb5497da4c07dfd35530e1a902659db6ff241e39d9953cad06ebd0ae75"},
 ]
 
 [[package]]

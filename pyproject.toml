@@ -7,7 +7,6 @@ dependencies = [
     "al-otto >= 0.2.2",
     "fastapi<1.0.0,>=0.92.0",
     "aiofiles<24.0.0,>=23.1.0",
-    "python-jose<4.0.0,>=3.3.0",
     "fastapi-users<11.0.0,>=10.4.0",
     "motor<4.0.0,>=3.1.1",
     "beanie<2.0.0,>=1.17.0",
