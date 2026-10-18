@@ -50,7 +50,13 @@ body {
   box-sizing: border-box;
 }
 
-section {
+/* Every section of the page's own is a region that grows and scrolls.
+   Golden Layout's are not: it draws a dock's header, tab strip, controls and
+   panel area as <section>s too, and this turned each into a scrolling column
+   -- a stack's three tabs stood one above another behind a scrollbar.
+   `:where()` leaves the specificity what it was, so the editor's classes
+   (`.editor` is a grid) still win over it. */
+section:where(:not([class^='lm_'])) {
   background-color: var(--grey0);
   display: flex;
   flex-direction: column;

@@ -16,9 +16,10 @@ import { PlaybackTools, SpeedTools } from '../Tools'
  *             what you are looking at
  *   transport playback and speed, together, because both move the playhead
  *
- * `settings` is anything a layout wants beside the output settings. The phone
- * flow puts the selected template clip's settings there, where they always
- * were; the desktop workspace gives them a panel of their own.
+ * `settings`, when a layout gives it, draws what goes beside the output
+ * settings. The phone flow puts the selected template clip's settings there,
+ * where they always were; the desktop workspace gives them a panel of their
+ * own.
  */
 export const Viewer = {
   view: ({ attrs }) =>
@@ -30,7 +31,7 @@ export const Viewer = {
         m('.viewersettings', [
           m(Aspect, ['16:9', '4:3', '4:5', '1:1', '5:4', '3:4', '9:16']),
           m(Resolution, ['1080p', '720p', '480p', '240p']),
-          attrs.settings || null,
+          typeof attrs.settings === 'function' ? attrs.settings() : null,
         ]),
       ]),
 

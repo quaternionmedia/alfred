@@ -67,7 +67,14 @@ export const Flow = {
       ...m.route.param(),
       stage: id,
     })
+    for (const follower of Flow.followers) follower(id)
   },
+
+  // Told each time `go` is asked for a stage -- the one already open too,
+  // which changes nothing in the address. The desktop workspace brings the
+  // stage's panels forward (layout/workspace.js), since one may have been
+  // closed or put behind another since the stage was last chosen.
+  followers: [],
 
   generating: null,
   filter: '',

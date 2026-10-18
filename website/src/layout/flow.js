@@ -1,6 +1,7 @@
 import m from 'mithril'
 import './flow.scss'
 import { PanelRegistry } from './registry'
+import { PanelHosts } from './hosts'
 import { Flow, StageRail } from '../Stages'
 import { DraftOffer } from '../Draft'
 import { Menu } from '../Menu'
@@ -20,14 +21,21 @@ export const FLOW_STAGE_PANELS = Object.freeze({
   deliver: ['deliver'],
 })
 
-/** One panel from the registry, in a box the flow's stylesheet places. */
-const panel = (id, attrs, key) => {
-  const definition = PanelRegistry.get(id)
-  return m(
-    `.flowpanel.flowpanel--${id}`,
-    key ? { key: id } : {},
-    m(definition.component, attrs || {})
-  )
+/**
+ * A place in the flow for one panel from the registry.
+ *
+ * The panel is drawn in a box of its own (hosts.js) that this slot holds, so
+ * it is the same panel the workspace showed -- the flow and the workspace
+ * swap at the breakpoint without starting it over. A slot that goes, as a
+ * stage's panels do when another stage is chosen, takes its panel's box with
+ * it, and the panel runs its `onremove` as it did when it was part of the
+ * page.
+ */
+const Slot = {
+  oncreate: ({ dom, attrs }) => PanelHosts.place(attrs.panel, dom, { attrs: attrs.with || {} }),
+  onupdate: ({ dom, attrs }) => PanelHosts.place(attrs.panel, dom, { attrs: attrs.with || {} }),
+  onremove: ({ attrs }) => PanelHosts.lift(attrs.panel),
+  view: ({ attrs }) => m(`.flowpanel.flowpanel--${attrs.panel}`),
 }
 
 /**
@@ -49,12 +57,13 @@ export const StackedFlow = {
     m(DraftOffer),
     m(
       '.flowstage',
-      (FLOW_STAGE_PANELS[Flow.stage()] || []).map(id => panel(id, null, true))
+      (FLOW_STAGE_PANELS[Flow.stage()] || []).map(id => m(Slot, { key: id, panel: id }))
     ),
-    panel('viewer', {
-      settings: m(PanelRegistry.get('template').component, { quiet: true }),
+    m(Slot, {
+      panel: 'viewer',
+      with: { settings: () => m(PanelRegistry.get('template').component, { quiet: true }) },
     }),
-    panel('timeline'),
+    m(Slot, { panel: 'timeline' }),
     // The editor is the whole app, so it carries the footer -- which is where
     // the documentation links and the session link live.
     m(Footer),

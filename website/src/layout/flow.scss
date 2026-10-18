@@ -1,13 +1,32 @@
 // The phone flow's boxes (flow.js).
+//
+// Each panel sits in a slot, inside a box of its own (hosts.js). Neither box
+// is meant to be seen: what lays out is the panel.
 
 // The viewer and the timeline keep the page's own shape. Their sections are
 // regions of the page column (style.css, editor.scss) -- each shrinks to fit
-// and scrolls inside itself -- so the boxes the flow wraps them in take no
-// part in the layout.
+// and scrolls inside itself -- so every box around them takes no part in the
+// layout.
 .flowpanel--viewer,
-.flowpanel--viewer > .viewerpanel,
-.flowpanel--timeline {
+.flowpanel--viewer > .panelhost,
+.flowpanel--viewer .viewerpanel,
+.flowpanel--timeline,
+.flowpanel--timeline > .panelhost {
   display: contents;
+}
+
+// The frame's room, as tall as the frame was before it fitted a room (Head.js):
+// a quarter of an upright screen, two-fifths of one held sideways. A room
+// with no height of its own would be as tall as the frame in it, and a frame
+// fitted to that could shrink and never grow back.
+.flowpanel--viewer .viewerframe {
+  height: 24vh;
+}
+
+@media (orientation: landscape) {
+  .flowpanel--viewer .viewerframe {
+    height: 40vh;
+  }
 }
 
 // The stage's own panels: as tall as they need, up to a share of the screen,
@@ -29,9 +48,13 @@
   min-height: 0;
 }
 
+.flowstage > .flowpanel > .panelhost {
+  display: contents;
+}
+
 // The panel is the scroller, not its box, so the panel keeps its full width
 // and the scrollbar is drawn inside it.
-.flowstage > .flowpanel > * {
+.flowstage > .flowpanel > .panelhost > * {
   flex: 0 1 auto;
   min-height: 0;
   overflow: auto;
