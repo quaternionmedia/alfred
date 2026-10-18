@@ -41,7 +41,7 @@ If the render was queued, this returns its `id`, as a JSON string.
 "61a43a5d6f511ec4ba99ac63"
 ```
 
-A request the server will not render is answered 422 before anything is stored or queued, with a `detail` that says why: media outside the library, a template the server does not offer, a setting out of range. A problem with one clip names it, counting from 1.
+A request the server will not render is answered 422 before anything is stored or queued, with a `detail` that says why: media outside the library, a template the server does not offer, a setting out of range. A problem with one clip names it, counting from 1. A clip the engine cannot build, such as a template without its text or an outpoint before its inpoint, is found when the render runs: the render fails, and its status says why.
 
 ## Check status
 ``` bash title="Render status"

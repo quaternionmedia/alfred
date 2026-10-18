@@ -1,6 +1,6 @@
 # Adjust clip
 ## Resize
-Resizing an image is as simple as passing the resize scale factor.
+A video or image is first fitted inside the frame, keeping its proportions, and centred. Resizing scales it from there by the factor given.
 
 - Values larger than 1 will enlarge the clip
 - Values less than 1 will shrink the clip
@@ -11,7 +11,7 @@ Resizing an image is as simple as passing the resize scale factor.
     "clips": [
       {
         "type": "video",
-        "name": "https://storage.googleapis.com/tower-bucket/moon.mp4",
+        "name": "videos/moon.mp4",
         "resize": 2.5
       }
     ]
@@ -20,24 +20,28 @@ Resizing an image is as simple as passing the resize scale factor.
 ```
 
 ## Position
-Reposition the clip
+Reposition the clip. A position of numbers places the clip's top left corner, from the frame's top left:
 
-- Positive `x` values move the image **right**
-- Negative `x` values move the image **left**
-- Positive `y` values move the image **down**
-- Negative `y` values move the image **up**
+- Larger `x` values move the clip **right**
+- Smaller `x` values, down to negative ones, move the clip **left**
+- Larger `y` values move the clip **down**
+- Smaller `y` values, down to negative ones, move the clip **up**
+
+Each example below shrinks the clip to half the frame first, so that where it sits shows.
 === "Absolute"
-    Move the clip by `[x, y]` pixels from the top left.
+    With `"relative": false`, move the clip by `[x, y]` pixels from the top left. This places it 100 pixels from the left and 50 from the top.
     ``` json title="data.json"
     {
       "edl": {
         "clips": [
           {
             "type": "video",
-            "name": "https://storage.googleapis.com/tower-bucket/moon.mp4",
+            "name": "videos/moon.mp4",
+            "resize": 0.5,
+            "relative": false,
             "position": [
-              "center",
-              "top"
+              100,
+              50
             ]
           }
         ]
@@ -45,20 +49,21 @@ Reposition the clip
     }
     ```
 === "Relative"
-    Move the clip by `[x, y]`, where `1` represents the width or height of the frame.
+    Move the clip by `[x, y]`, where `1` represents the width or height of the frame. Positions are relative unless the clip says `"relative": false`.
     
-    The below example places this video at the center, top of the frame.
+    The below example places this half-size video at the center, top of the frame: its left edge a quarter of the way across.
     ``` json title="data.json"
     {
       "edl": {
         "clips": [
           {
             "type": "video",
-            "name": "https://storage.googleapis.com/tower-bucket/moon.mp4",
+            "name": "videos/moon.mp4",
+            "resize": 0.5,
             "relative": true,
             "position": [
-              0.5,
-              1
+              0.25,
+              0
             ]
           }
         ]
@@ -73,13 +78,15 @@ Reposition the clip
     | x | `left`, `center`, `right` |
     | y | `top`, `center`, `bottom` |
         
+    This places it exactly as the relative example above does.
     ``` json title="data.json"
     {
       "edl": {
         "clips": [
           {
             "type": "video",
-            "name": "https://storage.googleapis.com/tower-bucket/moon.mp4",
+            "name": "videos/moon.mp4",
+            "resize": 0.5,
             "position": [
               "center",
               "top"

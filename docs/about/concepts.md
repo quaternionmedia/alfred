@@ -8,7 +8,7 @@ In most video editors, `Clips` are viewed as blocks, arranged from left to right
 ### Single Track Video Editing
 A `Timeline` where only one clip can be played at a time. 
 
-This is represented as a List of clips, which can be rearranged in any order. Each clip will play until the `duration` is reached, or if not specified, the end of the video clip.
+This is represented as a List of clips, which can be rearranged in any order. Each clip plays for its `duration`, and the next starts where it ends.
 
 The total duration of the video is the sum of the `duration`s of it's clips.
 
@@ -20,32 +20,33 @@ A Multi-Track Timeline is also represented as a List of clips, where each video 
 ## [Clip](clip.md)
 A `Clip` is a single, continuous section of a video, referenced in a `Timeline`. 
 
-Clips can be of several types, including `video`, `audio`, `template`, or `edl`.
+Clips can be of four types: `video`, `image`, `audio` or `template`.
 
 Timing of the clip is determined with the following variables:
+
+### `start`
+: Where the clip begins in the finished video, in seconds. Default: `0`
 
 ### `inpoint`
 : The start time for playing this video, in seconds. Default: `0`
 
 ### `outpoint`
-: The end time for playing this video, in seconds. Default: `video.duration`
+: The end time for playing this video, in seconds. Optional.
 
 ### `duration`
-: The length in seconds to play this video. Default: `video.duration`
+: The length in seconds to play this video, when it has no `outpoint`. Default: `5`
 
 ??? abstract "Timing math"
-    The `duration` should always equal to the `outpoint - inpoint`.
+    With an `outpoint`, a clip plays from its `inpoint` to its `outpoint`, for `outpoint - inpoint` seconds, and its `duration` is not read. Without one, it plays for `duration` seconds from its `inpoint`.
     
-    Any of these may be omitted, for example: 
-    
-    A `Clip` with `outpoint: 10` and `duration: 5` implies `inpoint: 5`
+    The editor sends both, with `duration` equal to `outpoint - inpoint`, and a `start` for every clip: clips are layered by their own timing, not played one after another.
 
 For more details, refer to the [Clip](clip.md) documentation.
 
 ## [Template](template.md)
 A `Template` is a predefined `Clip` generator, built to automate and simplify the process of rendering custom text and graphics in video. 
 
-Each template accepts parameters such as `text`, `font`, `fontsize`, `fontcolor`, `position`, `fxs`, and many others. 
+Each template accepts parameters such as `text`, `font`, `fontsize`, `color`, `position` and `fxs`. 
 
 By default, templates are transparent, which means they can be stacked on top of each other to render more complex video compositions.
 
@@ -54,7 +55,7 @@ An `EDL`, or **E**dit **D**ecision **L**ist, is a list of `Clips` to be combined
 
 The `EDL` is a data representation of the final video to be rendered. It describes all the steps necessary to take the source material (`video`, `photo`, `audio`, `templates`, etc.) and generate the desired final product.
 
-Each `EDL` can be viewed in a `Timeline`, or imported as a `Clip` into a different `Timeline`.
+Each `EDL` can be viewed in a `Timeline`.
 
 ## [Project](project.md)
 A `Project` is a special data format, designed to automatically create templates from user data.
