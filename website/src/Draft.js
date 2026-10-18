@@ -106,14 +106,15 @@ export const Draft = {
    * compared with; a kept timeline that differs from them is offered back.
    */
   opened: (project, saved) => {
+    const stored = read(project)
+    // Kept by someone else in this tab, as far as can be told: not theirs to
+    // be offered, and not ours to overwrite or throw away -- so this opening
+    // keeps nothing for this project at all.
+    if (stored && stored.user && User.username && stored.user !== User.username) return
     Draft.project = project
     Draft.base = shape(saved)
     Draft.kept = null
-    const stored = read(project)
     if (!stored || !Array.isArray(stored.clips)) return
-    // Kept by someone else in this tab, as far as can be told: not theirs to
-    // be offered, and not ours to throw away.
-    if (stored.user && User.username && stored.user !== User.username) return
     if (shape(stored.clips) === Draft.base) {
       // Saved since, from here or elsewhere: nothing is unsaved after all.
       forget(project)
