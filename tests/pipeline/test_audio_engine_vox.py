@@ -7,8 +7,8 @@ its own, and `utils.audio_engine` drives it through the vendored vox exactly
 as it would drive joe -- the contract's defaults, the real client, the real
 wire. They are what fails if alfred and vox disagree about the client's API.
 
-They need vox's media client, which the vendored vox carries from its media
-engine work on; until then they skip, and say why.
+They need vox's media client, which the vendored vox carries; a build with
+an older vox skips them, and says why.
 """
 
 import socket
@@ -17,7 +17,7 @@ import time
 
 import pytest
 
-pytest.importorskip('vox.media', reason='the vendored vox has no media client yet')
+pytest.importorskip('vox.media', reason='the vendored vox has no media client')
 
 from alfred import config  # noqa: E402
 from alfred.core.utils import audio_engine  # noqa: E402

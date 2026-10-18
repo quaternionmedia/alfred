@@ -97,9 +97,9 @@ const rows = page => page.locator('#captions-list .captionrow')
  * Whether the stack's audio engine can be asked, for the specs that need one.
  *
  * Skips where there is none -- a development stack without
- * ALFRED_AUDIO_ENGINE_URL -- and where the vendored vox has no media client
- * yet, the one reason this suite expects. Any other way of not answering
- * fails: the engine was promised.
+ * ALFRED_AUDIO_ENGINE_URL -- and where the vendored vox is one without a
+ * media client. Any other way of not answering fails: the engine was
+ * promised.
  */
 async function needEngine(request, token) {
   const health = await (await request.get('/health', auth(token))).json()
@@ -107,7 +107,7 @@ async function needEngine(request, token) {
   test.skip(!engine.configured, 'no audio engine is configured on this stack')
   test.skip(
     /vox\.media/.test(engine.detail || ''),
-    `the vendored vox has no media client yet: ${engine.detail}`
+    `the vendored vox has no media client: ${engine.detail}`
   )
   expect(engine.ok, engine.detail).toBe(true)
   return engine

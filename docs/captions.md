@@ -174,9 +174,10 @@ A `CONTRACT_` name that is not a field of the contract is reported by
 renderer: the api asks the engine for `/health` and for analyses, and the
 renderer transcribes.
 
-**vox's media client is new.** The vendored vox must carry `vox.media`; until
-it does, `GET /health` says so in `audio_engine.detail`, transcribing answers
-503 with the same reason, and nothing is sent to the engine.
+**vox's media client** is `vox.media`, which the vendored vox carries. A build
+with an older vox, without it, says so in `GET /health`'s
+`audio_engine.detail`, answers 503 with the same reason to a transcription,
+and sends nothing to the engine.
 
 ### Pointing alfred at joe
 

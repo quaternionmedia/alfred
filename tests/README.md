@@ -93,6 +93,10 @@ tests/
     test_render_pipeline.py
   integration/         needs MongoDB at DB_URL: the app in-process, real auth
     conftest.py          the app, a per-worker database, account factories
+  stubs/               deterministic stand-ins for services the stack talks to
+    audio_engine.py      joe's media API, hearing "speech" wherever there is
+                         sound; served by test_e2e.yml, driven in-process by
+                         the pipeline tier
 ```
 
 `integration/` runs wherever DB_URL is set -- `./al pytest` provides a

@@ -101,13 +101,21 @@ class EngineStatus:
 def _vox_media():
     """vox's media client. The one import of it in alfred.
 
-    vox's main branch does not carry it yet (it lands with vox's media
-    engine work); until the vendored copy does, `problem()` says so and
-    nothing is sent anywhere.
+    The vendored vox carries it from vox's media engine work on. A build
+    with an older vox has none, and `problem()` says so rather than sending
+    anything anywhere.
     """
     from vox import media
 
     return media
+
+
+def engine_options() -> dict:
+    """What `MediaEngine` is built with besides the contract, the address and
+    the timeout: nothing, in every running process. A test hands it an
+    `httpx.Client` on vox's own stand-in engine
+    (`vox.engine.media_transport`), so the real client is what it drives."""
+    return {}
 
 
 def engine_url() -> Optional[str]:
@@ -259,7 +267,10 @@ def _engine():
     media = _vox_media()
     url = engine_url()
     engine = media.MediaEngine(
-        contract=contract(), base_url=url, timeout=config.AUDIO_ENGINE_TIMEOUT
+        contract=contract(),
+        base_url=url,
+        timeout=config.AUDIO_ENGINE_TIMEOUT,
+        **engine_options(),
     )
     if hasattr(engine, '__enter__'):
         with engine:

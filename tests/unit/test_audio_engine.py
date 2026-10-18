@@ -479,7 +479,9 @@ class TestWhatVoxRefuses:
         import vox.contract
 
         class Strict(vox.contract.EngineContract):
-            def __post_init__(self):
+            # Refusing in __init__, which every version of the contract
+            # runs; vox's own check is in its __post_init__.
+            def __init__(self, *args, **kwargs):
                 raise ValueError('media_transcribe must name {media_id} once')
 
         monkeypatch.setattr(vox.contract, 'EngineContract', Strict)
