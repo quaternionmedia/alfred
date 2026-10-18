@@ -118,7 +118,7 @@ in and logout; `views.spec.js` that a reload keeps the session.
 
 | Area | Where | Level |
 |---|---|---|
-| Login, registration (incl. closed registration) | `login.spec.js` | UI |
+| Login, registration (incl. closed registration), password reset and confirmation pages | `login.spec.js` | UI |
 | Token issue, `/users/me`, 401s, project ownership | `auth.spec.js` | API |
 | Token renewal, staying logged in, logout | `session.spec.js` | UI |
 | Project selector and its filter | `projects.spec.js` | UI + API |
@@ -148,8 +148,10 @@ so no other test in this suite would notice.
 
 ## What is not covered
 
-1. **Password reset and verification.** Nothing delivers the token outside
-   development, and no spec drives either flow.
+1. **Password reset and confirmation, end to end in a browser.** The token
+   only ever reaches a mailbox, so `login.spec.js` answers the account pages'
+   requests itself; the API side, from the request to logging in with the new
+   password, runs in `tests/integration/test_password_reset_api.py`.
 2. **Fonts and documents.** `GET /fonts` and the documents view are
    exercised only by the views rendering.
 3. **Slip, slide and dual roller.** Not built; the specs check that they say so.
