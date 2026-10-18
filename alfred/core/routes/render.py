@@ -21,9 +21,16 @@ from ..models.render import (
     safe_name,
 )
 from ..responses import PartialFileResponse
-from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh, signed_url
+from ..utils.bucket import (
+    INVALID_ID,
+    NOT_FOUND,
+    fresh,
+    parse_reference,
+    signed_url,
+)
 from ..utils.db import get_client
 from ..utils.destinations import (
+    BucketDestination,
     Delivery,
     DeliveryError,
     LocalDestination,
@@ -239,14 +246,51 @@ def download_url(render: Render) -> Optional[str]:
     return media_url(download_path(render))
 
 
+def bucket_link(reference) -> Optional[str]:
+    """A freshly signed URL for a `(bucket, object)` reference; None if none.
+
+    Blocking: the storage client may go to the network for credentials.
+    """
+    bucket, blob = reference
+    try:
+        return signed_url(blob, bucket=bucket)
+    except Exception as exc:  # noqa: BLE001 - vendor SDK raises broadly
+        print(f'could not sign a link to {blob} ({bucket or "default bucket"})', exc)
+        return None
+
+
+def public_link(render: Render) -> Optional[str]:
+    """`render.link` as a caller can follow it, made at the moment of asking.
+
+    A bucket delivery records where the object is, `gs://<bucket>/<object>`,
+    and is signed here, each time: a delivery used to record the signed URL
+    itself, which was dead fifteen minutes later. A signed URL stored that way
+    still names its object, so it is signed afresh too. A local delivery's
+    link is the download route -- also for one recorded when it was a path
+    under the /data mount, which no longer exists. Blocking, as signing is.
+    """
+    link = render.link
+    if render.destination == LocalDestination.name or (
+        isinstance(link, str) and link.lstrip('/').startswith('data/')
+    ):
+        return download_path(render)
+    reference = parse_reference(link)
+    if reference is not None:
+        return bucket_link(reference)
+    return link
+
+
 def render_view(render: Render) -> dict:
-    """A render as the API answers with it: the document and its `download_url`.
+    """A render as the API answers with it: the document, `download_url`, and
+    a `link` that can be followed now.
 
     The document is encoded exactly as FastAPI encodes a returned document,
     so every field a client already reads keeps its name and shape.
+    Blocking: it looks for files, and may sign a link.
     """
     view = jsonable_encoder(render)
     view['download_url'] = download_url(render)
+    view['link'] = public_link(render)
     return view
 
 
@@ -472,11 +516,26 @@ class RenderAPI(MotorCRUDRouter):
                 delivery = Delivery(
                     destination=delivery.destination, location=download_path(render)
                 )
+            # Recorded as delivered before the link is signed: the object is
+            # in the bucket whether or not a link can be made to it now.
             await store.update(
                 render.id,
                 {'destination': delivery.destination, 'link': delivery.location},
             )
-            return delivery
+            if delivery.destination != BucketDestination.name:
+                return delivery
+            # The bucket's location is a lasting reference; the caller gets a
+            # link signed now, and the next caller another.
+            reference = parse_reference(delivery.location)
+            link = (
+                await run_in_threadpool(bucket_link, reference) if reference else None
+            )
+            if link is None:
+                raise HTTPException(
+                    status_code=502,
+                    detail='The render was uploaded, but no link to it could be signed',
+                )
+            return Delivery(destination=delivery.destination, location=link)
 
         @self.get('/{item_id}', *args, **kwargs)
         async def getSignedRenderLink(
@@ -494,16 +553,19 @@ class RenderAPI(MotorCRUDRouter):
             get a render back there.
             """
             render = await load_owned_render(store, item_id, user)
-            try:
-                # Off the event loop: the storage client is synchronous and
-                # may go to the network for credentials.
-                return await run_in_threadpool(signed_url, render.filename)
-            except Exception as exc:  # noqa: BLE001 - vendor SDK raises broadly
-                print('could not sign a link to render', render.id, exc)
+            # The object a bucket delivery recorded, where there was one: the
+            # bucket it went to may not be today's BUCKET_NAME. Otherwise the
+            # object the worker's automatic upload names after the file.
+            reference = parse_reference(render.link) or (None, render.filename)
+            # Off the event loop: the storage client is synchronous and may go
+            # to the network for credentials.
+            link = await run_in_threadpool(bucket_link, reference)
+            if link is None:
                 raise HTTPException(
                     status_code=502,
                     detail='No cloud link is available for this render',
-                ) from exc
+                )
+            return link
 
         @self.put('/{item_id}', *args, **kwargs)
         async def relabelRender(
