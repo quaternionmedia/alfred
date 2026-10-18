@@ -242,6 +242,79 @@ test.describe('the render request places every clip', () => {
   })
 })
 
+test.describe('a saved timeline is the timeline a render receives', () => {
+  test('Save sends exactly what Render sends: placed, with explicit fades', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * # Recipe: what "save" stores
+     *
+     * A project stores the clips a render of it would receive (contract M4):
+     * each placed by an explicit start, its fades explicit -- 0 unless one
+     * was chosen -- and its window in step with its length. Anything that
+     * renders `project.edl` as stored gets the video this editor renders.
+     * Save sent the raw clips: no starts, so rendered as stored they stacked
+     * at second 0, and the view's own bookkeeping went along with them.
+     *
+     * Served here with stale starts, the one-second fades the old routes
+     * wrote onto every clip, a chosen fade, and an out-point that disagrees
+     * with the clip's length. The save is answered here too: the shared
+     * fixture is not written.
+     */
+    const project = await projectNamed(request, token, MEDIA_PROJECT)
+    const [video, colour] = project.edl.clips
+    expect(video.type, `${MEDIA_PROJECT} starts with a video clip`).toBe('video')
+    const doctored = {
+      ...project,
+      edl: {
+        ...project.edl,
+        clips: [
+          { ...video, start: 99, fadeIn: 1, fadeOut: 1, outpoint: video.inpoint + video.duration + 2 },
+          { ...colour, start: 99, fadeIn: 0.5, fadeOut: 2 },
+        ],
+      },
+    }
+    await authedPage.route(
+      url => url.pathname === `/project/${project._id}`,
+      route =>
+        route.request().method() === 'GET' ? route.fulfill({ json: doctored }) : route.fallback()
+    )
+    const saved = []
+    await authedPage.route(
+      url => url.pathname === `/project/${project._id}/timeline`,
+      async route => {
+        const body = route.request().postDataJSON()
+        saved.push(body)
+        await route.fulfill({ json: { ...doctored, edl: body } })
+      }
+    )
+    const sent = await captureRenders(authedPage)
+
+    await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(2)
+
+    await authedPage.locator('#save-timeline').click()
+    await expect.poll(() => saved.length).toBe(1)
+    await authedPage.locator('#render-timeline').click()
+    await expect.poll(() => sent.length).toBe(1)
+
+    const stored = saved[0]
+    expect(stored).toEqual(sent[0].body.edl)
+    expect(stored.clips.map(c => c.start)).toEqual([0, video.duration])
+    expect(stored.duration).toBe(video.duration + colour.duration)
+    // The guessed default goes out as no fade; the chosen one is kept.
+    expect(fades({ edl: stored })).toEqual([
+      [0, 0],
+      [0.5, 2],
+    ])
+    // The window agrees with the length the editor played.
+    expect(stored.clips[0].outpoint).toBe(video.inpoint + video.duration)
+    for (const clip of stored.clips) expect(clip).not.toHaveProperty('i')
+  })
+})
+
 test.describe('the toolbar Render button', () => {
   test('sends the Render stage request, in the body', async ({
     authedPage,

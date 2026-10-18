@@ -477,6 +477,23 @@ arrive at 0, 5 and 10 seconds, with a total of 15 -- not all at 0.
   every redraw -- so a redraw between typing and clicking restored the
   project's size. Forcing a redraw in between is the point of this test.
 
+### a saved timeline is the timeline a render receives
+
+# Recipe: what "save" stores
+
+A project stores the clips a render of it would receive (contract M4):
+each placed by an explicit start, its fades explicit -- 0 unless one
+was chosen -- and its window in step with its length. Anything that
+renders `project.edl` as stored gets the video this editor renders.
+Save sent the raw clips: no starts, so rendered as stored they stacked
+at second 0, and the view's own bookkeeping went along with them.
+
+Served here with stale starts, the one-second fades the old routes
+wrote onto every clip, a chosen fade, and an out-point that disagrees
+with the clip's length. The save is answered here too: the shared
+fixture is not written.
+
+- **Save sends exactly what Render sends: placed, with explicit fades**
 ### the toolbar Render button
 
 It sent `?project=&width=&height=` and a body of bare clips. The route

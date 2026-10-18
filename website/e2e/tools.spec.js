@@ -381,6 +381,9 @@ test.describe('the project actions', () => {
       expect(saved.name, 'saving the timeline overwrote the project name').toBe(
         project.name
       )
+      // Stored as a render receives it: placed, and with no fade nobody chose.
+      expect(saved.edl.clips[0]).toMatchObject({ start: 0, fadeIn: 0, fadeOut: 0 })
+      expect(saved.edl.duration).toBe(saved.edl.clips[0].duration)
 
       await authedPage.reload()
       await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)

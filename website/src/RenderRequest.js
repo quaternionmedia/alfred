@@ -1,6 +1,7 @@
 import { auth } from './Login'
-import { Edl, clipSeconds } from './Video'
+import { Edl } from './Video'
 import { RenderStatus } from './RenderStatus'
+import { clipSeconds, inOf, toMs, windowed } from './Timing'
 
 var state = require('./Globals').state
 
@@ -34,7 +35,15 @@ var state = require('./Globals').state
  *
  * `duration` goes out as the number the start was computed from, for the same
  * reason: a clip whose length the editor read as zero must not render for
- * otto's default of five seconds.
+ * otto's default of five seconds. And a clip with a window goes out with an
+ * out-point that agrees with that length: otto plays such a clip from its
+ * in-point to its out-point and does not read `duration`, so a stored
+ * out-point that disagreed -- a clip saved before trims kept it in step --
+ * rendered a different length from the one the editor played.
+ *
+ * This is also what a project saves (contract M4): the same clips, placed the
+ * same way, so a saved `project.edl` renders verbatim to what the editor
+ * renders -- for anyone who renders it, not only this page.
  */
 export function timelineEdl(clips) {
   let start = 0
@@ -44,17 +53,22 @@ export function timelineEdl(clips) {
     // `i` is the view's index, written onto each clip as it is drawn. It
     // means nothing to the server.
     const { i, ...rest } = clip
-    const duration = clipSeconds(clip)
-    placed.push({
+    const duration = toMs(clipSeconds(clip))
+    const out = {
       ...rest,
       duration,
-      start,
+      start: toMs(start),
       fadeIn: chosenFade(clip.fadeIn),
       fadeOut: chosenFade(clip.fadeOut),
-    })
+    }
+    if (windowed(clip)) {
+      out.inpoint = toMs(inOf(clip))
+      out.outpoint = toMs(out.inpoint + duration)
+    }
+    placed.push(out)
     start += duration
   }
-  return { clips: placed, duration: start }
+  return { clips: placed, duration: toMs(start) }
 }
 
 // otto's default fade for a clip, in seconds -- which the API also writes
@@ -70,10 +84,12 @@ const MODEL_FADE = 1
  * a clip with no fade goes out with 0.
  *
  * "No fade" includes a fade of exactly otto's default. The project routes
- * store clips through otto's model, which fills in the default, so every
- * clip loaded from a saved project carries `fadeIn: 1` and `fadeOut: 1`
- * that nobody set -- indistinguishable from a chosen one-second fade, and
- * far more likely. Any other value was chosen by someone, and is kept.
+ * stored clips through otto's model, which filled in the default, so a clip
+ * loaded from a project saved before saves went through `timelineEdl` carries
+ * `fadeIn: 1` and `fadeOut: 1` that nobody set -- indistinguishable from a
+ * chosen one-second fade, and far more likely. Any other value was chosen by
+ * someone, and is kept. Saves write the explicit 0 now, so a project once
+ * saved from here no longer depends on this guess.
  */
 function chosenFade(value) {
   if (value === undefined || value === null || value === '') return 0
