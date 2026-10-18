@@ -166,6 +166,14 @@ services:
       # M6). It wrote them under the working directory's `data/`, which was
       # served publicly at /data. The renderer is given the same directory.
       OTTO_DOWNLOAD_DIR: ${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
+    # host.docker.internal is the server as a container sees it, so an audio
+    # engine running beside the stack is reached at the address the docs give,
+    # ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010. Docker Desktop
+    # provides the name; a Linux server, where this stack runs, does not. The
+    # engine also has to listen where the Docker bridge reaches it; see
+    # docs/configuration.md. A name in /etc/hosts, and nothing published.
+    extra_hosts:
+      - host.docker.internal:host-gateway
 
   # No ports for the database. It was published on 192.168.192.52:27017,
   # which put an unauthenticated MongoDB on the LAN; nothing outside this
@@ -208,3 +216,6 @@ services:
       # path did here.
       VIDEO_DIR: /app/videos
       OTTO_DOWNLOAD_DIR: ${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
+    # The worker transcribes, so it reaches the audio engine too; see the api.
+    extra_hosts:
+      - host.docker.internal:host-gateway

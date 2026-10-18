@@ -130,16 +130,19 @@ def as_mapping(environment):
 
 
 def stack(name):
-    """{service: {'environment': ..., 'env_file': [...]}} as compose merges
-    the stack's files: environment by name with later files winning, and
-    env_file entries in order (a later file's value wins there too)."""
+    """{service: {'environment': ..., 'env_file': [...], 'extra_hosts': {...}}}
+    as compose merges the stack's files: environment by name with later files
+    winning, env_file entries in order (a later file's value wins there too),
+    and extra_hosts together."""
     merged = {}
     for filename in STACKS[name][0]:
         for service, definition in (
             compose_file(filename).get('services') or {}
         ).items():
             definition = definition or {}
-            target = merged.setdefault(service, {'environment': {}, 'env_file': []})
+            target = merged.setdefault(
+                service, {'environment': {}, 'env_file': [], 'extra_hosts': set()}
+            )
             target['environment'].update(as_mapping(definition.get('environment')))
             env_files = definition.get('env_file') or []
             if not isinstance(env_files, list):
@@ -148,6 +151,7 @@ def stack(name):
                 entry if isinstance(entry, str) else entry['path']
                 for entry in env_files
             ]
+            target['extra_hosts'] |= set(definition.get('extra_hosts') or [])
     return merged
 
 
@@ -291,4 +295,22 @@ def test_the_dev_api_signs_with_this_checkouts_key(name):
     assert 'ALFRED_SECRET_KEY' not in api['environment'], (
         'ALFRED_SECRET_KEY is in the dev api\'s environment, which overrides '
         'its env files -- and a bare name the shell does not set erases them'
+    )
+
+
+@pytest.mark.parametrize('service', SERVICES)
+@pytest.mark.parametrize('name', ['dev', 'production'])
+def test_the_documented_engine_address_resolves_on_a_linux_host(name, service):
+    """host.docker.internal is mapped to the host, for both services.
+
+    The docs point ALFRED_AUDIO_ENGINE_URL at http://host.docker.internal:8010,
+    an engine running beside the stack. Docker Desktop provides that name and
+    a Linux host does not, so without the mapping the address resolves on a
+    laptop and nowhere else -- on a Linux host the api and the worker would
+    each report the engine unreachable. The api checks it for /health and
+    analysis, and the worker transcribes, so both need it.
+    """
+    assert 'host.docker.internal:host-gateway' in stack(name)[service]['extra_hosts'], (
+        f'The {name} {service} does not map host.docker.internal to the host '
+        '(extra_hosts: host.docker.internal:host-gateway).'
     )
