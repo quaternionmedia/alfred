@@ -1182,8 +1182,10 @@ Template clips: adding them, and changing what they say.
 Templates are made, not uploaded -- a title, a text box, a colour field.
 Add one from the bin under the timeline (its + button, or drag it into
 place) or from the Source stage's Templates list. Its settings appear beside
-the viewer: text, length and colours. The server renders every change, and
-if a setting cannot be rendered it says why, next to the settings.
+the viewer: text, length, font and size, how the text is aligned, where the
+template sits in the frame, and colours -- whichever of those the template
+takes. The server renders every change, and if a setting cannot be rendered
+it says why, next to the settings.
 
 None of this worked before. The timeline refused drops from the bin, the
 drop handler threw on the shape of a template entry when one got through,
@@ -1233,6 +1235,33 @@ render receives. A colour can be typed or picked; the swatch follows.
   the reason. That reason was read from a blob response with
   `responseText`, which throws, so it never reached the screen. Served
   here so the reason is known.
+
+### a template's type and placement
+
+# Recipe: setting a title's font, size and position
+
+A text template is offered a font -- from the fonts this server can draw
+-- a size, and where it sits in the frame; a text box also how its text
+is aligned in the box. Each is the template's own until chosen, and
+"Template default" puts it back.
+
+- **font, size, alignment and position change the frame and the render**
+- **each template is offered only what it takes**
+
+  A title takes a font and a position but aligns nothing; a colour field
+  takes a position, and nothing about text.
+
+- **a font that cannot be drawn says why, and the default puts it right**
+
+  Validation is the server's, as for every setting: the frame is
+  rendered with the font, and a refusal's reason is shown beside the
+  fields. Served here so the reason is known.
+
+- **a placement written by a project's logic is kept, not replaced**
+
+  A project can place a template by coordinates, which the form offers
+  no field for. It is shown as set, and goes on to the render untouched
+  when other settings change.
 
 
 ## timeline tools

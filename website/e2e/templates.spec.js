@@ -6,8 +6,10 @@
  * Templates are made, not uploaded -- a title, a text box, a colour field.
  * Add one from the bin under the timeline (its + button, or drag it into
  * place) or from the Source stage's Templates list. Its settings appear beside
- * the viewer: text, length and colours. The server renders every change, and
- * if a setting cannot be rendered it says why, next to the settings.
+ * the viewer: text, length, font and size, how the text is aligned, where the
+ * template sits in the frame, and colours -- whichever of those the template
+ * takes. The server renders every change, and if a setting cannot be rendered
+ * it says why, next to the settings.
  *
  * None of this worked before. The timeline refused drops from the bin, the
  * drop handler threw on the shape of a template entry when one got through,
@@ -270,5 +272,173 @@ test.describe("changing a template clip's settings", () => {
     await authedPage.locator('#template-params .paramreset').click()
     await expect(authedPage.locator('#param-problem')).toHaveCount(0)
     await expect(authedPage.locator('img.preview')).toBeVisible({ timeout: 20_000 })
+  })
+})
+
+test.describe("a template's type and placement", () => {
+  /**
+   * # Recipe: setting a title's font, size and position
+   *
+   * A text template is offered a font -- from the fonts this server can draw
+   * -- a size, and where it sits in the frame; a text box also how its text
+   * is aligned in the box. Each is the template's own until chosen, and
+   * "Template default" puts it back.
+   */
+  const FONTS = ['DejaVu-Sans', 'Nimbus-Sans']
+
+  /** Serve the font list, and keep every frame the viewer asks for. */
+  async function serveFonts(page) {
+    await page.route(
+      url => url.pathname === '/fonts',
+      route => route.fulfill({ json: FONTS })
+    )
+    const frames = []
+    page.on('request', req => {
+      const url = new URL(req.url())
+      if (url.pathname.startsWith('/preview/template/')) frames.push(url.searchParams)
+    })
+    return frames
+  }
+
+  test('font, size, alignment and position change the frame and the render', async ({
+    authedPage,
+  }) => {
+    const frames = await serveFonts(authedPage)
+    const sent = await captureRenders(authedPage)
+    await authedPage.goto('/#!/?stage=edit')
+    await binEntry(authedPage, 'textBox').locator('.binadd').click()
+
+    const font = authedPage.locator('#param-font')
+    await expect(font.locator('option')).toHaveText([
+      'Template default',
+      'DejaVu Sans',
+      'Nimbus Sans',
+    ])
+    await font.selectOption('DejaVu-Sans')
+    await authedPage.locator('#param-fontsize').fill('48')
+    await authedPage.locator('#param-align').selectOption('West')
+    await authedPage.locator('#param-position').selectOption('top')
+
+    // The viewer's frame is rendered with each of them.
+    await expect
+      .poll(() =>
+        frames.some(
+          p =>
+            p.get('font') === 'DejaVu-Sans' &&
+            p.get('fontsize') === '48' &&
+            p.get('align') === 'West' &&
+            p.get('position') === 'top'
+        )
+      )
+      .toBe(true)
+
+    await authedPage.locator('#stage-render').click()
+    await authedPage.locator('#queue-render').click()
+    await expect.poll(() => sent.length).toBe(1)
+    expect(sent[0].edl.clips[0].data).toEqual({
+      text: DEFAULT_TEXT,
+      font: 'DejaVu-Sans',
+      fontsize: 48,
+      align: 'West',
+      position: 'top',
+    })
+  })
+
+  test('each template is offered only what it takes', async ({ authedPage }) => {
+    /**
+     * A title takes a font and a position but aligns nothing; a colour field
+     * takes a position, and nothing about text.
+     */
+    await serveFonts(authedPage)
+    await authedPage.goto('/#!/?stage=edit')
+
+    await binEntry(authedPage, 'title').locator('.binadd').click()
+    const params = authedPage.locator('#template-params')
+    await expect(params.locator('#param-font')).toBeVisible()
+    await expect(params.locator('#param-fontsize')).toBeVisible()
+    await expect(params.locator('#param-position')).toBeVisible()
+    await expect(params.locator('#param-align')).toHaveCount(0)
+
+    await binEntry(authedPage, 'makeColor').locator('.binadd').click()
+    await expect(params.locator('h4')).toContainText('makeColor')
+    await expect(params.locator('#param-position')).toBeVisible()
+    for (const field of ['#param-font', '#param-fontsize', '#param-align', '#param-text']) {
+      await expect(params.locator(field)).toHaveCount(0)
+    }
+  })
+
+  test('a font that cannot be drawn says why, and the default puts it right', async ({
+    authedPage,
+  }) => {
+    /**
+     * Validation is the server's, as for every setting: the frame is
+     * rendered with the font, and a refusal's reason is shown beside the
+     * fields. Served here so the reason is known.
+     */
+    await serveFonts(authedPage)
+    const reason = 'title could not be rendered from the data supplied.'
+    await authedPage.route(
+      url =>
+        url.pathname === '/preview/template/title' && url.searchParams.get('font') === 'Nimbus-Sans',
+      route => route.fulfill({ status: 422, json: { detail: reason } })
+    )
+    await authedPage.goto('/#!/?stage=edit')
+    await binEntry(authedPage, 'title').locator('.binadd').click()
+
+    await authedPage.locator('#param-font').selectOption('Nimbus-Sans')
+    await expect(authedPage.locator('#param-problem')).toHaveText(reason)
+
+    await authedPage.locator('#param-font').selectOption('')
+    await expect(authedPage.locator('#param-problem')).toHaveCount(0)
+    await expect(authedPage.locator('img.preview')).toBeVisible({ timeout: 20_000 })
+  })
+
+  test("a placement written by a project's logic is kept, not replaced", async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * A project can place a template by coordinates, which the form offers
+     * no field for. It is shown as set, and goes on to the render untouched
+     * when other settings change.
+     */
+    const projects = await (
+      await request.get('/project', { headers: { Authorization: token } })
+    ).json()
+    const project = projects.find(p => p.name === 'Timeline demo')
+    expect(project, 'Timeline demo is missing; global-setup.js creates it').toBeTruthy()
+    const placed = {
+      type: 'template',
+      name: 'textBox',
+      duration: 3,
+      data: { text: 'Placed', position: ['center', 0.8] },
+    }
+    await authedPage.route(
+      url => url.pathname === `/project/${project._id}`,
+      route =>
+        route.request().method() === 'GET'
+          ? route.fulfill({ json: { ...project, edl: { clips: [placed], duration: 3 } } })
+          : route.fallback()
+    )
+    // The Render stage remembers the size on the project; the shared fixture
+    // is answered here rather than written.
+    await authedPage.route(
+      url => url.pathname === `/project/${project._id}/settings`,
+      route => route.fulfill({ json: project })
+    )
+    await serveFonts(authedPage)
+    const sent = await captureRenders(authedPage)
+
+    await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(1)
+    const position = authedPage.locator('#param-position')
+    await expect(position.locator('option:checked')).toHaveText('As set: center,0.8')
+
+    await authedPage.locator('#param-text').fill('Still placed')
+    await authedPage.locator('#stage-render').click()
+    await authedPage.locator('#queue-render').click()
+    await expect.poll(() => sent.length).toBe(1)
+    expect(sent[0].edl.clips[0].data).toEqual({ text: 'Still placed', position: ['center', 0.8] })
   })
 })

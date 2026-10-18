@@ -358,6 +358,7 @@ $rule: 1px solid #2e2e2e;
   }
 
   textarea,
+  select,
   input[type='text'],
   input[type='number'] {
     min-width: 0;
@@ -371,6 +372,13 @@ $rule: 1px solid #2e2e2e;
 
   textarea {
     resize: vertical;
+  }
+
+  // As wide as the fields beside it: the page's own select rule centres a
+  // select in a coloured pill, which here read as a different kind of control.
+  select {
+    margin: 0;
+    justify-self: stretch;
   }
 
   label {
