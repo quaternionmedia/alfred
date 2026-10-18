@@ -18,16 +18,6 @@ export const templatePreviewUrl = clip =>
     clip.data
   )}&width=${state.width()}&height=${state.height()}&t=${Video.time()}`
 
-export function ImagePreview() {
-  return {
-    view: (vnode) => {
-      return m('img.preview', {
-        src: vnode.attrs.src
-      })
-    }
-  }
-}
-
 /** The latest verdict on the template frame in the viewer.
  *
  * Read by the template settings beside it, which show the server's reason a
