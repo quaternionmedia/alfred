@@ -7,7 +7,10 @@ branches. The first, integrated on `integrate/review-fixes`: the render
 pipeline, auth and ownership, the editor, CI and operations, and the engine
 (otto `fix/engine-contract`). The second, on `integrate/wave-2`: media
 access and storage, the editor again, accounts and the timeline API,
-dependencies, and the engine (otto pinned at e050396, `fix/engine-wave2`). Read **Security** and **Changed** before
+dependencies, and the engine (otto pinned at e050396, `fix/engine-wave2`).
+The third, on `integrate/wave-3`: captions through an audio engine -- vox
+vendored at `alfred/vox` beside otto, driving joe -- and a Golden Layout
+workspace for the editor. Read **Security** and **Changed** before
 deploying: several requests that used to be accepted are now refused, and a
 production stack needs its own signing key.
 
@@ -107,6 +110,16 @@ production stack needs its own signing key.
   beanie 1.30; celery 5.6; imageio-ffmpeg 0.6. Installs use `--no-deps` from
   the lockfiles, because python-multipart overrides fastapi-users' exact pin;
   `requirements-test.lock` pins the test tools.
+- **`GET /health` gains `audio_engine: {configured, ok, detail}`**; `POST /render`
+  accepts `captions` and `caption_style`; httpx is a runtime dependency (vox's
+  client).
+- **The viewer's frame takes the output's shape at any size**, the transport is
+  two rows, and on a phone a stage's panels scroll inside themselves.
+- **Front-end dependencies are current**, matching codecartographer's:
+  golden-layout 2.6.0, mithril 2.3.8, parcel 2.16.4, sass 1.105, jwt-decode 4,
+  Playwright 1.64.1 and its runner image. json-logic-engine stays at 1.3.9 (its
+  2.x changes how stored project logic evaluates); unused babel and cssnano
+  packages are gone.
 
 ### Fixed
 
@@ -139,6 +152,10 @@ production stack needs its own signing key.
   the test image is a stage of the root Dockerfile instead of `FROM
   alfred_api`, whatever that tag held. `./al init` creates the `videos/`
   directory the stacks mount.
+- **Scrubbing and zooming land under the pointer**, the timeline keeps its
+  clips on one row, a Deliver-stage reload no longer sends an unauthenticated
+  request, and `./al test` renews its anonymous volumes after a dependency
+  change.
 
 ### Added
 
@@ -173,6 +190,30 @@ production stack needs its own signing key.
   `feat/alfred-tools`): tools that list projects and templates, queue a render
   and follow it, and a flow that puts a finished render to a person for
   approval.
+- **Captions.** A project's captions can be typed in the Captions panel,
+  imported from SubRip, WebVTT or JSON with a review step, or transcribed from
+  the timeline's own sound by an audio engine; renders draw them as textBox
+  clips once the project's caption style enables them (it starts disabled).
+  Routes: `GET`/`PUT /project/{id}/captions`, `POST .../captions/import`,
+  `POST .../captions/transcribe` (a worker job; 503 with no engine, 409 while
+  one runs). The caption under the playhead is drawn over the viewer.
+- **vox is vendored at `alfred/vox`, beside otto, as the client for the sound.**
+  otto renders the picture; vox carries the audio engine's contract
+  (`EngineContract`, which names no engine) and its typed client
+  (`vox.media.MediaEngine`). It is installed editable wherever otto is, and the
+  stack-config checks hold it to the vendored copy. `ALFRED_AUDIO_ENGINE_URL`,
+  `ALFRED_AUDIO_ENGINE_TIMEOUT` and `ALFRED_AUDIO_ENGINE_CONTRACT_*` configure it;
+  `docs/captions.md` says how to point it at joe.
+- **`GET /media/{name}/audio`**: the audio engine's analysis of a library file
+  -- tempo, beats, onsets, loudness, silences, waveform peaks -- cached per file
+  version.
+- **A desktop workspace.** At 1024 px and wider the editor's panels are docked
+  with Golden Layout 2.6, after codecartographer's shell: moved, resized,
+  maximised, closed, kept per browser (a broken arrangement falls back to the
+  default), reopened from a Panels menu, reset, and reached from the keyboard.
+  `?stage=` links and the rail bring a stage's panel forward. Narrower screens
+  keep the stage flow, built from the same panels.
+- **The browser suite runs a `phone` project** (390x844) beside `chromium`.
 
 ### CI and release
 
@@ -186,14 +227,20 @@ production stack needs its own signing key.
 - **The api test jobs install the lockfiles with `--no-deps`**
   (`requirements.lock`, `requirements-test.lock`, then the project and the
   vendored engine) and no longer use the org workflow's `requirements` input.
+- **CI installs `alfred/vox` editable** beside the engine; the e2e stack runs a
+  deterministic stub audio engine, and both browser projects.
 
 ### Measured
 
 First round, on f0e8cb3: `./al pytest` 699 passed, 2 skipped, 8 xfailed;
 `./al test` 212 passed, 1 skipped. Second round, on `integrate/wave-2`:
-`./al pytest` 1118 passed, 2 skipped, 8 xfailed, with the database tier
-running; `./al test` 281 passed, 1 skipped, including the `@slow` specs,
-which encode on the new engine.
+`./al pytest` 1118 passed, 2 skipped, 8 xfailed; `./al test` 281 passed, 1
+skipped. Third round, on `integrate/wave-3`: `./al pytest` 1464 passed, 2
+skipped, 8 xfailed; `./al test` 381 passed, 1 skipped, across the `chromium`
+and `phone` projects, including the `@slow` specs that encode on otto and
+transcribe through vox and the stub engine. Live, against joe on the host:
+a synthesised spoken line was transcribed into three timed captions and
+rendered with them drawn in.
 
 ## 0.3.0 — breaking
 

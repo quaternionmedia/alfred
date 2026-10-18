@@ -87,8 +87,9 @@ and its `CYPRESS_baseUrl` (`http://api/`) disagreed with `cypress.json`'s
 
 ## Verification status
 
-`./al test` on `integrate/review-fixes`: **212 passed, 1 skipped, in 3.3
-minutes**, including the `@slow` specs that wait on a real encode. The skip is
+`./al test` on `integrate/wave-3`: **381 passed, 1 skipped, in about 4
+minutes**, across the `chromium` (workspace) and `phone` (stage flow)
+projects, including the `@slow` specs that wait on a real encode. The skip is
 data-dependent: the project filter test needs more than three projects.
 
 The three image breaks recorded when this suite replaced Cypress -- `FROM
