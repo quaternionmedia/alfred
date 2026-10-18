@@ -173,11 +173,14 @@ class ProjectAPI(MotorCRUDRouter):
             model: self.create_schema,  # type: ignore
             user: User = Depends(current_active_user),
         ):
-            # Both assigned by the server. A client-chosen id could collide
+            # All assigned by the server. A client-chosen id could collide
             # with a project the caller cannot see, and the duplicate-key
-            # error would confirm that it exists.
+            # error would confirm that it exists. Only the demo generator marks
+            # a project as the account's demo; a second mark would collide
+            # with the real one on its unique index.
             model.id = None
             model.owner = owner_key(user)
+            model.demo = None
             return await model.create()
 
         return route
@@ -192,8 +195,11 @@ class ProjectAPI(MotorCRUDRouter):
             # This route writes every field of the body, present or not. Left
             # as sent, `owner` would be whatever the caller claimed -- or null,
             # for any body that simply omitted it, which would orphan the
-            # project out of its own owner's reach.
+            # project out of its own owner's reach. `demo` likewise: a body
+            # could otherwise mark any project as the account's demo, or unmark
+            # the real one.
             model.owner = project.owner
+            model.demo = project.demo
             del model.id
             return await project.update(Set(model))
 

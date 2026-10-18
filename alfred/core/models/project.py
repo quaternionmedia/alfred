@@ -3,6 +3,23 @@ from typing import List, Optional
 from beanie import Document
 from otto.models import Edl
 from pydantic import BaseModel
+from pymongo import ASCENDING, IndexModel
+
+# At most one generated demo per account, held by MongoDB rather than by the
+# route. `POST /demo/project` is find-or-insert, and two requests for the same
+# account could both find nothing and both insert; with this index the second
+# insert fails and the route answers with the first one's project. Partial, so
+# it constrains the generated demo and no other project -- an account may have
+# as many projects called "Demo" as it likes.
+#
+# Built at startup by `routes.demo`, not declared in Settings for beanie to
+# build: see `keepOneDemoPerOwner` for why.
+ONE_DEMO_PER_OWNER = IndexModel(
+    [('owner', ASCENDING)],
+    name='one_demo_per_owner',
+    unique=True,
+    partialFilterExpression={'demo': True},
+)
 
 
 class RenderSettings(BaseModel):
@@ -60,6 +77,11 @@ class Project(Document):
     # defaults.
     render_settings: Optional[RenderSettings]
     destination: Optional[str]
+    # True on the project `POST /demo/project` generated for its owner, and on
+    # no other. Server-owned like `owner`: dropped from a create, kept as stored
+    # on an update, so no request can mark a project or unmark the demo -- the
+    # index above counts on it.
+    demo: Optional[bool]
 
     class Config:
         title = 'Alfred Project'

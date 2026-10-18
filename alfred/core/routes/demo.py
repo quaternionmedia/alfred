@@ -21,16 +21,61 @@ import subprocess
 from os import makedirs
 from os.path import getsize, isfile, join
 
+from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from pymongo import DESCENDING, ReturnDocument
+from pymongo.errors import DuplicateKeyError, OperationFailure
 
 from alfred.config import VIDEO_DIR
 
-from ..utils.db import User
+from ..utils.db import User, get_db
 from ..utils.ownership import owner_key
 from .users import current_active_user
 
 demoAPI = APIRouter()
+
+
+@demoAPI.on_event('startup')
+async def keepOneDemoPerOwner():
+    """Build the index that keeps one demo per account under concurrency.
+
+    By hand rather than declared on the model. beanie builds declared indexes
+    inside `init_beanie`, and a unique index cannot be built over duplicates
+    -- which a database can hold if the index went missing under a running
+    server, as `./al reseed` drops it with the collection -- so a declared one
+    would stop the API starting at all. Here a failed build is reported, with
+    the accounts to tidy, and the API starts without it: the route still
+    answers correctly, and only two simultaneous first requests could again
+    make two demos.
+
+    Before beanie is initialised (the router's hooks run first), so the
+    collection is reached by name: beanie names it after the class.
+    """
+    from ..models.project import ONE_DEMO_PER_OWNER, Project
+
+    collection = get_db()[Project.__name__]
+    try:
+        await collection.create_indexes([ONE_DEMO_PER_OWNER])
+    except OperationFailure as exc:
+        doubled = await collection.aggregate(
+            [
+                {'$match': {'demo': True}},
+                {'$group': {'_id': '$owner', 'demos': {'$sum': 1}}},
+                {'$match': {'demos': {'$gt': 1}}},
+            ]
+        ).to_list(20)
+        line = '!' * 72
+        print(line, flush=True)
+        print(
+            '  ONE DEMO PER ACCOUNT IS NOT ENFORCED: the index did not build.',
+            flush=True,
+        )
+        print(f'  {exc}', flush=True)
+        for row in doubled:
+            print(f'  {row["_id"]} has {row["demos"]} demo projects', flush=True)
+        print('  Delete the extra ones and restart to build it.', flush=True)
+        print(line, flush=True)
 
 
 # Small, short and synthetic. The point is to have something real to edit, not
@@ -145,36 +190,53 @@ async def generateDemoProject(user: User = Depends(current_active_user)):
 
     The project belongs to whoever asked, and is idempotent per account:
     asking twice returns the one you already have rather than accumulating one
-    per click. It was idempotent by name across the whole server, which under
-    ownership would have handed the second person to ask somebody else's demo
-    -- or, filtered properly, a demo they could not open.
+    per click -- renamed or not. It was idempotent by name across the whole
+    server, which under ownership would have handed the second person to ask
+    somebody else's demo -- or, filtered properly, a demo they could not open.
     """
     from ..models import Project
 
-    # Check-then-create is not atomic, and this endpoint is one button that
-    # people press twice. Two concurrent requests both found nothing and both
-    # inserted, so "idempotent by name" held only when nobody raced it -- the
-    # e2e suite raced it immediately and ended up with two projects called
-    # Demo. An upsert with $setOnInsert leaves the decision to MongoDB.
+    # One find-or-insert, so the decision is MongoDB's rather than a
+    # check-then-create that two presses of the button could both pass. The
+    # upsert alone was not enough either: two requests could both match
+    # nothing and both insert, and the e2e suite, which presses it from
+    # several workers at once, ended up with two demos. The partial unique
+    # index on `{owner}` where `demo` (models/project.py) refuses the second
+    # insert, and the request that loses answers with the winner's project.
+    #
+    # The demo is the project marked `demo`. One called "Demo" without the
+    # mark is an account's demo from before the mark existed, or one it named
+    # itself, and is returned as before rather than joined by a second.
     collection = Project.get_motor_collection()
-    mine = {'name': DEMO_PROJECT_NAME, 'owner': owner_key(user)}
-    # The document *before* the update, so None means this call is the one that
-    # created it. Asking for the document after would return one either way and
-    # make `created` permanently false.
-    previous = await collection.find_one_and_update(
-        mine,
-        {'$setOnInsert': _demo_project_document(owner=owner_key(user))},
-        upsert=True,
-        return_document=False,
-    )
-
-    stored = await Project.find_one(mine)
-    clips = len(stored.edl.clips) if stored and stored.edl else 0
+    owner = owner_key(user)
+    yours = {'owner': owner, '$or': [{'demo': True}, {'name': DEMO_PROJECT_NAME}]}
+    # Chosen here, so the answer says whether this request is the one that
+    # inserted: the document comes back either way.
+    new_id = ObjectId()
+    try:
+        demo = await collection.find_one_and_update(
+            yours,
+            {'$setOnInsert': {'_id': new_id, **_demo_project_document(owner)}},
+            upsert=True,
+            # The marked demo first, if an account has both kinds.
+            sort=[('demo', DESCENDING)],
+            return_document=ReturnDocument.AFTER,
+        )
+    except DuplicateKeyError:
+        # Another request for this account inserted between this one's match
+        # and its insert, and the index refused this one. Theirs is the demo.
+        demo = await collection.find_one({'owner': owner, 'demo': True})
+    if demo is None:
+        # Inserted by the winner and deleted again before this read: too
+        # fast to say anything but "again".
+        raise HTTPException(
+            status_code=409, detail='The demo project changed meanwhile; ask again'
+        )
     return DemoProject(
-        id=str(stored.id),
-        name=stored.name,
-        clips=clips,
-        created=previous is None,
+        id=str(demo['_id']),
+        name=demo.get('name') or DEMO_PROJECT_NAME,
+        clips=len((demo.get('edl') or {}).get('clips') or []),
+        created=demo['_id'] == new_id,
     )
 
 
@@ -185,6 +247,7 @@ def _demo_project_document(owner):
     return dict(
         name=DEMO_PROJECT_NAME,
         owner=owner,
+        demo=True,
         logic={},
         fields=[],
         edl={
