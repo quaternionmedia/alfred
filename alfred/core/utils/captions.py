@@ -63,6 +63,54 @@ def checked_captions(captions: Optional[Iterable[Caption]]) -> List[Caption]:
     return ordered
 
 
+# --- a project's style --------------------------------------------------------
+#
+# A render request that carries captions means them: its style draws them
+# unless it says `enabled: false`. A project is different. Its captions may be
+# work in progress -- imported to be corrected, transcribed to be checked --
+# and must not appear in its renders until someone says they should. So a
+# project's style always states `enabled`, and states false until it is set.
+
+
+def style_document(style: CaptionStyle) -> dict:
+    """`style` as MongoDB keeps it: every field, a position pair as a list."""
+    data = style.dict()
+    if isinstance(data.get('position'), tuple):
+        data['position'] = list(data['position'])
+    return data
+
+
+def project_style(stored) -> CaptionStyle:
+    """A project's style as stored, `enabled` false where it says nothing."""
+    data = dict(stored) if isinstance(stored, dict) else {}
+    if data.get('enabled') is None:
+        data['enabled'] = False
+    try:
+        return CaptionStyle.parse_obj(data)
+    except ValidationError:
+        return CaptionStyle(enabled=False)
+
+
+def style_to_store(sent: Optional[CaptionStyle], stored) -> Optional[dict]:
+    """The style a project keeps once its captions are written, or None when
+    what it has already says all it must.
+
+    `sent`, if anything was: with `enabled` as sent, or as stored when it was
+    not, or false. Nothing sent keeps the stored style, giving it an explicit
+    `enabled: false` when it has none -- so after any write of a project's
+    captions its style says whether they are drawn.
+    """
+    stored = stored if isinstance(stored, dict) else {}
+    if sent is not None:
+        data = style_document(sent)
+        if 'enabled' not in sent.__fields_set__:
+            data['enabled'] = bool(stored.get('enabled') or False)
+        return data
+    if stored.get('enabled') is not None:
+        return None
+    return style_document(project_style(stored))
+
+
 # --- parsing ----------------------------------------------------------------
 
 FORMATS = ('srt', 'vtt', 'json')

@@ -11,7 +11,12 @@ from alfred.config import DB_NAME, DB_URL
 
 from ..models import Project, ProjectUpdate, RenderSettings
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
-from ..utils.captions import TooManyCaptions, checked_captions
+from ..utils.captions import (
+    TooManyCaptions,
+    checked_captions,
+    project_style,
+    style_to_store,
+)
 from ..utils.db import User, get_client
 from ..utils.ownership import owner_filter, owner_key
 from .users import current_active_user
@@ -202,7 +207,8 @@ class ProjectAPI(MotorCRUDRouter):
             model.owner = owner_key(user)
             model.demo = None
             # A transcription is the server's record; captions sent with a new
-            # project are held to the rules their own route applies.
+            # project are held to the rules their own route applies, and its
+            # style says whether they are drawn -- false unless it was sent.
             model.captions_job = None
             try:
                 model.captions = (
@@ -210,6 +216,10 @@ class ProjectAPI(MotorCRUDRouter):
                 )
             except TooManyCaptions as exc:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
+            if model.captions or model.caption_style is not None:
+                model.caption_style = project_style(
+                    style_to_store(model.caption_style, None)
+                )
             return await model.create()
 
         return route

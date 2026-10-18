@@ -210,6 +210,17 @@ class TestTheTask:
         assert stored['captions_job']['segments'] == 3
         assert stored['captions_job']['error'] is None
         assert stored['captions_job']['updated_at'] is not None
+        # Captions it did not have: not drawn into renders until someone says.
+        assert stored['caption_style']['enabled'] is False
+
+    def test_a_style_that_says_whether_is_left_alone(self, projects, monkeypatch):
+        project_id = ObjectId()
+        style = {'enabled': True, 'color': '#ffcc00'}
+        collection = projects({'_id': project_id, 'edl': EDL, 'caption_style': style})
+        heard(monkeypatch, ([], 0))
+        tasks.transcribeCaptions(projectId=str(project_id))
+        assert collection.documents[project_id]['caption_style'] == style
+        assert all('caption_style' not in update for update in collection.updates)
 
     def test_an_engine_failure_is_recorded_plainly(self, projects, monkeypatch):
         project_id = ObjectId()

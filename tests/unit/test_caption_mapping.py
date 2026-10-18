@@ -274,3 +274,37 @@ class TestWithCaptions:
             with_captions(edl, [cap(0, 1)], CaptionStyle(enabled=False), (320, 180))
             is edl
         )
+
+
+class TestAProjectsStyle:
+    """A render request's captions are drawn unless its style says not; a
+    project's are not drawn until its style says so, and it always says."""
+
+    def test_absent_is_not_drawn(self):
+        from alfred.core.utils.captions import project_style
+
+        assert project_style(None).enabled is False
+        assert project_style({'color': '#ffffff'}).enabled is False
+        assert project_style({'enabled': None}).enabled is False
+        assert project_style({'enabled': True}).enabled is True
+
+    def test_a_stored_style_that_no_longer_validates_is_not_drawn(self):
+        from alfred.core.utils.captions import project_style
+
+        assert project_style({'enabled': True, 'color': 'mauve'}).enabled is False
+
+    def test_what_a_write_stores(self):
+        from alfred.core.utils.captions import style_to_store
+
+        sent = CaptionStyle(color='#ff0000')
+        assert style_to_store(sent, None)['enabled'] is False
+        assert style_to_store(sent, {'enabled': True})['enabled'] is True
+        assert style_to_store(CaptionStyle(enabled=True), None)['enabled'] is True
+        assert style_to_store(None, None)['enabled'] is False
+        assert style_to_store(None, {'enabled': False, 'color': '#123456'}) is None
+        kept = style_to_store(None, {'color': '#123456'})
+        assert (kept['enabled'], kept['color']) == (False, '#123456')
+
+    def test_a_render_request_s_style_draws_unless_it_says_not(self):
+        assert CaptionStyle().enabled is True
+        assert CaptionStyle.parse_obj({'color': '#ffffff'}).enabled is True

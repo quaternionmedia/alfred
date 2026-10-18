@@ -27,6 +27,8 @@ from ..utils.captions import (
     TooManyCaptions,
     checked_captions,
     parse,
+    project_style,
+    style_to_store,
 )
 from ..utils.db import User
 from ..utils.media import RefusedEdl, check_edl
@@ -155,23 +157,13 @@ def view_of(project: dict) -> CaptionsView:
             # Stored by something that skipped the checks; shown without it
             # rather than failing the whole read.
             print('skipping a stored caption that does not validate:', exc)
-    try:
-        style = CaptionStyle.parse_obj(project.get('caption_style') or {})
-    except ValidationError:
-        style = CaptionStyle()
+    style = project_style(project.get('caption_style'))
     job = project.get('captions_job')
     if job:
         job = CaptionsJob.parse_obj(
             {**job, 'updated_at': _as_utc(job.get('updated_at'))}
         )
     return CaptionsView(captions=captions, style=style, job=job or None)
-
-
-def stored_style(style: CaptionStyle) -> dict:
-    data = style.dict()
-    if isinstance(data.get('position'), tuple):
-        data['position'] = list(data['position'])
-    return data
 
 
 captionsAPI = APIRouter()
@@ -186,9 +178,10 @@ async def getProjectCaptions(
     """# A project's captions
 
     `captions`, each `{start, end, text}` in timeline seconds and in order;
-    `style`, how they are drawn (every field optional, defaults applied when
-    they are rendered); and `job`, the last transcription of the timeline's
-    sound, or null.
+    `style`, how they are drawn -- `enabled` says whether they are drawn into
+    the project's renders at all, false until someone says so; every other
+    field is optional, defaults applied when they are rendered -- and `job`,
+    the last transcription of the timeline's sound, or null.
     """
     return view_of(await owned(store, item_id, user))
 
@@ -206,6 +199,10 @@ async def saveProjectCaptions(
     one is sent; nothing else on the project is written. Each caption starts
     at or after 0, ends after it starts and has text, at most 500 characters
     of it; they are stored in order of when they start, at most 1000.
+
+    The style's `enabled` is always stored: as sent, else as it was, else
+    false -- a project's captions are not drawn into its renders until
+    someone says they should be. Answers `{captions, style, job}` as stored.
     """
     project = await owned(store, item_id, user)
     try:
@@ -213,8 +210,9 @@ async def saveProjectCaptions(
     except TooManyCaptions as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     fields = {'captions': [caption.dict() for caption in captions]}
-    if update.style is not None:
-        fields['caption_style'] = stored_style(update.style)
+    style = style_to_store(update.style, project.get('caption_style'))
+    if style is not None:
+        fields['caption_style'] = style
     await store.set(project['_id'], fields)
     return view_of({**project, **fields})
 

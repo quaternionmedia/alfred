@@ -82,6 +82,7 @@ class TestTheRoundTrip:
         assert [c['text'] for c in body['captions']] == ['Sooner', 'Later']
         assert body['style']['position'] == ['left', 'top']
         assert body['style']['color'] == '#ffcc00'
+        assert body['style']['enabled'] is False
         assert body['job'] is None
 
     def test_the_project_carries_them(self, api, alice, make_project):
@@ -153,6 +154,28 @@ class TestTheRestOfTheProject:
         )
         assert [c['text'] for c in project['captions']] == ['a', 'b']
         assert project['captions_job'] is None
+        assert project['caption_style']['enabled'] is False
+
+    def test_the_project_says_whether_its_captions_are_drawn(
+        self, api, alice, make_project
+    ):
+        """GET /project/{id} carries the captions and the style, `enabled`
+        stated -- what an API client reads to render the project."""
+        project = make_project(alice)
+        api.put(
+            f'/project/{project["_id"]}/captions',
+            json={'captions': [{'start': 0, 'end': 1, 'text': 'Hi'}]},
+            headers=alice.headers,
+        )
+        whole = api.get(f'/project/{project["_id"]}', headers=alice.headers).json()
+        assert whole['caption_style']['enabled'] is False
+        api.put(
+            f'/project/{project["_id"]}/captions',
+            json={'captions': whole['captions'], 'style': {'enabled': True}},
+            headers=alice.headers,
+        )
+        whole = api.get(f'/project/{project["_id"]}', headers=alice.headers).json()
+        assert whole['caption_style']['enabled'] is True
 
 
 class TestTranscribing:

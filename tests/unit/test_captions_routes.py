@@ -124,7 +124,7 @@ class TestReading:
         assert res.json() == {
             'captions': [],
             'style': {
-                'enabled': True,
+                'enabled': False,
                 'fontsize': None,
                 'color': None,
                 'bg': None,
@@ -202,12 +202,47 @@ class TestSaving:
         stored = store.projects[mine['_id']]
         assert [c['start'] for c in stored['captions']] == [1.0, 3.0]
         assert stored['caption_style']['bg'] == ''
+        # Not said, and never said before: not drawn, and stored as such.
+        assert stored['caption_style']['enabled'] is False
+        assert body['style']['enabled'] is False
 
     def test_only_those_fields_are_written(self, api):
-        mine = project()
+        mine = project(caption_style={'enabled': True})
         client, store, _ = api(OWNER, mine)
         client.put(url(mine), json={'captions': [{'start': 0, 'end': 1, 'text': 'x'}]})
         assert [set(write) for write in store.writes] == [{'captions'}]
+
+    def test_a_project_s_first_captions_are_not_drawn_until_someone_says(self, api):
+        """A project's style always states `enabled` once it has captions,
+        and states false until it is set: imported or transcribed captions
+        are often still being corrected."""
+        mine = project()
+        client, store, _ = api(OWNER, mine)
+        res = client.put(
+            url(mine), json={'captions': [{'start': 0, 'end': 1, 'text': 'x'}]}
+        )
+        assert res.json()['style']['enabled'] is False
+        assert store.projects[mine['_id']]['caption_style']['enabled'] is False
+
+    @pytest.mark.parametrize('enabled', [True, False])
+    def test_enabled_as_sent(self, api, enabled):
+        mine = project(caption_style={'enabled': not enabled})
+        client, store, _ = api(OWNER, mine)
+        res = client.put(
+            url(mine), json={'captions': [], 'style': {'enabled': enabled}}
+        )
+        assert res.json()['style']['enabled'] is enabled
+        assert store.projects[mine['_id']]['caption_style']['enabled'] is enabled
+
+    def test_a_style_without_enabled_keeps_the_one_stored(self, api):
+        mine = project(caption_style={'enabled': True, 'color': '#123456'})
+        client, store, _ = api(OWNER, mine)
+        res = client.put(
+            url(mine), json={'captions': [], 'style': {'color': '#abcdef'}}
+        )
+        stored = store.projects[mine['_id']]['caption_style']
+        assert (stored['enabled'], stored['color']) == (True, '#abcdef')
+        assert res.json()['style']['enabled'] is True
 
     def test_a_style_left_out_is_kept(self, api):
         mine = project(caption_style={'enabled': True, 'color': '#123456'})

@@ -13,7 +13,7 @@ from alfred import config
 from ..models.render import is_output_filename
 from . import audio_engine
 from .bucket import upload
-from .captions import TooManyCaptions
+from .captions import TooManyCaptions, style_to_store
 from .db import get_sync_db
 from .encoding import preset_for
 from .logger import DbLogger, failure_reason, mark_failed
@@ -231,10 +231,12 @@ def captions_job(state, error=None, segments=None) -> dict:
     }
 
 
-def record_captions_job(project_id, job, captions=None) -> None:
+def record_captions_job(project_id, job, captions=None, style=None) -> None:
     fields = {'captions_job': job}
     if captions is not None:
         fields['captions'] = captions
+    if style is not None:
+        fields['caption_style'] = style
     get_sync_db()[PROJECTS].update_one(
         {'_id': ObjectId(str(project_id))}, {'$set': fields}
     )
@@ -266,7 +268,9 @@ def transcribeCaptions(self, projectId: str, **kwargs):
     job waited is left deleted.
     """
     projects = get_sync_db()[PROJECTS]
-    project = projects.find_one({'_id': ObjectId(projectId)}, {'edl': 1})
+    project = projects.find_one(
+        {'_id': ObjectId(projectId)}, {'edl': 1, 'caption_style': 1}
+    )
     if project is None:
         return
     record_captions_job(projectId, captions_job('transcribing'))
@@ -279,8 +283,11 @@ def transcribeCaptions(self, projectId: str, **kwargs):
         print('could not transcribe project', projectId, reason, flush=True)
         record_captions_job(projectId, captions_job('failed', error=reason))
         return
+    # Captions a project had not had: its style now says, if it did not,
+    # that they are not drawn into renders until someone has looked at them.
     record_captions_job(
         projectId,
         captions_job('done', segments=heard),
         captions=[caption.dict() for caption in captions],
+        style=style_to_store(None, project.get('caption_style')),
     )
