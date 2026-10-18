@@ -34,8 +34,9 @@ from urllib.parse import urlsplit, urlunsplit
 from alfred import config
 
 # What `GET /media/{name}/audio` may ask the engine to measure, all of them by
-# default.
-FEATURES = ('tempo', 'beats', 'onsets', 'loudness', 'silence', 'peaks')
+# default: vox's names for them (its `vox.media.FEATURES`, the fields of its
+# `Analysis`), which its contract spells as the engine does.
+FEATURES = ('tempo', 'beats', 'onsets', 'loudness', 'silences', 'peaks')
 
 # A failure's line, at most.
 REASON_LIMIT = 300
@@ -144,7 +145,14 @@ def contract(overrides=None):
             f'engine can be told to spell differently; the fields are '
             f'{", ".join(sorted(known))}'
         )
-    return EngineContract(**overrides)
+    try:
+        return EngineContract(**overrides)
+    except (TypeError, ValueError) as exc:
+        # vox checks its own contract: a media route without the upload's id
+        # in it, say.
+        raise NoAudioEngine(
+            f'ALFRED_AUDIO_ENGINE_CONTRACT_*: vox refused the contract: {exc}'
+        ) from exc
 
 
 def problem() -> Optional[str]:
@@ -211,10 +219,15 @@ def _detail_of(exc) -> str:
 def _call(media, url, method, *args, **kwargs):
     """`method(*args, **kwargs)`, its failures as AudioEngineErrors."""
     refused = getattr(media, 'EngineRefused', ())
+    not_offered = getattr(media, 'EngineDoesNotOffer', ())
     try:
         return method(*args, **kwargs)
     except AudioEngineError:
         raise
+    except not_offered as exc:
+        # The contract says the engine has no such route: configuration, not
+        # an engine that failed.
+        raise NoAudioEngine(_line(str(exc), url)) from exc
     except refused as exc:
         status = _status_of(exc)
         detail = _detail_of(exc)

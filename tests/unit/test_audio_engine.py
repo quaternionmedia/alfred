@@ -188,12 +188,22 @@ class TestTheContract:
         from vox.contract import EngineContract
 
         default = EngineContract()
-        alien = {
-            field.name: (
-                f'/alien/{field.name}'
-                if str(getattr(default, field.name) or '').startswith('/')
-                else f'alien_{field.name}'
+
+        def alien_spelling(name):
+            spelled = str(getattr(default, name) or '')
+            if not spelled.startswith('/'):
+                return f'alien_{name}'
+            # A route naming where an upload's id goes keeps the placeholder:
+            # vox's own, not any engine's, and vox insists on it.
+            placeholder = '{media_id}'
+            return (
+                f'/alien/{name}/{placeholder}'
+                if placeholder in spelled
+                else f'/alien/{name}'
             )
+
+        alien = {
+            field.name: alien_spelling(field.name)
             for field in dataclasses.fields(EngineContract)
         }
         env = {
@@ -442,3 +452,39 @@ def test_only_the_adapter_imports_vox():
         if IMPORTS_VOX.search(path.read_text(encoding='utf-8'))
     ]
     assert importers == [str(Path('alfred/core/utils/audio_engine.py'))]
+
+
+class TestWhatVoxRefuses:
+    def test_a_capability_its_contract_leaves_out_is_no_engine_to_ask(
+        self, engine, monkeypatch
+    ):
+        """vox refuses, by name and before any request, a route its contract
+        leaves None: configuration, answered as no engine (503), not as an
+        engine that failed."""
+
+        class EngineDoesNotOffer(Exception):
+            pass
+
+        import alfred.core.utils.audio_engine as adapter
+
+        fake = adapter._vox_media()
+        fake.EngineDoesNotOffer = EngineDoesNotOffer
+        engine['analyze'] = EngineDoesNotOffer(
+            'the engine at http://engine.test:8010 does not offer analysis'
+        )
+        with pytest.raises(audio_engine.NoAudioEngine, match='does not offer analysis'):
+            audio_engine.analyze('/tmp/x.mp3', 'audio/mpeg')
+
+    def test_a_contract_vox_itself_refuses_is_a_problem(self, engine, monkeypatch):
+        import vox.contract
+
+        class Strict(vox.contract.EngineContract):
+            def __post_init__(self):
+                raise ValueError('media_transcribe must name {media_id} once')
+
+        monkeypatch.setattr(vox.contract, 'EngineContract', Strict)
+        assert 'media_transcribe must name' in audio_engine.problem()
+
+    def test_feature_names_are_vox_s(self):
+        assert 'silences' in audio_engine.FEATURES
+        assert 'silence' not in audio_engine.FEATURES

@@ -92,7 +92,8 @@ def test_it_measures_what_it_hears(engine, tmp_path):
     assert body['onsets'] == [0.5, 2.0]
     assert body['silences'][0] == {'start': 0.0, 'end': 0.5}
     assert body['loudness']['lufs'] is None
-    assert math.isclose(body['peaks']['rate'], 10)
+    assert math.isclose(body['peaks']['rate'], 50)  # joe's default
+    assert len(body['peaks']['values']) == 200
     some = engine.post(
         f'/api/media/{media_id}/analyze', params={'features': 'tempo'}
     ).json()
@@ -101,11 +102,70 @@ def test_it_measures_what_it_hears(engine, tmp_path):
 
 def test_what_it_will_not_take(engine):
     assert upload(engine, b'hello', 'text/plain').status_code == 415
-    assert upload(engine, b'not audio at all', 'audio/wav').status_code == 422
+    refused = upload(engine, b'not audio at all', 'audio/wav')
+    assert refused.status_code == 422
+    assert refused.json()['detail'].startswith(
+        'this media has no audio ffmpeg can decode'
+    )
     assert engine.post('/api/media/nope/transcribe').status_code == 404
+    assert engine.delete('/api/media/nope').status_code == 404
+
+
+def test_a_video_with_no_sound_track_is_refused_as_joe_refuses_it(engine, tmp_path):
+    import subprocess
+
+    import imageio_ffmpeg
+
+    silent = tmp_path / 'silent.mp4'
+    subprocess.run(
+        [
+            imageio_ffmpeg.get_ffmpeg_exe(),
+            '-nostdin',
+            '-v',
+            'error',
+            '-y',
+            '-f',
+            'lavfi',
+            '-i',
+            'testsrc=size=64x36:rate=10:duration=1',
+            '-pix_fmt',
+            'yuv420p',
+            str(silent),
+        ],
+        check=True,
+    )
+    res = upload(engine, silent.read_bytes(), 'video/mp4')
+    assert res.status_code == 422
+    assert res.json()['detail'] == 'this media has no audio stream'
+
+
+def test_segments_are_trimmed_and_their_words_join_back_into_them(engine, tmp_path):
+    media_id = upload(engine, fixture_bytes(tmp_path)).json()['media_id']
+    body = engine.post(f'/api/media/{media_id}/transcribe').json()
+    for segment in body['segments']:
+        assert segment['text'] == segment['text'].strip()
+        assert ''.join(w['word'] for w in segment['words']).strip() == segment['text']
+    assert body['info']['words'] is True
 
 
 def test_forgetting(engine, tmp_path):
     media_id = upload(engine, fixture_bytes(tmp_path)).json()['media_id']
     assert engine.delete(f'/api/media/{media_id}').status_code == 204
     assert engine.post(f'/api/media/{media_id}/transcribe').status_code == 404
+
+
+def test_what_joe_s_capabilities_also_say(engine):
+    body = engine.get('/api/media/capabilities').json()
+    assert {'max_bytes', 'max_seconds', 'ttl_seconds'} <= set(body)
+
+
+def test_the_analysis_takes_joe_s_options(engine, tmp_path):
+    media_id = upload(engine, fixture_bytes(tmp_path)).json()['media_id']
+    body = engine.post(
+        f'/api/media/{media_id}/analyze',
+        params={'features': 'peaks,silence', 'peaks_rate': 4, 'silence_min': 0.6},
+    ).json()
+    assert body['peaks']['rate'] == 4
+    assert len(body['peaks']['values']) == 16  # four seconds, four a second
+    # Only the silences of 0.6 s or more: the last one, 3.2 to 4.0.
+    assert body['silences'] == [{'start': 3.2, 'end': 4.0}]

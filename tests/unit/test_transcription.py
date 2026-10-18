@@ -105,6 +105,29 @@ class TestFromATranscript:
         )
         assert texts(captions) == ['a', 'b']
 
+    @pytest.mark.parametrize(
+        'text',
+        [
+            '[Music]',
+            ' (applause) ',
+            '♪♪',
+            '...',
+            '[BLANK_AUDIO]',
+            '*laughs*',
+            '- [ Silence ] -',
+        ],
+    )
+    def test_what_is_not_speech_is_not_a_caption(self, text):
+        """What whisper writes over music and silence."""
+        assert captions_from_transcript([Segment(0, 1, text, ())]) == []
+        worded = Segment(0, 1, text, (Word(0, 1, f' {text}'),))
+        assert captions_from_transcript([worded]) == []
+
+    @pytest.mark.parametrize('text', ['[Music] Hello', '♪ la la la ♪', 'Track 3'])
+    def test_words_outside_the_brackets_are_kept_as_they_are(self, text):
+        [caption] = captions_from_transcript([Segment(0, 1, text, ())])
+        assert caption.text == text
+
     def test_more_than_a_project_carries_says_so(self):
         many = [Segment(i, i + 0.5, 'x', ()) for i in range(MAX_CAPTIONS + 1)]
         with pytest.raises(TooManyCaptions):
@@ -146,6 +169,29 @@ class TestWhatCanBeHeard:
             {'clips': [{'type': 'template', 'name': 'makeColor', 'duration': 1}]}
         )
         assert sounding_timeline(edl) is None
+
+
+class TestNothingHeard:
+    def test_a_take_with_no_speech_fails_rather_than_wiping_the_captions(
+        self, monkeypatch, tmp_path
+    ):
+        from alfred import config
+        from alfred.core.utils import transcription
+
+        monkeypatch.setattr(config, 'VIDEO_DIR', str(tmp_path))
+        (tmp_path / 'talk.wav').write_bytes(b'RIFF')
+        monkeypatch.setattr(transcription, 'mix_timeline', lambda edl, path: 3.0)
+        monkeypatch.setattr(
+            audio_engine,
+            'transcribe',
+            lambda path, content_type: audio_engine.Transcript(
+                segments=(Segment(0, 3, ' [Music]', ()),)
+            ),
+        )
+        with pytest.raises(NothingToHear, match='no speech'):
+            transcription.transcribe_timeline(
+                {'clips': [{'type': 'audio', 'name': 'videos/talk.wav', 'duration': 3}]}
+            )
 
 
 class FakeCollection:

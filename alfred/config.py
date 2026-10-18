@@ -326,8 +326,11 @@ REMOTE_MEDIA_HOSTS = parse_hosts(environ.get('ALFRED_REMOTE_MEDIA_HOSTS', ''))
 AUDIO_ENGINE_URL = (environ.get('ALFRED_AUDIO_ENGINE_URL') or '').strip() or None
 
 # How long one request to the engine may take, in seconds. Transcribing is the
-# slow one: whisper on a CPU takes about as long as the speech lasts.
-AUDIO_ENGINE_TIMEOUT = resolve_seconds(environ, 'ALFRED_AUDIO_ENGINE_TIMEOUT', 600)
+# slow one, and it runs on the render worker, where no request is waiting on
+# it: joe takes about eighteen seconds for its first transcription after it
+# starts, then about as long as the speech lasts on a CPU, so a long timeline
+# takes minutes. Half an hour, by default, before a job is given up on.
+AUDIO_ENGINE_TIMEOUT = resolve_seconds(environ, 'ALFRED_AUDIO_ENGINE_TIMEOUT', 1800)
 
 # Where an engine spells things differently from vox's defaults: any field of
 # vox's `EngineContract`, as ALFRED_AUDIO_ENGINE_CONTRACT_<FIELD> -- for

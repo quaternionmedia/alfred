@@ -518,6 +518,26 @@ SENTENCE_CHARS = 24
 # The shortest a caption from a transcript is shown for.
 MIN_SECONDS = 0.3
 
+# What a speech model writes for what is not speech: `[Music]`, `(applause)`,
+# `*laughs*`, `[BLANK_AUDIO]`, musical notes. Whisper writes these over music
+# and silence, and worse -- it can hallucinate whole lines there, which
+# nothing in a segment's text gives away.
+_ANNOTATION = re.compile(r'\[[^\]]*\]|\([^)]*\)|\*[^*]*\*|[♪♫♬\U0001f3b5\U0001f3b6]')
+
+
+def is_speech(text) -> bool:
+    """Whether `text` says anything: a letter or a digit left once bracketed
+    annotations, musical notes and punctuation are taken away.
+
+    Deliberately narrow. A line with any word outside the brackets is kept as
+    it is, and a whole take is never dropped on the engine's own doubt
+    (whisper's no-speech probability and mean log-probability arrive for the
+    whole take, so they cannot say which line was invented, and real speech
+    over music would go with the music).
+    """
+    return any(ch.isalnum() for ch in _ANNOTATION.sub(' ', str(text)))
+
+
 _SENTENCE_END = re.compile(r'[.!?…]["\')\]]*$')
 
 
@@ -567,9 +587,10 @@ def captions_from_transcript(segments, until=None) -> List[Caption]:
 
     A segment with word timings is cut into readable captions at word
     boundaries (TRANSCRIPT_CHARS, TRANSCRIPT_SECONDS, ends of sentences);
-    one without is a caption as it stands. Empty text is dropped, times are
-    clamped to the timeline -- from 0 to `until` -- and what is left with no
-    length is dropped too.
+    one without is a caption as it stands. Text that is not speech (empty,
+    or only `[Music]`-style annotations and punctuation: `is_speech`) is
+    dropped, times are clamped to the timeline -- from 0 to `until` -- and
+    what is left with no length is dropped too.
     """
     pieces = []
     for segment in segments:
@@ -594,7 +615,7 @@ def captions_from_transcript(segments, until=None) -> List[Caption]:
                 continue
             end = min(end, until)
         text = clean_caption_text(text)[:MAX_CAPTION_CHARS].strip()
-        if not text or end - start <= 0.001:
+        if not is_speech(text) or end - start <= 0.001:
             continue
         captions.append(Caption(start=start, end=end, text=text))
     # More than a project may carry is a failure that says so, not a

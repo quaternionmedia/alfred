@@ -52,9 +52,11 @@ PROJECTION = {'edl': 1, 'captions': 1, 'caption_style': 1, 'captions_job': 1}
 def stale_after() -> timedelta:
     """How long a queued or running transcription may go unheard from before
     another may start in its place: a worker that died mid-job must not leave
-    the project unable to be transcribed again. Twice the engine's timeout,
-    and ten minutes for mixing the timeline and waiting in the queue."""
-    return timedelta(seconds=2 * config.AUDIO_ENGINE_TIMEOUT + 600)
+    the project unable to be transcribed again. The engine's timeout, which
+    bounds the longest wait on it, and a quarter of an hour for mixing the
+    timeline. A job left queued behind long renders for longer than that may
+    be joined by a second; both finish, and the later one's captions stand."""
+    return timedelta(seconds=config.AUDIO_ENGINE_TIMEOUT + 900)
 
 
 class CaptionsView(BaseModel):

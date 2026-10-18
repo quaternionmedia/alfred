@@ -27,6 +27,19 @@ from ..utils.probe import ProbeCache
 # Analyses kept. One holds a loudness envelope, a few kilobytes for a song.
 CACHE_SIZE = 128
 
+# The type a library file is sent to the engine as, where the one it is served
+# with will not do. Python's table can spell WAV `audio/x-wav`, which a
+# browser plays and an engine reading types strictly refuses; `audio/wav` is
+# the name every engine and browser takes.
+ENGINE_TYPES = {'.wav': 'audio/wav'}
+
+
+def engine_type(filename) -> str:
+    return ENGINE_TYPES.get(os.path.splitext(filename)[1].lower()) or media_type(
+        filename
+    )
+
+
 _cache = ProbeCache(size=CACHE_SIZE)
 
 audioAPI = APIRouter()
@@ -64,7 +77,7 @@ async def mediaAudio(name: str, features: Optional[str] = None):
 
     `name` is the file as `GET /media` lists it (`videos/<file>`) or its bare
     file name. `features` is a comma-separated subset of `tempo`, `beats`,
-    `onsets`, `loudness`, `silence` and `peaks`; all of them by default.
+    `onsets`, `loudness`, `silences` and `peaks`; all of them by default.
 
     Answers the audio engine's analysis: `duration`, `tempo` (beats a minute),
     `beats` and `onsets` (seconds), `loudness` (`rms_db`, `peak_db`, `lufs`),
@@ -100,7 +113,7 @@ async def mediaAudio(name: str, features: Optional[str] = None):
         return known
     try:
         analysis = await run_in_threadpool(
-            audio_engine.analyze, path, media_type(filename), chosen
+            audio_engine.analyze, path, engine_type(filename), chosen
         )
     except audio_engine.AudioEngineRefused as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc

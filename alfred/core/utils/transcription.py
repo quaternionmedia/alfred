@@ -97,9 +97,9 @@ def transcribe_timeline(edl_data: dict):
 
     Raises what stops it, with a message for the person waiting: a media name
     the library does not hold (MediaNameError), a timeline with nothing to
-    hear (NothingToHear), an engine that is missing or fails
-    (AudioEngineError), or more captions than a project carries
-    (TooManyCaptions).
+    hear, or in which no speech was heard (NothingToHear), an engine that is
+    missing, refuses the sound or fails (AudioEngineError), or more captions
+    than a project carries (TooManyCaptions).
     """
     edl = resolve_edl(Edl.parse_obj(edl_data))
     until = timeline_end(edl)
@@ -111,4 +111,8 @@ def transcribe_timeline(edl_data: dict):
     finally:
         shutil.rmtree(folder, ignore_errors=True)
     captions = captions_from_transcript(transcript.segments, until=until)
+    if not captions:
+        # Music, silence, or nothing the engine could make out. Said as a
+        # failure, so the captions the project has are not replaced by none.
+        raise NothingToHear("the audio engine heard no speech in the timeline's sound")
     return captions, len(transcript.segments)

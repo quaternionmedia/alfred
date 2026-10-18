@@ -25,6 +25,7 @@ def library(tmp_path, monkeypatch):
     (tmp_path / 'song.mp3').write_bytes(b'not really audio')
     (tmp_path / 'talk.mp4').write_bytes(b'not really video')
     (tmp_path / 'still.png').write_bytes(b'not really a picture')
+    (tmp_path / 'speech.wav').write_bytes(b'not really a wav')
     return tmp_path
 
 
@@ -64,6 +65,10 @@ class TestAsking:
     def test_a_video_is_sent_as_one(self, client, analysed):
         client.get('/media/videos/talk.mp4/audio')
         assert analysed[0][1] == 'video/mp4'
+
+    def test_a_wav_is_sent_under_the_name_every_engine_takes(self, client, analysed):
+        client.get('/media/videos/speech.wav/audio')
+        assert analysed[0][1] == 'audio/wav'
 
     def test_some_features(self, client, analysed):
         res = client.get('/media/videos/song.mp3/audio?features=tempo,beats,tempo')
