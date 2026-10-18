@@ -4,6 +4,10 @@
 # 0.1.3.
 VERSION=v$(sed -n "s/^__version__ = ['\"]\(.*\)['\"]$/\1/p" "$(dirname "$0")/alfred/_version.py")
 
+# Every command below, under every name it answers to, and nothing else:
+# tests/unit/test_task_runner.py holds this list to the commands the script
+# dispatches. It listed an `s` that did nothing, and left out six commands
+# that worked (demo, thin, stop, seed, docs, pytest) and names others answer to.
 HELP="./al
 
 Init script and helper functions for Alfred
@@ -13,28 +17,34 @@ USAGE:
 
 
 COMMANDS:
-b | build
-cookbook
-recipes
-d | dev
-docker | dock
-flower
-dump
-git
-i | install
-init
-l | log
-n | nox
-p | production
-reload
-r | restart
-reseed
-restore
-s | sh
-storage
-t | test | e2e
-v | version
-w | worker
+init                    build the site's image; give this checkout a dev signing key
+d | dev                 run the dev stack (--build rebuilds the images first)
+thin                    run the dev stack without the render worker
+stop                    stop the dev stack
+reload                  rebuild and restart the dev stack's api
+b | build               build the dev stack's images
+docker | dock           docker compose with the dev stack's files: ./al docker ps
+l | logs | log          follow the logs (docker compose logs -f)
+sh                      a shell in the dev stack's api container
+seed | db               put the demo projects in an empty database
+reinit | reseed         drop every project and seed the demo ones again
+storage                 tidy renders, deliveries and fetched media (--apply to act)
+dump                    write the database to alfred_db_<date>.gz
+restore                 load an archive written by dump: ./al restore FILE
+demo | download | samples  download demo media into videos/ (needs the network)
+t | test | e2e          the browser suite, in Docker (test_e2e.yml)
+pt | pytest | py        the API suite, in Docker (pytest.yml)
+n | nox                 a nox session in the test container: ./al nox -s lint
+cookbook                regenerate docs/cookbook.md from the browser specs
+recipes                 record the recipe walkthroughs (needs a dev stack)
+docs | doc              serve the docs on http://localhost:4000
+flower                  Celery monitoring on http://localhost:5555
+i | install             add a frontend dependency: ./al install PACKAGE
+w | worker              a render worker on this machine: ./al worker DB_HOST
+p | prod | production   the production stack (export ALFRED_SECRET_KEY first)
+r | restart             restart the production stack
+g | git                 pull, then update the submodules
+v | version | -v        print the version
 "
 
 # Returns a greeting quote to the user.
@@ -98,6 +108,138 @@ ensureDevKey() {
   echo "  Created .secret_key.local, this checkout's own development signing key." >&2
 }
 
+# The compose project this checkout's stacks run as: COMPOSE_PROJECT_NAME, or
+# what compose makes of the directory's name.
+projectName() {
+  if [ -n "${COMPOSE_PROJECT_NAME:-}" ]; then
+    printf '%s\n' "$COMPOSE_PROJECT_NAME"
+  else
+    basename "$(cd "$(dirname "$0")" && pwd)" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-'
+  fi
+}
+
+# Connect to a port on this machine; the exit status says what is there.
+#
+# curl, because a POSIX shell has no sockets of its own. 7 is a refused
+# connection: nothing is listening. 0 is an HTTP answer. Anything else -- an
+# empty reply, a reset, a timeout -- is a listener that does not speak HTTP,
+# as MongoDB and the site's live-reload server need not. Five seconds to
+# connect, because Windows takes about two to refuse a connection on loopback.
+probePort() {
+  curl -s -o /dev/null --connect-timeout 5 --max-time 6 "http://localhost:$1/" 2>/dev/null
+}
+
+# The container publishing a port, as "name project", when a container is.
+publisher() {
+  docker ps --filter "publish=$1" --format '{{.Names}} {{.Label "com.docker.compose.project"}}' 2>/dev/null | head -1
+}
+
+# Refuse to start on a port somebody else already holds.
+#
+# Docker publishes the port, but if another process bound it first the host
+# port answers *them* -- so the stack looks healthy, the container serves
+# correctly on its own network, and every request from the host reaches a
+# different application. That happened here: another QM project defaults to
+# 8000 too, and `curl localhost:8000` answered "Apothecary API" for an
+# entire session while this stack was up and fine.
+#
+# The stack publishes three ports, and only the api's was checked. A held
+# database or live-reload port failed the start with "port is already
+# allocated", naming the port but neither the setting that moves it nor what
+# holds it. All three are probed now, at once, and whatever is in the way is
+# reported together, with one command that starts clear of it. A port this
+# checkout's own stack holds is left to compose, which keeps or recreates its
+# containers rather than colliding with them.
+#
+# Failing here with the occupant named beats discovering it later, or worse,
+# not discovering it. Override rather than kill: ALFRED_PORT=8100 ./al dev
+refuseTakenPorts() {
+  run="./al $1"
+  ALFRED_PORT="${ALFRED_PORT:-8000}"
+  ALFRED_HMR_PORT="${ALFRED_HMR_PORT:-8001}"
+  ALFRED_DB_PORT="${ALFRED_DB_PORT:-27017}"
+  # Without curl there is no probe, and the stack starts unguarded, as it did
+  # before there was a guard.
+  command -v curl >/dev/null 2>&1 || return 0
+
+  probePort "$ALFRED_PORT" & api=$!
+  probePort "$ALFRED_HMR_PORT" & hmr=$!
+  probePort "$ALFRED_DB_PORT" & db=$!
+  wait $api; api_status=$?
+  wait $hmr; hmr_status=$?
+  wait $db; db_status=$?
+
+  project=$(projectName)
+  moves=""
+
+  if [ $api_status -ne 7 ]; then
+    holder=$(publisher "$ALFRED_PORT")
+    if [ -n "$holder" ] && [ "${holder#* }" = "$project" ]; then
+      if [ $api_status -eq 0 ]; then
+        echo >&2
+        echo "  Alfred is already running from this checkout, on port $ALFRED_PORT." >&2
+        echo >&2
+        echo "  Stop it first:  ./al stop" >&2
+        echo >&2
+        exit 1
+      fi
+      # This checkout's api, not answering yet: compose will recreate it.
+    else
+      occupant=""
+      if [ $api_status -eq 0 ]; then
+        # First match, not last: an OpenAPI document has a `title` per schema
+        # as well as the one in `info`, and a greedy pattern finds the wrong one.
+        occupant=$(curl -s --max-time 3 "http://localhost:$ALFRED_PORT/openapi.json" 2>/dev/null | head -c 400 | grep -o '"title":"[^"]*"' | head -1 | cut -d'"' -f4)
+      fi
+      echo >&2
+      if [ "$occupant" = "Alfred API" ]; then
+        echo "  Port $ALFRED_PORT (ALFRED_PORT) is held by another Alfred stack${holder:+, the container ${holder%% *}}." >&2
+      elif [ $api_status -eq 0 ]; then
+        echo "  Port $ALFRED_PORT (ALFRED_PORT) is already answering, and not as Alfred." >&2
+        echo "  Starting here would look fine and be wrong: the container would" >&2
+        echo "  serve correctly on its own network while every request from your" >&2
+        echo "  machine reached whatever holds the port." >&2
+        echo "  It identifies itself as:  ${occupant:-(no OpenAPI document)}" >&2
+      else
+        echo "  Port $ALFRED_PORT (ALFRED_PORT) is already in use, by something that does" >&2
+        echo "  not answer HTTP${holder:+: the container ${holder%% *}}." >&2
+      fi
+      moves="$moves ALFRED_PORT=$((ALFRED_PORT + 100))"
+    fi
+  fi
+
+  if [ $hmr_status -ne 7 ]; then
+    holder=$(publisher "$ALFRED_HMR_PORT")
+    if [ -z "$holder" ] || [ "${holder#* }" != "$project" ]; then
+      echo >&2
+      echo "  Port $ALFRED_HMR_PORT (ALFRED_HMR_PORT, the site's live reload) is already" >&2
+      echo "  in use${holder:+, by the container ${holder%% *}}." >&2
+      moves="$moves ALFRED_HMR_PORT=$((ALFRED_HMR_PORT + 100))"
+    fi
+  fi
+
+  if [ $db_status -ne 7 ]; then
+    holder=$(publisher "$ALFRED_DB_PORT")
+    if [ -z "$holder" ] || [ "${holder#* }" != "$project" ]; then
+      echo >&2
+      echo "  Port $ALFRED_DB_PORT (ALFRED_DB_PORT, the database) is already in use," >&2
+      if [ -n "$holder" ]; then
+        echo "  by the container ${holder%% *}." >&2
+      else
+        echo "  most likely by a standalone mongod or another project's database." >&2
+      fi
+      moves="$moves ALFRED_DB_PORT=$((ALFRED_DB_PORT + 100))"
+    fi
+  fi
+
+  if [ -n "$moves" ]; then
+    echo >&2
+    echo "  Start elsewhere instead:  ${moves# } $run" >&2
+    echo >&2
+    exit 1
+  fi
+}
+
 if [ -z $1 ]; then
   echo "$HELP"
 
@@ -113,45 +255,7 @@ elif [ $1 = "b" -o $1 = "build" ]; then
 elif [ $1 = "d" ] || [ $1 = "dev" ]; then
   if [ !-z ]; then shift; fi
   ensureDevKey
-
-  # Refuse to start on a port somebody else already holds.
-  #
-  # Docker publishes the port, but if another process bound it first the host
-  # port answers *them* -- so the stack looks healthy, the container serves
-  # correctly on its own network, and every request from the host reaches a
-  # different application. That happened here: another QM project defaults to
-  # 8000 too, and `curl localhost:8000` answered "Apothecary API" for an
-  # entire session while this stack was up and fine.
-  #
-  # Failing here with the occupant named beats discovering it later, or worse,
-  # not discovering it. Override rather than kill: ALFRED_PORT=8100 ./al dev
-  ALFRED_PORT="${ALFRED_PORT:-8000}"
-  if curl -s -o /dev/null --max-time 3 "http://localhost:$ALFRED_PORT/" 2>/dev/null; then
-    # First match, not last: an OpenAPI document has a `title` per schema as
-    # well as the one in `info`, and a greedy pattern finds the wrong one.
-    occupant=$(curl -s --max-time 3 "http://localhost:$ALFRED_PORT/openapi.json" 2>/dev/null       | head -c 400 | grep -o '"title":"[^"]*"' | head -1 | cut -d'"' -f4)
-    # Suggest a port that is actually free, rather than naming the taken one.
-    alternate=$((ALFRED_PORT + 100))
-    echo >&2
-    if [ "$occupant" = "Alfred API" ]; then
-      echo "  Alfred is already running on port $ALFRED_PORT." >&2
-      echo >&2
-      echo "  Stop it first:                  ./al stop" >&2
-      echo "  or start a second stack:        ALFRED_PORT=$alternate ./al dev" >&2
-    else
-      echo "  Port $ALFRED_PORT is already answering, and not as Alfred." >&2
-      echo "  Starting here would look fine and be wrong: the container would" >&2
-      echo "  serve correctly on its own network while every request from your" >&2
-      echo "  machine reached whatever holds the port." >&2
-      echo >&2
-      echo "  It identifies itself as:  ${occupant:-(no OpenAPI document)}" >&2
-      echo >&2
-      echo "  Start elsewhere instead:  ALFRED_PORT=$alternate ./al dev" >&2
-    fi
-    echo >&2
-    exit 1
-  fi
-
+  refuseTakenPorts dev
   warnIfExposed
   echo "Alfred! running dev $1  (http://localhost:$ALFRED_PORT)"
   ALFRED_PORT="$ALFRED_PORT" docker compose -f docker-compose.yml -f dev.yml up "$@"
@@ -216,7 +320,8 @@ elif [ $1 = "cookbook" ]; then
 elif [ $1 = "flower" ]; then
   shift
   # Celery monitoring on http://localhost:5555. Needs the dev stack up for the
-  # broker; flower.yml only brings up flower itself.
+  # broker; flower.yml only brings up flower itself. On loopback unless
+  # ALFRED_BIND says otherwise, like the dev stack (flower.yml says why).
   docker compose -f flower.yml up "$@"
 
 elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
@@ -227,7 +332,8 @@ elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
 elif [ $1 = "thin" ]; then
   shift
   ensureDevKey
-  ALFRED_PORT="${ALFRED_PORT:-8000}"
+  # The same three ports as `./al dev`, so the same guard.
+  refuseTakenPorts thin
   warnIfExposed
   echo "Alfred! thin dev stack, no renderer  (http://localhost:$ALFRED_PORT)"
   ALFRED_PORT="$ALFRED_PORT" docker compose     -f docker-compose.yml -f dev.yml -f thin.yml up "$@"
@@ -349,9 +455,12 @@ elif [ $1 = "g" -o $1 = "git" ]; then
   git pull && git submodule update
 
 elif [ $1 = "docs" -o $1 = "doc" ]; then
-  # build documentation and serve locally, with hot reloader
+  # Build the documentation and serve it, reloading as it changes, on
+  # http://localhost:4000. Loopback unless ALFRED_BIND says otherwise, like the
+  # dev stack: on 0.0.0.0 it served this checkout's docs -- drafts included --
+  # to the whole network by default. ALFRED_BIND=0.0.0.0 ./al docs opens it.
   shift
-  mkdocs serve -a 0.0.0.0:4000
+  mkdocs serve -a "${ALFRED_BIND:-127.0.0.1}:4000"
 
 elif [ $1 = "docker" -o $1 = "dock" ]; then
   shift
@@ -359,12 +468,26 @@ elif [ $1 = "docker" -o $1 = "dock" ]; then
 
 elif [ $1 = "t" -o $1 = "test" -o $1 = "e2e" ]; then
   shift
+  # A compose project of its own. test_e2e.yml names its services api,
+  # renderer and db, as the dev stack does, and under the checkout's default
+  # project they were the dev stack's containers: a run recreated a running
+  # dev stack with the test configuration. As <project>-e2e the two never meet.
+  e2e="docker compose -p $(projectName)-e2e -f test_e2e.yml"
+  # From nothing, as CI starts. `down --volumes` removes what the last run
+  # left: its containers, the volume its renders and deliveries are on, and
+  # the anonymous volumes holding the database and the node_modules of the
+  # site and the runner. --renew-anon-volumes alone gave each run fresh ones
+  # and left the old ones behind, unused, a set per run. The last run's
+  # containers and volumes stay until the next one, for its logs and outputs:
+  #   docker compose -p <project>-e2e -f test_e2e.yml logs api
+  $e2e down --volumes --remove-orphans
   # --build, as CI runs it, so a local run tests this checkout's images rather
   # than whichever ones an earlier run left behind. --renew-anon-volumes for
-  # the same reason: the site's node_modules and the database are anonymous
-  # volumes, and compose hands a recreated container its old ones -- so after
-  # a dependency change the bundle was built against the previous install.
-  docker compose -f test_e2e.yml up --build --renew-anon-volumes --exit-code-from e2e "$@"
+  # the same reason, should `down` have left a container: the site's
+  # node_modules and the database are anonymous volumes, and compose hands a
+  # recreated container its old ones -- so after a dependency change the
+  # bundle was built against the previous install.
+  $e2e up --build --renew-anon-volumes --exit-code-from e2e "$@"
 
 elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   shift

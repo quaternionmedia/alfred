@@ -7,8 +7,11 @@ jobs:
   detect_haiku:
     runs-on: ubuntu-latest
     steps:
+      # The checkout major every other workflow of this project's own runs
+      # (Node 24). The three copied from governance/qm's project seed --
+      # adr-lint, reuse-lint and submodule-check -- keep the seed's versions.
       - name: 🛒 Checkout action repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: quaternionmedia/haiku
           path: ./.github/actions/haiku

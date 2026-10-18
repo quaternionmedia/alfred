@@ -26,9 +26,10 @@ jobs:
 
       # The whole stack comes from test_e2e.yml: it builds the site, starts
       # the api, a render worker and the database, and runs the suite. The
-      # same command as `./al test`, so a failure here reproduces locally with
-      # that command and nothing else -- no `./al init`, no separate site
-      # build, no secrets.
+      # stack `./al test` runs -- locally under a compose project of its own,
+      # after removing what its last run left, which a fresh runner does not
+      # have -- so a failure here reproduces locally with that command and
+      # nothing else: no `./al init`, no separate site build, no secrets.
       - name: 🧪 Run E2E suite
         run: docker compose -f test_e2e.yml up --build --exit-code-from e2e
 

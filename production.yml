@@ -5,6 +5,122 @@
 # (`./al prod` runs that, after building the docs.) traefik terminates TLS on
 # the external `web` network and is expected to be running already.
 
+# Every setting alfred reads, passed through from the deploying shell as
+# dev.yml passes them: export one before `./al prod` and the api and the
+# renderer both get it. Exported and not listed here, a setting did nothing
+# -- ALFRED_ALLOW_REGISTRATION, the only way to open registration on this
+# stack, among them. docs/configuration.md says what each one does.
+#
+# Bare names, so a setting nobody exported stays unset and the code's own
+# default holds; see dev.yml for why that is not the same as empty. One list,
+# merged into both services; tests/unit/test_stack_settings.py fails when
+# alfred reads a setting this does not pass.
+#
+# Two settings are not here on purpose. ALFRED_DEV_SKIP_AUTH: the auth bypass
+# has no way into this stack. ALFRED_SECRET_KEY: the api below requires it,
+# and the renderer signs nothing.
+x-alfred-settings: &alfred-settings
+  # Production is a property of this file, not of the shell that runs it.
+  ALFRED_PRODUCTION: 'true'
+  # Closed under ALFRED_PRODUCTION unless this says otherwise:
+  #   ALFRED_ALLOW_REGISTRATION=1 ./al prod
+  ALFRED_ALLOW_REGISTRATION:
+  # Reserved in every mode -- it cannot register, log in or be reset -- so
+  # it matters here too, though nothing here acts as it.
+  ALFRED_DEV_USER_EMAIL:
+  ALFRED_SEED_OWNER:
+  # The address account mail links to (password reset, confirmation) --
+  # never taken from a request's Host header, which the requester controls.
+  # The default is the host the traefik rule below serves; export
+  # ALFRED_PUBLIC_URL to deploy elsewhere. Reset mail also needs EMAIL_SERVER
+  # and EMAIL_USERNAME, which the `.email` env file carries.
+  ALFRED_PUBLIC_URL: ${ALFRED_PUBLIC_URL:-https://alfred.quaternion.media}
+  # Hosts a clip may name remote media on; none unless set.
+  ALFRED_REMOTE_MEDIA_HOSTS:
+  # Also sets OTTO_DOWNLOAD_DIR, the engine's name for it, in each service.
+  ALFRED_REMOTE_CACHE_DIR:
+  ALFRED_REMOTE_CACHE_TTL:
+  ALFRED_RENDER_DIR:
+  ALFRED_DELIVERY_DIR:
+  ALFRED_PREVIEW_DIR:
+  ALFRED_FRAME_TTL:
+  ALFRED_MEDIA_URL_TTL:
+  ALFRED_BUCKET_NAME:
+  # The audio engine captions are transcribed with; none unless set.
+  ALFRED_AUDIO_ENGINE_URL:
+  ALFRED_AUDIO_ENGINE_TIMEOUT:
+
+# An audio engine's own spelling, one ALFRED_AUDIO_ENGINE_CONTRACT_<FIELD> per
+# field of vox's EngineContract; see dev.yml.
+x-audio-engine-contract: &audio-engine-contract
+  ALFRED_AUDIO_ENGINE_CONTRACT_HEALTH:
+  ALFRED_AUDIO_ENGINE_CONTRACT_DEVICES:
+  ALFRED_AUDIO_ENGINE_CONTRACT_TRANSCRIBE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LISTEN:
+  ALFRED_AUDIO_ENGINE_CONTRACT_FILENAME_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_DURATION_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PAUSE_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_HINT_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_TEXT_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_AUDIO_PATH_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_CONFIDENCE_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_DEVICES_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_AVAILABLE_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_CONVERSATION:
+  ALFRED_AUDIO_ENGINE_CONTRACT_WATCH:
+  ALFRED_AUDIO_ENGINE_CONTRACT_UNWATCH:
+  ALFRED_AUDIO_ENGINE_CONTRACT_CONTROL:
+  ALFRED_AUDIO_ENGINE_CONTRACT_INTERRUPTED_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_UPLOAD:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_CAPABILITIES:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_TRANSCRIBE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_ANALYZE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_DELETE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LANGUAGE_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_WORDS_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_FEATURES_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAKS_RATE_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SILENCE_DB_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SILENCE_MIN_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_ID_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_DURATION_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SAMPLE_RATE_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_CHANNELS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_HAS_AUDIO_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LANGUAGE_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SEGMENTS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_START_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_END_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_WORDS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_WORD_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PROBABILITY_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_INFO_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_TEMPO_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_BEATS_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_ONSETS_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LOUDNESS_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SILENCES_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAKS_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_TEMPO_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_BEATS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_ONSETS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LOUDNESS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SILENCES_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAKS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_RMS_DB_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAK_DB_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LUFS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAKS_RATE_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAKS_VALUES_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_FORMATS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_FEATURES_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SPEECH_MODEL_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_WORD_TIMESTAMPS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MAX_BYTES_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MAX_SECONDS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_TTL_SECONDS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_DETAIL_KEY:
+
 networks:
   web:
     name: web
@@ -33,7 +149,7 @@ services:
       # rendered there draws with the same fonts. Additive; see dev.yml.
       - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
     environment:
-      - ALFRED_PRODUCTION=true
+      <<: [*alfred-settings, *audio-engine-contract]
       # The key that signs every session token, from the deploying shell and
       # nowhere else. docker-compose.yml loads ALFRED_SECRET_KEY from
       # .secret_key, a development stub committed to this public repository,
@@ -41,28 +157,23 @@ services:
       # replaced, anyone could read the key and mint a token for any user.
       # This entry overrides that file, and compose refuses to start the
       # stack without it.
-      - ALFRED_SECRET_KEY=${ALFRED_SECRET_KEY:?production signs tokens with its own key; export ALFRED_SECRET_KEY before ./al prod}
+      ALFRED_SECRET_KEY: ${ALFRED_SECRET_KEY:?production signs tokens with its own key; export ALFRED_SECRET_KEY before ./al prod}
       # The directory the renderer writes to, named the same way on both, so
       # delivery reads the file the worker produced.
-      - VIDEO_DIR=/app/videos
-      # Hosts a clip may name remote media on, passed through from the
-      # deploying shell; empty unless set. The renderer reads the same value.
-      - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
-      # The address account mail links to (password reset, confirmation) --
-      # never taken from a request's Host header, which the requester
-      # controls. The default is the host the traefik rule above serves;
-      # export ALFRED_PUBLIC_URL to deploy elsewhere. Reset mail also needs
-      # EMAIL_SERVER and EMAIL_USERNAME, which the `.email` env file carries.
-      - ALFRED_PUBLIC_URL=${ALFRED_PUBLIC_URL:-https://alfred.quaternion.media}
+      VIDEO_DIR: /app/videos
       # Where the engine keeps media it fetched from a URL: hidden in the
       # library mount the renderer shares, never listed or served (contract
       # M6). It wrote them under the working directory's `data/`, which was
       # served publicly at /data. The renderer is given the same directory.
-      - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
-      # The audio engine captions are transcribed with; none unless set. The
-      # renderer below is given the same address.
-      - ALFRED_AUDIO_ENGINE_URL=${ALFRED_AUDIO_ENGINE_URL:-}
-      - ALFRED_AUDIO_ENGINE_TIMEOUT=${ALFRED_AUDIO_ENGINE_TIMEOUT:-}
+      OTTO_DOWNLOAD_DIR: ${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
+    # host.docker.internal is the server as a container sees it, so an audio
+    # engine running beside the stack is reached at the address the docs give,
+    # ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010. Docker Desktop
+    # provides the name; a Linux server, where this stack runs, does not. The
+    # engine also has to listen where the Docker bridge reaches it; see
+    # docs/configuration.md. A name in /etc/hosts, and nothing published.
+    extra_hosts:
+      - host.docker.internal:host-gateway
 
   # No ports for the database. It was published on 192.168.192.52:27017,
   # which put an unauthenticated MongoDB on the LAN; nothing outside this
@@ -93,17 +204,18 @@ services:
       - ./cred.json:/cred.json
     depends_on:
       - db
+    # The same settings as the api, from the same list.
     environment:
-      - ALFRED_PRODUCTION=true
-      - CELERY_BROKER=mongodb://db:27017/celery
-      - CELERY_BACKEND=mongodb://db:27017/celery
-      - DB_URL=mongodb://db:27017
-      - DB_NAME=alfred
-      - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+      <<: [*alfred-settings, *audio-engine-contract]
+      CELERY_BROKER: mongodb://db:27017/celery
+      CELERY_BACKEND: mongodb://db:27017/celery
+      DB_URL: mongodb://db:27017
+      DB_NAME: alfred
+      GOOGLE_APPLICATION_CREDENTIALS: /cred.json
       # Absolute, matching the mount above; see dev.yml for what a relative
       # path did here.
-      - VIDEO_DIR=/app/videos
-      - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
-      - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
-      - ALFRED_AUDIO_ENGINE_URL=${ALFRED_AUDIO_ENGINE_URL:-}
-      - ALFRED_AUDIO_ENGINE_TIMEOUT=${ALFRED_AUDIO_ENGINE_TIMEOUT:-}
+      VIDEO_DIR: /app/videos
+      OTTO_DOWNLOAD_DIR: ${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
+    # The worker transcribes, so it reaches the audio engine too; see the api.
+    extra_hosts:
+      - host.docker.internal:host-gateway

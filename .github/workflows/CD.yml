@@ -15,4 +15,12 @@ jobs:
     name: 🔨 Build and deploy to ghcr
     uses: quaternionmedia/.github/.github/workflows/build.yml@main
     with:
-      submodules: true
+      # A string, as build.yml declares the input: it is handed to
+      # actions/checkout, whose `submodules` takes `true` or `recursive`.
+      # This passed the boolean `true`, which the input's type refuses.
+      #
+      # `recursive`, as CI.yml, playwright.yml and license-report.yml check
+      # out: the image builds alfred/otto and alfred/vox into itself, so it
+      # is built from the same tree the suites tested. No submodule has
+      # submodules of its own today, so the two values fetch the same files.
+      submodules: recursive

@@ -3,12 +3,46 @@
 #   docker compose -f test_e2e.yml up --build --exit-code-from e2e
 #
 # builds the SPA, starts the api, a render worker and a database, and runs
-# Playwright against them. `./al test` and the CI job both run exactly this.
-# Nothing is assumed to exist beforehand -- no `./al init`, no dev stack, no
-# earlier build of website/dist, no secrets.
+# Playwright against them. The CI job runs exactly this; `./al test` runs it
+# too, under a compose project of its own, after removing what its last run
+# left. Nothing is assumed to exist beforehand -- no `./al init`, no dev stack,
+# no earlier build of website/dist, no secrets.
 #
 # `--exit-code-from` stops every container as soon as any one exits, which is
 # why `site` below stays up after building instead of exiting when it is done.
+
+# The settings the api and the renderer share, from one list so they agree on
+# where every file is. Nothing comes from the shell running the suite: a run
+# tests the same stack everywhere.
+#
+# What the suite makes -- renders, local deliveries, preview frames, fetched
+# media -- goes to the e2e-outputs volume, mounted at /outputs in both. With
+# the defaults it went into the checkout through the repository mount: every
+# e2e render into videos/renders/ and every local delivery into deliveries/,
+# where the dev stack listed them as orphans. The library itself stays the
+# checkout's videos/, which the suite generates its demo clips into and the
+# audio stub writes e2e-speech.wav into: inputs, not outputs.
+x-e2e-settings: &e2e-settings
+  CELERY_BROKER: mongodb://db:27017/celery
+  CELERY_BACKEND: mongodb://db:27017/celery
+  DB_URL: mongodb://db:27017
+  DB_NAME: alfred
+  # The library, shared through the repository mount.
+  VIDEO_DIR: /app/videos
+  ALFRED_RENDER_DIR: /outputs/renders
+  ALFRED_DELIVERY_DIR: /outputs/deliveries
+  # The api's alone; here so it is not the one output left elsewhere.
+  ALFRED_PREVIEW_DIR: /outputs/previews
+  # Fetched remote media, served by nothing (contract M6).
+  OTTO_DOWNLOAD_DIR: /outputs/remote-cache
+  # The stub audio engine below, which the captions specs transcribe with;
+  # the renderer is what transcribes.
+  ALFRED_AUDIO_ENGINE_URL: http://audio
+
+volumes:
+  # Created with the stack, and removed with it by `down --volumes`, which
+  # `./al test` runs before each run.
+  e2e-outputs:
 
 services:
   e2e:
@@ -117,27 +151,18 @@ services:
     volumes:
       - ./:/app/
       - ./website/dist/:/app/dist/
+      # Shared with the renderer, so the file the worker writes is the file
+      # the api delivers.
+      - e2e-outputs:/outputs
     environment:
-      - CELERY_BROKER=mongodb://db:27017/celery
-      - CELERY_BACKEND=mongodb://db:27017/celery
-      - DB_URL=mongodb://db:27017
-      - DB_NAME=alfred
-      - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+      <<: *e2e-settings
+      GOOGLE_APPLICATION_CREDENTIALS: /cred.json
       # Signs this stack's session tokens and nothing else. docker-compose.yml
       # reads the dev key from .secret_key; this file does not include it, so
       # without a key here every login answered 500. A value written in the
       # open is the honest kind for a test stack: it is not a secret, and it
       # says so.
-      - ALFRED_SECRET_KEY=e2e-only-signing-key-not-a-secret-never-use-outside-test-e2e
-      # Shared with the renderer through the repository mount, so the file
-      # the worker writes is the file the api delivers.
-      - VIDEO_DIR=/app/videos
-      # Fetched remote media, hidden in the library and served by nothing
-      # (contract M6); the renderer is given the same directory.
-      - OTTO_DOWNLOAD_DIR=/app/videos/.remote-cache
-      # The stub audio engine below, which the captions specs transcribe
-      # with; the renderer, which does the transcribing, is given it too.
-      - ALFRED_AUDIO_ENGINE_URL=http://audio
+      ALFRED_SECRET_KEY: e2e-only-signing-key-not-a-secret-never-use-outside-test-e2e
     healthcheck:
       test:
         [
@@ -171,14 +196,9 @@ services:
       - audio
     volumes:
       - ./:/app/
+      - e2e-outputs:/outputs
     environment:
-      - CELERY_BROKER=mongodb://db:27017/celery
-      - CELERY_BACKEND=mongodb://db:27017/celery
-      - DB_URL=mongodb://db:27017
-      - DB_NAME=alfred
-      - VIDEO_DIR=/app/videos
-      - OTTO_DOWNLOAD_DIR=/app/videos/.remote-cache
-      - ALFRED_AUDIO_ENGINE_URL=http://audio
+      <<: *e2e-settings
 
   # The audio engine, as a stub: joe's media API, answered from what it is
   # sent -- a segment of "speech" wherever the sound is -- with no model and
