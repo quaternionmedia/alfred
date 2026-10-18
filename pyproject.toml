@@ -92,8 +92,17 @@ test = [
     # environment installs its own copy and needs the same bound.
     "setuptools>=75.3.4,<81",
 ]
+# What the engine's own `render` extra asks for, restated so pdm can lock it.
+#
+# This was `al-otto[render]>=0.2.2`, and pdm resolves al-otto from PyPI, where
+# 0.2.2's render extra still names bezier. The engine alfred runs is the
+# submodule at alfred/otto, which dropped bezier after 0.2.2 (otto 0e30bb4),
+# so the lock carried a package nothing here imports -- and one with no wheel
+# for this Python, which fails to build without the switches otto removed.
+# tests/unit/test_stack_config.py fails if this stops matching
+# alfred/otto/pyproject.toml.
 render = [
-    "al-otto[render]>=0.2.2",
+    "gizeh~=0.1",
 ]
 
 # An override replaces every requirement on a package, its dependents'

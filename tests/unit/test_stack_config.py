@@ -402,6 +402,45 @@ class TestDependencyPinning:
                 'vendored submodule the image installs editable'
             )
 
+    def test_the_render_group_is_the_engine_render_extra(self):
+        """pdm locks what the vendored engine draws with, not what PyPI's does.
+
+        The group was `al-otto[render]`, which pdm resolves against the
+        published al-otto -- and 0.2.2's render extra still names bezier,
+        which the engine in alfred/otto has since dropped. So the lock carried
+        a package nothing imports, with no wheel for this Python. The group
+        restates the submodule's own extra instead, and this holds the two
+        together: a requirement otto's extra gains, loses or retunes shows up
+        here, rather than as a lock describing some other engine.
+        """
+        engine = tomllib.loads(read('alfred/otto/pyproject.toml'))['project'][
+            'optional-dependencies'
+        ]['render']
+        ours = pyproject()['project']['optional-dependencies']['render']
+
+        def normalised(specs):
+            return sorted(
+                (canonicalize_name(r.name), str(r.specifier), str(r.marker or ''))
+                for r in map(Requirement, specs)
+            )
+
+        assert normalised(ours) == normalised(engine), (
+            f"pyproject.toml's render group is {ours}, but alfred/otto's render "
+            f'extra is {engine}. Restate the extra, then relock with '
+            '`pdm lock --update-reuse`.'
+        )
+        locked = {
+            canonicalize_name(package['name'])
+            for package in tomllib.loads(read('pdm.lock'))['package']
+            if 'render' in package.get('groups', [])
+        }
+        unlocked = [
+            spec
+            for spec in ours
+            if canonicalize_name(Requirement(spec).name) not in locked
+        ]
+        assert not unlocked, f"pdm.lock's render group lacks {unlocked}; relock"
+
     def test_the_installed_vox_is_the_vendored_one(self):
         """The sound engine's client is vendored the way otto is, for the
         same reason: the suite must import the copy the image runs.
