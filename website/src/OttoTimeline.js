@@ -8,14 +8,12 @@ import { Preview } from './Preview'
 import { Player } from './Player'
 import { auth } from './Login'
 import { cutAtPlayhead } from './TimelineTools'
+import { setLength } from './Timing'
 
 // How far a press may wander and still count as a tap. Past this it is a drag
 // -- on a touch screen, usually the start of scrolling the timeline -- and
 // must not seek.
 const TAP_SLOP = 8
-
-// The shortest a trim may make a clip, in seconds.
-const SHORTEST = 0.1
 
 /**
  * One clip on the timeline, and what the timeline tools do to it.
@@ -67,14 +65,10 @@ export function Clip() {
           element.style.width = trim.startStyle
           return
         }
-        const seconds = Math.max(SHORTEST, parseFloat(element.style.width) / state.scale())
-        clip.duration = Math.round(seconds * 1000) / 1000
-        // A media clip is a window onto its file: its out-point is where
-        // the window ends, so it moves with the length. Left alone it went
-        // on reporting the length the clip was added at.
-        if (clip.type !== 'template') {
-          clip.outpoint = Math.round(((Number(clip.inpoint) || 0) + clip.duration) * 1000) / 1000
-        }
+        // A clip with a window -- media, or the continuing half of a cut
+        // template -- keeps its out-point in step with its length (Timing.js).
+        // Left alone it went on reporting the length the clip was added at.
+        setLength(clip, parseFloat(element.style.width) / state.scale())
         Edl.update()
       }
 

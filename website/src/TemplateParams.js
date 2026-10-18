@@ -2,6 +2,7 @@ import m from 'mithril'
 import { Edl } from './Video'
 import { TemplatePreview, templatePreviewUrl } from './Preview'
 import Bin from './Bin'
+import { SHORTEST, setLength } from './Timing'
 
 /** Two frame URLs for the same template and settings, at any time. */
 const sameSettings = (a, b) =>
@@ -35,8 +36,6 @@ const COLOURS = [
 // Offered when the template's parameters are not known yet (the bin has not
 // loaded): everything TemplateData carries that this form edits.
 const EVERYTHING = ['text', 'color', 'themecolor', 'bg']
-
-const SHORTEST = 0.1
 
 /** Write one field of a clip's data; '' or null removes it, back to the template's default. */
 function setData(clip, key, value) {
@@ -143,7 +142,9 @@ export const TemplateParams = () => {
             oninput: e => {
               draft = { clip, value: e.target.value }
               const seconds = Number(e.target.value)
-              if (e.target.value !== '' && seconds >= SHORTEST) clip.duration = seconds
+              // Through the clip's window (Timing.js): the continuing half of
+              // a cut template has an out-point, and it moves with the length.
+              if (e.target.value !== '' && seconds >= SHORTEST) setLength(clip, seconds)
             },
             onblur: () => {
               draft = null

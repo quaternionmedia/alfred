@@ -1184,11 +1184,19 @@ press S. Either half can then be trimmed, moved or deleted on its own.
   the second starts in the file where the first ends and finishes where
   the original did. Back to back they show what the original showed.
 
-- **a template clip becomes two of the same template, edited separately**
+- **a template clip becomes two halves of one animation, edited separately**
 
-  A template has no in-point -- it is drawn fresh for its length -- so
-  it becomes two clips of the same template, each with its own copy of
-  the settings.
+  Two clips of the same template, each with its own copy of the
+  settings. The second carries on where the first stopped: it starts in
+  the template where the cut was (its in-point) and ends where the
+  original did (its out-point), so its animation continues rather than
+  starting over -- in the viewer, and in the render.
+
+- **a continuing half keeps its window when its length changes**
+
+  otto plays a clip with an out-point from its in-point to its out-point
+  and does not read `duration`. So a length typed beside the viewer has
+  to move the out-point too, or the render would ignore it.
 
 - **S splits the clip under the playhead, whatever the tool**
 

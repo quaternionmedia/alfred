@@ -230,17 +230,22 @@ test.describe('cut', () => {
     await expect.poll(() => seconds(authedPage)).toBeCloseTo(at, 1)
   })
 
-  test('a template clip becomes two of the same template, edited separately', async ({
+  test('a template clip becomes two halves of one animation, edited separately', async ({
     authedPage,
-    request,
-    token,
   }) => {
     /**
-     * A template has no in-point -- it is drawn fresh for its length -- so
-     * it becomes two clips of the same template, each with its own copy of
-     * the settings.
+     * Two clips of the same template, each with its own copy of the
+     * settings. The second carries on where the first stopped: it starts in
+     * the template where the cut was (its in-point) and ends where the
+     * original did (its out-point), so its animation continues rather than
+     * starting over -- in the viewer, and in the render.
      */
     const sent = await captureRenders(authedPage)
+    const frames = []
+    authedPage.on('request', req => {
+      const url = new URL(req.url())
+      if (url.pathname === '/preview/template/title') frames.push(url.searchParams)
+    })
     await authedPage.goto('/#!/?stage=edit')
     await authedPage.locator('#bin .binclip[data-bin-name="title"] .binadd').click()
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(1)
@@ -258,6 +263,12 @@ test.describe('cut', () => {
     await expect(authedPage.locator('#timeline .clip').nth(1)).toHaveText('Second half')
     await expect(authedPage.locator('#timeline .clip').first()).toHaveText('Your text here')
 
+    // The viewer shows the second half from where the cut was in the
+    // template, not from the template's start.
+    await expect
+      .poll(() => frames.filter(p => p.get('text') === 'Second half').map(p => Number(p.get('t'))))
+      .toContainEqual(expect.closeTo(2.5, 1))
+
     await authedPage.locator('#stage-render').click()
     await authedPage.locator('#queue-render').click()
     await expect.poll(() => sent.length).toBe(1)
@@ -267,8 +278,39 @@ test.describe('cut', () => {
     expect(a.duration).toBeCloseTo(2.5, 1)
     expect(b.start).toBeCloseTo(a.duration, 3)
     expect(a.duration + b.duration).toBeCloseTo(5, 3)
-    // A template is drawn fresh for its length; it has no in-point to move.
-    expect(b).not.toHaveProperty('inpoint')
+    // The first half is the template from its start, as it was.
+    expect(a).not.toHaveProperty('inpoint')
+    // The second plays the template from the cut to the original's end.
+    expect(b.inpoint).toBeCloseTo(a.duration, 3)
+    expect(b.outpoint).toBeCloseTo(5, 3)
+    expect(b.outpoint - b.inpoint).toBeCloseTo(b.duration, 3)
+  })
+
+  test("a continuing half keeps its window when its length changes", async ({
+    authedPage,
+  }) => {
+    /**
+     * otto plays a clip with an out-point from its in-point to its out-point
+     * and does not read `duration`. So a length typed beside the viewer has
+     * to move the out-point too, or the render would ignore it.
+     */
+    const sent = await captureRenders(authedPage)
+    await authedPage.goto('/#!/?stage=edit')
+    await authedPage.locator('#bin .binclip[data-bin-name="title"] .binadd').click()
+    await authedPage.locator('#TTools [data-tool="cut"]').click()
+    const clip = authedPage.locator('#timeline .clip').first()
+    const box = await clip.boundingBox()
+    await clip.click({ position: { x: box.width * 0.4, y: box.height / 2 } })
+    await expect(authedPage.locator('#template-params h4')).toContainText('clip 2')
+
+    await authedPage.locator('#param-duration').fill('1.5')
+    await authedPage.locator('#stage-render').click()
+    await authedPage.locator('#queue-render').click()
+    await expect.poll(() => sent.length).toBe(1)
+    const [, b] = sent[0].edl.clips
+    expect(b.inpoint).toBeCloseTo(2, 1)
+    expect(b.duration).toBe(1.5)
+    expect(b.outpoint).toBeCloseTo(b.inpoint + 1.5, 3)
   })
 
   test('S splits the clip under the playhead, whatever the tool', async ({
