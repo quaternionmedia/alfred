@@ -1,3 +1,131 @@
+# Every setting alfred reads, passed through from the shell that starts the
+# stack: export one before `./al dev`, or name it in front of the command as
+# the examples below do, and the api and the renderer both get it. Exported
+# and not listed here, a setting did nothing at all. docs/configuration.md
+# says what each one does.
+#
+# Bare names: a setting reaches the containers when the shell sets it and
+# stays unset when it does not, so the code's own default holds. That is not
+# always what an empty value does -- ALFRED_RENDER_DIR or ALFRED_DELIVERY_DIR
+# set to nothing would write into the working directory, the checkout itself
+# -- so nothing here is handed a value the code would not choose.
+#
+# One list, merged into both services, so the two cannot drift apart;
+# tests/unit/test_stack_settings.py fails when alfred reads a setting this
+# does not pass. A directory setting is a path inside the containers, and one
+# the api and the renderer both use (ALFRED_RENDER_DIR: the renderer writes
+# there, the api reads) has to be somewhere both can see: under /app/videos,
+# which they share, or a volume added to both.
+x-alfred-settings: &alfred-settings
+  # The auth bypass, off unless you ask for it:
+  #   ALFRED_DEV_SKIP_AUTH=1 ./al dev
+  # Serves every request as a fixed superuser and skips the login screen.
+  # config.py refuses to start if this is combined with ALFRED_PRODUCTION.
+  # Only in dev.yml -- production.yml has no such passthrough, so there is
+  # no environment variable a production stack will even look at.
+  ALFRED_DEV_SKIP_AUTH:
+  ALFRED_DEV_USER_EMAIL:
+  ALFRED_ALLOW_REGISTRATION:
+  ALFRED_SEED_OWNER:
+  ALFRED_PUBLIC_URL:
+  # Hosts a clip may name remote media on; none unless you ask for some:
+  #   ALFRED_REMOTE_MEDIA_HOSTS=storage.googleapis.com ./al dev
+  # The api refuses any other URL first, and the worker refuses it rather
+  # than downloading it.
+  ALFRED_REMOTE_MEDIA_HOSTS:
+  # Also sets OTTO_DOWNLOAD_DIR, the engine's name for it, in each service.
+  ALFRED_REMOTE_CACHE_DIR:
+  ALFRED_REMOTE_CACHE_TTL:
+  ALFRED_RENDER_DIR:
+  ALFRED_DELIVERY_DIR:
+  ALFRED_PREVIEW_DIR:
+  ALFRED_FRAME_TTL:
+  ALFRED_MEDIA_URL_TTL:
+  ALFRED_BUCKET_NAME:
+  # The audio engine captions are transcribed with, none unless you ask for
+  # one. joe on this machine, started in its own checkout with
+  # `uv run uvicorn api:app --port 8010` (its CLI binds 8000, ours):
+  #   ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010 ./al dev
+  # The renderer, which does the transcribing, gets it too. On a Linux host
+  # joe also has to listen where the Docker bridge can reach it; see
+  # docs/configuration.md.
+  ALFRED_AUDIO_ENGINE_URL:
+  ALFRED_AUDIO_ENGINE_TIMEOUT:
+
+# Where an audio engine spells its API differently from vox's defaults: one
+# ALFRED_AUDIO_ENGINE_CONTRACT_<FIELD> per field of vox's EngineContract
+# (alfred/vox/vox/contract.py), in its order, passed through the same way.
+# Listed rather than matched, because compose passes names, not patterns; the
+# settings test holds this list to the contract's fields.
+x-audio-engine-contract: &audio-engine-contract
+  ALFRED_AUDIO_ENGINE_CONTRACT_HEALTH:
+  ALFRED_AUDIO_ENGINE_CONTRACT_DEVICES:
+  ALFRED_AUDIO_ENGINE_CONTRACT_TRANSCRIBE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LISTEN:
+  ALFRED_AUDIO_ENGINE_CONTRACT_FILENAME_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_DURATION_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PAUSE_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_HINT_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_TEXT_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_AUDIO_PATH_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_CONFIDENCE_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_DEVICES_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_AVAILABLE_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_CONVERSATION:
+  ALFRED_AUDIO_ENGINE_CONTRACT_WATCH:
+  ALFRED_AUDIO_ENGINE_CONTRACT_UNWATCH:
+  ALFRED_AUDIO_ENGINE_CONTRACT_CONTROL:
+  ALFRED_AUDIO_ENGINE_CONTRACT_INTERRUPTED_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_UPLOAD:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_CAPABILITIES:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_TRANSCRIBE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_ANALYZE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_DELETE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LANGUAGE_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_WORDS_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_FEATURES_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAKS_RATE_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SILENCE_DB_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SILENCE_MIN_PARAM:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_ID_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_DURATION_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SAMPLE_RATE_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_CHANNELS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_HAS_AUDIO_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LANGUAGE_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SEGMENTS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_START_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_END_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_WORDS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_WORD_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PROBABILITY_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_INFO_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_TEMPO_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_BEATS_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_ONSETS_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LOUDNESS_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SILENCES_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAKS_FEATURE:
+  ALFRED_AUDIO_ENGINE_CONTRACT_TEMPO_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_BEATS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_ONSETS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LOUDNESS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SILENCES_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAKS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_RMS_DB_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAK_DB_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_LUFS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAKS_RATE_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_PEAKS_VALUES_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_FORMATS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_FEATURES_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_SPEECH_MODEL_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_WORD_TIMESTAMPS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MAX_BYTES_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_MAX_SECONDS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_TTL_SECONDS_KEY:
+  ALFRED_AUDIO_ENGINE_CONTRACT_DETAIL_KEY:
+
 services:
   # TODO Development Reloader description
   website:
@@ -67,34 +195,21 @@ services:
     env_file:
       - path: .secret_key.local
         required: false
+    # The settings above, and two paths of the stack's own. Not
+    # ALFRED_SECRET_KEY, which the two env files supply: a bare name for it
+    # here would erase their key whenever the shell had none of its own.
     environment:
-      # Passed through from the host, empty unless you ask for it:
-      #   ALFRED_DEV_SKIP_AUTH=1 ./al dev
-      # Serves every request as a fixed superuser and skips the login screen.
-      # config.py refuses to start if this is combined with ALFRED_PRODUCTION.
-      # Only in dev.yml -- production.yml has no such passthrough, so there is
-      # no environment variable a production stack will even look at.
-      - ALFRED_DEV_SKIP_AUTH=${ALFRED_DEV_SKIP_AUTH:-}
+      <<: [*alfred-settings, *audio-engine-contract]
       # The same absolute path the renderer writes to, so delivery reads the
       # file the worker actually produced rather than guessing from its own
       # working directory.
-      - VIDEO_DIR=/app/videos
-      # Same passthrough as the renderer's: hosts a clip may name remote media
-      # on, empty unless you ask for it.
-      - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
+      VIDEO_DIR: /app/videos
       # Where the engine keeps media it fetched from a URL: a hidden directory
       # in the library mount the renderer shares, so a file previewed here is
       # not fetched again to render, and is never listed or served (contract
       # M6). The engine wrote downloads to `data/` under its working
       # directory, which the api served publicly at /data. A container path.
-      - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
-      # The audio engine captions are transcribed with, empty unless you ask
-      # for one. joe on this machine, started in its own checkout with
-      # `uv run uvicorn api:app --port 8010` (its CLI binds 8000, ours):
-      #   ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010 ./al dev
-      # The renderer, which does the transcribing, is given the same.
-      - ALFRED_AUDIO_ENGINE_URL=${ALFRED_AUDIO_ENGINE_URL:-}
-      - ALFRED_AUDIO_ENGINE_TIMEOUT=${ALFRED_AUDIO_ENGINE_TIMEOUT:-}
+      OTTO_DOWNLOAD_DIR: ${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
     # host.docker.internal is this machine as a container sees it. Docker
     # Desktop provides the name; a Linux host does not, and this adds it.
     extra_hosts:
@@ -142,31 +257,24 @@ services:
       - ./cred.json:/cred.json
     depends_on:
       - 'db'
+    # The same settings as the api, from the same list.
     environment:
-      - CELERY_BROKER=mongodb://db:27017/celery
-      - CELERY_BACKEND=mongodb
-      - DB_URL=mongodb://db:27017
-      - DB_NAME=alfred
-      - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+      <<: [*alfred-settings, *audio-engine-contract]
+      CELERY_BROKER: mongodb://db:27017/celery
+      CELERY_BACKEND: mongodb
+      DB_URL: mongodb://db:27017
+      DB_NAME: alfred
+      GOOGLE_APPLICATION_CREDENTIALS: /cred.json
       # Absolute, because a relative path here depends on a working directory
       # nobody sets deliberately. Celery was started with `--workdir
       # /app/alfred`, so a bare `videos/` resolved to /app/alfred/videos --
       # which does not exist -- while the mount is at /app/videos. Every render
       # died on "Error opening output videos/....mp4: No such file or
       # directory", recorded as a failed render and nowhere else.
-      - VIDEO_DIR=/app/videos
-      # Hosts a clip may name remote media on; empty unless you ask for it:
-      #   ALFRED_REMOTE_MEDIA_HOSTS=storage.googleapis.com ./al dev
-      # The worker refuses any other URL rather than downloading it. The api
-      # reads the same setting and refuses first.
-      - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
+      VIDEO_DIR: /app/videos
       # Where fetched remote media is kept; the api's, so one download serves
       # both. See the api above.
-      - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
-      # The audio engine; see the api above. The worker is what mixes a
-      # timeline's sound and sends it to be transcribed.
-      - ALFRED_AUDIO_ENGINE_URL=${ALFRED_AUDIO_ENGINE_URL:-}
-      - ALFRED_AUDIO_ENGINE_TIMEOUT=${ALFRED_AUDIO_ENGINE_TIMEOUT:-}
+      OTTO_DOWNLOAD_DIR: ${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
     extra_hosts:
       - host.docker.internal:host-gateway
 
