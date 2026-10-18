@@ -76,6 +76,28 @@ warnIfExposed() {
   esac
 }
 
+# A signing key of this checkout's own, for development.
+#
+# docker-compose.yml loads `.secret_key`, a committed stub that sets
+# ALFRED_SECRET_KEY to nothing. PyJWT signs with an empty key without
+# complaint, so every development token could be forged by anyone who knew
+# that, and the media links the api signs died with each restart because it
+# fell back to a key of its own. dev.yml also loads `.secret_key.local`; this
+# creates it once, with a random key, and git ignores it. Delete it to rotate.
+ensureDevKey() {
+  key_file="$(dirname "$0")/.secret_key.local"
+  [ -s "$key_file" ] && return
+  key=$(od -An -N32 -tx1 /dev/urandom | tr -d ' 
+')
+  if [ ${#key} -ne 64 ]; then
+    echo "  Could not generate a development signing key; the api keeps the empty stub key, and its tokens can be forged." >&2
+    return
+  fi
+  (umask 077 && printf 'ALFRED_SECRET_KEY=%s
+' "$key" > "$key_file")
+  echo "  Created .secret_key.local, this checkout's own development signing key." >&2
+}
+
 if [ -z $1 ]; then
   echo "$HELP"
 
@@ -90,6 +112,7 @@ elif [ $1 = "b" -o $1 = "build" ]; then
 # Starts in development (optional "--build")
 elif [ $1 = "d" ] || [ $1 = "dev" ]; then
   if [ !-z ]; then shift; fi
+  ensureDevKey
 
   # Refuse to start on a port somebody else already holds.
   #
@@ -152,6 +175,7 @@ elif [ $1 = "p" -o $1 = "production" -o $1 = "prod" ]; then
 # Installs website dependencies.
 elif [ $1 = "init" ]; then
   shift
+  ensureDevKey
   mkdir -p $(dirname $0)/website/dist
   mkdir -p $(dirname $0)/alfred/videos
   mkdir -p $(dirname $0)/alfred/data
@@ -200,6 +224,7 @@ elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
 # Starts development without the renderer
 elif [ $1 = "thin" ]; then
   shift
+  ensureDevKey
   ALFRED_PORT="${ALFRED_PORT:-8000}"
   warnIfExposed
   echo "Alfred! thin dev stack, no renderer  (http://localhost:$ALFRED_PORT)"

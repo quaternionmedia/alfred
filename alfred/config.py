@@ -16,12 +16,17 @@ MIN_SECRET_KEY_LENGTH = 32
 def secret_key_problem(env):
     """What is wrong with ALFRED_SECRET_KEY for this process, or None.
 
-    Two different failures, checked in different places:
+    Three different failures, checked in different places:
 
-    - **Missing**, anywhere. Nothing can be signed, so every login answers
+    - **Unset**, anywhere. Nothing can be signed, so every login answers
       500 -- PyJWT is handed None -- and nothing says why. That is not a
-      production-only problem: test_e2e.yml's api has no key, and its whole
+      production-only problem: test_e2e.yml's api had no key, and its whole
       suite failed at the first login.
+    - **Empty**, anywhere. The opposite failure, and the quieter one: PyJWT
+      signs and verifies with an empty key without complaint, so logins work
+      -- and anyone who knows the key is empty can mint a token for any
+      account. The committed `.secret_key` is such a stub; `./al` gives a
+      development checkout a random key of its own (`.secret_key.local`).
     - **Shorter than MIN_SECRET_KEY_LENGTH**, under ALFRED_PRODUCTION. Anyone
       holding a single token can guess HS256 keys offline until the signature
       matches, and a short key puts that within reach -- after which they can
@@ -31,11 +36,18 @@ def secret_key_problem(env):
     Reported, not enforced: the process still boots. Whether production should
     refuse to start instead is an open decision.
     """
-    key = env.get('ALFRED_SECRET_KEY') or ''
-    if not key:
+    key = env.get('ALFRED_SECRET_KEY')
+    if key is None:
         return (
             'ALFRED_SECRET_KEY is not set, so no token can be signed: every '
             'login will fail with a server error.'
+        )
+    if not key:
+        return (
+            'ALFRED_SECRET_KEY is empty. Tokens are still signed, with a key '
+            'anyone can reproduce, so any session, password-reset or '
+            'verification token can be forged. In development, ./al init gives '
+            'this checkout a key of its own; in production, export a random one.'
         )
     if env.get('ALFRED_PRODUCTION') and len(key) < MIN_SECRET_KEY_LENGTH:
         return (

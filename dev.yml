@@ -60,6 +60,13 @@ services:
       # mount in docker-compose.yml -- a bind mount over a populated path
       # takes the host's version of it, empty or not.
       - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
+    # This checkout's own signing key, merged after docker-compose.yml's
+    # `.secret_key` stub (an empty ALFRED_SECRET_KEY) so it wins. `./al init`,
+    # `./al dev` and `./al thin` create it; without it the stack still starts,
+    # on the stub, and the api announces that its tokens can be forged.
+    env_file:
+      - path: .secret_key.local
+        required: false
     environment:
       # Passed through from the host, empty unless you ask for it:
       #   ALFRED_DEV_SKIP_AUTH=1 ./al dev
