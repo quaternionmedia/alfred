@@ -1,7 +1,7 @@
 # Render video
 Render an `Edl` with a single video and download the result when finished.
 
-See [about/edl](../../about/edl) for a full list of render parameters available.
+See [about/edl](../about/edl.md) for a full list of render parameters available.
 
 ## Request
 === "Edl"

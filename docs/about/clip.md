@@ -83,7 +83,7 @@ All fields are optional.
 
     Defines values to be rendered into the template. 
 
-    Data fields are specific to each template. See [template](../template)
+    Data fields are specific to each template. See [template](template.md)
     ??? example "Sample JSON Template"
           ``` json
           {

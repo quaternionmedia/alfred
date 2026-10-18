@@ -18,4 +18,4 @@ class Render:
     
 ```
 
-For a full working example, see [examples/render](../../examples/render)
+For a full working example, see [examples/render](../examples/render.md)

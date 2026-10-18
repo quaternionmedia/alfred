@@ -64,4 +64,4 @@ Change the Properties of the text by passing `data` parameters.
 
 ![Animation preview](../../assets/20220111-071708.png){ align = right, loading = lazy }
 
-For a full list of available properties, see [about/template](../../about/template).
+For a full list of available properties, see [about/template](../about/template.md).

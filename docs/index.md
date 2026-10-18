@@ -24,7 +24,7 @@ Alfred is a web based video editing suite, designed to simplify the production p
 - Render final videos in the cloud
 - Output to different resolutions and formats
   <!-- - Advanced (multi-track) -->
-### [Templates](../template)
+### [Templates](about/template.md)
 - Define dynamic `Templates` for clips
 - Create forms for end users to customize a video from a Template
 - Apply `fx` to clips for text and video animations
