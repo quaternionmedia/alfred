@@ -82,9 +82,9 @@ def service_block(compose_text, service):
     return '\n'.join(out)
 
 
-# The lockfiles pip installs, both exported from pdm.lock: what the image runs,
-# and the test tools from the same resolution.
-EXPORTS = ['requirements.lock', 'requirements-test.lock']
+# The lockfiles pip installs, all exported from pdm.lock: what the image runs,
+# the test tools, and what the engine draws with, from one resolution.
+EXPORTS = ['requirements.lock', 'requirements-test.lock', 'requirements-render.lock']
 
 
 def exported_pins(relative):
@@ -427,7 +427,7 @@ class TestDependencyPinning:
         assert normalised(ours) == normalised(engine), (
             f"pyproject.toml's render group is {ours}, but alfred/otto's render "
             f'extra is {engine}. Restate the extra, then relock with '
-            '`pdm lock --update-reuse`.'
+            '`pdm lock --update-reuse` and regenerate requirements-render.lock.'
         )
         locked = {
             canonicalize_name(package['name'])
@@ -440,6 +440,36 @@ class TestDependencyPinning:
             if canonicalize_name(Requirement(spec).name) not in locked
         ]
         assert not unlocked, f"pdm.lock's render group lacks {unlocked}; relock"
+
+    def test_what_the_engine_depends_on_is_locked(self):
+        """otto is installed with --no-deps as well, so everything it declares
+        has to come from this project's exports, at a version it accepts: its
+        core from requirements.lock, its render extra from
+        requirements-render.lock.
+
+        Read from otto's own pyproject rather than restated, so a dependency
+        the engine gains shows up here as one alfred does not install --
+        rather than as an ImportError in the image.
+        """
+        project = tomllib.loads(read('alfred/otto/pyproject.toml'))['project']
+        wanted = [(spec, 'requirements.lock') for spec in project['dependencies']]
+        wanted += [
+            (spec, 'requirements-render.lock')
+            for spec in project['optional-dependencies']['render']
+        ]
+        problems = []
+        for spec, export in wanted:
+            requirement = Requirement(spec)
+            name = canonicalize_name(requirement.name)
+            pins = exported_pins(export)
+            if name not in pins:
+                problems.append(f'{spec} is not in {export}')
+            elif not requirement.specifier.contains(pins[name], prereleases=True):
+                problems.append(f'otto needs {spec}; {export} has {pins[name]}')
+        assert not problems, (
+            f'{problems}. Add what the engine needs to pyproject.toml (its core) '
+            'or restate its render extra, then relock and regenerate the exports.'
+        )
 
     def test_the_installed_vox_is_the_vendored_one(self):
         """The sound engine's client is vendored the way otto is, for the
@@ -574,9 +604,40 @@ class TestExactInstall:
             project and '--no-deps' in project.group(0).split()
         ), 'install the project with --no-deps: resolving it refuses the override'
 
+    def test_the_image_draws_with_the_locked_render_extra(self):
+        """What the engine draws with is pinned, like everything else.
+
+        The image installed `alfred/otto[render]` with the resolver, on the
+        day of the build, so its gizeh and cairocffi were whatever was newest
+        -- and CI, which did not install the extra at all, could not have
+        matched them. Both install requirements-render.lock now.
+        """
+        dockerfile = strip_comments(read('Dockerfile'))
+        render = re.search(
+            r'^RUN\s+pip3?\s+install\b.*requirements-render\.lock.*$', dockerfile, re.M
+        )
+        assert render and '--no-deps' in render.group(0).split(), (
+            'install requirements-render.lock, with --no-deps, so the image '
+            'draws with the versions pdm locked'
+        )
+        resolving = [
+            line
+            for line in re.findall(r'^RUN\s+pip3?\s+install\b.*$', dockerfile, re.M)
+            if 'alfred/otto' in line and '--no-deps' not in line.split()
+        ]
+        assert not resolving, (
+            f'{resolving}: the engine is installed with the resolver, so what '
+            'it brings in is whatever was newest on the day of the build'
+        )
+
     @pytest.mark.parametrize('workflow', ['CI.yml', 'publish.yml'])
-    def test_ci_installs_both_exports_with_no_deps(self, workflow):
-        """CI runs the suite as the image and nox do, or it tests other versions."""
+    def test_ci_installs_every_export_with_no_deps(self, workflow):
+        """CI runs the suite as the image and nox do, or it tests other versions.
+
+        The render export included: CI installed none of the engine's render
+        extra, so a test that drew a box failed there on a missing gizeh,
+        where the image and nox had it.
+        """
         text = strip_comments(read(f'.github/workflows/{workflow}'))
         args = re.findall(r"^\s*pip_args:\s*'([^']*)'", text, re.M)
         assert args, f'{workflow} passes no pip_args'
@@ -592,10 +653,32 @@ class TestExactInstall:
 
 class TestBothEnginesAreInstalledAlike:
     """otto draws the picture and vox carries the sound, and both are vendored
-    submodules installed editable from the checkout -- in the image, in the
-    suite and in CI. An install path that has one and not the other tests a
-    stack nobody runs.
+    submodules installed editable from the checkout, with --no-deps -- in the
+    image, in the suite and in CI. An install path that has one and not the
+    other tests a stack nobody runs.
     """
+
+    def test_the_image_installs_otto_from_the_submodule_with_no_deps(self):
+        dockerfile = strip_comments(read('Dockerfile'))
+        line = re.search(
+            r'^RUN\s+pip3?\s+install\b.*-e\s+alfred/otto\b.*$', dockerfile, re.M
+        )
+        assert line, 'the image does not install alfred/otto'
+        assert '--no-deps' in line.group(0).split(), (
+            'install alfred/otto with --no-deps: what it needs is in '
+            'requirements.lock and requirements-render.lock'
+        )
+
+    def test_the_suite_installs_otto_from_the_submodule_with_no_deps(self):
+        calls = [
+            call
+            for call in re.findall(
+                r'session\.install\(([^)]*)\)', read('tests/noxfile.py')
+            )
+            if 'alfred/otto' in call
+        ]
+        assert calls, 'tests/noxfile.py does not install ../alfred/otto'
+        assert "'--no-deps'" in calls[0] and "'../alfred/otto'" in calls[0]
 
     def test_the_image_installs_vox_from_the_submodule_with_no_deps(self):
         dockerfile = strip_comments(read('Dockerfile'))

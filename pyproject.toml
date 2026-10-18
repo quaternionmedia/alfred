@@ -99,7 +99,8 @@ test = [
 # submodule at alfred/otto, which dropped bezier after 0.2.2 (otto 0e30bb4),
 # so the lock carried a package nothing here imports -- and one with no wheel
 # for this Python, which fails to build without the switches otto removed.
-# tests/unit/test_stack_config.py fails if this stops matching
+# The image, nox and CI install requirements-render.lock, exported from this
+# group, and tests/unit/test_stack_config.py fails if it stops matching
 # alfred/otto/pyproject.toml.
 render = [
     "gizeh~=0.1",
