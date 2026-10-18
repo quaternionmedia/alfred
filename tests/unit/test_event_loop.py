@@ -319,6 +319,22 @@ class TestRunsInAThread:
         assert res.status_code == 202, res.text
         assert queue.on_the_loop == [False]
 
+    def test_listing_the_library(self, signed_in, tmp_path, monkeypatch):
+        from alfred.core.routes import video
+
+        seen = []
+
+        def listing(root):
+            seen.append(on_the_loop())
+            return ['clip.mp4']
+
+        monkeypatch.setattr(video, 'VIDEO_DIR', str(tmp_path))
+        monkeypatch.setattr(video, 'library_files', listing)
+        res = TestClient(app).get('/videos')
+        assert res.status_code == 200, res.text
+        assert res.json() == ['videos/clip.mp4']
+        assert seen == [False]
+
     def test_reading_a_subtitle_file(self, transcribable, monkeypatch):
         from alfred.core.routes import captions
 
