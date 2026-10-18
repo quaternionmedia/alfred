@@ -3,11 +3,19 @@
 Playwright, replacing the Cypress suite that lived in `website/cypress/`.
 
 The whole suite, on a stack built from the checkout -- the site, the api, a
-render worker for the `@slow` specs, and the database -- in Docker:
+render worker for the `@slow` specs, a stub audio engine for the captions
+specs, and the database -- in Docker:
 
 ```sh
 ./al test
 ```
+
+The audio engine is `test_e2e.yml`'s `audio` service: `tests/stubs/audio_engine.py`,
+which speaks joe's media API with no model and no download, "hearing" a line
+of speech wherever the sound it is sent is louder than a whisper. The api and
+the worker reach it through vox, as they would reach joe. At startup it writes
+`videos/e2e-speech.wav` -- four seconds holding two bursts of tone -- into the
+library, the one piece of media with sound the captions specs need.
 
 Or from the host, against a stack you are already running:
 
@@ -30,10 +38,12 @@ one stage at a time, over the viewer and the timeline -- below that. The
 gate runs both:
 
 - **`chromium`** (1280x720) runs every spec against the desktop workspace,
-  `workspace.spec.js` among them.
-- **`phone`** (390x844) runs the specs that walk the stages, edit a timeline
-  and follow a render -- `flow`, `editor`, `timeline-tools`, `deliver` --
-  and `stacked.spec.js` against the phone flow.
+  `workspace.spec.js` among them -- all but the phone flow's own,
+  `stacked.spec.js`.
+- **`phone`** (390x844) runs only the specs that walk the stages, edit a
+  timeline and follow a render -- `flow`, `editor`, `timeline-tools`,
+  `deliver` -- and `stacked.spec.js` against the phone flow. "Both layouts"
+  below marks those four; every other spec runs in `chromium` alone.
 
 A spec about one layout's own shape sets the viewport it means --
 `appearance.spec.js` does for the phone flow's rail and panels -- and the
@@ -48,6 +58,13 @@ fires, start Alfred elsewhere (`ALFRED_PORT=8100 ./al dev`) and point the
 suite at it. `E2E_EMAIL`,
 `E2E_PASSWORD` and `E2E_NAME` override the test account;
 `E2E_LOAD_BUDGET_MS` overrides the performance budget.
+
+`E2E_OTHER_EMAIL` names the second account `auth.spec.js` registers to show
+that a project is its owner's alone (`other@mail.me` by default, with the test
+account's password). `E2E_AUDIO_ENGINE_URL` is where the captions specs ask
+the stub audio engine what it was sent (`GET /stub/uploads`): `test_e2e.yml`
+points it at the `audio` service, and without it that one check is left out.
+Point it at the stub only -- joe has no `/stub/uploads`.
 
 ## Why the conversion is not one-to-one
 
@@ -104,19 +121,20 @@ no longer rewrites `website/yarn.lock`.
 All four are fixed; `navigation.spec.js` now asserts there are no duplicate
 ids, and the logo, reload and mount problems are gone with their causes.
 
-- **Duplicate element ids.** The nav bar and the menu bar render the same
-  components, so `home-link`, `projects-link`, `renders-link`,
-  `documents-link` and `login-link` are each emitted twice on every page.
-  This is invalid HTML and makes every `#id` selector ambiguous. Playwright's
-  strict mode fails on it; Cypress did not. `navigation.spec.js` records it
-  as a `test.fail()` so the suite stays green and turns red when it is fixed.
-  Until then `fixtures.js` exports scoped `SELECTORS` that resolve uniquely.
-- **The logo renders `src="[object Object]"`**, producing a steady stream of
-  404s for `/%5Bobject%20Object%5D` in the API log.
+- **Duplicate element ids.** The header rendered its links twice, once as a
+  drawer and once as a bar, so each of their ids appeared twice on every
+  page -- invalid HTML, and every `#id` selector ambiguous. Playwright's
+  strict mode failed on it where Cypress had not. `navigation.spec.js`
+  carried it as a `test.fail()` until the header rendered one list, whose
+  shape CSS decides; it now asserts that every id on the page is unique.
+  `fixtures.js` still addresses the session link by class (`SELECTORS`),
+  the stable choice either way.
+- **The logo rendered `src="[object Object]"`**, a steady stream of 404s for
+  `/%5Bobject%20Object%5D` in the API log. `src/Menu.js` imports it as a URL.
 - **`--reload` in a test run.** The image's default command runs uvicorn with
-  `--reload`, and the compose file mounts the repo at `/app`. Playwright
-  writing `playwright-report/` or `test-results/` under `website/` therefore
-  restarts the API mid-run and drops in-flight connections. `test_e2e.yml`
+  `--reload`, and the compose file mounts the repo at `/app`, so Playwright
+  writing `playwright-report/` or `test-results/` under `website/` restarted
+  the API mid-run and dropped in-flight connections. `test_e2e.yml`
   overrides the command to disable reload; this cost one spurious failure
   before it was diagnosed.
 - **`test_cy.yml` mounted `./alfred/` onto `/app`**, shadowing the package
@@ -142,9 +160,10 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Project selector and its filter | `projects.spec.js` | UI + API |
 | Demo project and media, empty states | `demo.spec.js` | UI + API |
 | The four-stage flow, delivery with real bytes (both layouts) | `flow.spec.js` | UI + API |
-| The desktop workspace: every panel under its registry id, `?stage=` bringing a panel forward, a panel dragged by its tab or resized and the arrangement kept, a broken one dropped for the default, the Panels menu reopening without doubling, Reset layout, tabs and menu from the keyboard, the viewer keeping its shape, swapping with the phone flow without losing work | `workspace.spec.js` | UI |
+| The desktop workspace: every panel under its registry id, `?stage=` bringing a panel forward, a tab chosen staying in front and named in the address however quickly the router reads it back, Back and Forward, a panel dragged by its tab or resized and the arrangement kept, a broken one dropped for the default, the Panels menu reopening without doubling, Reset layout, tabs and menu from the keyboard, the viewer keeping its shape, swapping with the phone flow without losing work | `workspace.spec.js` | UI |
 | The phone flow: one stage's panels over the viewer and the timeline, a long list scrolling inside its panel | `stacked.spec.js` | UI, `phone` |
-| Timeline editor, transport, saving (both layouts) | `editor.spec.js`, `tools.spec.js`, `otto.spec.js` | UI |
+| Timeline editor with a project open (both layouts) | `editor.spec.js` | UI |
+| The timeline tools and the media they act on, the transport, saving; the toolbar | `tools.spec.js`, `otto.spec.js` | UI |
 | Trim, cut, slip, slide and roll, by mouse and touch (both layouts) | `timeline-tools.spec.js` | UI |
 | Adding and editing template clips, fonts and placement | `templates.spec.js` | UI |
 | The timeline tools from the keyboard, the footer | `editor-access.spec.js` | UI |
@@ -157,6 +176,8 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Captions: typed, imported, styled, over the viewer, carried by renders | `captions.spec.js` | UI + API |
 | Captions transcribed through the stub audio engine and the worker; library media analysed | `captions.spec.js` | UI + API, `@slow` |
 | Render list | `renders.spec.js` | API + UI |
+| `GET /healthz` with no session; `GET /health` needing one, its contract fields, the running worker answering | `health.spec.js` | API |
+| The media library (`GET /media`), signed URLs for media, preview frames and downloads that load in a page with no session, nothing served from `/data` | `media.spec.js` | API + UI |
 | Preview contract, malformed input, partial writes | `api-contract.spec.js` | API |
 | Routing, history, menu, unique ids | `navigation.spec.js` | UI |
 | Views render, no uncaught page errors, reload | `views.spec.js` | UI |
