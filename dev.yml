@@ -88,6 +88,17 @@ services:
       # M6). The engine wrote downloads to `data/` under its working
       # directory, which the api served publicly at /data. A container path.
       - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
+      # The audio engine captions are transcribed with, empty unless you ask
+      # for one. joe on this machine, started in its own checkout with
+      # `uv run uvicorn api:app --port 8010` (its CLI binds 8000, ours):
+      #   ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010 ./al dev
+      # The renderer, which does the transcribing, is given the same.
+      - ALFRED_AUDIO_ENGINE_URL=${ALFRED_AUDIO_ENGINE_URL:-}
+      - ALFRED_AUDIO_ENGINE_TIMEOUT=${ALFRED_AUDIO_ENGINE_TIMEOUT:-}
+    # host.docker.internal is this machine as a container sees it. Docker
+    # Desktop provides the name; a Linux host does not, and this adds it.
+    extra_hosts:
+      - host.docker.internal:host-gateway
 
   renderer:
     build:
@@ -152,6 +163,12 @@ services:
       # Where fetched remote media is kept; the api's, so one download serves
       # both. See the api above.
       - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
+      # The audio engine; see the api above. The worker is what mixes a
+      # timeline's sound and sends it to be transcribed.
+      - ALFRED_AUDIO_ENGINE_URL=${ALFRED_AUDIO_ENGINE_URL:-}
+      - ALFRED_AUDIO_ENGINE_TIMEOUT=${ALFRED_AUDIO_ENGINE_TIMEOUT:-}
+    extra_hosts:
+      - host.docker.internal:host-gateway
 
   db:
     ports:

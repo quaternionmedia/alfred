@@ -31,6 +31,8 @@ TIMELINE = {
     'duration': 2.0,
 }
 
+CUE = '1\n00:00:00,000 --> 00:00:01,000\nx\n'
+
 # Every route that addresses one project, with a body it would accept. The
 # inventory in unit/test_project_route_inventory.py fails if a route is added
 # without being listed somewhere like here.
@@ -39,6 +41,15 @@ SINGLE_PROJECT_ROUTES = [
     ('PUT', '/project/{id}', {'name': 'taken over', 'logic': {}}),
     ('PUT', '/project/{id}/settings', {'destination': 'local'}),
     ('PUT', '/project/{id}/timeline', TIMELINE),
+    ('GET', '/project/{id}/captions', None),
+    (
+        'PUT',
+        '/project/{id}/captions',
+        {'captions': [{'start': 0, 'end': 1, 'text': 'x'}]},
+    ),
+    ('POST', '/project/{id}/captions/import', {'format': 'srt', 'text': CUE}),
+    # POST /project/{id}/captions/transcribe answers 202 or 503 for its owner,
+    # not 200; integration/test_captions_api.py holds it to the same 404s.
     ('DELETE', '/project/{id}', None),
 ]
 ROUTE_IDS = [f'{method} {path}' for method, path, _ in SINGLE_PROJECT_ROUTES]

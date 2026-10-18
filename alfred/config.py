@@ -313,6 +313,47 @@ def parse_hosts(value):
 # those processes can reach -- including addresses on their own network.
 REMOTE_MEDIA_HOSTS = parse_hosts(environ.get('ALFRED_REMOTE_MEDIA_HOSTS', ''))
 
+# The audio engine: what transcribes a timeline's sound into captions, and
+# analyses a library file's. Reached through vox (vendored at alfred/vox) and
+# `utils.audio_engine`, the only module that knows how; nothing else in alfred
+# names an engine, a path or a key of one.
+#
+# ALFRED_AUDIO_ENGINE_URL is the engine's base address. Unset or empty, there
+# is no engine: captions are still typed and imported, and transcribing says
+# why it cannot. joe's own CLI binds 8000, this server's port; run it as
+# `uv run uvicorn api:app --port 8010` and point this at
+# http://host.docker.internal:8010 (docs/captions.md).
+AUDIO_ENGINE_URL = (environ.get('ALFRED_AUDIO_ENGINE_URL') or '').strip() or None
+
+# How long one request to the engine may take, in seconds. Transcribing is the
+# slow one, and it runs on the render worker, where no request is waiting on
+# it: joe takes about eighteen seconds for its first transcription after it
+# starts, then about as long as the speech lasts on a CPU, so a long timeline
+# takes minutes. Half an hour, by default, before a job is given up on.
+AUDIO_ENGINE_TIMEOUT = resolve_seconds(environ, 'ALFRED_AUDIO_ENGINE_TIMEOUT', 1800)
+
+# Where an engine spells things differently from vox's defaults: any field of
+# vox's `EngineContract`, as ALFRED_AUDIO_ENGINE_CONTRACT_<FIELD> -- for
+# instance ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_UPLOAD=/v2/upload. `none` sets a
+# field to None ("this engine does not offer it"); empty is unset. A name
+# that is not a field is reported by /health rather than ignored.
+AUDIO_ENGINE_CONTRACT_PREFIX = 'ALFRED_AUDIO_ENGINE_CONTRACT_'
+
+
+def resolve_audio_engine_contract(env):
+    """{field: value} for every ALFRED_AUDIO_ENGINE_CONTRACT_<FIELD> set."""
+    overrides = {}
+    for name, value in env.items():
+        if not name.startswith(AUDIO_ENGINE_CONTRACT_PREFIX) or not _given(value):
+            continue
+        field = name[len(AUDIO_ENGINE_CONTRACT_PREFIX) :].lower()
+        value = value.strip()
+        overrides[field] = None if value.lower() == 'none' else value
+    return overrides
+
+
+AUDIO_ENGINE_CONTRACT = resolve_audio_engine_contract(environ)
+
 DB_URL = environ.get('DB_URL')
 DB_NAME = environ.get('DB_NAME', 'db')
 

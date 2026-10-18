@@ -402,6 +402,112 @@ class TestDependencyPinning:
                 'vendored submodule the image installs editable'
             )
 
+    def test_the_installed_vox_is_the_vendored_one(self):
+        """The sound engine's client is vendored the way otto is, for the
+        same reason: the suite must import the copy the image runs.
+
+        vox is not on an index alfred installs from, so the likelier mistake
+        is the other one -- a checkout whose environment never installed it,
+        or installed some other clone of it. Either way every audio-engine
+        assertion here would be evidence about the wrong code.
+
+        Fix with: pip install -e alfred/vox --no-deps
+        """
+        import vox
+
+        installed = Path(vox.__file__).resolve()
+        vendored = (REPO / 'alfred' / 'vox' / 'vox').resolve()
+        assert vendored in installed.parents or installed.parent == vendored, (
+            f'vox is imported from {installed.parent}, not the vendored '
+            f'submodule at {vendored}. '
+            'Fix with: pip install -e alfred/vox --no-deps'
+        )
+
+    def test_vox_is_not_pinned_in_the_export(self):
+        """Nothing may install a second vox over the vendored one."""
+        for line in read('requirements.lock').split('\n'):
+            assert not line.strip().lower().startswith('vox=='), (
+                'vox is pinned in requirements.lock; it would shadow the '
+                'vendored submodule the image installs editable'
+            )
+
+    def test_what_the_vox_core_imports_is_locked(self):
+        """vox is installed with --no-deps, so its core's one dependency has
+        to come from this project's own lock.
+
+        Read from vox's own pyproject rather than restated, so a dependency
+        its core gains shows up here as one alfred does not install.
+        `pyttsx3` (a synthesizer adapter) and `typer` (its CLI) serve parts of
+        vox alfred never imports; the import test below holds that.
+        """
+        declared = tomllib.loads(read('alfred/vox/pyproject.toml'))['project'][
+            'dependencies'
+        ]
+        exported = exported_pins('requirements.lock')
+        unused_here = {'pyttsx3', 'typer'}
+        missing = [
+            spec
+            for spec in declared
+            if canonicalize_name(Requirement(spec).name) not in exported
+            and canonicalize_name(Requirement(spec).name) not in unused_here
+        ]
+        assert not missing, (
+            f'vox needs {missing}, which requirements.lock does not install. '
+            'Add it to pyproject.toml, relock and regenerate the exports.'
+        )
+        for spec in declared:
+            requirement = Requirement(spec)
+            name = canonicalize_name(requirement.name)
+            if name in exported:
+                assert requirement.specifier.contains(
+                    exported[name], prereleases=True
+                ), f'vox needs {spec}; the lock has {name}=={exported[name]}'
+
+    def test_importing_vox_needs_nothing_alfred_leaves_out(self):
+        """The core imports neither its synthesizer adapter nor its CLI.
+
+        Run in a fresh interpreter, so modules this suite imported earlier
+        cannot make it pass: what loading `vox` pulls in is the question.
+        """
+        import sys
+
+        probe = (
+            'import sys, vox; '
+            'print(",".join(sorted(m for m in ("pyttsx3", "typer", "vox.cli") '
+            'if m in sys.modules)))'
+        )
+        loaded = subprocess.run(
+            [sys.executable, '-c', probe],
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        assert loaded == '', f'importing vox loaded {loaded}'
+
+    @pytest.mark.parametrize('path', ['alfred/otto', 'alfred/vox'])
+    def test_each_engine_is_a_submodule_on_its_own_remote(self, path):
+        """Both engines are vendored the same way: a submodule tracking its
+        repository's `main`, at a URL the submodule check can fetch from.
+
+        `.github/workflows/submodule-check.yml` walks every submodule `git
+        submodule status` lists, and errors on a filesystem URL -- one that
+        resolves only on the machine that added it. This holds the two engines
+        to that from the test suite too, where a slip shows before a push.
+        """
+        text = read('.gitmodules')
+        block = re.search(
+            rf'^\[submodule "{re.escape(path)}"\]\n((?:[ \t]+.*\n?)+)', text, re.M
+        )
+        assert block, f'{path} is not declared in .gitmodules'
+        fields = dict(
+            line.strip().split(' = ', 1)
+            for line in block.group(1).splitlines()
+            if ' = ' in line
+        )
+        assert fields.get('path') == path
+        assert fields.get('url', '').startswith('https://github.com/quaternionmedia/')
+        assert fields.get('branch') == 'main'
+
 
 class TestExactInstall:
     """Every install path installs pdm's resolution exactly.
@@ -443,6 +549,51 @@ class TestExactInstall:
         assert not re.search(
             r'^\s*requirements:', text, re.M
         ), f'{workflow} hands a lockfile to the resolving install step'
+
+
+class TestBothEnginesAreInstalledAlike:
+    """otto draws the picture and vox carries the sound, and both are vendored
+    submodules installed editable from the checkout -- in the image, in the
+    suite and in CI. An install path that has one and not the other tests a
+    stack nobody runs.
+    """
+
+    def test_the_image_installs_vox_from_the_submodule_with_no_deps(self):
+        dockerfile = strip_comments(read('Dockerfile'))
+        line = re.search(
+            r'^RUN\s+pip3?\s+install\b.*-e\s+alfred/vox\b.*$', dockerfile, re.M
+        )
+        assert line, 'the image does not install alfred/vox'
+        assert '--no-deps' in line.group(0).split(), (
+            'install alfred/vox with --no-deps: its core needs only httpx, '
+            'which the lockfile carries'
+        )
+
+    def test_the_image_installs_vox_before_the_project(self):
+        dockerfile = strip_comments(read('Dockerfile'))
+        vox = re.search(r'^RUN\s+pip3?\s+install\b.*alfred/vox', dockerfile, re.M)
+        project = re.search(
+            r'^RUN\s+pip3?\s+install\b.*\s-e\s+\.\s*$', dockerfile, re.M
+        )
+        assert vox and project and vox.start() < project.start()
+
+    def test_the_suite_installs_vox_from_the_submodule_with_no_deps(self):
+        calls = [
+            call
+            for call in re.findall(
+                r'session\.install\(([^)]*)\)', read('tests/noxfile.py')
+            )
+            if 'alfred/vox' in call
+        ]
+        assert calls, 'tests/noxfile.py does not install ../alfred/vox'
+        assert "'--no-deps'" in calls[0] and "'../alfred/vox'" in calls[0]
+
+    @pytest.mark.parametrize('workflow', ['CI.yml', 'publish.yml'])
+    def test_ci_installs_both_engines(self, workflow):
+        text = strip_comments(read(f'.github/workflows/{workflow}'))
+        for line in re.findall(r"^\s*pip_args:\s*'([^']*)'", text, re.M):
+            assert '-e alfred/otto' in line, f'{workflow}: does not install otto'
+            assert '-e alfred/vox' in line, f'{workflow}: does not install vox'
 
 
 class TestImagePinning:

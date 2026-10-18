@@ -22,7 +22,9 @@ from alfred.core.routes import (
     ProjectAPI,
     RenderAPI,
     adminAPI,
+    audioAPI,
     authAPI,
+    captionsAPI,
     demoAPI,
     fontAPI,
     healthAPI,
@@ -233,6 +235,10 @@ projects = ProjectAPI()
 app.include_router(
     projects, dependencies=[Depends(current_active_user)], tags=['project']
 )
+# A project's captions (contract K2), scoped to the caller like the project.
+app.include_router(
+    captionsAPI, dependencies=[Depends(current_active_user)], tags=['captions']
+)
 
 app.include_router(fontAPI, dependencies=[Depends(current_active_user)], tags=['font'])
 app.include_router(
@@ -244,6 +250,11 @@ app.include_router(
 )
 app.include_router(
     mediaAPI, dependencies=[Depends(current_active_user)], tags=['media']
+)
+# How a library file sounds, from the audio engine; seen by whoever sees the
+# library.
+app.include_router(
+    audioAPI, dependencies=[Depends(current_active_user)], tags=['media']
 )
 app.include_router(
     previewAPI,

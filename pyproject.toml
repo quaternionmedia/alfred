@@ -50,6 +50,13 @@ dependencies = [
     # replaced passlib with pwdlib -- a dependency bump with an auth migration
     # attached, which is its own change and not this one.
     "setuptools>=75.3.4,<81",
+    # The sound engine's client. vox -- vendored at alfred/vox, as otto is at
+    # alfred/otto -- is installed with --no-deps like everything else here, so
+    # what its core imports has to be declared by this project, and httpx is
+    # the whole of that: the rest of vox's own dependencies (a speech
+    # synthesizer, a CLI) serve parts of it alfred does not load. The floor is
+    # vox's.
+    "httpx>=0.27.0,<1",
 ]
 # 3.11, and only 3.11: the image, CI, ruff and black all target it, and the
 # engine caps below 3.12 (alfred/otto/pyproject.toml: the newest Python every
@@ -131,7 +138,7 @@ target-version = ['py311']
 # `force-exclude`, not `exclude`: plain `exclude` is ignored for paths given
 # explicitly on the command line, and these are submodules with their own
 # repositories and their own formatting gates.
-force-exclude = '(alfred/otto|governance|website|tests/\.nox)'
+force-exclude = '(alfred/otto|alfred/vox|governance|website|tests/\.nox)'
 
 [tool.ruff]
 # Explicit, because the absence of this block was not "ruff defaults" -- the
@@ -145,7 +152,7 @@ force-exclude = '(alfred/otto|governance|website|tests/\.nox)'
 # catch mistakes rather than express preferences. Formatting belongs to Black
 # (`-S`), which runs in its own session and is the authority on layout.
 target-version = 'py311'
-extend-exclude = ['alfred/otto', 'governance', 'website', 'tests/.nox']
+extend-exclude = ['alfred/otto', 'alfred/vox', 'governance', 'website', 'tests/.nox']
 
 [tool.ruff.lint]
 select = ['E4', 'E7', 'E9', 'F', 'I', 'B']

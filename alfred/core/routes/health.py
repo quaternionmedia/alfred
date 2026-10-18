@@ -18,7 +18,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
-from ..utils import tasks
+from ..utils import audio_engine, tasks
 from ..utils.db import get_db
 from .users import current_active_user
 
@@ -45,13 +45,23 @@ class QueueHealth(BaseModel):
     pending: Optional[int]
 
 
+class AudioEngineHealth(BaseModel):
+    # Whether ALFRED_AUDIO_ENGINE_URL names an engine at all.
+    configured: bool
+    # Whether it answered, from this build: there is one to transcribe with.
+    ok: bool
+    # Why not, when it is not ok; null when it is.
+    detail: Optional[str]
+
+
 class Health(BaseModel):
-    """`GET /health` (contract M3)."""
+    """`GET /health` (contracts M3 and K2)."""
 
     api: Literal['ok']
     db: Literal['ok', 'down']
     renderer: RendererHealth
     queue: QueueHealth
+    audio_engine: AudioEngineHealth
 
 
 @dataclass(frozen=True)
@@ -80,12 +90,22 @@ class CachedRenderer:
 
     Concurrent requests share the check in flight rather than each pinging.
     The task is per event loop, so a cache that outlives one loop (as in
-    tests) never awaits another loop's task.
+    tests) never awaits another loop's task. A check that takes longer than
+    `timeout` (by default RENDERER_TIMEOUT) answers `unanswered()` meanwhile;
+    for the renderer, no workers.
     """
 
-    def __init__(self, check=check_renderer, ttl=RENDERER_CACHE_SECONDS):
+    def __init__(
+        self,
+        check=check_renderer,
+        ttl=RENDERER_CACHE_SECONDS,
+        timeout=None,
+        unanswered=lambda: RendererState(workers=0, pending=None),
+    ):
         self.check = check
         self.ttl = ttl
+        self.timeout = timeout
+        self.unanswered = unanswered
         self.value: Optional[RendererState] = None
         self.checked_at = float('-inf')
         self._inflight: Optional[asyncio.Task] = None
@@ -106,10 +126,12 @@ class CachedRenderer:
         ):
             task = self._inflight = asyncio.ensure_future(self._refresh())
         try:
-            return await asyncio.wait_for(asyncio.shield(task), RENDERER_TIMEOUT)
+            # Looked up when asked, not when built, so it can be changed.
+            timeout = RENDERER_TIMEOUT if self.timeout is None else self.timeout
+            return await asyncio.wait_for(asyncio.shield(task), timeout)
         except asyncio.TimeoutError:
             # The broker is not answering: no renderer can be reached.
-            return RendererState(workers=0, pending=None)
+            return self.unanswered()
 
 
 _renderer = CachedRenderer()
@@ -118,6 +140,48 @@ _renderer = CachedRenderer()
 def get_renderer_state() -> CachedRenderer:
     """A dependency, so a test can answer for the broker."""
     return _renderer
+
+
+# How long an answer about the audio engine is reused, in seconds. Asking it
+# is a request to another service, and a page polls this.
+AUDIO_ENGINE_CACHE_SECONDS = 10.0
+AUDIO_ENGINE_TIMEOUT = 5.0
+
+
+def check_audio_engine() -> audio_engine.EngineStatus:
+    """Ask the engine. Blocking: one request, bounded by its own timeout."""
+    try:
+        return audio_engine.status()
+    except Exception as exc:  # noqa: BLE001 - an engine that breaks is "not ok"
+        return audio_engine.EngineStatus(
+            configured=bool(audio_engine.engine_url()), ok=False, detail=str(exc)
+        )
+
+
+def audio_engine_unanswered() -> audio_engine.EngineStatus:
+    return audio_engine.EngineStatus(
+        configured=bool(audio_engine.engine_url()),
+        ok=False,
+        detail=f'the audio engine at {audio_engine.describe()} did not answer',
+    )
+
+
+def cached_audio_engine(check=check_audio_engine, ttl=AUDIO_ENGINE_CACHE_SECONDS):
+    """The audio engine's status, kept as the renderer's is."""
+    return CachedRenderer(
+        check=check,
+        ttl=ttl,
+        timeout=AUDIO_ENGINE_TIMEOUT,
+        unanswered=audio_engine_unanswered,
+    )
+
+
+_audio_engine = cached_audio_engine()
+
+
+def get_audio_engine_state() -> CachedRenderer:
+    """A dependency, so a test can answer for the audio engine."""
+    return _audio_engine
 
 
 async def ping_database() -> bool:
@@ -154,6 +218,7 @@ async def healthz():
 async def health(
     renderer: CachedRenderer = Depends(get_renderer_state),
     database=Depends(get_database_check),
+    sound: CachedRenderer = Depends(get_audio_engine_state),
 ):
     """# Health
 
@@ -163,14 +228,22 @@ async def health(
     the broker could not be asked. With no worker, a queued render waits
     until one starts -- on the thin stack, which runs none, for ever.
 
-    The renderer is asked at most every few seconds; the answer between is
-    the last one. A ping takes about a second, so the first request after
-    that pays for it.
+    `audio_engine` says whether an audio engine is `configured`
+    (ALFRED_AUDIO_ENGINE_URL) and whether it is `ok` -- it answered -- with
+    the reason in `detail` when it is not. Transcribing captions needs both,
+    and a renderer to do the mixing.
+
+    The renderer and the audio engine are asked at most every few seconds;
+    the answer between is the last one. A ping takes about a second, so the
+    first request after that pays for it.
     """
-    db_ok, state = await asyncio.gather(database(), renderer.get())
+    db_ok, state, engine = await asyncio.gather(database(), renderer.get(), sound.get())
     return Health(
         api='ok',
         db='ok' if db_ok else 'down',
         renderer=RendererHealth(ok=state.workers > 0, workers=state.workers),
         queue=QueueHealth(pending=state.pending),
+        audio_engine=AudioEngineHealth(
+            configured=engine.configured, ok=engine.ok, detail=engine.detail
+        ),
     )

@@ -2,6 +2,7 @@ import { auth } from './Login'
 import { Edl } from './Video'
 import { RenderStatus } from './RenderStatus'
 import { clipSeconds, inOf, toMs, windowed } from './Timing'
+import { Captions } from './captions/store'
 
 var state = require('./Globals').state
 
@@ -139,6 +140,10 @@ export function renderSize(project) {
  * Everything in the body, nothing in the query string: the route reads only
  * the body, which is why the toolbar's `?project=&width=&height=` rendered
  * every timeline at 1920x1080 with no project.
+ *
+ * With the project's captions and their style, when the style draws them
+ * (contract K2): the editor's own, as they stand, like the timeline -- the
+ * server draws them over it at the render's size.
  */
 export function timelineRender({ project, projectId, width, height }) {
   const edl = timelineEdl(Edl.edl)
@@ -151,6 +156,7 @@ export function timelineRender({ project, projectId, width, height }) {
     width: Number(width),
     height: Number(height),
     duration: edl.duration,
+    ...Captions.forRender(projectId, project),
   }
 }
 

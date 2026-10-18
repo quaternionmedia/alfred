@@ -1,0 +1,256 @@
+// The captions panel and the caption overlay. Everything here is scoped to
+// their own classes, so the panel can sit wherever the page puts it -- the
+// Edit stage today, a workspace panel tomorrow -- and style nothing else.
+
+$rule: 1px solid #2e2e2e;
+$muted: #8f8f8f;
+$text: #d8d8d8;
+$accent: #f2aa4c;
+$problem: #e57373;
+
+// The viewer, made the box the overlay lies over.
+.head.captioned {
+  position: relative;
+}
+
+// The Edit stage's placement: one line until opened.
+.captionsdrawer {
+  padding: 0 0.75rem;
+  background: #161616;
+  border-bottom: $rule;
+  color: $text;
+
+  .disclosure {
+    margin: 0.2rem 0;
+    padding: 0.2rem 0.4rem;
+    border: 0;
+    background: transparent;
+    color: $muted;
+    font: inherit;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+
+    &:hover {
+      color: $text;
+    }
+  }
+
+  .captionsdrawerbody {
+    border-top: $rule;
+  }
+}
+
+#caption-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  pointer-events: none;
+  overflow: hidden;
+
+  .captionline {
+    max-width: 90%;
+    padding: 0 0.3em;
+    line-height: 1.2;
+    font-family: 'DejaVu Sans', Verdana, sans-serif;
+    white-space: pre-line;
+  }
+}
+
+.captionspanel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  padding: 0.6rem 0.9rem;
+  background: #161616;
+  color: $text;
+  font-size: 0.85rem;
+
+  h3 {
+    margin: 0;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $muted;
+  }
+
+  .captionshead {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .captionsactions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-left: auto;
+  }
+
+  button {
+    min-height: 2rem;
+    padding: 0 0.7rem;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    background: #222;
+    color: $text;
+    font: inherit;
+    cursor: pointer;
+
+    &.primary {
+      background: $accent;
+      border-color: $accent;
+      color: #101820;
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    &.icon {
+      min-height: 1.6rem;
+      padding: 0 0.3rem;
+      line-height: 1;
+
+      i {
+        font-size: 1.1rem;
+      }
+    }
+  }
+
+  input,
+  select,
+  textarea {
+    padding: 0.25rem 0.35rem;
+    background: #101010;
+    color: $text;
+    border: 1px solid #3a3a3a;
+    border-radius: 3px;
+    font: inherit;
+  }
+
+  .captionsnote {
+    margin: 0.25rem 0;
+    color: $muted;
+  }
+
+  .captionserror,
+  .captionproblem {
+    color: $problem;
+  }
+
+  .captionsjob {
+    margin: 0.25rem 0;
+
+    &.failed {
+      color: $problem;
+    }
+  }
+
+  .captionsstyle {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.4rem 0.8rem;
+    padding: 0.4rem 0;
+    border-top: $rule;
+    border-bottom: $rule;
+    margin-bottom: 0.4rem;
+
+    label {
+      display: inline-flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      color: $muted;
+
+      &.inline {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.35rem;
+      }
+    }
+
+    input[type='number'] {
+      width: 4.5rem;
+    }
+
+    input[type='color'] {
+      width: 2.6rem;
+      height: 1.8rem;
+      padding: 0.1rem;
+    }
+  }
+
+  .captionlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .captionrow {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: start;
+    gap: 0.35rem;
+    padding: 0.3rem 0;
+    border-bottom: $rule;
+
+    &.current {
+      box-shadow: inset 3px 0 0 $accent;
+    }
+
+    &.invalid textarea,
+    &.invalid input {
+      border-color: $problem;
+    }
+
+    .captiontime {
+      display: flex;
+      align-items: center;
+      gap: 0.15rem;
+    }
+
+    input[type='number'] {
+      width: 5.2rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 2rem;
+      resize: vertical;
+    }
+
+    .captionproblem {
+      grid-column: 3 / 5;
+      font-size: 0.8rem;
+    }
+  }
+
+  .captionsreview {
+    margin: 0.4rem 0;
+    padding: 0.5rem;
+    border: 1px solid $accent;
+    border-radius: 4px;
+
+    ol {
+      margin: 0.3rem 0;
+      padding-left: 1.4rem;
+      color: $muted;
+    }
+  }
+
+  .confirm {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+}

@@ -76,6 +76,10 @@ def coverage(session):
     # has these, so the tests were failing on a gap that existed only in the
     # tests.
     session.install('-e', '../alfred/otto[render]')
+    # The sound engine's client, vendored beside otto and installed the way
+    # the image installs it: editable from the submodule, with --no-deps. Its
+    # core needs only httpx, which the lockfiles above carry.
+    session.install('--no-deps', '-e', '../alfred/vox')
     session.run('mkdir', '-p', 'dist')
     session.run('mkdir', '-p', 'site')
     session.run('touch', join('dist', 'index.html'))

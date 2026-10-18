@@ -6,3 +6,7 @@
 	path = governance/qm
 	url = https://github.com/quaternionmedia/qm.git
 	branch = project/alfred
+[submodule "alfred/vox"]
+	path = alfred/vox
+	url = https://github.com/quaternionmedia/vox.git
+	branch = main

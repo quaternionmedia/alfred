@@ -20,8 +20,8 @@ jobs:
       - name: 📰 Checkout
         uses: actions/checkout@v7
         with:
-          # The api and renderer images install the vendored engine from
-          # alfred/otto.
+          # The api and renderer images install the vendored engines from
+          # alfred/otto and alfred/vox.
           submodules: recursive
 
       # The whole stack comes from test_e2e.yml: it builds the site, starts

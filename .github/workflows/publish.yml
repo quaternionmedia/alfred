@@ -88,7 +88,7 @@ jobs:
     with:
       python_version: '3.11'
       submodules: recursive
-      pip_args: '--no-deps -r requirements.lock -r requirements-test.lock -e . -e alfred/otto'
+      pip_args: '--no-deps -r requirements.lock -r requirements-test.lock -e . -e alfred/otto -e alfred/vox'
 
   build:
     name: 📦 Build package

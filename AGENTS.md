@@ -55,15 +55,20 @@ what was actually verified.
 
 A browser video editor whose previews and renders are all made server-side,
 by a self-hosted stack built as a **small control plane** (`alfred/`)
-orchestrating a **render engine** (`otto`, a separate public QM package
-consumed as `al-otto` and vendored at `alfred/otto`). The seam owns auth,
-project and render lifecycle state, and orchestration; it does not own video
-handling. Keep it that way — see the control-plane record in
-`governance/qm/adr/`.
+orchestrating two cooperating, parallel engines: **otto** renders the picture
+(a separate public QM package consumed as `al-otto` and vendored at
+`alfred/otto`), and **vox** carries the sound (QM's audio-engine seam,
+vendored at `alfred/vox`, driving an engine such as joe over HTTP). Both are
+submodules installed editable, the same way, everywhere. The seam owns auth,
+project, render and caption lifecycle state, and orchestration; it does not
+own video or audio handling, and only `alfred/core/utils/audio_engine.py`
+knows how the audio engine is reached (docs/captions.md). Keep it that way —
+see the control-plane record in `governance/qm/adr/`.
 
 - `alfred/core/routes/` — API surface (FastAPI routers)
 - `alfred/core/models/` — Beanie/Pydantic documents
-- `alfred/core/utils/` — DB, Celery tasks, storage, email
+- `alfred/core/utils/` — DB, Celery tasks, storage, email, captions, and the
+  audio-engine adapter
 - `website/` — mithril SPA, built with parcel
 - `governance/qm/` — the constitution and this project's `adr/`
 

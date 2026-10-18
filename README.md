@@ -13,10 +13,18 @@ Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 
 ## Shape
 
-A small **control plane** (`alfred/`) orchestrating a **render engine**
-(`otto`, published separately as `al-otto`). The control plane owns auth,
-project and render lifecycle, and orchestration; it does not touch media.
+A small **control plane** (`alfred/`) orchestrating two cooperating engines,
+side by side: **otto** draws the picture (the render engine, published
+separately as `al-otto`, vendored at `alfred/otto`), and **vox** carries the
+sound (QM's audio-engine seam, vendored at `alfred/vox`, which drives an
+engine such as joe over HTTP). The control plane owns auth, project, render
+and caption lifecycle, and orchestration; it does not touch media itself.
 `website/` is a mithril SPA built with parcel.
+
+Captions -- typed, imported from SubRip, WebVTT or JSON, or transcribed from
+the timeline's own sound by the audio engine -- are drawn into renders by
+otto: [docs/captions.md](docs/captions.md), which also says how to point alfred
+at joe.
 
 The project is governed by the [Quaternion Media
 constitution](https://github.com/quaternionmedia/qm), vendored at
@@ -104,9 +112,10 @@ npx playwright install chromium
 yarn e2e                          # end-to-end, against a running ./al dev
 ```
 
-On the host, `pdm install` takes `al-otto` from PyPI. `pip install -e
-alfred/otto --no-deps` in that environment makes the suite test the vendored
-engine the image runs, which `tests/unit/test_stack_config.py` checks.
+On the host, `pdm install` takes `al-otto` from PyPI and has no vox at all.
+`pip install -e alfred/otto --no-deps` and `pip install -e alfred/vox
+--no-deps` in that environment make the suite test the vendored engines the
+image runs, which `tests/unit/test_stack_config.py` checks.
 
 Strategy and known gaps: [tests/README.md](tests/README.md) for the backend,
 [website/e2e/README.md](website/e2e/README.md) for the browser suite. Both
