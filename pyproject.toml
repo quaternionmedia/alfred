@@ -35,7 +35,12 @@ dependencies = [
     # attached, which is its own change and not this one.
     "setuptools>=75.3.4,<81",
 ]
-requires-python = ">=3.8.1,<4.0"
+# 3.11, and only 3.11: the image, CI, ruff and black all target it, and the
+# engine caps below 3.12 (alfred/otto/pyproject.toml: the newest Python every
+# pydantic 1.10 it admits supports). The floor was 3.8.1, and pdm locks for the
+# whole range, so anything that has since dropped 3.8 sat at its last release
+# that still installed there -- numpy 1.24, anyio 4.5 -- whatever Python ran.
+requires-python = ">=3.11,<3.12"
 readme = "README.md"
 license = { text = "MIT" }
 
