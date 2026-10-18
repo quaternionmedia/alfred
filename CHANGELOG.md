@@ -191,7 +191,7 @@ production stack needs its own signing key.
 
 First round, on f0e8cb3: `./al pytest` 699 passed, 2 skipped, 8 xfailed;
 `./al test` 212 passed, 1 skipped. Second round, on `integrate/wave-2`:
-`./al pytest` 1117 passed, 2 skipped, 8 xfailed, with the database tier
+`./al pytest` 1118 passed, 2 skipped, 8 xfailed, with the database tier
 running; `./al test` 281 passed, 1 skipped, including the `@slow` specs,
 which encode on the new engine.
 

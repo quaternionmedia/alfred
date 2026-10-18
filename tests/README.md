@@ -6,7 +6,7 @@ Scope: the backend and the render engine. Browser coverage lives in
 ## Status
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
-stack's own configuration: **1127 tests -- 1117 passed, 2 skipped, 8
+stack's own configuration: **1128 tests -- 1118 passed, 2 skipped, 8
 xfailed** in the `./al pytest` container, measured on integrate/wave-2 with
 its `db` service up, so the database tier ran too. The two skips need a
 Docker CLI, which that container does not have; where ImageMagick cannot draw
