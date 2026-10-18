@@ -44,16 +44,68 @@ async function sentTimeline(page, sent) {
   return sent[before].edl
 }
 
-async function openMediaProject(page, request, token) {
+const basename = name => String(name).split('/').pop()
+
+/**
+ * Serve `GET /media` for the library's real files, each `lengths[file]`
+ * seconds long, or a minute.
+ *
+ * An edit stops at the end of a clip's file, so a test that drags a clip
+ * longer, or slides the window it shows, says how long the file is rather
+ * than depending on what the demo media happens to measure -- or on whether
+ * the server measures anything at all.
+ */
+async function serveMedia(page, request, token, lengths = {}) {
+  const names = await (
+    await request.get('/videos', { headers: { Authorization: token } })
+  ).json()
+  await page.route(
+    url => url.pathname === '/media',
+    route =>
+      route.fulfill({
+        json: names.map(name => ({
+          name,
+          kind: 'video',
+          duration: basename(name) in lengths ? lengths[basename(name)] : 60,
+          width: 320,
+          height: 180,
+          fps: 24,
+          size: 1000,
+          url: null,
+        })),
+      })
+  )
+}
+
+/**
+ * Open the shared media project on the Edit stage.
+ *
+ * With `clips`, the project is served holding those instead, so a test can
+ * start from the timeline it needs without writing to the shared fixture.
+ * With `lengths`, the media list is served too (see serveMedia) and the page
+ * reloaded: the library is read once per page load, and the fixture's login
+ * already read it.
+ */
+async function openMediaProject(page, request, token, { clips, lengths } = {}) {
   const project = await mediaProject(request, token)
   // Keeps the shared fixture as it is when the toolbar's render remembers.
   await page.route(
     url => url.pathname === `/project/${project._id}/settings`,
     route => route.fulfill({ json: project })
   )
+  const opened = clips ? { ...project, edl: { ...project.edl, clips } } : project
+  if (clips) {
+    await page.route(
+      url => url.pathname === `/project/${project._id}`,
+      route =>
+        route.request().method() === 'GET' ? route.fulfill({ json: opened }) : route.fallback()
+    )
+  }
+  if (lengths) await serveMedia(page, request, token, lengths)
   await page.goto(`/#!/?project=${project._id}&stage=edit`)
-  await expect(page.locator('#timeline .clip')).toHaveCount(project.edl.clips.length)
-  return project
+  if (lengths) await page.reload()
+  await expect(page.locator('#timeline .clip')).toHaveCount(opened.edl.clips.length)
+  return opened
 }
 
 const seconds = async page => {
@@ -88,9 +140,10 @@ test.describe('trim, by mouse', () => {
     /**
      * Grab a clip near its end and drag. The pointer is captured, so the
      * drag keeps arriving at the clip after leaving its edge -- the whole
-     * gesture -- and the clips after it move along.
+     * gesture -- and the clips after it move along. (Its file is served as a
+     * minute long, so the end of the file is not what stops it.)
      */
-    const project = await openMediaProject(authedPage, request, token)
+    const project = await openMediaProject(authedPage, request, token, { lengths: {} })
     const sent = await captureRenders(authedPage)
     const first = project.edl.clips[0]
 
@@ -125,7 +178,7 @@ test.describe('by touch', () => {
      * A real touch drag, sent through the browser's input pipeline rather
      * than as synthetic events -- the kind a phone sends.
      */
-    await openMediaProject(authedPage, request, token)
+    await openMediaProject(authedPage, request, token, { lengths: {} })
     await authedPage.locator('#TTools [data-tool="trim"]').click()
 
     const clip = authedPage.locator('#timeline .clip').first()

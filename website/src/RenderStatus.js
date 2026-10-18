@@ -56,6 +56,8 @@ function snapshot(r) {
     filename: r.filename || null,
     destination: r.destination || null,
     error: r.error || null,
+    // The signed link to the finished file (contract M1), when it is finished.
+    download_url: r.download_url || null,
   }
 }
 

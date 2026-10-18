@@ -1,5 +1,6 @@
 import { auth } from './Login'
 import { describeDetail } from './Problem'
+import { authJson, expired, usable } from './Signed'
 
 /**
  * Bytes that need the session to fetch, and handing them to the browser.
@@ -8,6 +9,10 @@ import { describeDetail } from './Problem'
  * request -- an `<a href>`, an `<img src>`, a `<video src>` -- never carries.
  * So a protected file is fetched here, with the token, and the element (or the
  * download) is given an object URL for the bytes instead.
+ *
+ * That is the fallback now. Where the server issues a signed URL for a file
+ * (contract M1, Signed.js) the browser is handed that and fetches the file by
+ * itself; this path serves a server that does not, or a file it did not sign.
  *
  * Built on `auth()` rather than beside it, so a protected file gets the same
  * session handling as every other request, whatever `auth()` does about an
@@ -92,17 +97,61 @@ export function saveBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 60000)
 }
 
+/** Hand the browser a URL to download by itself, under the server's name for it. */
+export function saveUrl(url) {
+  const a = document.createElement('a')
+  a.href = url
+  // Empty, so the `Content-Disposition` the server sends names the file.
+  a.setAttribute('download', '')
+  a.style.display = 'none'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+}
+
 /**
- * Download a finished render. Resolves to the filename it was saved under.
+ * A signed download URL for a finished render that is good to use now, or
+ * null when the server issues none.
  *
- * The whole file is held in memory on the way through. Renders here are
- * seconds to minutes long, so that is fine; a long-form render would want a
- * short-lived signed link the browser can fetch by itself instead.
+ * The render list and its status both carry `download_url` (contract M1), but
+ * a list read when the Deliver stage opened can be older than the URL's
+ * lifetime by the time anyone presses Download. One that has run out, or is
+ * about to, is asked for again rather than handed to a download that would be
+ * refused.
+ */
+export function freshDownloadUrl(render) {
+  const url = render && render.download_url
+  if (!url) return Promise.resolve(null)
+  if (usable(url, 10 * 1000)) return Promise.resolve(url)
+  return authJson(`/render/${render._id}/status`).then(
+    status => {
+      const renewed = status && status.download_url
+      return renewed && !expired(renewed) ? renewed : null
+    },
+    () => null
+  )
+}
+
+/**
+ * Download a finished render. Resolves to the filename it was saved under,
+ * or null when the browser is fetching it under the server's name.
+ *
+ * Through the render's signed download URL when the server issues one: the
+ * browser fetches the file itself, straight to disk, the way any download
+ * works. Without one the file is fetched with the session and held in memory
+ * on the way through -- fine for seconds of video, and the reason the signed
+ * link is preferred.
  */
 export function downloadRender(render) {
-  return authBlob(`/render/${render._id}/download`).then(({ blob, filename }) => {
-    const name = filename || `${render.name || render.project || render._id}.mp4`
-    saveBlob(blob, name)
-    return name
+  return freshDownloadUrl(render).then(url => {
+    if (url) {
+      saveUrl(url)
+      return null
+    }
+    return authBlob(`/render/${render._id}/download`).then(({ blob, filename }) => {
+      const name = filename || `${render.name || render.project || render._id}.mp4`
+      saveBlob(blob, name)
+      return name
+    })
   })
 }

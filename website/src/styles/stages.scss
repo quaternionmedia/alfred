@@ -308,7 +308,9 @@
   display: flex;
 }
 
-.mediachoice {
+// A template is offered the way a file is, though it is not one.
+.mediachoice,
+.templatechoice {
   display: flex;
   align-items: center;
   gap: 0.4rem;
@@ -334,6 +336,13 @@
     i {
       opacity: 1;
     }
+  }
+
+  // How long the file runs: secondary to its name.
+  .mediaduration {
+    color: #8f8f8f;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
   }
 }
 

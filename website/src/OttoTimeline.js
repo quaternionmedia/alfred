@@ -6,14 +6,21 @@ var state = require("./Globals").state
 import { Video, Edl, array_move } from './Video'
 import { Preview } from './Preview'
 import { Player } from './Player'
+import { message } from 'alertifyjs'
 import { auth } from './Login'
 import { cutAtPlayhead } from './TimelineTools'
-import { setLength } from './Timing'
+import { clipSeconds, trim } from './Timing'
 
 // How far a press may wander and still count as a tap. Past this it is a drag
 // -- on a touch screen, usually the start of scrolling the timeline -- and
 // must not seek.
 const TAP_SLOP = 8
+
+/** The edits a press on a clip can begin, by tool: each returns a gesture
+ * (Timing.js), or `{refusal}` saying why it cannot begin there. */
+const EDITS = {
+  trim: ({ index }) => trim(Edl.edl[index]),
+}
 
 /**
  * One clip on the timeline, and what the timeline tools do to it.
@@ -24,12 +31,18 @@ const TAP_SLOP = 8
  * on the phones and tablets the README promises, trimming did nothing at all.
  * Pointer events are one stream for mouse, pen and touch.
  *
- * A trim captures the pointer (`setPointerCapture`), so the drag keeps
- * arriving at this clip when it leaves the clip's edge -- which is the whole
- * gesture, since the point is to make it wider -- and the release arrives
- * wherever it happens. That replaces listeners on `document`, which had to be
- * added and removed by hand; when they were bound to the clip instead, every
- * press leaked one, and clips resized without being dragged.
+ * An edit -- a trim -- captures the pointer (`setPointerCapture`), so the drag
+ * keeps arriving at this clip when it leaves the clip's edge -- which is the
+ * whole gesture, since the point is to make it wider -- and the release
+ * arrives wherever it happens. That replaces listeners on `document`, which
+ * had to be added and removed by hand; when they were bound to the clip
+ * instead, every press leaked one, and clips resized without being dragged.
+ *
+ * What an edit does to the clips is Timing.js's business: this turns pointer
+ * movement into timeline seconds and hands them over. The clips change as the
+ * pointer moves, so what the drag will leave is what is drawn while dragging,
+ * and an edit the browser takes back (`pointercancel`) puts them back as they
+ * were.
  *
  * Seeking happens on release, not on press. With the timeline scrollable by
  * touch, a press is as likely to be the start of a scroll as a choice of
@@ -37,8 +50,13 @@ const TAP_SLOP = 8
  * press that stays put is a tap.
  */
 export function Clip() {
-  // The gesture in progress: a trim being dragged, or a press that may be a tap.
+  // The gesture in progress: an edit being dragged, or a press that may be a tap.
   let gesture = null
+  // The attributes of the latest draw. This component is reused for whatever
+  // clip is drawn at its position -- the list is unkeyed -- so the clip it
+  // stands for, and how long that clip is, are read from the latest draw
+  // rather than from the one that created it.
+  let attrs = {}
 
   return {
     oncreate: vnode => {
@@ -53,23 +71,13 @@ export function Clip() {
         }
       }
 
-      const finishTrim = commit => {
-        const trim = gesture
+      const finishEdit = keep => {
+        const { edit } = gesture
         gesture = null
-        // `vnode.attrs`, read now rather than captured at oncreate. This
-        // component instance is reused for whatever clip ends up at its
-        // position -- the list is unkeyed -- so a reference taken once
-        // describes the clip that used to be here.
-        const clip = Edl.edl[vnode.attrs.i]
-        if (!commit || !clip) {
-          element.style.width = trim.startStyle
-          return
-        }
-        // A clip with a window -- media, or the continuing half of a cut
-        // template -- keeps its out-point in step with its length (Timing.js).
-        // Left alone it went on reporting the length the clip was added at.
-        setLength(clip, parseFloat(element.style.width) / state.scale())
-        Edl.update()
+        if (!keep) edit.cancel()
+        // The playhead stays where it was on the timeline; what lies under it
+        // may have changed, so the viewer is brought up to date.
+        Player.seek(Edl.time)
       }
 
       element.addEventListener('pointerdown', e => {
@@ -77,15 +85,18 @@ export function Clip() {
         if (e.pointerType === 'mouse' && e.button !== 0) return
         if (gesture) return
         const tool = state.tool()
-        if (tool === 'trim') {
-          e.preventDefault()
-          gesture = {
-            kind: 'trim',
-            id: e.pointerId,
-            startX: e.clientX,
-            startWidth: element.getBoundingClientRect().width,
-            startStyle: element.style.width,
+        const index = attrs.i
+        if (EDITS[tool]) {
+          if (!Edl.edl[index]) return
+          const box = element.getBoundingClientRect()
+          const along = box.width > 0 ? (e.clientX - box.left) / box.width : 0.5
+          const edit = EDITS[tool]({ index, along })
+          if (!edit || edit.refusal) {
+            if (edit && edit.refusal) message(edit.refusal, 4)
+            return
           }
+          e.preventDefault()
+          gesture = { kind: 'edit', edit, id: e.pointerId, startX: e.clientX }
           capture(e.pointerId)
         } else if (tool === 'time' || tool === 'cut') {
           gesture = { kind: 'tap', tool, id: e.pointerId, x: e.clientX, y: e.clientY }
@@ -94,9 +105,13 @@ export function Clip() {
 
       element.addEventListener('pointermove', e => {
         if (!gesture || e.pointerId !== gesture.id) return
-        if (gesture.kind === 'trim') {
-          const width = gesture.startWidth + (e.clientX - gesture.startX)
-          if (width > 4) element.style.width = `${width}px`
+        if (gesture.kind === 'edit') {
+          const scale = Number(state.scale()) || 1
+          gesture.edit.apply((e.clientX - gesture.startX) / scale)
+          // Keep the playhead's clip and the viewer's position honest while
+          // lengths change under them; the viewer catches up on release.
+          Edl.seek(Edl.time)
+          m.redraw()
         } else if (
           Math.abs(e.clientX - gesture.x) > TAP_SLOP ||
           Math.abs(e.clientY - gesture.y) > TAP_SLOP
@@ -107,7 +122,7 @@ export function Clip() {
 
       element.addEventListener('pointerup', e => {
         if (!gesture || e.pointerId !== gesture.id) return
-        if (gesture.kind === 'trim') return finishTrim(true)
+        if (gesture.kind === 'edit') return finishEdit(true)
         const tool = gesture.tool
         gesture = null
         // Where along the clip, from the clip's own box. `offsetX` is
@@ -115,7 +130,7 @@ export function Clip() {
         // in-point -- so pressing on the label seeked to the wrong place.
         const box = element.getBoundingClientRect()
         const along = box.width > 0 ? Math.max(0, Math.min(1, (e.clientX - box.left) / box.width)) : 0
-        const at = Edl.startOf(vnode.attrs.i) + along * (Number(vnode.attrs.duration) || 0)
+        const at = Edl.startOf(attrs.i) + along * clipSeconds(Edl.edl[attrs.i])
         // Through the transport, so the viewer follows the click. Setting
         // `Edl.time` directly moved the playhead marker and left the
         // preview showing whatever it had been showing.
@@ -126,10 +141,10 @@ export function Clip() {
       })
 
       // The browser took the pointer back (it is scrolling, or the clip went
-      // away mid-drag): a trim is abandoned rather than half-applied.
+      // away mid-drag): an edit is abandoned rather than half-applied.
       const abandon = e => {
         if (!gesture || e.pointerId !== gesture.id) return
-        if (gesture.kind === 'trim') finishTrim(false)
+        if (gesture.kind === 'edit') finishEdit(false)
         else gesture = null
       }
       element.addEventListener('pointercancel', abandon)
@@ -137,10 +152,12 @@ export function Clip() {
     },
 
     onremove: () => {
+      if (gesture && gesture.kind === 'edit') gesture.edit.cancel()
       gesture = null
     },
 
     view: vnode => {
+      attrs = vnode.attrs
       const at = vnode.attrs.i
       return m(
         '.clip',
@@ -202,13 +219,16 @@ export function Template() {
   }
 }
 
+/** A clip of a library file: a video, a sound, or a still picture. */
 export function VideoClip() {
   return {
     view: (vnode) => {
-      return m(Clip, vnode.attrs, [
-        m('p.clipname', vnode.attrs.name),
-        m('p.inpoint', vnode.attrs.inpoint),
-        m('p.outpoint', vnode.attrs.outpoint),
+      const still = vnode.attrs.type === 'image'
+      return m(Clip, { class: vnode.attrs.type, ...vnode.attrs }, [
+        m('p.clipname', String(vnode.attrs.name).split('/').pop()),
+        // A still has no window onto its source to show.
+        still ? null : m('p.inpoint', vnode.attrs.inpoint),
+        still ? null : m('p.outpoint', vnode.attrs.outpoint),
       ])
     }
   }
@@ -357,7 +377,11 @@ export function OttoTimeline() {
             c.i = i
             switch (c.type) {
               case 'template': return m(Template, c)
-              case 'video': return m(VideoClip, c)
+              // Stills and sounds are library clips too; they were drawn as
+              // nothing at all, a gap the playhead still crossed.
+              case 'video':
+              case 'audio':
+              case 'image': return m(VideoClip, c)
               // default: return m(Clip, c)
             }
           } else return m('')

@@ -250,6 +250,17 @@ $rule: 1px solid #2e2e2e;
   }
 }
 
+// A still and a sound read as what they are, beside the video clips.
+#timeline .clip.image,
+#bin .binclip.image {
+  background-color: #2d3a7a;
+}
+
+#timeline .clip.audio,
+#bin .binclip.audio {
+  background-color: #1f4a52;
+}
+
 // ---- the bin: what can go on the timeline --------------------------------
 
 // Entries wrap rather than shrinking to fit one row. Squeezed onto one line,

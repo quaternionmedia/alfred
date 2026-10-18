@@ -9,8 +9,10 @@ import { queueRender, renderSize, timelineRender } from './RenderRequest'
 import { RenderStatus, isSettled, renderState } from './RenderStatus'
 import { blobProblem, downloadRender } from './Download'
 import { requestProblem } from './Problem'
-import { addClip, templateClip, videoClip } from './Clips'
-import Bin from './Bin'
+import { addClip, mediaClip, templateClip } from './Clips'
+import Bin, { seconds } from './Bin'
+import { Library } from './Library'
+import { expiresAt } from './Signed'
 
 /**
  * The four stages of the flow, as one view.
@@ -37,7 +39,6 @@ export const DEFAULT_STAGE = 'edit'
 
 export const Flow = {
   projects: [],
-  videos: [],
   renders: [],
   // Fetched, not hardcoded. Cloud delivery is the next phase, so the server
   // currently offers only `local` -- and a destination becoming available
@@ -113,11 +114,8 @@ export const Flow = {
         Flow.projects = p
       })
       .catch(() => {})
-    auth('/videos')
-      .then(v => {
-        Flow.videos = v
-      })
-      .catch(() => {})
+    // The media library is the page's own (Library.js), shared with the bin.
+    Library.load({ force: Boolean(opts && opts.force) })
     auth('/destinations')
       .then(d => {
         Flow.destinations = d
@@ -201,7 +199,15 @@ const current = r => {
     error: live.error || r.error || null,
     filename: r.filename || live.filename || null,
     destination: r.destination || live.destination || null,
+    // Whichever signed link runs out later: both were issued by the server,
+    // at different moments.
+    download_url: laterLink(live.download_url, r.download_url),
   }
+}
+
+const laterLink = (a, b) => {
+  if (!a || !b) return a || b || null
+  return (expiresAt(a) || 0) >= (expiresAt(b) || 0) ? a : b
 }
 
 /** Keeps the Deliver list moving while something on it has not finished.
@@ -348,7 +354,7 @@ const add = (clip, label, kind) => {
   }, 4000)
 }
 
-const addMedia = name => add(videoClip(name), basename(name), 'media')
+const addMedia = name => add(mediaClip(name), basename(name), 'media')
 
 const addTemplate = template =>
   add(templateClip(template), `${template.name} template`, 'template')
@@ -464,8 +470,8 @@ const SourcePanel = {
       // watching the id itself.
       current ? m(ProjectTemplate) : null,
 
-      m('h3', `Material${Flow.videos.length ? ` (${Flow.videos.length})` : ''}`),
-      Flow.videos.length
+      m('h3', `Material${Library.items.length ? ` (${Library.items.length})` : ''}`),
+      Library.items.length
         ? [
             m(
               'p.stagehint',
@@ -479,7 +485,7 @@ const SourcePanel = {
               : null,
             m(
               'ul.medialist',
-              Flow.videos.map(v =>
+              Library.items.map(item =>
                 m('li.mediaitem', [
                   // A button, not an `<li>` with text on it. This list was
                   // inert: it named the media on the server and offered no
@@ -491,21 +497,38 @@ const SourcePanel = {
                   m(
                     'button.mediachoice',
                     {
-                      title: `Add ${basename(v)} to the timeline`,
-                      onclick: () => addMedia(v),
+                      title: `Add ${basename(item.name)} to the timeline`,
+                      'data-media': item.name,
+                      'data-kind': item.kind,
+                      onclick: () => addMedia(item.name),
                     },
-                    [m('i.material-icons', 'add'), basename(v)]
+                    [
+                      m('i.material-icons', 'add'),
+                      basename(item.name),
+                      // How long it runs, when the server could tell: the
+                      // length the clip will arrive at.
+                      item.duration
+                        ? m('span.mediaduration', seconds(item.duration))
+                        : null,
+                    ]
                   ),
                 ])
               )
             ),
           ]
-        : Generate(
-            'No media on the server.',
-            'Generate demo media',
-            () => auth('/demo/media', { method: 'POST' }),
-            'media'
-          ),
+        : // Not "no media" until the server has said so. Before the list
+          // arrived this offered to generate demo media on a server that had
+          // plenty.
+          Library.loaded
+          ? Generate(
+              'No media on the server.',
+              'Generate demo media',
+              () => auth('/demo/media', { method: 'POST' }),
+              'media'
+            )
+          : Library.retryAt
+            ? m('p.stagewarn#media-unavailable', 'Could not list the media on the server.')
+            : m('p.stagehint#media-loading', 'Looking for media…'),
 
       // Templates are material too: a title card or a colour field is made,
       // not uploaded. They were reachable only by dragging from the bin,
@@ -525,8 +548,10 @@ const SourcePanel = {
               Bin.templates.map(t =>
                 m(
                   'li.mediaitem',
+                  // Drawn like a media choice, but not one: `.mediachoice` is
+                  // a file from the library, and a template is not a file.
                   m(
-                    'button.mediachoice.templatechoice',
+                    'button.templatechoice',
                     {
                       'data-template': t.name,
                       title: t.description

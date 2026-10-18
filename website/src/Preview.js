@@ -3,6 +3,8 @@ import { Video, Edl } from './Video'
 import { Player } from './Player'
 import { authBlob, blobProblem } from './Download'
 import { cutAtPlayhead } from './TimelineTools'
+import { Library } from './Library'
+import { isSigned } from './Signed'
 var state = require("./Globals").state
 
 const urlfy = obj => Object
@@ -146,8 +148,8 @@ export function VideoPreview() {
     oncreate: vnode => {
       Player.attach(vnode.dom)
       vnode.dom.addEventListener('loadeddata', () => {
-        // The source arrives well after the element does -- it is fetched with
-        // the session token and handed over as an object URL -- so the
+        // The source arrives after the element does -- a signed URL once the
+        // library has answered, or a blob once the whole file has -- so the
         // playhead has usually moved on by the time there is anything to show.
         Player.syncElement(true)
         if (Player.playing) Player.resume()
@@ -157,6 +159,11 @@ export function VideoPreview() {
       vnode.dom.addEventListener('ended', () => {
         if (Player.playing) Player.pause()
       })
+      // A signed URL refused -- run out while the page sat idle, or the key
+      // changed -- is renewed rather than left as a broken frame.
+      vnode.dom.addEventListener('error', () => {
+        if (isSigned(vnode.dom.getAttribute('src'))) Library.renew()
+      })
     },
 
     onremove: vnode => Player.detach(vnode.dom),
@@ -164,8 +171,8 @@ export function VideoPreview() {
     view: vnode => {
       return m('video.preview', {
         ...vnode.attrs,
-        // `src` comes from authedSource below, never straight from the clip.
-        src: authedSource(vnode.attrs.src),
+        // `src` comes from mediaSource below, never straight from the clip.
+        src: mediaSource(vnode.attrs.src),
         style: {
           width: '100%',
           height: '100%',
@@ -176,7 +183,30 @@ export function VideoPreview() {
   }
 }
 
-// Media the browser cannot fetch on its own.
+/**
+ * Where an element should fetch the media named `name` from.
+ *
+ * A library file comes from the signed URL `GET /media` issued for it
+ * (contract M1): the element fetches that itself, with Range requests, so a
+ * video starts playing and seeking before it has downloaded -- and nothing
+ * holds the whole file in memory. Until the library has answered there is
+ * nothing to hand over; waiting for it beats starting a whole-file download
+ * a moment before a URL that streams arrives.
+ *
+ * Without one -- a server from before `/media`, or a file it did not sign --
+ * the file is fetched with the session and handed over as a blob, as it was.
+ * A remote URL is fetched by the element itself, as it always was.
+ */
+export function mediaSource(name) {
+  if (!name) return undefined
+  if (/^https?:\/\//i.test(name)) return name
+  const signed = Library.urlFor(name)
+  if (signed) return signed
+  if (Library.signs(name)) return undefined
+  return authedSource(name)
+}
+
+// Media the browser cannot fetch on its own: the fallback.
 //
 // A selected video clip rendered `<video src="videos/x.mp4">`, and /videos
 // requires a session -- so the element requested the file with no
@@ -184,9 +214,8 @@ export function VideoPreview() {
 // bin appeared to do nothing at all.
 //
 // Same fix as AuthedImage: fetch with the token and hand the element an object
-// URL. Fine for the demo clips, which are seconds long; a long edit would want
-// range requests, and this loads the whole file before playing. That is the
-// trade recorded here rather than discovered later.
+// URL. It loads the whole file before playing, which is why a signed URL is
+// preferred whenever the server issues one (mediaSource above).
 const objectUrls = new Map()
 
 export function authedSource(path) {
@@ -330,7 +359,14 @@ export var Preview = () => {
           }),
         ])
       }
-      // Deliberately unkeyed. This branch alternates with two unkeyed ones
+      // A still is a picture, not a video: shown as one, from the same source
+      // a video would be.
+      if (clip.type == 'image') {
+        return m('.bkg#preview', {}, [
+          m('img.preview.still', { src: mediaSource(clip.name), alt: '' }),
+        ])
+      }
+      // Deliberately unkeyed. This branch alternates with unkeyed ones
       // above, and mithril refuses a fragment whose children are only
       // partly keyed -- it throws during render and takes the whole subtree
       // with it, which is a failure this codebase has already paid for once.

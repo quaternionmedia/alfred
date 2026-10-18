@@ -62,8 +62,11 @@ test.describe('the render request places every clip', () => {
     /**
      * # Recipe: what "render" sends
      *
-     * The exact case from the bug report: three five-second clips. They must
-     * arrive at 0, 5 and 10 seconds, with a total of 15 -- not all at 0.
+     * The exact case from the bug report: three clips of one file, added one
+     * after another. They must arrive end to end -- the second where the
+     * first ends, the third where the second ends -- not all at 0. (How long
+     * each is depends on what the server measured the file as; five seconds
+     * when it measures nothing.)
      */
     const sent = await captureRenders(authedPage)
 
@@ -81,10 +84,15 @@ test.describe('the render request places every clip', () => {
 
     expect(sent).toHaveLength(1)
     const { body } = sent[0]
-    expect(starts(body)).toEqual([0, 5, 10])
-    expect(durations(body)).toEqual([5, 5, 5])
-    expect(body.edl.duration).toBe(15)
-    expect(body.duration).toBe(15)
+    const [length] = durations(body)
+    expect(length).toBeGreaterThan(0)
+    expect(durations(body)).toEqual([length, length, length])
+    const [a, b, c] = starts(body)
+    expect(a).toBe(0)
+    expect(b).toBeCloseTo(length, 3)
+    expect(c).toBeCloseTo(2 * length, 3)
+    expect(body.edl.duration).toBeCloseTo(3 * length, 3)
+    expect(body.duration).toBe(body.edl.duration)
     // Hard cuts, as the preview plays them. Left unset, otto would fade every
     // clip in and out over a second: a dip to black at each cut.
     expect(fades(body)).toEqual([
@@ -429,6 +437,46 @@ test.describe('a form-driven project', () => {
     if (project) {
       await request.delete(`/project/${project._id}`, { headers: { Authorization: token } })
     }
+  })
+
+  test('its preview frame is shown from the address the server gives', async ({
+    authedPage,
+  }) => {
+    /**
+     * `POST /preview/` answers with where the frame is: a signed URL for the
+     * private frames route, which the image fetches by itself -- or, from a
+     * server before that route, a path under the public `/data` mount.
+     */
+    const PNG = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+      'base64'
+    )
+    const frame = `/preview/frames/0123abcd.jpg?exp=${Math.floor(Date.now() / 1000) + 600}&sig=e2e`
+    const answers = [frame, 'data/none.jpg']
+    await authedPage.route(
+      url => url.pathname === '/preview/',
+      route => route.fulfill({ json: answers.shift() })
+    )
+    const fetched = []
+    await authedPage.route(
+      url => url.pathname.startsWith('/preview/frames/') || url.pathname === '/data/none.jpg',
+      async route => {
+        fetched.push({ url: route.request().url(), headers: route.request().headers() })
+        await route.fulfill({ status: 200, contentType: 'image/png', body: PNG })
+      }
+    )
+
+    await authedPage.goto(`/#!/?project=${project._id}&stage=render`)
+    const form = authedPage.locator('#template_form')
+    await form.locator('input[name="headline"]').fill('A frame')
+    await form.locator('input[name="preview"]').click()
+    await expect(authedPage.locator('img#form-preview')).toHaveAttribute('src', frame)
+    await expect.poll(() => fetched.length).toBe(1)
+    expect(fetched[0].url).toContain('sig=e2e')
+    expect(fetched[0].headers.authorization).toBeUndefined()
+
+    await form.locator('input[name="preview"]').click()
+    await expect(authedPage.locator('img#form-preview')).toHaveAttribute('src', '/data/none.jpg')
   })
 
   test('renders its logic layered, with a preset and no ffmpeg flags', async ({

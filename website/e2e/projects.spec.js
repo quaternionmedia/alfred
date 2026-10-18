@@ -253,12 +253,13 @@ test.describe('the project selector', () => {
     await authedPage.goto('/#!/?stage=source')
     await authedPage.locator('.mediachoice').first().click()
 
-    // A blob URL, not the path: /videos needs the session token, so the
-    // element is handed an object URL fetched with it rather than a `src` the
-    // browser would request anonymously and be refused.
+    // Not the bare path: /videos needs the session, so the element is handed
+    // the signed URL the server issued for the file (`GET /media`), or -- from
+    // a server that issues none -- an object URL fetched with the token,
+    // rather than a `src` the browser would request anonymously and be refused.
     await expect(authedPage.locator('video.preview')).toHaveAttribute(
       'src',
-      /^blob:/
+      /^blob:|[?&]sig=/
     )
   })
 

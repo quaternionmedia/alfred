@@ -434,6 +434,80 @@ Two bare anchors side by side read "User documentationAPI reference".
 
 - **its links are separated, to the eye and in the text**
 
+## editor media
+
+Media in the editor: how long it runs, and how the browser fetches it.
+
+# Recipe: adding footage at its own length
+
+Choose a file on the Source stage (or press + beside it in the bin) and it
+arrives as the whole file, from its start: as long as the file runs, which
+the Source stage shows beside its name. A still image arrives as five
+seconds of the picture, as does a file whose length the server could not
+measure. Trimming stops at the end of the file. Every library clip used to
+arrive as five seconds, because nothing reported a length.
+
+The server's media list (`GET /media`) carries, for each file, its kind,
+its length and a short-lived signed URL. The viewer plays a video from that
+URL by itself -- streaming, seeking -- instead of downloading the whole file
+with the session first; renders download the same way. A server without
+that list still works: names come from `GET /videos`, and files are fetched
+with the session as before.
+
+The media list, the signed URLs and the render list are answered here: what
+is under test is what the editor does with each answer.
+
+### a library clip is as long as its file
+
+- **it arrives at the length the server measured, from its start**
+- **a file the server could not measure arrives as five seconds**
+
+  It was sent as a video clip. otto draws an image clip as one picture
+  for as long as the clip lasts, with no in-point to move.
+
+- **a still image arrives as a picture: a length and no window**
+
+  It was sent as a video clip. otto draws an image clip as one picture
+  for as long as the clip lasts, with no in-point to move.
+
+- **a server without the media list: names from /videos, five seconds each**
+
+  Against a server from before `GET /media` -- it answers 404 -- the
+  editor reads the older list of names and carries on as it did.
+
+### a trim stops at the end of the file
+
+The shared fixture's video clip plays the first three seconds of
+demo-bars. Served here as a 3.5-second file, a long drag to the right
+lengthens the clip by half a second and no more.
+
+- **dragging past the end of the source leaves the clip as long as the file**
+### media is fetched by signed URL
+
+The element is handed the signed URL and fetches it itself -- no
+Authorization header, no blob: it streams, and nothing holds the
+whole file in memory. (The request is passed on here with the session
+added, so that a server which does not check signatures yet still
+serves it.)
+
+- **the viewer plays a video from its signed URL, fetched by the browser**
+- **a signed URL that has run out is renewed, not handed to the viewer**
+- **a finished render downloads from its signed link**
+
+  # Recipe: downloading a render
+
+  Download hands the browser the render's signed link: the browser
+  fetches the file straight to disk, under the name the server gives it,
+  the way any download goes -- instead of the page fetching the whole
+  file into memory with the session and handing it over afterwards.
+
+- **a download link that has run out is asked for again**
+
+  The list was read when the stage opened; by the time Download is
+  pressed its link may have run out. A fresh one comes from the
+  render's status.
+
+
 ## editor render
 
 What the editor sends when it asks for a render.
@@ -452,8 +526,11 @@ here, so nothing is queued) rather than trusting the code that builds it.
 
 # Recipe: what "render" sends
 
-The exact case from the bug report: three five-second clips. They must
-arrive at 0, 5 and 10 seconds, with a total of 15 -- not all at 0.
+The exact case from the bug report: three clips of one file, added one
+after another. They must arrive end to end -- the second where the
+first ends, the third where the second ends -- not all at 0. (How long
+each is depends on what the server measured the file as; five seconds
+when it measures nothing.)
 
 - **three clips added in the editor render end to end, not stacked**
 - **a start stored on a clip is replaced by its place on the timeline**
@@ -512,6 +589,12 @@ they keep their own starts, and a clip with none leaves with an explicit
 The form also sent ffmpeg flags of its own and a quality of "web" or
 "TV"; the server now picks the encoding from a named preset and refuses
 client-supplied ffmpeg parameters, so this asserts neither is sent.
+
+- **its preview frame is shown from the address the server gives**
+
+  `POST /preview/` answers with where the frame is: a signed URL for the
+  private frames route, which the image fetches by itself -- or, from a
+  server before that route, a path under the public `/data` mount.
 
 - **renders its logic layered, with a preset and no ffmpeg flags**
 
@@ -1168,7 +1251,8 @@ send while it moves, so on a phone trimming did nothing at all.
 
 Grab a clip near its end and drag. The pointer is captured, so the
 drag keeps arriving at the clip after leaving its edge -- the whole
-gesture -- and the clips after it move along.
+gesture -- and the clips after it move along. (Its file is served as a
+minute long, so the end of the file is not what stops it.)
 
 - **dragging a clip past its own edge lengthens it, and its out-point**
 ### by touch
@@ -1255,8 +1339,9 @@ The preview was blank for every video clip.
 `<video src="videos/x.mp4">` is a browser-issued request with no
 Authorization header, and /videos requires a session -- so it 401'd and
 showed nothing. Selecting media in the bin looked like a click that did
-not register. The element is handed an object URL fetched with the token
-instead.
+not register. The element is handed the signed URL the server issued
+for the file, or -- from a server that issues none -- an object URL for
+the file fetched with the token.
 
 - **a video clip previews from generated demo footage**
 - **a template clip previews as a rendered frame**

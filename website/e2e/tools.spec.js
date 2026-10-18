@@ -48,8 +48,9 @@ test.describe('selected media renders', () => {
      * `<video src="videos/x.mp4">` is a browser-issued request with no
      * Authorization header, and /videos requires a session -- so it 401'd and
      * showed nothing. Selecting media in the bin looked like a click that did
-     * not register. The element is handed an object URL fetched with the token
-     * instead.
+     * not register. The element is handed the signed URL the server issued
+     * for the file, or -- from a server that issues none -- an object URL for
+     * the file fetched with the token.
      */
     const project = await mediaProject(request, token)
 
@@ -60,10 +61,10 @@ test.describe('selected media renders', () => {
 
     const video = authedPage.locator('video.preview')
     await expect(video).toBeVisible({ timeout: 30_000 })
-    // A blob URL means the fetch carried the token and the bytes arrived.
-    // Generous timeouts: this downloads and decodes a real file, and with the
-    // suite running eight workers wide the first frame can take a while.
-    await expect(video).toHaveAttribute('src', /^blob:/, { timeout: 30_000 })
+    // Never the bare protected path: a signed URL, or a blob fetched with the
+    // token. Generous timeouts: this decodes a real file, and with the suite
+    // running wide the first frame can take a while.
+    await expect(video).toHaveAttribute('src', /^blob:|[?&]sig=/, { timeout: 30_000 })
 
     // readyState >= 2 is HAVE_CURRENT_DATA: decoded, not merely requested.
     await expect
@@ -154,7 +155,12 @@ test.describe('the tools pass their events', () => {
 
     for (const tool of ['trim', 'move', 'time']) {
       await authedPage.locator(`#TTools [data-tool="${tool}"]`).click()
-      expect(await highlighted(), `after choosing ${tool}`).toBe(1)
+      // Polled: the page redraws on the next frame, not inside the click, and
+      // until it does the tool just left is still filled and the one under
+      // the pointer has its hover.
+      await expect
+        .poll(highlighted, { message: `after choosing ${tool}` })
+        .toBe(1)
     }
   })
 

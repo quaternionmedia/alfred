@@ -22,6 +22,8 @@
  *   image         the same picture throughout: no window to move, any length.
  */
 
+import { Library } from './Library'
+
 // The shortest a clip may be made, in seconds. A trim, a cut or a roll that
 // would leave less leaves this much: a sliver nobody can see or select is a
 // near-empty layer for the renderer.
@@ -73,6 +75,78 @@ export function place(clip, inpoint, length) {
 
 /** Make a clip `seconds` long, keeping where it starts in its source. */
 export const setLength = (clip, seconds) => place(clip, inOf(clip), Math.max(SHORTEST, seconds))
+
+/**
+ * What bounds a clip's window: `end` is the length of its source in seconds
+ * -- Infinity when there is no end (a template) or none is known (a file the
+ * library could not measure, or a server that measures nothing) -- and a
+ * `still` has no position in a source at all.
+ */
+export function source(clip) {
+  if (isStill(clip)) return { still: true, end: Infinity }
+  if (clip && MEDIA.has(clip.type)) {
+    const known = Library.durationOf(clip.name)
+    return { still: false, end: known > 0 ? known : Infinity }
+  }
+  return { still: false, end: Infinity }
+}
+
+// ---- edits ----------------------------------------------------------------
+//
+// Each edit is a gesture: it begins on some clips, is applied again and again
+// as the pointer moves -- always from where the clips were when it began, so
+// nothing accumulates -- and is either kept or cancelled. `apply(seconds)`
+// takes how far the pointer has moved, in timeline seconds, and returns how
+// far the edit actually went once the bounds had their say.
+//
+// The bounds never move a clip by themselves. A clip already past one -- a
+// five-second clip of a three-second file, from before lengths were known --
+// may be brought back inside it, but is not pulled there the moment an edit
+// begins, and cannot be pushed further out.
+
+const FIELDS = ['inpoint', 'outpoint', 'duration']
+const remember = clip => FIELDS.map(key => [key, clip[key]])
+const restore = (clip, kept) => {
+  for (const [key, value] of kept) {
+    if (value === undefined) delete clip[key]
+    else clip[key] = value
+  }
+}
+const measure = clip => ({ inpoint: inOf(clip), length: clipSeconds(clip) })
+const clamp = (x, [lo, hi]) => Math.max(lo, Math.min(hi, x))
+const room = (lo, hi) => [Math.min(0, lo), Math.max(0, hi)]
+
+/** How far a clip's end may move, in seconds: [earlier, later]. */
+function endRange(clip) {
+  const { inpoint, length } = measure(clip)
+  const { end } = source(clip)
+  return room(SHORTEST - length, Number.isFinite(end) ? end - inpoint - length : Infinity)
+}
+
+/** A gesture on `clips`, applied by `edit(seconds)` from where they started. */
+function gesture(clips, range, edit) {
+  const kept = clips.map(remember)
+  const reset = () => clips.forEach((clip, n) => restore(clip, kept[n]))
+  return {
+    range,
+    apply: seconds => {
+      const moved = clamp(Number(seconds) || 0, range)
+      reset()
+      edit(moved)
+      return moved
+    },
+    cancel: reset,
+  }
+}
+
+/**
+ * Trim: move the end of `clip`. Longer to the right, shorter to the left; no
+ * shorter than SHORTEST, and no further than the end of its source.
+ */
+export function trim(clip) {
+  const { inpoint, length } = measure(clip)
+  return gesture([clip], endRange(clip), moved => place(clip, inpoint, length + moved))
+}
 
 /**
  * Split a clip `at` seconds into it. Returns the two halves, or null when

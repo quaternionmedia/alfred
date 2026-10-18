@@ -1,6 +1,7 @@
 import m from 'mithril'
 import { success, error, message } from 'alertifyjs'
-import { ImagePreview } from './Preview'
+import { AuthedImage } from './Preview'
+import { isSigned } from './Signed'
 import { Form, Text, TextBox, Button, Img, Selector} from './Components'
 import { User } from './User'
 import { auth } from './Login'
@@ -16,6 +17,29 @@ import { escapeHtml, requestProblem } from './Problem'
 
 // Named encoding presets the server applies; the first is the default.
 const QUALITIES = ['standard', 'high', 'draft']
+
+/**
+ * The frame `POST /preview/` made, shown.
+ *
+ * The route answers with where the frame is. That was a path under the public
+ * `/data` mount (`data/<uuid>.jpg`), which any `<img>` can show and so can
+ * anyone else who learns the name; it is now a signed URL for the private
+ * frames route (contract M1), which an `<img>` can show for a few minutes and
+ * nobody can guess. Both are handed to the image as they are. A private path
+ * that arrives unsigned is fetched with the session instead, since the image
+ * alone would be refused.
+ */
+const FramePreview = {
+  view: ({ attrs: { frame } }) => {
+    const src = typeof frame === 'string' ? frame.replace(/^"|"$/g, '') : ''
+    if (!src) return null
+    if (isSigned(src) || /^https?:\/\//i.test(src)) return m('img.preview#form-preview', { src })
+    if (/^\/?data\//.test(src)) {
+      return m('img.preview#form-preview', { src: src.startsWith('/') ? src : `/${src}` })
+    }
+    return m(AuthedImage, { id: 'form-preview', src: src.startsWith('/') ? src : `/${src}` })
+  },
+}
 
 /** The form's values, with the chosen resolution as numbers. */
 function formData() {
@@ -133,7 +157,7 @@ export function Magnussens() {
             t = v.toFixed(1)
           }
         }, m('.timerange-value', {}, t)),
-        loading ? m('.loader') : m(ImagePreview, {src: preview,})
+        loading ? m('.loader') : m(FramePreview, { frame: preview })
       ]),
     ]
   }
