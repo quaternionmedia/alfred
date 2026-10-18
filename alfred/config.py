@@ -1,5 +1,7 @@
+import sys
 from os import environ
 from os.path import join
+from tempfile import gettempdir
 from urllib.parse import urlsplit
 
 PRODUCTION = environ.get('ALFRED_PRODUCTION')
@@ -67,6 +69,31 @@ def _given(value):
     "explicitly off".
     """
     return value is not None and str(value).strip() != ''
+
+
+def resolve_seconds(env, name, default):
+    """A whole, positive number of seconds from `env[name]`, else `default`.
+
+    Unset or empty is the default. Anything that is not a positive whole
+    number is the default too, and says so on stderr: these are lifetimes,
+    and a typo such as `15m` should neither stop the server starting nor
+    quietly become something nobody asked for.
+    """
+    raw = env.get(name)
+    if not _given(raw):
+        return default
+    try:
+        value = int(str(raw).strip())
+    except ValueError:
+        value = 0
+    if value < 1:
+        print(
+            f'{name}={raw!r} is not a positive number of seconds; ' f'using {default}.',
+            file=sys.stderr,
+            flush=True,
+        )
+        return default
+    return value
 
 
 def resolve_allow_registration(env):
@@ -181,7 +208,6 @@ def resolve_public_url(env):
 
 PUBLIC_URL = resolve_public_url(environ)
 
-DATA_DIR = environ.get('DATA_DIR', 'data')
 # The media library: what `GET /videos` lists and clips name as
 # `videos/<file>`. It was a bare 'videos' literal inside the Celery task, so
 # nothing else could agree with it without repeating the string -- and the
@@ -197,11 +223,63 @@ STATIC_DIR = environ.get('STATIC_DIR', 'dist')
 # signed in and served to anyone who asked for it by name.
 RENDER_DIR = environ.get('ALFRED_RENDER_DIR', join(VIDEO_DIR, 'renders'))
 
-# Where the `local` destination copies a delivered render. Deliberately not
-# under DATA_DIR: that directory is served by an unauthenticated static mount,
-# so a local delivery was a public link to somebody's video. A delivered
-# render's `link` is the authenticated download route instead.
+# Where the `local` destination copies a delivered render. Not anywhere a
+# static mount serves: a local delivery used to land under the public /data
+# mount, which made it a link to somebody's video for anyone who had it. A
+# delivered render's `link` is the download route instead.
 DELIVERY_DIR = environ.get('ALFRED_DELIVERY_DIR', 'deliveries')
+
+# Where EDL preview frames are written, and `GET /preview/frames/{name}` reads
+# them from. Outside every directory the app serves statically: frames used to
+# be written to DATA_DIR and fetched from its unauthenticated /data mount, so
+# the only thing between a frame and anyone was its name. They are fetched
+# with a session or a signed URL now (contract M1). The api is the only
+# process that writes or reads them, so a directory private to its container
+# is the right default.
+PREVIEW_DIR = environ.get('ALFRED_PREVIEW_DIR') or join(gettempdir(), 'alfred-previews')
+
+# How long a preview frame is kept, in seconds. Frames were never removed, so
+# every playhead move in the editor left a file behind for good. Older ones
+# are swept when a frame is written and when the api starts.
+FRAME_TTL = resolve_seconds(environ, 'ALFRED_FRAME_TTL', 3600)
+
+
+# Where the engine keeps media it fetched from a URL (contract M6). Inside the
+# library directory, so the api's previews and the worker's renders share one
+# copy through the mount they both have -- but in a hidden subdirectory, which
+# neither `GET /videos` nor `GET /media` lists and `/videos/{file}` never
+# serves. The engine wrote downloads to `data/` under its working directory,
+# which the api served publicly at /data.
+#
+# The engine reads OTTO_DOWNLOAD_DIR. The compose files set it outright; for
+# anything started another way it is set from here, at import -- before the
+# engine is imported, since the `alfred` package imports this module first --
+# so one value decides where downloads go in every process.
+def resolve_remote_cache_dir(env, video_dir):
+    """ALFRED_REMOTE_CACHE_DIR, else OTTO_DOWNLOAD_DIR, else in the library.
+
+    An explicit ALFRED_REMOTE_CACHE_DIR wins over an OTTO_DOWNLOAD_DIR that
+    disagrees; empty counts as unset.
+    """
+    for name in ('ALFRED_REMOTE_CACHE_DIR', 'OTTO_DOWNLOAD_DIR'):
+        if _given(env.get(name)):
+            return env[name].strip()
+    return join(video_dir, '.remote-cache')
+
+
+REMOTE_CACHE_DIR = resolve_remote_cache_dir(environ, VIDEO_DIR)
+environ['OTTO_DOWNLOAD_DIR'] = REMOTE_CACHE_DIR
+
+# How long fetched remote media is kept, in seconds; a week by default. The
+# engine keeps every file it fetches and never removed one. Swept when the api
+# starts, and at most hourly by the api and the worker as they fetch; `./al
+# storage cache` does it on demand.
+REMOTE_CACHE_TTL = resolve_seconds(environ, 'ALFRED_REMOTE_CACHE_TTL', 7 * 24 * 3600)
+
+# How long a signed media URL works, in seconds (contract M1). Long enough to
+# watch a preview or finish a download that started; a URL is reissued with
+# every listing and status, so nothing needs one to last.
+MEDIA_URL_TTL = resolve_seconds(environ, 'ALFRED_MEDIA_URL_TTL', 900)
 
 
 def parse_hosts(value):
@@ -269,3 +347,12 @@ class CeleryConfig:
     event_serializer = 'json'
     accept_content = ['json']
     result_accept_content = ['json']
+
+    # How often a process waiting on the MongoDB broker looks for a message,
+    # in seconds; kombu's default is 1. `GET /health` counts workers with a
+    # Celery ping, and a worker hears a ping the next time it looks -- so at
+    # 1 s a reply could take longer than the ping's own one-second timeout,
+    # and a running renderer would intermittently be reported missing. Half a
+    # second answers well inside it, for one cheap query a second per queue
+    # on an idle worker. Queued renders are picked up sooner as well.
+    broker_transport_options = {'polling_interval': 0.5}

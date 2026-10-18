@@ -31,6 +31,7 @@ r | restart
 reseed
 restore
 s | sh
+storage
 t | test | e2e
 v | version
 w | worker
@@ -255,6 +256,23 @@ print(f"dropped Project and seeded {len(seed)} projects, owner: {SEED_OWNER}")
 elif [ $1 = "sh" ]; then
   shift
   docker compose -f docker-compose.yml -f dev.yml exec api sh "$@"
+
+elif [ $1 = "storage" ]; then
+  shift
+  # Tidy what the server keeps on disk, from inside the running api, which
+  # sees the same directories and database the server does. Dry runs unless
+  # told --apply.
+  #
+  #   ./al storage migrate             render outputs still in the media
+  #                                    library: what would move to the render
+  #                                    directory, and what is in the way
+  #   ./al storage migrate --apply     move them
+  #   ./al storage orphans [--apply]   files whose render has been deleted
+  #   ./al storage cache [--apply]     remote media the engine fetched, past
+  #                                    ALFRED_REMOTE_CACHE_TTL (--all: every one)
+  #
+  # -T: no terminal, so this works from scripts and CI as well as a shell.
+  docker compose exec -T api python -m alfred.core.utils.storage "$@"
 
 elif [ $1 = "l" -o $1 = "logs" -o $1 = "log" ]; then
   shift

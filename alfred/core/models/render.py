@@ -91,7 +91,7 @@ def render_state(status, progress) -> str:
 
 
 class RenderStatus(BaseModel):
-    """`GET /render/{id}/status` (contract C2)."""
+    """`GET /render/{id}/status` (contracts C2 and M1)."""
 
     id: str
     state: RenderState
@@ -100,9 +100,14 @@ class RenderStatus(BaseModel):
     filename: Optional[str]
     destination: Optional[str]
     error: Optional[str]
+    # A signed URL for the finished file, which a browser or any HTTP client
+    # can fetch without a session until it expires; null until the render has
+    # finished and its file is there. Decided by the route, which knows where
+    # files are and holds the signing key.
+    download_url: Optional[str]
 
     @classmethod
-    def of(cls, render) -> 'RenderStatus':
+    def of(cls, render, download_url=None) -> 'RenderStatus':
         progress = render.progress
         if progress is not None:
             progress = min(max(float(progress), 0.0), 100.0)
@@ -114,6 +119,7 @@ class RenderStatus(BaseModel):
             filename=render.filename,
             destination=render.destination,
             error=render.error,
+            download_url=download_url,
         )
 
 

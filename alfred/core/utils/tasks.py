@@ -2,6 +2,7 @@ from os import makedirs
 from os.path import join
 
 from celery import Celery, Task
+from celery.signals import celeryd_init
 from otto.models import Edl
 from otto.render import renderMultitrack
 
@@ -12,6 +13,7 @@ from .bucket import upload
 from .encoding import preset_for
 from .logger import DbLogger, failure_reason, mark_failed
 from .media import MediaNameError, check_media_name, resolve_edl
+from .storage import sweep_remote_cache_now_and_then
 
 renderer = Celery(
     'renderer',
@@ -29,6 +31,49 @@ renderer = Celery(
 )
 
 renderer.config_from_object(config.CeleryConfig)
+
+
+def worker_count(timeout=1.0) -> int:
+    """How many render workers answer a ping within `timeout` seconds.
+
+    Blocking, for up to `timeout` past the last reply: Celery collects
+    replies until none has arrived for that long. Call it off the event loop.
+    """
+    return len(renderer.control.ping(timeout=timeout) or [])
+
+
+def pending_count():
+    """How many render jobs are waiting in the queue, as the broker counts."""
+    with renderer.connection_for_read() as connection:
+        declared = connection.default_channel.queue_declare(
+            queue=renderer.conf.task_default_queue, passive=True
+        )
+    return declared.message_count
+
+
+@celeryd_init.connect
+def open_the_broadcast_channel(**kwargs):
+    """Make sure this worker will hear pings, and every other broadcast.
+
+    With MongoDB as the broker, a worker hears broadcasts -- the ping `GET
+    /health` counts workers with, and every other remote-control command --
+    through a tailable cursor on a capped collection. MongoDB kills a
+    tailable cursor at once if nothing in the collection matches when it is
+    opened, and kombu does not reopen it. On a fresh database there is
+    nothing to match, so the first worker ever started heard no broadcast
+    for as long as it ran: it rendered perfectly well, and answered no ping,
+    so a health check reported no renderer at all. Restarting it fixed it,
+    because by then something had been broadcast.
+
+    So before this worker starts consuming, broadcast something harmless: a
+    ping nobody waits for. That leaves a message in the collection for the
+    worker's cursor to start after. Failing here must not stop the worker;
+    it would only be deaf to broadcasts, as it always was.
+    """
+    try:
+        renderer.control.broadcast('ping', reply=False)
+    except Exception as exc:  # noqa: BLE001 - the worker must start regardless
+        print('could not open the broadcast channel; pings may go unheard', exc)
 
 
 class Renderer(Task):
@@ -119,6 +164,13 @@ def renderRemote(
     # The render is finished and the file exists. Say so before attempting to
     # put it anywhere, because those are separate outcomes.
     log.rendered()
+
+    # The worker is what fetches most remote media, so it keeps that cache
+    # within its TTL -- at most hourly, and never at the render's expense.
+    try:
+        sweep_remote_cache_now_and_then()
+    except Exception as e:  # noqa: BLE001 - housekeeping must not fail a render
+        print('could not sweep the remote media cache', e)
 
     # Uploading is now one destination among several, reachable explicitly via
     # POST /render/{id}/deliver. Attempt it here for the deployments that

@@ -91,7 +91,12 @@ class TestLocalDelivery:
 
 
 class TestWhereLocalDeliveriesGo:
-    """Not under DATA_DIR, which the unauthenticated /data mount serves."""
+    """Nowhere the app serves statically.
+
+    Deliveries went to DATA_DIR, which an unauthenticated mount served at
+    /data. That mount is gone; the one directory still served to anyone is
+    STATIC_DIR, the SPA's.
+    """
 
     def test_the_default_is_the_delivery_directory(self, monkeypatch, tmp_path):
         from pathlib import Path
@@ -106,22 +111,22 @@ class TestWhereLocalDeliveriesGo:
 
         from alfred import config
 
-        data = Path(config.DATA_DIR).resolve()
+        public = Path(config.STATIC_DIR).resolve()
         delivery = Path(config.DELIVERY_DIR).resolve()
-        assert delivery != data and data not in delivery.parents
+        assert delivery != public and public not in delivery.parents
 
-    def test_a_directory_inside_data_dir_is_refused(
+    def test_a_directory_inside_the_static_directory_is_refused(
         self, a_render, tmp_path, monkeypatch
     ):
         """Refused rather than published: no setting should make a delivery
         public by accident."""
         from alfred import config
 
-        monkeypatch.setattr(config, 'DATA_DIR', str(tmp_path / 'data'))
-        destination = LocalDestination(root=tmp_path / 'data' / 'renders')
-        with pytest.raises(DeliveryError, match='DATA_DIR'):
+        monkeypatch.setattr(config, 'STATIC_DIR', str(tmp_path / 'dist'))
+        destination = LocalDestination(root=tmp_path / 'dist' / 'renders')
+        with pytest.raises(DeliveryError, match='STATIC_DIR'):
             destination.deliver(str(a_render))
-        assert not (tmp_path / 'data' / 'renders').exists()
+        assert not (tmp_path / 'dist' / 'renders').exists()
 
 
 class TestTheSeam:
