@@ -136,6 +136,7 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Routing, history, menu, unique ids | `navigation.spec.js` | UI |
 | Views render, no uncaught page errors, reload | `views.spec.js` | UI |
 | Layout at every width | `appearance.spec.js` | UI |
+| Icons drawn by a self-hosted font; nothing loaded from a CDN | `assets.spec.js` | UI |
 | Recipe walkthroughs (the cookbook) | `recipes.spec.js` | UI, `@recipe` |
 | Page-load budget | `performance.spec.js` | UI, `@perf` |
 

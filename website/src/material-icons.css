@@ -1,9 +1,21 @@
-/* fallback */
+/*
+ * The icon font, served by this app rather than by Google's font CDN.
+ *
+ * The face was fetched from Google on every page view, which told a third
+ * party who was using the editor -- and AGENTS.md rules out frontend assets
+ * loaded from a CDN. It comes from the material-design-icons-iconfont package
+ * now (Apache-2.0, the licence the icons themselves are published under), and
+ * parcel copies the font into dist/ beside the bundle. `npm:` is parcel's
+ * scheme for a file inside a package; a bare path would resolve relative to
+ * this file.
+ */
 @font-face {
   font-family: 'Material Icons';
   font-style: normal;
   font-weight: 400;
-  src: url(https://fonts.gstatic.com/s/materialicons/v48/flUhRq6tzZclQEJ-Vdg-IuiaDsNc.woff2) format('woff2');
+  src:
+    url('npm:material-design-icons-iconfont/dist/fonts/MaterialIcons-Regular.woff2') format('woff2'),
+    url('npm:material-design-icons-iconfont/dist/fonts/MaterialIcons-Regular.woff') format('woff');
 }
 
 .material-icons {
