@@ -1,5 +1,5 @@
 import m from 'mithril'
-import jwt_decode from 'jwt-decode'
+import { jwtDecode } from 'jwt-decode'
 import { message } from 'alertifyjs'
 import { auth } from './Login'
 
@@ -54,7 +54,7 @@ export function isPublicRoute(route) {
 
 export function expiryOf(token, receivedAt = Date.now()) {
   if (typeof token.expires_at == 'number') return token.expires_at
-  const { exp, iat } = jwt_decode(token.access_token)
+  const { exp, iat } = jwtDecode(token.access_token)
   if (!exp) return null
   return iat ? receivedAt + (exp - iat) * 1000 : exp * 1000
 }

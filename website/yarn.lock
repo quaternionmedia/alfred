@@ -925,9 +925,9 @@
   dependencies:
     "@swc/counter" "^0.1.3"
 
-alertifyjs@^1.13.1:
+alertifyjs@^1.14.0:
   version "1.14.0"
-  resolved "https://registry.npmjs.org/alertifyjs/-/alertifyjs-1.14.0.tgz"
+  resolved "https://registry.yarnpkg.com/alertifyjs/-/alertifyjs-1.14.0.tgz#b6690580007d6cca2407d5a61e68aadc820e13e3"
   integrity sha512-jUxJTcNYhJ2P1Wal73nmyTwMkaPim4PjZP9CAG+S8SK2SinraXxvOxnPrEY81/wc2iBPDFBP7mdg61db4WsuHQ==
 
 ansi-styles@^4.1.0:
@@ -1061,9 +1061,9 @@ immutable@^5.1.5:
   resolved "https://registry.yarnpkg.com/immutable/-/immutable-5.1.9.tgz#ac23c3a01992ab665e14ac9ffff298f28cd74a0c"
   integrity sha512-m8nVez3rwrgmWxtLMt1ZYXB2Lv7OKYn/disyxAlSDYAlKSlFoPPfIAmAM/M5xqL4m4C/wAPw7S2/CNaUii1Hxg==
 
-interactjs@^1.10.3:
+interactjs@^1.10.28:
   version "1.10.28"
-  resolved "https://registry.npmjs.org/interactjs/-/interactjs-1.10.28.tgz"
+  resolved "https://registry.yarnpkg.com/interactjs/-/interactjs-1.10.28.tgz#17f91e61214e4947d16953ba7987f9495b0874d2"
   integrity sha512-QCa4ksTPd2p/FZ4I6hrH6fogjLqru1TxYywRiKYNuLZtrlAxTIYUa/MYsE7PnUgWZJU3SrGVDjiz065BeaXYng==
   dependencies:
     "@interactjs/types" "1.10.28"
@@ -1080,9 +1080,9 @@ is-glob@^4.0.3:
   dependencies:
     is-extglob "^2.1.1"
 
-json-logic-engine@^1.2.0:
+json-logic-engine@^1.3.9:
   version "1.3.9"
-  resolved "https://registry.npmjs.org/json-logic-engine/-/json-logic-engine-1.3.9.tgz"
+  resolved "https://registry.yarnpkg.com/json-logic-engine/-/json-logic-engine-1.3.9.tgz#d26bf8af6b029e8a13c041ef70ac8f74224c1aa5"
   integrity sha512-cS/OgwggY1tLjEh52BBP8Fiw8yFi2xzi4H91nezhZyigLSKiUeOIr9BB/5T7fW70Mds1R4778CXGFfrpl86kug==
 
 json5@^2.2.1, json5@^2.2.3:
@@ -1090,10 +1090,10 @@ json5@^2.2.1, json5@^2.2.3:
   resolved "https://registry.npmjs.org/json5/-/json5-2.2.3.tgz"
   integrity sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==
 
-jwt-decode@^3.1.2:
-  version "3.1.2"
-  resolved "https://registry.npmjs.org/jwt-decode/-/jwt-decode-3.1.2.tgz"
-  integrity sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==
+jwt-decode@^4.0.0:
+  version "4.0.0"
+  resolved "https://registry.yarnpkg.com/jwt-decode/-/jwt-decode-4.0.0.tgz#2270352425fd413785b2faf11f6e755c5151bd4b"
+  integrity sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==
 
 lightningcss-android-arm64@1.33.0:
   version "1.33.0"
@@ -1202,9 +1202,9 @@ mithril-range@^1.0.0:
   resolved "https://registry.npmjs.org/mithril-range/-/mithril-range-1.0.0.tgz"
   integrity sha512-T8mCwT1+chaQL9I2yOIhv9c6lJv526XJz6KZkMwO2lrFfJvjYvTZM0Q6wO9xdPIAHLvi/qH+w8ZNJ3lcTEegyQ==
 
-mithril@^2.2.2:
+mithril@^2.3.8:
   version "2.3.8"
-  resolved "https://registry.npmjs.org/mithril/-/mithril-2.3.8.tgz"
+  resolved "https://registry.yarnpkg.com/mithril/-/mithril-2.3.8.tgz#e6c74f0ffe909adc5682a05a220f6f80ceb88ff0"
   integrity sha512-za/Yo7qXEckjm5syrSfaaI9Utf4tCUT3T1IOIYqH6Lrj7G0OZuYYLAY9SV4ygoaAf0+CNqU92MBt+7pmo53JVQ==
 
 msgpackr-extract@^3.0.2:
@@ -1351,9 +1351,9 @@ semver@^7.7.1:
   resolved "https://registry.npmjs.org/semver/-/semver-7.8.5.tgz"
   integrity sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==
 
-sortablejs@^1.13.0:
+sortablejs@^1.15.7:
   version "1.15.7"
-  resolved "https://registry.npmjs.org/sortablejs/-/sortablejs-1.15.7.tgz"
+  resolved "https://registry.yarnpkg.com/sortablejs/-/sortablejs-1.15.7.tgz#83a0bddc472117ee328dea20b2e6f490fed20f86"
   integrity sha512-Kk8wLQPlS+yi1ZEf48a4+fzHa4yxjC30M/Sr2AnQu+f/MPwvvX9XjZ6OWejiz8crBsLwSq8GHqaxaET7u6ux0A==
 
 "source-map-js@>=0.6.2 <2.0.0":
