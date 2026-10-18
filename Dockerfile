@@ -10,7 +10,7 @@ RUN mkdir -p data
 COPY pyproject.toml README.md requirements.lock ./
 COPY alfred alfred
 
-# Pinned dependencies first, from the lockfile.
+# Exactly the lockfile: its pins, and nothing resolved around them.
 #
 # This was `pip install -e .`, which re-resolves the loose ranges in
 # pyproject.toml on every build -- so the image ran beanie 1.30, fastapi 0.125
@@ -18,15 +18,24 @@ COPY alfred alfred
 # not testing the versions the application used, and two builds a month apart
 # were not the same application.
 #
-# Installing the pins before the project means pip already has every version
-# resolved when `pip install -e .` runs, so the ranges cannot pull anything
-# newer. `--no-deps` on the project install would be stricter still, but it
-# would also silently skip a dependency added to pyproject.toml and not yet
-# locked; letting pip check is the better failure.
-RUN pip3 install --no-cache-dir -r requirements.lock
+# --no-deps, on the lockfile and on the project, because pip cannot reproduce
+# what pdm resolved. pyproject.toml overrides fastapi-users' exact pin on
+# python-multipart (0.0.6, with nine advisories); pdm honours an override and
+# pip has none, so resolving either the lockfile or the project fails outright
+# (ResolutionImpossible). `pip check` here reports that one conflict, and it is
+# the intended one. What resolving used to catch -- a dependency added to
+# pyproject.toml and never locked, which --no-deps would leave out --
+# tests/unit/test_stack_config.py checks against requirements.lock instead.
+RUN pip3 install --no-cache-dir --no-deps -r requirements.lock
 
+# The engine's render extras are not in the lockfile, so this install
+# resolves; nothing the engine depends on reaches python-multipart, so it
+# cannot undo the override.
 RUN BEZIER_NO_EXTENSION=true pip3 install -e alfred/otto[render]
-RUN pip3 install -e . uvicorn
+RUN pip3 install --no-deps -e .
+# Not in the lockfile either -- pyproject.toml lists the server as a
+# development dependency -- so it is resolved here, and floats.
+RUN pip3 install uvicorn
 
 # The base now carries ImageMagick 7, so the hardcoded version-6 path no
 # longer exists and this failed the build even once the base was pinned.

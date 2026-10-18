@@ -73,7 +73,7 @@ pydantic==1.10.26
 pyjwt[crypto]==2.6.0
 pymongo==4.19.0
 python-dateutil==2.9.0.post0
-python-multipart==0.0.6
+python-multipart==0.0.32
 reportlab==3.6.13
 requests==2.34.2
 setuptools==80.10.2

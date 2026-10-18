@@ -18,9 +18,13 @@ actually have caught the bug these were written for. It needs Docker.
 
 import re
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
+from packaging.requirements import Requirement
+from packaging.specifiers import SpecifierSet
+from packaging.utils import canonicalize_name
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -76,6 +80,29 @@ def service_block(compose_text, service):
             'If it was renamed, these tests need renaming with it.'
         )
     return '\n'.join(out)
+
+
+# The lockfiles pip installs, both exported from pdm.lock: what the image runs,
+# and the test tools from the same resolution.
+EXPORTS = ['requirements.lock', 'requirements-test.lock']
+
+
+def exported_pins(relative):
+    """name -> version for every `==` pin in an exported requirements file."""
+    pins = {}
+    for line in read(relative).split('\n'):
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        name, _, rest = line.partition('==')
+        if rest:
+            name = canonicalize_name(name.split('[')[0])
+            pins[name] = rest.split(';')[0].strip()
+    return pins
+
+
+def pyproject():
+    return tomllib.loads(read('pyproject.toml'))
 
 
 class TestNodeModulesIsolation:
@@ -224,69 +251,119 @@ class TestDependencyPinning:
         pins = re.search(
             r'^RUN\s+pip3?\s+install[^\n]*requirements\.lock', dockerfile, re.M
         )
-        project = re.search(r'^RUN\s+pip3?\s+install\s+-e\s+\.', dockerfile, re.M)
+        project = re.search(
+            r'^RUN\s+pip3?\s+install\s+(?:--?[\w-]+\s+)*-e\s+\.', dockerfile, re.M
+        )
         assert pins and project
         assert pins.start() < project.start(), (
             'requirements.lock must be installed before `pip install -e .`, '
             'or the loose ranges resolve first and the pins do nothing'
         )
 
-    def test_the_suite_installs_the_lockfile_before_the_project(self):
+    def test_the_suite_installs_the_lockfiles_before_the_project(self):
         """The suite is evidence about the image only if it runs its versions.
 
         The coverage session installed `-e ..[test]` and nothing else, which
         resolves pyproject.toml's ranges on the day: the suite ran numpy 2.4
         and starlette 0.50 while the image ran the lockfile's 1.24 and 0.44.
-        The same order rule as the Dockerfile's applies -- the pins first, or
-        the ranges resolve and the pins change nothing.
+        It installs both exports now, with --no-deps (see TestExactInstall),
+        and no later than the project.
         """
         noxfile = strip_comments(read('tests/noxfile.py'))
         assert 'def coverage(' in noxfile, 'no coverage session in tests/noxfile.py'
         session = noxfile[noxfile.index('def coverage(') :]
-        pins = re.search(r"session\.install\([^)]*'\.\./requirements\.lock'", session)
-        project = re.search(
-            r"session\.install\([^)]*'-e',\s*'\.\.(\[[^]]*\])?'", session
+        calls = re.findall(r'session\.install\(([^)]*)\)', session)
+        project = next(
+            (i for i, call in enumerate(calls) if re.search(r"'-e',\s*'\.\.'", call)),
+            None,
         )
-        assert pins, (
-            "the coverage session must install ../requirements.lock, or the "
-            'suite tests whatever pip resolves instead of what the image runs'
+        assert project is not None, 'no `-e ..` install in the coverage session'
+        assert "'--no-deps'" in calls[project], (
+            'install the project with --no-deps: resolving it refuses the '
+            'override the lock carries'
         )
-        assert project, 'no `-e ..` install of the project in the coverage session'
-        assert pins.start() < project.start(), (
-            'requirements.lock must be installed before the project, or the '
-            'loose ranges resolve first and the pins do nothing'
-        )
+        for export in EXPORTS:
+            lock = next(
+                (i for i, call in enumerate(calls) if f"'../{export}'" in call), None
+            )
+            assert lock is not None and lock <= project, (
+                f'the coverage session must install ../{export} no later than '
+                'the project, or the suite tests what pip resolves instead of '
+                'what the image runs'
+            )
+            assert "'--no-deps'" in calls[lock], f'install ../{export} with --no-deps'
 
-    def test_requirements_lock_agrees_with_pdm_lock(self):
-        """The exported file is a copy, and copies drift.
+    @pytest.mark.parametrize('export', EXPORTS)
+    def test_each_export_agrees_with_pdm_lock(self, export):
+        """The exported files are copies, and copies drift.
 
         Rather than shell out to pdm -- which is not in the test image -- this
-        checks that every package pinned in requirements.lock appears at the
-        same version in pdm.lock. Regenerate with the command in the file's
-        own header.
+        checks that every package an export pins is in pdm.lock at the same
+        version. By name: the search this replaces looked for the bare
+        `version = "..."` line, which any package sharing the version
+        satisfied. Regenerate with the command in the file's own header.
         """
-        exported = {}
-        for line in read('requirements.lock').split('\n'):
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            name, _, rest = line.partition('==')
-            if rest:
-                exported[name.strip().lower()] = rest.split(';')[0].strip()
-        assert exported, 'requirements.lock pins nothing'
-
-        pdm_lock = read('pdm.lock')
-        mismatched = []
-        for name, version in exported.items():
-            # pdm.lock records each package as a [[package]] table with name
-            # and version keys; a naive containment check is enough to catch a
-            # stale export without parsing TOML.
-            if f'version = "{version}"' not in pdm_lock:
-                mismatched.append(f'{name}=={version}')
+        exported = exported_pins(export)
+        assert exported, f'{export} pins nothing'
+        locked = {}
+        for package in tomllib.loads(read('pdm.lock'))['package']:
+            name = canonicalize_name(package['name'])
+            locked.setdefault(name, set()).add(package['version'])
+        mismatched = [
+            f'{name}=={version}'
+            for name, version in exported.items()
+            if version not in locked.get(name, set())
+        ]
         assert not mismatched, (
-            f'requirements.lock pins versions absent from pdm.lock: '
-            f'{mismatched[:5]}. Regenerate it -- see the header of the file.'
+            f'{export} pins versions pdm.lock does not: {mismatched[:5]}. '
+            'Regenerate it -- see the header of the file.'
         )
+
+    def test_every_dependency_is_exported_at_a_version_it_accepts(self):
+        """The check a resolving `pip install -e .` used to make, made here.
+
+        The image installs the project with --no-deps, so a dependency added
+        to pyproject.toml and never relocked would not fail the build -- it
+        would just be missing from the image.
+        """
+        exported = exported_pins('requirements.lock')
+        text = read('requirements.lock')
+        problems = []
+        for spec in pyproject()['project']['dependencies']:
+            requirement = Requirement(spec)
+            name = canonicalize_name(requirement.name)
+            if name == 'al-otto':
+                continue  # the vendored submodule, installed editable
+            if requirement.url:
+                if not re.search(rf'^{re.escape(requirement.name)} @ ', text, re.M):
+                    problems.append(f'{requirement.name} is not exported')
+            elif name not in exported:
+                problems.append(f'{requirement.name} is not exported')
+            elif not requirement.specifier.contains(exported[name], prereleases=True):
+                problems.append(
+                    f'{requirement.name}=={exported[name]} is outside '
+                    f'{requirement.specifier}'
+                )
+        assert not problems, (
+            f'requirements.lock does not satisfy pyproject.toml: {problems}. '
+            'Relock and regenerate it.'
+        )
+
+    def test_the_overrides_hold_in_the_export(self):
+        """An override the lock does not honour protects nothing.
+
+        When python-multipart's override was added, `pdm lock --update-reuse`
+        kept it at 0.0.6 and recorded the lock as current; `pdm update
+        python-multipart` was what moved it.
+        """
+        overrides = pyproject()['tool']['pdm']['resolution']['overrides']
+        exported = exported_pins('requirements.lock')
+        for name, spec in overrides.items():
+            version = exported.get(canonicalize_name(name))
+            assert version and SpecifierSet(spec).contains(version), (
+                f'{name} is exported at {version}, outside its override {spec}. '
+                f'Relock with `pdm update {name}` and regenerate the export.'
+            )
 
     def test_the_installed_otto_is_the_vendored_one(self):
         """Tests must import the same engine the application runs.
@@ -324,6 +401,48 @@ class TestDependencyPinning:
                 'al-otto is pinned in requirements.lock; it would shadow the '
                 'vendored submodule the image installs editable'
             )
+
+
+class TestExactInstall:
+    """Every install path installs pdm's resolution exactly.
+
+    pyproject.toml overrides fastapi-users' exact pin on python-multipart. pdm
+    honours an override; pip has no such thing, so a resolving install of the
+    lockfile or of the project fails with ResolutionImpossible. The image, the
+    suite and CI all install with --no-deps instead, and TestDependencyPinning
+    makes the check the resolver used to.
+    """
+
+    def test_the_image_installs_the_lock_and_the_project_with_no_deps(self):
+        dockerfile = strip_comments(read('Dockerfile'))
+        lock = re.search(
+            r'^RUN\s+pip3?\s+install\b.*requirements\.lock.*$', dockerfile, re.M
+        )
+        project = re.search(
+            r'^RUN\s+pip3?\s+install\b.*\s-e\s+\.\s*$', dockerfile, re.M
+        )
+        assert lock and '--no-deps' in lock.group(0).split(), (
+            'install requirements.lock with --no-deps: resolving it refuses the '
+            'override'
+        )
+        assert (
+            project and '--no-deps' in project.group(0).split()
+        ), 'install the project with --no-deps: resolving it refuses the override'
+
+    @pytest.mark.parametrize('workflow', ['CI.yml', 'publish.yml'])
+    def test_ci_installs_both_exports_with_no_deps(self, workflow):
+        """CI runs the suite as the image and nox do, or it tests other versions."""
+        text = strip_comments(read(f'.github/workflows/{workflow}'))
+        args = re.findall(r"^\s*pip_args:\s*'([^']*)'", text, re.M)
+        assert args, f'{workflow} passes no pip_args'
+        for line in args:
+            assert '--no-deps' in line.split(), f'{workflow}: pip_args lack --no-deps'
+            for export in EXPORTS:
+                assert f'-r {export}' in line, f'{workflow}: does not install {export}'
+        # The org workflow's `requirements` input installs with the resolver.
+        assert not re.search(
+            r'^\s*requirements:', text, re.M
+        ), f'{workflow} hands a lockfile to the resolving install step'
 
 
 class TestImagePinning:

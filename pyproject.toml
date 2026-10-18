@@ -8,6 +8,10 @@ dependencies = [
     "fastapi<1.0.0,>=0.92.0",
     "aiofiles<24.0.0,>=23.1.0",
     "fastapi-users<11.0.0,>=10.4.0",
+    # Declared although nothing here imports it: it parses every form the api
+    # accepts, the login form anyone can post included, so this project
+    # depends on its fixes. fastapi-users pins it exactly; see the override.
+    "python-multipart>=0.0.31",
     "motor<4.0.0,>=3.1.1",
     "beanie<2.0.0,>=1.17.0",
     "passlib<2.0.0,>=1.7.4",
@@ -84,6 +88,18 @@ test = [
 render = [
     "al-otto[render]>=0.2.2",
 ]
+
+# An override replaces every requirement on a package, its dependents'
+# included. pdm honours it; pip has no such thing, so the image, nox and CI
+# install the exported lockfiles with --no-deps (the Dockerfile says more).
+[tool.pdm.resolution.overrides]
+# fastapi-users 10.4 pins python-multipart==0.0.6, which has nine advisories
+# against it (CVE-2024-24762 and CVE-2024-53981 among them). Every
+# fastapi-users before 15.0.4 pins an exact version with some still open --
+# 14.x pins 0.0.20, with seven -- and 15 needs pydantic 2, which the engine
+# cannot take yet. 0.0.31 is the first release with none open. fastapi-users
+# never imports it; FastAPI and Starlette do, and both take this release.
+python-multipart = ">=0.0.31"
 
 [tool.pdm]
 version = { source = "file", path = "alfred/_version.py" }
