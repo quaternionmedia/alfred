@@ -26,17 +26,22 @@ $rule: 1px solid #2e2e2e;
   gap: $gutter;
   padding-top: $gutter;
 
-  // The frame's room, which takes what the row leaves the settings.
+  // The frame's room, which takes what the row leaves the settings. The
+  // frame is the largest rectangle of the output's shape that fits in it
+  // (Head.js), centred, so the room decides the size and never the shape.
   .viewerframe {
     display: flex;
+    align-items: center;
+    justify-content: center;
     flex: 1 1 24rem;
     min-width: 0;
   }
 
   #head,
   .head {
-    flex: 1 1 24rem;
-    min-width: 0;
+    flex: 0 0 auto;
+    box-sizing: border-box;
+    margin: 0;
   }
 
   // Output settings sit beside the picture rather than above it: they describe
@@ -54,22 +59,36 @@ $rule: 1px solid #2e2e2e;
 
 .transport {
   display: flex;
+  // A row, said so: every `section` is a column (style.css), and this rule
+  // never said otherwise, so the time, the scrubber and the buttons stood
+  // three rows tall -- a third of a phone's height between the viewer and
+  // the timeline.
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
-  gap: $gutter;
+  gap: 0.35rem $gutter;
   padding-top: 0.4rem;
   padding-bottom: 0.4rem;
   border-bottom: $rule;
   // Never squeezed. The page is a fixed-height column whose regions shrink
-  // to fit and scroll inside themselves, and this one is a single row with
-  // the play button in it: shrunk, it scrolled its own controls out of view.
+  // to fit and scroll inside themselves, and this one holds the play button:
+  // shrunk, it scrolled its own controls out of view.
   flex-shrink: 0;
 
-  // The slider takes the room left over, so the playhead is the widest control
-  // on the row -- it is the one being dragged.
+  // The scrubber across the whole region, the time and the buttons under it:
+  // the playhead is the widest control -- it is the one being dragged -- and
+  // beside the buttons it was left a few dozen pixels in a narrow panel.
   #slider,
   .slider {
-    flex: 1 1 auto;
+    order: -1;
+    flex: 1 0 100%;
     min-width: 0;
+    margin: 0.9rem 1em 0.3rem;
+  }
+
+  .timecode {
+    margin: 0;
+    min-width: 4.5rem;
   }
 
   .transportcontrols {
@@ -77,6 +96,7 @@ $rule: 1px solid #2e2e2e;
     align-items: center;
     gap: $gutter;
     flex: 0 0 auto;
+    margin-left: auto;
   }
 }
 
@@ -213,6 +233,17 @@ $rule: 1px solid #2e2e2e;
 }
 
 // ---- the timeline, under each tool ---------------------------------------
+
+// One row of clips, however narrow the timeline: a timeline whose clips wrap
+// onto a second line is no longer a timeline. style.css asks for
+// `display: -webkit-inline-box`, which no longer lays its children out in a
+// row in Chromium, so the clips flowed like words and wrapped as soon as the
+// timeline was narrower than they were long -- unseen while the timeline was
+// as wide as the page, and at once in a workspace panel. Kept on one line,
+// they are centred while they fit and scroll sideways when they do not.
+#timeline {
+  white-space: nowrap;
+}
 
 // What a touch on a clip means depends on the tool. Selecting (and cutting)
 // is a tap, so a swipe is left to the browser to scroll the timeline -- a
@@ -478,7 +509,13 @@ $rule: 1px solid #2e2e2e;
     position: static;
   }
 
+  // A row of tools, as this always meant: `.toolcol` is a grid (style.css),
+  // which `flex-direction` does nothing to, and under 700px that grid is one
+  // column -- seven buttons standing above the timeline, pushing it out of
+  // its region on a phone.
   .tools.toolcol {
+    display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
   }
 }
