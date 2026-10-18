@@ -39,6 +39,19 @@ const ACTIVITY = ['pointerdown', 'keydown', 'wheel', 'touchstart', 'mousemove']
  * index.js) does not restart the countdown from zero. A token from a server
  * that does not send `iat` falls back to trusting the two clocks agree.
  */
+/** Routes anybody may open: logging in and out, and the account pages.
+ *
+ * `/account/` is where a mailed reset or confirmation link lands, opened by
+ * somebody who is by definition not logged in. The session guard used to
+ * send every route but these two to the login screen, the reset page with
+ * them -- and its token with it, out of the address bar.
+ */
+const PUBLIC_ROUTES = ['/login', '/logout', '/account/']
+
+export function isPublicRoute(route) {
+  return PUBLIC_ROUTES.some(prefix => (route || '').startsWith(prefix))
+}
+
 export function expiryOf(token, receivedAt = Date.now()) {
   if (typeof token.expires_at == 'number') return token.expires_at
   const { exp, iat } = jwt_decode(token.access_token)
@@ -253,7 +266,7 @@ export var User = {
     User.loggedIn = false
     if (!hadSession) return
     const route = m.route.get() || ''
-    if (route.startsWith('/login') || route.startsWith('/logout')) {
+    if (isPublicRoute(route)) {
       m.redraw()
       return
     }
@@ -378,7 +391,7 @@ export var User = {
     if (!User.booted) return
     if (User.loggedIn) return
     const route = m.route.get() || ''
-    if (route.startsWith('/login') || route.startsWith('/logout')) return
+    if (isPublicRoute(route)) return
     User.toLogin(route)
   },
 

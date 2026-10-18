@@ -2,8 +2,8 @@ from time import time
 from typing import Optional
 
 from beanie import PydanticObjectId
-from fastapi import Depends, Request
-from fastapi_users import BaseUserManager, FastAPIUsers
+from fastapi import Depends, HTTPException, Request
+from fastapi_users import BaseUserManager, FastAPIUsers, exceptions
 from fastapi_users.authentication import (
     AuthenticationBackend,
     BearerTransport,
@@ -15,33 +15,70 @@ from fastapi_users.jwt import generate_jwt
 from alfred import config
 from alfred.config import DEV_SKIP_AUTH, DEV_USER_EMAIL, SECRET_KEY
 
+from ..models import UserRead
+from ..utils import account_mail
 from ..utils.db import User, get_user_db
+from ..utils.ownership import changes_owner_key
+
+EMAIL_IS_THE_OWNER_KEY = (
+    "An account's email address cannot be changed: its projects and renders "
+    'are recorded against it, and changing it would leave them behind.'
+)
+
+DEV_ADDRESS_IS_RESERVED = (
+    "That address belongs to this server's development login and cannot be "
+    'registered. Use another address.'
+)
+
+DEV_ACCOUNT_HAS_NO_PASSWORD = (
+    'The development login has no password, and cannot be given one.'
+)
 
 
-def announce_token(purpose, user, token):
+def is_dev_address(email):
+    """Whether `email` is the auth bypass account's address, in any case.
+
+    In any case, because fastapi-users finds accounts by address
+    case-insensitively: `DEV@example.com` is the same login as
+    `dev@example.com`. Read through the module, so the tests can rename it.
+    """
+    return bool(email) and email.casefold() == config.DEV_USER_EMAIL.casefold()
+
+
+NOT_MAILED = (
+    'no mail was sent: that needs EMAIL_SERVER, EMAIL_USERNAME and ' 'ALFRED_PUBLIC_URL'
+)
+
+
+def announce_token(purpose, user, token, mailed=False):
     """Note that a single-use token was issued -- and, outside production, show it.
 
     Both of these printed the token itself, every time. A password-reset
     token is a credential: whoever holds it can set the account's password,
     so a production log that recorded them made reading the logs equivalent
     to taking over any account that asked for a reset. Under
-    ALFRED_PRODUCTION the event is logged and the token is not.
+    ALFRED_PRODUCTION the event is logged, with whether the link was mailed
+    and why not, and the token is not.
 
-    In development the token stays in the log on purpose. Nothing here sends
-    email, so the log is the only way to finish a reset or a verification on
-    a development stack, and that is exactly where somebody needs to.
+    In development the token stays in the log on purpose: a development stack
+    rarely has mail configured, and then the log is the only way to finish a
+    reset or a verification.
 
     Read through the module at call time, so the tests can switch modes
     without re-importing.
     """
+    delivery = 'a link was mailed to the account' if mailed else NOT_MAILED
     if config.PRODUCTION:
         print(
-            f'{purpose} requested for user {user.id}. The token is not logged '
-            'in production.',
+            f'{purpose} requested for user {user.id}; {delivery}. The token is '
+            'not logged in production.',
             flush=True,
         )
     else:
-        print(f'{purpose} requested for user {user.id}. Token: {token}', flush=True)
+        print(
+            f'{purpose} requested for user {user.id}; {delivery}. Token: {token}',
+            flush=True,
+        )
 
 
 class UserManager(
@@ -51,18 +88,120 @@ class UserManager(
     reset_password_token_secret = SECRET_KEY
     verification_token_secret = SECRET_KEY
 
+    async def update(self, user_update, user, safe=False, request=None):
+        """Change an account -- but never its owner key (contract M5).
+
+        Projects and renders record their owner by email, so an email change
+        was an ownership change nobody asked for: the account kept its id and
+        lost every project and render recorded against the old address, which
+        went on matching nobody. Refused with 422, for superusers editing
+        anyone too, until the key is the user id (docs/ownership.md).
+
+        Here rather than on a route because both `PATCH /users/me` and
+        `PATCH /users/{id}` arrive through this method, and neither route is
+        ours to edit. Sending the address the account already has is not a
+        change, and passes.
+        """
+        if changes_owner_key(user, user_update.create_update_dict_superuser()):
+            raise HTTPException(status_code=422, detail=EMAIL_IS_THE_OWNER_KEY)
+        return await super().update(user_update, user, safe=safe, request=request)
+
+    async def create(self, user_create, safe=False, request=None):
+        """Create an account -- but never at the dev account's address.
+
+        The auth bypass acts as ALFRED_DEV_USER_EMAIL, and owns what
+        development creates for it: the seeded projects and its demo. That
+        account is made by the bypass on first use, so on a stack where the
+        bypass had never run, the address was free -- and with registration
+        open, whoever registered it owned the dev seeds, and became the
+        account the bypass would act as. Refused with 400 and a reason, like
+        fastapi-users' own refusals here, before anything is looked up.
+        """
+        if is_dev_address(user_create.email):
+            raise HTTPException(status_code=400, detail=DEV_ADDRESS_IS_RESERVED)
+        return await super().create(user_create, safe=safe, request=request)
+
+    async def validate_password(self, password, user):
+        """No password is ever set on the dev account.
+
+        It stores `!dev-no-login` where a hash belongs, so no password matches
+        it and the account cannot be logged into once the bypass is off --
+        and it is a superuser. Every route that sets a password comes through
+        here -- a reset, a superuser's `PATCH /users/{id}` -- so this is where
+        that property is kept.
+        """
+        if is_dev_address(getattr(user, 'email', None)):
+            raise exceptions.InvalidPasswordException(
+                reason=DEV_ACCOUNT_HAS_NO_PASSWORD
+            )
+        return await super().validate_password(password, user)
+
+    async def authenticate(self, credentials):
+        """A login -- refused for the dev account like a wrong password.
+
+        It was refused, but as a 500: fastapi-users hands the stored value to
+        passlib to verify, and `!dev-no-login` is not a hash passlib can
+        identify, so every attempt raised. A 400 is the answer any wrong
+        password gets. The hash runs anyway, so the refusal takes as long.
+        """
+        if is_dev_address(credentials.username):
+            self.password_helper.hash(credentials.password)
+            return None
+        return await super().authenticate(credentials)
+
+    async def forgot_password(self, user, request=None):
+        """Issue a reset token -- except to the dev account, which has no use for one.
+
+        It could not be used (see `validate_password`), and there is nobody at
+        the address to read it. The route answers 202 either way, as it does
+        for an address with no account, so this says nothing to the caller.
+        """
+        if is_dev_address(user.email):
+            return
+        return await super().forgot_password(user, request)
+
+    async def verify(self, token, request=None):
+        """Confirm an address -- and answer with the account as the API shows it.
+
+        fastapi-users' `POST /auth/verify` returns what this returns, under
+        `response_model=UserRead`. Given the beanie document, FastAPI dumps it
+        by alias, its id comes out as `_id`, and `UserRead` has no `id`: every
+        confirmation that succeeded answered 500, after confirming. Nothing
+        called it until the confirmation link was mailed.
+        """
+        return UserRead.from_orm(await super().verify(token, request))
+
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")
 
     async def on_after_forgot_password(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        announce_token('Password reset', user, token)
+        """Mail the reset link, when mail is configured; and say so in the log.
+
+        Nothing delivered these tokens, so outside development -- where the
+        log is not somewhere the person asking can read -- a reset could be
+        asked for and never finished. See `utils.account_mail`.
+        """
+        mailed = account_mail.deliver(
+            account_mail.RESET,
+            user.email,
+            token,
+            self.reset_password_token_lifetime_seconds,
+        )
+        announce_token('Password reset', user, token, mailed)
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        announce_token('Verification', user, token)
+        """Mail the confirmation link, as a reset link is mailed."""
+        mailed = account_mail.deliver(
+            account_mail.VERIFY,
+            user.email,
+            token,
+            self.verification_token_lifetime_seconds,
+        )
+        announce_token('Verification', user, token, mailed)
 
 
 async def get_user_manager(user_db: BeanieUserDatabase = Depends(get_user_db)):

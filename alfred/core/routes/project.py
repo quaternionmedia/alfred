@@ -12,23 +12,13 @@ from alfred.config import DB_NAME, DB_URL
 from ..models import Project, ProjectUpdate, RenderSettings
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
 from ..utils.db import User, get_client
+from ..utils.ownership import owner_filter, owner_key
 from .users import current_active_user
 
-
-def visible_to(user):
-    """The query that restricts projects to the ones `user` may touch.
-
-    Superusers see everything, including projects stored before ownership
-    existed. Everybody else sees the projects they own, and a project without
-    an owner matches no email, so it is superuser-only by construction rather
-    than by a separate rule someone could forget.
-
-    One function for listing and for every single-project route, so "can I
-    see it in the list" and "can I open it" cannot disagree.
-    """
-    if user.is_superuser:
-        return {}
-    return {'owner': user.email}
+# Where a project keeps its owner key. Every query below scopes itself with
+# `owner_filter(user, OWNER)`, the same rule the renders use, so "can I see it
+# in the list" and "can I open it" cannot disagree -- here or across the two.
+OWNER = 'owner'
 
 
 class ProjectSettings(BaseModel):
@@ -103,14 +93,17 @@ class ProjectAPI(MotorCRUDRouter):
             arrives with `logic` unset, and `logic` is required, so saving one
             preference meant sending the entire project back and racing anyone
             else editing it. This writes only the fields it is given.
+
+            Only those, at the database too. It loaded the project, changed
+            the fields and saved the whole document back, so a timeline saved
+            in between was overwritten with the one this request had loaded.
             """
             project = await self._owned(item_id, user)
 
             patch = settings.dict(exclude_none=True)
-            for field, value in patch.items():
-                setattr(project, field, value)
-            await project.save()
-            return project
+            if patch:
+                await project.set(patch)
+            return await self._as_stored(project)
 
         @self.put('/{item_id}/timeline', *args, **kwargs)
         async def saveProjectTimeline(
@@ -131,12 +124,28 @@ class ProjectAPI(MotorCRUDRouter):
             hypothetical; it happened, and every subsequent GET answered 500.
 
             So this writes one field, for the same reason `/settings` does.
+
+            Each clip is validated against otto's `Clip` and stored as sent
+            (contract M4): the fields the editor set and no others, so a
+            saved timeline renders exactly as the editor renders it. It used
+            to come back with otto's defaults written in -- `fadeIn: 1` and
+            `fadeOut: 1` on every clip -- which rendered as fades nobody
+            chose. The answer is the project as stored.
             """
             project = await self._owned(item_id, user)
 
-            project.edl = edl
-            await project.save()
-            return project
+            await project.set({'edl': edl})
+            return await self._as_stored(project)
+
+    async def _as_stored(self, project):
+        """`project` read back after a write: what the next GET will answer.
+
+        Not the object just written. beanie merges the stored document into
+        it field by field after an update, which marks the EDL's `duration`
+        as sent even where it was not, and the answer would say `null` for
+        something the project does not hold.
+        """
+        return await self.schema.get(project.id)
 
     async def _owned(self, item_id, user):
         """The project `item_id`, if `user` may touch it; otherwise 404.
@@ -150,7 +159,7 @@ class ProjectAPI(MotorCRUDRouter):
             # traceback with every request (see `bucket.fresh`).
             raise fresh(INVALID_ID)
         project = await self.schema.find_one(
-            {'_id': ObjectId(item_id), **visible_to(user)}
+            {'_id': ObjectId(item_id), **owner_filter(user, OWNER)}
         )
         if project is None:
             raise fresh(NOT_FOUND)
@@ -167,7 +176,7 @@ class ProjectAPI(MotorCRUDRouter):
             user: User = Depends(current_active_user),
         ):
             skip, limit = pagination.get('skip'), pagination.get('limit')
-            query = self.schema.find(visible_to(user)).skip(skip or 0)
+            query = self.schema.find(owner_filter(user, OWNER)).skip(skip or 0)
             return await query.to_list(limit or 100)
 
         return route
@@ -183,11 +192,14 @@ class ProjectAPI(MotorCRUDRouter):
             model: self.create_schema,  # type: ignore
             user: User = Depends(current_active_user),
         ):
-            # Both assigned by the server. A client-chosen id could collide
+            # All assigned by the server. A client-chosen id could collide
             # with a project the caller cannot see, and the duplicate-key
-            # error would confirm that it exists.
+            # error would confirm that it exists. Only the demo generator marks
+            # a project as the account's demo; a second mark would collide
+            # with the real one on its unique index.
             model.id = None
-            model.owner = user.email
+            model.owner = owner_key(user)
+            model.demo = None
             return await model.create()
 
         return route
@@ -202,10 +214,14 @@ class ProjectAPI(MotorCRUDRouter):
             # This route writes every field of the body, present or not. Left
             # as sent, `owner` would be whatever the caller claimed -- or null,
             # for any body that simply omitted it, which would orphan the
-            # project out of its own owner's reach.
+            # project out of its own owner's reach. `demo` likewise: a body
+            # could otherwise mark any project as the account's demo, or unmark
+            # the real one.
             model.owner = project.owner
+            model.demo = project.demo
             del model.id
-            return await project.update(Set(model))
+            await project.update(Set(model))
+            return await self._as_stored(project)
 
         return route
 
