@@ -255,11 +255,71 @@ def test_the_timeline_is_mixed_to_16khz_mono_where_it_sounds(library, tmp_path):
 
 
 @pytest.mark.needs_ffmpeg
+def test_the_mix_lasts_until_the_timeline_ends_where_a_template_ends_it(
+    library, tmp_path
+):
+    """Captions are clamped to the timeline's end and timed from its start,
+    so the WAV must run that long even when what ends it makes no sound."""
+    from alfred.core.utils.media import resolve_edl
+
+    out = tmp_path / 'mix.wav'
+    timeline = {'clips': [background(8.0), TIMELINE['clips'][1]]}
+    edl = resolve_edl(Edl.parse_obj(timeline))
+
+    length = mix_timeline(edl, out)
+
+    with wave.open(str(out)) as reader:
+        frames = reader.getnframes()
+    assert timeline_end(edl) == 8.0
+    assert length == pytest.approx(8.0, abs=0.05)
+    assert frames / 16000 == pytest.approx(8.0, abs=0.05)
+
+
+@pytest.mark.needs_ffmpeg
 def test_a_timeline_with_nothing_to_hear_says_so(library, tmp_path):
     from alfred.core.utils.transcription import NothingToHear
 
     with pytest.raises(NothingToHear):
         mix_timeline(Edl.parse_obj({'clips': [background(1.0)]}), tmp_path / 'x.wav')
+
+
+@pytest.mark.needs_ffmpeg
+def test_a_timeline_whose_video_has_no_sound_track_says_so(library, tmp_path):
+    """Only the file can say a video is silent: otto opens it, finds no sound,
+    and alfred says so in the words the browser suite reads."""
+    import imageio_ffmpeg
+
+    from alfred.core.utils.media import resolve_edl
+    from alfred.core.utils.transcription import NothingToHear
+
+    subprocess.run(
+        [
+            imageio_ffmpeg.get_ffmpeg_exe(),
+            '-nostdin',
+            '-v',
+            'error',
+            '-y',
+            '-f',
+            'lavfi',
+            '-i',
+            'testsrc=size=64x36:rate=10:duration=2',
+            '-pix_fmt',
+            'yuv420p',
+            str(library / 'silent.mp4'),
+        ],
+        check=True,
+    )
+    out = tmp_path / 'x.wav'
+    timeline = {
+        'clips': [
+            background(2.0),
+            {'type': 'video', 'name': 'videos/silent.mp4', 'duration': 2.0},
+        ]
+    }
+
+    with pytest.raises(NothingToHear, match='has a sound track'):
+        mix_timeline(resolve_edl(Edl.parse_obj(timeline)), out)
+    assert not out.exists()
 
 
 class StubMediaEngine:
