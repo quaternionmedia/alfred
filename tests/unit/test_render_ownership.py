@@ -119,6 +119,7 @@ class TestEveryRouteChecksTheOwner:
         as_user(app, STRANGER)
         assert self.call(client, method, path, render).status_code == 404
         assert render.id in store.renders, 'a stranger changed the render'
+        assert (renders / render.filename).exists(), 'a stranger removed its file'
         assert queue.sent == []
 
     def test_a_render_with_no_owner_is_a_404_to_a_user(
@@ -214,6 +215,31 @@ class TestWhatAnOwnerCanDo:
         render = stored(store, renders)
         assert client.delete(f'/render/{render.id}').status_code == 200
         assert render.id not in store.renders
+
+    def test_deleting_a_render_removes_its_video_and_its_delivered_copy(
+        self, api, renders, tmp_path
+    ):
+        """The record went and the bytes stayed, for good."""
+        client, store, _ = api
+        render = stored(store, renders, status='RENDERED')
+        assert client.post(f'/render/{render.id}/deliver').status_code == 200
+        delivered = tmp_path / 'delivered' / render.filename
+        assert delivered.is_file()
+
+        assert client.delete(f'/render/{render.id}').status_code == 200
+        assert not (renders / render.filename).exists()
+        assert not delivered.exists()
+
+    def test_a_render_from_before_outputs_were_named_by_id_keeps_its_file(
+        self, api, library
+    ):
+        """Its file is in the media library, where it may be in use as media."""
+        client, store, _ = api
+        render = make_render(status='RENDERED', filename='old_composite_name.mp4')
+        store.renders[render.id] = render
+        (library / render.filename).write_bytes(b'an old render')
+        assert client.delete(f'/render/{render.id}').status_code == 200
+        assert (library / render.filename).exists()
 
 
 class TestNoBulkDelete:

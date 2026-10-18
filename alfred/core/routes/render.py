@@ -32,6 +32,7 @@ from ..utils.destinations import (
 from ..utils.encoding import QUALITIES, UnknownQuality, preset_for
 from ..utils.media import RefusedEdl, check_edl, output_path
 from ..utils.signing import media_url
+from ..utils.storage import remove_render_files
 from ..utils.tasks import renderRemote
 from .media import MediaAccess, media_access
 from .templates import TEMPLATE_NAMES
@@ -536,9 +537,16 @@ class RenderAPI(MotorCRUDRouter):
 
             Its owner's, or any for a superuser. The crud router's delete
             removed any render for anyone signed in.
+
+            Its video goes with it, and any copy a local delivery made. They
+            used to stay on disk for good once the record was gone. A copy in
+            a cloud bucket is left where it is.
             """
             render = await load_owned_render(store, item_id, user)
             await store.delete(render)
+            # After the record, so a file that cannot be removed never leaves
+            # a render pointing at nothing; best effort, and reported.
+            await run_in_threadpool(remove_render_files, render.id, render.filename)
             return render
 
 
