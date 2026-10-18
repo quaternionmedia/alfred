@@ -177,6 +177,84 @@ test.describe('@slow render pipeline, end to end', () => {
     expect((await part.body()).equals(bytes.subarray(0, 100))).toBe(true)
   })
 
+  test('the download_url fetches it with no session, as a link would', async ({
+    request,
+    token,
+  }) => {
+    /**
+     * What an `<a download>` or a `<video src>` can use: the status hands
+     * out a signed URL, and a request carrying no Authorization header at all
+     * gets the file -- whole, or a range at a time.
+     */
+    const id = await queue(request, token, {
+      ...TINY_RENDER,
+      name: 'e2e signed download',
+      project: 'e2e signed download',
+    })
+    const render = await waitForRender(request, token, id)
+    test.skip(render.state === 'failed', `the encode failed: ${render.error}`)
+    expect(render.download_url).toMatch(
+      new RegExp(`^/render/${id}/download\\?exp=\\d+&sig=[A-Za-z0-9_-]{43}$`)
+    )
+
+    const whole = await request.get(render.download_url)
+    expect(whole.status()).toBe(200)
+    expect(whole.headers()['content-disposition']).toBe(
+      'attachment; filename="e2e-signed-download-320x180.mp4"'
+    )
+    const bytes = await whole.body()
+    expect(looksLikeMp4(bytes)).toBe(true)
+
+    const part = await request.get(render.download_url, {
+      headers: { Range: 'bytes=0-99' },
+    })
+    expect(part.status()).toBe(206)
+    expect((await part.body()).equals(bytes.subarray(0, 100))).toBe(true)
+
+    // The same signature on another path opens nothing.
+    const elsewhere = render.download_url.replace(id, 'deadbeefdeadbeefdeadbeef')
+    expect((await request.get(elsewhere)).status()).toBe(401)
+  })
+
+  test('a browser plays the download_url in a video element', async ({
+    page,
+    request,
+    token,
+  }) => {
+    /**
+     * Streamed by the browser itself, with no session in the page at all:
+     * the element asks for the file by URL and plays it, which is the point
+     * of a signed URL. The editor used to fetch each file whole with the
+     * session token and hand the bytes to the element instead.
+     */
+    const id = await queue(request, token, { ...TINY_RENDER, name: 'e2e playback' })
+    const render = await waitForRender(request, token, id)
+    test.skip(render.state === 'failed', `the encode failed: ${render.error}`)
+
+    await page.goto('/')
+    const played = await page.evaluate(
+      url =>
+        new Promise(resolve => {
+          const video = document.createElement('video')
+          video.muted = true
+          video.addEventListener('loadeddata', () =>
+            resolve({ ok: true, duration: video.duration, width: video.videoWidth })
+          )
+          video.addEventListener('error', () =>
+            resolve({ ok: false, code: video.error && video.error.code })
+          )
+          video.src = url
+          document.body.appendChild(video)
+        }),
+      render.download_url
+    )
+    expect(played.ok, `the video element could not load it: ${JSON.stringify(played)}`).toBe(
+      true
+    )
+    expect(played.width).toBe(320)
+    expect(played.duration).toBeGreaterThan(0.5)
+  })
+
   test('the finished render can be delivered, and the link works', async ({
     request,
     token,

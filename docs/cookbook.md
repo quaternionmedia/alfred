@@ -659,6 +659,35 @@ registers its own user and needs registration open to do it.
 - **a server that does not take registrations says so**
 - **an address that already has an account says so**
 
+## media
+
+Media the browser fetches by itself.
+
+# Recipe: media links that work without a session
+
+A `<video src>`, an `<img src>` or an `<a download>` is a request the
+browser makes on its own, and it carries no session. So the API hands out
+signed URLs for the files those elements need -- each good for one path, for
+a limited time -- and the file routes accept one in place of a session
+(contract M1):
+
+- `POST /preview/` answers with a signed URL for the frame it made.
+- a render's `download_url`, in its status and in the render list.
+
+The frames used to be served from `/data`, a static mount open to anyone;
+it is gone.
+
+### a preview frame
+
+- **the EDL preview answers with a signed URL for its frame**
+- **the URL fetches the frame with no session**
+- **an image element shows it, in a page with no session at all**
+- **the frame without its signature is refused**
+- **a signature moved to another frame is refused**
+### nothing is served from /data
+
+- **the public mount the frames came from is gone**
+
 ## navigation
 
 ### navigation
@@ -844,8 +873,11 @@ before the worker would be involved.
   anything else is a 422 before anything is stored (contract C4).
 - Encoding comes from a named quality preset; client ffmpeg options are a
   422 (C5).
-- `GET /render/{id}/status` answers for one render (C2).
+- `GET /render/{id}/status` answers for one render (C2), with a signed
+  `download_url` once there is a file to download (M1).
 - A render is its owner's: another user gets 404 for it everywhere (C6).
+- The download takes a session or a signature for exactly its own path,
+  and nothing else (M1).
 
 ### a render request is checked before it is queued
 
@@ -859,6 +891,7 @@ before the worker would be involved.
 - **its status has exactly the contract fields**
 - **a malformed id is a 422 and a missing one a 404**
 - **none of it is open to an anonymous caller**
+- **a made-up signature opens nothing**
 ### another user's render
 
 - **is not listed, and answers 404 everywhere**
@@ -891,6 +924,19 @@ failed, and the only render test used a template, which needs no file.
 - **a render queued from the API becomes a real video file**
 - **a clip from the media library renders**
 - **a finished render downloads, whole or in ranges**
+- **the download_url fetches it with no session, as a link would**
+
+  What an `<a download>` or a `<video src>` can use: the status hands
+  out a signed URL, and a request carrying no Authorization header at all
+  gets the file -- whole, or a range at a time.
+
+- **a browser plays the download_url in a video element**
+
+  Streamed by the browser itself, with no session in the page at all:
+  the element asks for the file by URL and plays it, which is the point
+  of a signed URL. The editor used to fetch each file whole with the
+  session token and hand the bytes to the element instead.
+
 - **the finished render can be delivered, and the link works**
 - **delivery is recorded on the render, so it is not repeated blindly**
 

@@ -47,7 +47,6 @@ def renders(library):
 @pytest.fixture
 def api(monkeypatch, library, tmp_path):
     monkeypatch.setattr(config, 'DELIVERY_DIR', str(tmp_path / 'delivered'))
-    monkeypatch.setattr(config, 'DATA_DIR', str(tmp_path / 'data'))
     offline_documents(monkeypatch, Render)
     store, queue = FakeRenderStore(), FakeQueue()
     overrides = as_user(app, OWNER) + use_fakes(app, store, queue)
@@ -155,7 +154,6 @@ class TestWhatAnOwnerCanDo:
         assert receipt == {'destination': 'local', 'location': link}
         assert store.renders[render.id].link == link
         assert (tmp_path / 'delivered' / render.filename).is_file()
-        assert not (tmp_path / 'data').exists()
         assert client.get(link).status_code == 200
 
     def test_deliver_only_a_finished_one(self, api, renders):

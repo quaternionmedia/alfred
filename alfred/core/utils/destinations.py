@@ -78,9 +78,9 @@ class LocalDestination:
     finished-render path went to a Google bucket, so a server without one had
     no way to give your video back.
 
-    Not under DATA_DIR, where this used to copy to: that directory is served
-    by an unauthenticated static mount at /data, so every local delivery was
-    a public URL for somebody's video. The video comes back to its owner
+    Not anywhere the app serves statically. This used to copy into DATA_DIR,
+    which an unauthenticated mount served at /data, so every local delivery
+    was a public URL for somebody's video. The video comes back to its owner
     through the download route instead.
     """
 
@@ -93,11 +93,12 @@ class LocalDestination:
         source = Path(filename)
         if not source.is_file():
             raise DeliveryError(f'no such render: {filename}')
-        if _inside(self.root, config.DATA_DIR):
-            # Refused rather than written: a delivery there is published to
-            # anyone, which no setting should be able to do by accident.
+        if _inside(self.root, config.STATIC_DIR):
+            # Refused rather than written: the SPA's directory is served to
+            # anyone, so a delivery there would be published, which no
+            # setting should be able to do by accident.
             raise DeliveryError(
-                'the delivery directory is inside DATA_DIR, which is served '
+                'the delivery directory is inside STATIC_DIR, which is served '
                 'publicly; set ALFRED_DELIVERY_DIR somewhere else'
             )
         self.root.mkdir(parents=True, exist_ok=True)

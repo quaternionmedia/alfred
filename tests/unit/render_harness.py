@@ -9,7 +9,10 @@ Three things stand between a route and a unit test, and each has a seam:
 
 - **Authentication.** Every render route depends on `current_active_user`;
   `as_user` swaps it, and `current_active_superuser` for routes elsewhere that
-  use it, for a fixed user through FastAPI's dependency overrides.
+  use it, for a fixed user through FastAPI's dependency overrides -- and
+  `optional_user`, the session as the file routes see it (they also accept a
+  signed URL instead; see `routes.media`). `anonymous` leaves the file routes
+  with no session, so only a signature can admit a request.
 - **Storage.** `Render` is a beanie Document, and constructing one --
   which FastAPI does to parse a request body -- calls `get_motor_collection()`,
   which raises until `init_beanie` has run against a live MongoDB.
@@ -57,6 +60,7 @@ def as_user(app, user):
     The superuser dependency answers 403 for anyone else, as fastapi-users'
     own does.
     """
+    from alfred.core.routes.media import optional_user
     from alfred.core.routes.users import current_active_superuser, current_active_user
 
     def superuser():
@@ -66,7 +70,26 @@ def as_user(app, user):
 
     app.dependency_overrides[current_active_user] = lambda: user
     app.dependency_overrides[current_active_superuser] = superuser
-    return [current_active_user, current_active_superuser]
+    app.dependency_overrides[optional_user] = lambda: user
+    return [current_active_user, current_active_superuser, optional_user]
+
+
+def anonymous(app):
+    """Serve every request with no session. Returns the overridden dependencies.
+
+    The session routes answer 401, as fastapi-users' dependencies do; the file
+    routes see no user, so only a signed URL can admit a request to them.
+    """
+    from alfred.core.routes.media import optional_user
+    from alfred.core.routes.users import current_active_superuser, current_active_user
+
+    def no_session():
+        raise HTTPException(status_code=401, detail='Unauthorized')
+
+    app.dependency_overrides[current_active_user] = no_session
+    app.dependency_overrides[current_active_superuser] = no_session
+    app.dependency_overrides[optional_user] = lambda: None
+    return [current_active_user, current_active_superuser, optional_user]
 
 
 class FakeQueue:
