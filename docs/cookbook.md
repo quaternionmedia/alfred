@@ -341,7 +341,9 @@ project's captions are drawn only once someone says so.
 ### transcribing the timeline
 
 Transcribing needs an audio engine that answers and a renderer to mix
-the timeline's sound. Without one, the button says which is missing.
+the timeline's sound. Until the server has said whether there is one,
+the button waits and says it is checking; without one, it says which
+is missing.
 
 - **transcribing says why it cannot**
 ### @slow transcribing through the worker

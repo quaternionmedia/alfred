@@ -24,9 +24,19 @@ import '../captions/captions.scss'
 
 const projectId = () => m.route.param('project')
 
+/** What the panel says while it waits for the server's first word on the engine. */
+export const CHECKING = 'Checking the audio engine…'
+
 /** Why transcribing cannot be asked for now, or '' when it can. */
 export function transcribeBlocker() {
   if (!projectId()) return 'Choose a project first.'
+  // Not known yet is not "nothing wrong". Until `/health` first comes back,
+  // whether there is an engine to transcribe with is not known, and the
+  // button waits and says so. It was enabled meanwhile: on a busy server the
+  // answer could take ten seconds and more, and for all that time the panel
+  // offered a transcription it might refuse. A server without the route
+  // (404) is answered too, and then nothing is said, as before.
+  if (Health.supported && !Health.answered) return CHECKING
   const engine = Health.state && Health.state.audio_engine
   if (engine && !engine.configured) {
     return 'No audio engine is configured on the server (ALFRED_AUDIO_ENGINE_URL).'
