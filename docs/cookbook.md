@@ -671,12 +671,21 @@ signed URLs for the files those elements need -- each good for one path, for
 a limited time -- and the file routes accept one in place of a session
 (contract M1):
 
+- `GET /media` lists the library with what the editor needs to place each
+  file -- its kind, how long it runs, its size in pixels -- and a signed
+  `url` to load it from (contract M2).
 - `POST /preview/` answers with a signed URL for the frame it made.
 - a render's `download_url`, in its status and in the render list.
 
 The frames used to be served from `/data`, a static mount open to anyone;
 it is gone.
 
+### the media library
+
+- **GET /media describes exactly the files GET /videos lists**
+- **a clip says how long it runs and how big its picture is**
+- **its url plays in a video element, in a page with no session**
+- **a url opens its own file and no other**
 ### a preview frame
 
 - **the EDL preview answers with a signed URL for its frame**

@@ -26,6 +26,7 @@ from alfred.core.routes import (
     demoAPI,
     fontAPI,
     issueAPI,
+    mediaAPI,
     previewAPI,
     previewFrameAPI,
     renderFileAPI,
@@ -233,6 +234,9 @@ app.include_router(
 app.include_router(demoAPI, dependencies=[Depends(current_active_user)], tags=['demo'])
 app.include_router(
     videoAPI, dependencies=[Depends(current_active_user)], tags=['video']
+)
+app.include_router(
+    mediaAPI, dependencies=[Depends(current_active_user)], tags=['media']
 )
 app.include_router(
     previewAPI,

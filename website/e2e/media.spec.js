@@ -9,6 +9,9 @@
  * a limited time -- and the file routes accept one in place of a session
  * (contract M1):
  *
+ * - `GET /media` lists the library with what the editor needs to place each
+ *   file -- its kind, how long it runs, its size in pixels -- and a signed
+ *   `url` to load it from (contract M2).
  * - `POST /preview/` answers with a signed URL for the frame it made.
  * - a render's `download_url`, in its status and in the render list.
  *
@@ -17,6 +20,84 @@
  */
 
 const { test, expect } = require('./fixtures')
+
+/** The library as `GET /media` describes it, after global setup's demo media. */
+async function media(request, token) {
+  const res = await request.get('/media', { headers: { Authorization: token } })
+  expect(res.status()).toBe(200)
+  return res.json()
+}
+
+test.describe('the media library', () => {
+  test('GET /media describes exactly the files GET /videos lists', async ({
+    request,
+    token,
+  }) => {
+    const listed = await (
+      await request.get('/videos', { headers: { Authorization: token } })
+    ).json()
+    const described = await media(request, token)
+    expect(described.map(item => item.name)).toEqual(listed)
+    for (const item of described) {
+      expect(Object.keys(item).sort()).toEqual(
+        ['duration', 'fps', 'height', 'kind', 'name', 'size', 'url', 'width'].sort()
+      )
+    }
+  })
+
+  test('a clip says how long it runs and how big its picture is', async ({
+    request,
+    token,
+  }) => {
+    // The editor placed every library clip as five seconds long, because
+    // nothing said otherwise. The demo bars are three seconds of 320x180 at 24.
+    const bars = (await media(request, token)).find(
+      item => item.name === 'videos/demo-bars.mp4'
+    )
+    expect(bars, 'global setup generates demo media').toBeTruthy()
+    expect(bars.kind).toBe('video')
+    expect(bars.duration).toBeCloseTo(3, 1)
+    expect([bars.width, bars.height, bars.fps]).toEqual([320, 180, 24])
+    expect(bars.size).toBeGreaterThan(0)
+  })
+
+  test('its url plays in a video element, in a page with no session', async ({
+    page,
+    request,
+    token,
+  }) => {
+    const bars = (await media(request, token)).find(
+      item => item.name === 'videos/demo-bars.mp4'
+    )
+    await page.goto('/')
+    const played = await page.evaluate(
+      url =>
+        new Promise(resolve => {
+          const video = document.createElement('video')
+          video.muted = true
+          video.addEventListener('loadeddata', () =>
+            resolve({ ok: true, width: video.videoWidth })
+          )
+          video.addEventListener('error', () =>
+            resolve({ ok: false, code: video.error && video.error.code })
+          )
+          video.src = url
+          document.body.appendChild(video)
+        }),
+      bars.url
+    )
+    expect(played).toEqual({ ok: true, width: 320 })
+  })
+
+  test('a url opens its own file and no other', async ({ request, token }) => {
+    const items = await media(request, token)
+    const [first, second] = items
+    test.skip(!second, 'needs two files in the library')
+    const moved = `${second.url.split('?')[0]}?${first.url.split('?')[1]}`
+    expect((await request.get(moved)).status()).toBe(401)
+    expect((await request.get(second.url.split('?')[0])).status()).toBe(401)
+  })
+})
 
 const FRAME_REQUEST = {
   edl: {

@@ -3,6 +3,7 @@ from .auth import auth as authAPI
 from .demo import demoAPI
 from .fonts import fontAPI
 from .issue import issueAPI
+from .media import mediaAPI
 from .preview import previewAPI, previewFrameAPI
 from .project import ProjectAPI
 from .render import RenderAPI, renderFileAPI
@@ -14,6 +15,7 @@ __all__ = [
     authAPI,
     issueAPI,
     fontAPI,
+    mediaAPI,
     videoAPI,
     videoFileAPI,
     ProjectAPI,
