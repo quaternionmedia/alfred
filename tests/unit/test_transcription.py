@@ -359,6 +359,22 @@ class TestTheTask:
             'the timeline has no video or audio clips'
         )
 
+    def test_a_clip_the_engine_cannot_play_is_recorded_plainly(
+        self, projects, monkeypatch
+    ):
+        from otto.exceptions import EdlException
+
+        project_id = ObjectId()
+        collection = projects({'_id': project_id, 'edl': EDL})
+        heard(
+            monkeypatch,
+            EdlException("clip 2 ('videos/talk.wav'): inpoint 9 is past its end"),
+        )
+        tasks.transcribeCaptions(projectId=str(project_id))
+        assert collection.documents[project_id]['captions_job']['error'] == (
+            "clip 2 ('videos/talk.wav'): inpoint 9 is past its end"
+        )
+
     def test_anything_else_is_recorded_with_its_name(self, projects, monkeypatch):
         project_id = ObjectId()
         collection = projects({'_id': project_id, 'edl': EDL})
