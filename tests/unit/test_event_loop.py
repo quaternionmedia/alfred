@@ -2,10 +2,11 @@
 
 The api is one uvicorn process with one event loop. `POST /preview/` and `GET
 /preview/template/{name}` were coroutines that built a clip, drew a frame and
-encoded it without awaiting anything, so for as long as each took the loop ran
-nothing else: every other request waited behind it, `/healthz` and `/health`
-included. The editor asks for a preview on every playhead move. The captions
-spec that reads `/health` while the editor previews tripped over exactly that.
+encoded it without awaiting anything, and `POST /demo/media` ran ffmpeg the same
+way, so for as long as each took the loop ran nothing else: every other request
+waited behind it, `/healthz` and `/health` included. The editor asks for a
+preview on every playhead move. The captions spec that reads `/health` while the
+editor previews tripped over exactly that.
 
 `TestTheApiAnswersWhile` shows the property itself. Each test makes the heavy
 call hold its thread until the test lets it go, asks for `/healthz` meanwhile,
@@ -20,17 +21,26 @@ server and no lifespan, so no database.
 blocking call, stood in for, records whether an event loop is running in the
 thread that called it. Code a coroutine calls directly runs on the loop's
 thread; the thread pool runs none.
+
+Off the loop, requests overlap that used to run one after another.
+`TestDemoMediaWhileOtherRequestsRun` holds the demo generator to what that
+must not change.
 """
 
 import asyncio
 import threading
+from os.path import basename
+from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
+from fastapi import HTTPException
 
 from alfred import config
 from alfred.core.models.render import Render
-from alfred.core.routes import preview
+from alfred.core.routes import demo, preview
+from alfred.core.utils.media import is_library_filename
 from alfred.main import app
 from tests.unit.render_harness import OWNER, TEMPLATE_EDL, as_user, offline_documents
 
@@ -40,6 +50,8 @@ from tests.unit.render_harness import OWNER, TEMPLATE_EDL, as_user, offline_docu
 BLOCK = 10.0
 
 BASE = 'http://alfred'
+
+DEMO_NAMES = [name for name, _ in demo.DEMO_CLIPS]
 
 
 class HeavyWork:
@@ -59,6 +71,19 @@ class HeavyWork:
             self.running = False
 
 
+def client():
+    """An httpx client on the app itself, in this event loop."""
+    return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=BASE)
+
+
+async def until(condition, timeout=BLOCK):
+    """Wait, without holding the loop, until `condition()` or `timeout`."""
+    deadline = asyncio.get_running_loop().time() + timeout
+    while not condition() and asyncio.get_running_loop().time() < deadline:
+        await asyncio.sleep(0.01)
+    return condition()
+
+
 async def healthz_meanwhile(work, send):
     """Send a request whose work is `work`; ask for /healthz once that work has
     begun; then let it go.
@@ -66,14 +91,12 @@ async def healthz_meanwhile(work, send):
     Returns /healthz's answer, whether the work was still running when that
     answer came, and the first request's own answer.
     """
-    transport = httpx.ASGITransport(app=app)
-    async with httpx.AsyncClient(transport=transport, base_url=BASE) as client:
-        heavy = asyncio.ensure_future(send(client))
-        while not work.started.is_set() and not heavy.done():
-            await asyncio.sleep(0.01)
+    async with client() as api:
+        heavy = asyncio.ensure_future(send(api))
+        await until(lambda: work.started.is_set() or heavy.done())
         if not work.started.is_set():
             pytest.fail(f'the request never reached its work: {(await heavy).text}')
-        health = await client.get('/healthz')
+        health = await api.get('/healthz')
         meanwhile = work.running
         work.released.set()
         return health, meanwhile, await heavy
@@ -129,11 +152,35 @@ def building(monkeypatch):
     return work
 
 
+@pytest.fixture
+def library(tmp_path, monkeypatch):
+    """An empty media library for the demo generator to fill."""
+    root = tmp_path / 'videos'
+    monkeypatch.setattr(demo, 'VIDEO_DIR', str(root))
+    return root
+
+
+@pytest.fixture
+def encoding(monkeypatch):
+    """ffmpeg writing demo clips, held until the test lets it go. Records the
+    clips it was asked for."""
+    work = HeavyWork()
+    work.made = []
+
+    def generate(path, source, duration=demo.DEMO_DURATION):
+        work.made.append(basename(path))
+        work.hold()
+        Path(path).write_bytes(b'not really a video')
+
+    monkeypatch.setattr(demo, 'generate_clip', generate)
+    return work
+
+
 class TestTheApiAnswersWhile:
     def test_a_timeline_s_frame_is_made(self, signed_in, scratch, building):
         res = answers_meanwhile(
             building,
-            lambda client: client.post(
+            lambda api: api.post(
                 '/preview/?t=0', json={'edl': TEMPLATE_EDL, 'width': 64, 'height': 48}
             ),
         )
@@ -143,12 +190,17 @@ class TestTheApiAnswersWhile:
     def test_a_template_is_drawn(self, signed_in, scratch, building):
         res = answers_meanwhile(
             building,
-            lambda client: client.get(
+            lambda api: api.get(
                 '/preview/template/makeColor?color=%23f2aa4c&width=64&height=48&t=0'
             ),
         )
         assert res.status_code == 200, res.text
         assert res.headers['content-type'] == 'image/jpeg'
+
+    def test_demo_media_is_generated(self, signed_in, library, encoding):
+        res = answers_meanwhile(encoding, lambda api: api.post('/demo/media'))
+        assert res.status_code == 200, res.text
+        assert res.json() == {'created': DEMO_NAMES, 'skipped': []}
 
 
 def on_the_loop():
@@ -171,3 +223,81 @@ class TestRunsInAThread:
         monkeypatch.setattr(preview, 'sweep_frames', sweep)
         asyncio.run(preview.sweep_frames_at_startup())
         assert seen == [False]
+
+
+class TestDemoMediaWhileOtherRequestsRun:
+    def test_two_presses_at_once_make_each_clip_once(
+        self, signed_in, library, encoding
+    ):
+        """The second waits for the first and finds its clips, as it did when
+        one ran after the other on the loop."""
+
+        async def press_twice():
+            async with client() as api:
+                first = asyncio.ensure_future(api.post('/demo/media'))
+                await until(encoding.started.is_set)
+                second = asyncio.ensure_future(api.post('/demo/media'))
+                # Long enough for the second to reach the clips, were nothing
+                # holding it back.
+                await until(lambda: len(encoding.made) > 1, timeout=1.0)
+                encoding.released.set()
+                return await first, await second
+
+        first, second = asyncio.run(press_twice())
+        assert encoding.made == DEMO_NAMES
+        assert first.json() == {'created': DEMO_NAMES, 'skipped': []}
+        assert second.json() == {'created': [], 'skipped': DEMO_NAMES}
+
+    def test_a_clip_is_written_out_of_sight_and_moved_into_place(
+        self, library, monkeypatch
+    ):
+        """A listing taken while ffmpeg writes must not offer a clip that is
+        half written: the library lists no hidden name."""
+        library.mkdir()
+        target = library / 'demo-bars.mp4'
+        seen = {}
+
+        def run(command, **kwargs):
+            written = Path(command[-1])
+            seen['written'] = written
+            seen['in place meanwhile'] = target.exists()
+            written.write_bytes(b'a whole clip')
+            return SimpleNamespace(returncode=0, stderr='')
+
+        monkeypatch.setattr(demo, 'subprocess', SimpleNamespace(run=run))
+        monkeypatch.setattr(demo, 'ffmpeg_binary', lambda: 'ffmpeg')
+        demo.generate_clip(str(target), 'smptebars')
+
+        assert seen['in place meanwhile'] is False
+        assert seen['written'].parent == library
+        assert not is_library_filename(seen['written'].name)
+        assert target.read_bytes() == b'a whole clip'
+        assert [p.name for p in library.iterdir()] == ['demo-bars.mp4']
+
+    def test_a_failed_run_leaves_nothing(self, library, monkeypatch):
+        library.mkdir()
+        target = library / 'demo-bars.mp4'
+
+        def run(command, **kwargs):
+            Path(command[-1]).write_bytes(b'half a clip')
+            return SimpleNamespace(returncode=1, stderr='something went wrong')
+
+        monkeypatch.setattr(demo, 'subprocess', SimpleNamespace(run=run))
+        monkeypatch.setattr(demo, 'ffmpeg_binary', lambda: 'ffmpeg')
+        with pytest.raises(HTTPException) as refused:
+            demo.generate_clip(str(target), 'smptebars')
+
+        assert refused.value.status_code == 500
+        assert refused.value.detail == (
+            f'ffmpeg could not generate {target}: something went wrong'
+        )
+        assert list(library.iterdir()) == []
+
+    @pytest.mark.needs_ffmpeg
+    def test_ffmpeg_writes_a_whole_clip(self, library):
+        library.mkdir()
+        target = library / 'demo-colour.mp4'
+        demo.generate_clip(str(target), 'color=c=black:size=32x32:rate=4', duration=1)
+        # An MP4 opens with its file-type box.
+        assert target.read_bytes()[4:8] == b'ftyp'
+        assert [p.name for p in library.iterdir()] == ['demo-colour.mp4']
