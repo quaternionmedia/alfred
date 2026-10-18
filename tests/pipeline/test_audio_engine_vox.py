@@ -1,21 +1,21 @@
-"""The adapter, vox's real media client, and an engine on the other end of a
-socket.
+"""The adapter, vox's real media client, and the stub engine that hears.
 
-Everything else stands in for vox at the adapter's edge. These do not: the
-stub engine (`tests/stubs/audio_engine.py`) is served over HTTP on a port of
-its own, and `utils.audio_engine` drives it through the vendored vox exactly
-as it would drive joe -- the contract's defaults, the real client, the real
-wire. They are what fails if alfred and vox disagree about the client's API.
+`test_audio_engine_standin.py` drives the real client against vox's own
+scripted engine. These drive it against the stub engine the browser suite
+runs (`tests/stubs/audio_engine.py`), which answers joe's media API from where
+the sound it is sent actually is -- so a timeline mixed by otto and carried by
+vox comes back as captions where its sound was. The stub is reached through an
+HTTP client handed to vox (`utils.audio_engine.engine_options`), in-process;
+the browser suite reaches it over a socket.
 
 They need vox's media client, which the vendored vox carries; a build with
 an older vox skips them, and says why.
 """
 
 import socket
-import threading
-import time
 
 import pytest
+from fastapi.testclient import TestClient
 
 pytest.importorskip('vox.media', reason='the vendored vox has no media client')
 
@@ -27,35 +27,17 @@ from tests.stubs import audio_engine as stub  # noqa: E402
 pytestmark = pytest.mark.needs_ffmpeg
 
 
-@pytest.fixture(scope='module')
-def served():
-    """The stub engine, listening on a free port for the module."""
-    import uvicorn
-
-    with socket.socket() as probe:
-        probe.bind(('127.0.0.1', 0))
-        port = probe.getsockname()[1]
-    server = uvicorn.Server(
-        uvicorn.Config(stub.app, host='127.0.0.1', port=port, log_level='warning')
-    )
-    thread = threading.Thread(target=server.run, daemon=True)
-    thread.start()
-    deadline = time.monotonic() + 20
-    while not server.started:
-        assert time.monotonic() < deadline, 'the stub engine did not start'
-        time.sleep(0.05)
-    yield f'http://127.0.0.1:{port}'
-    server.should_exit = True
-    thread.join(timeout=10)
-
-
 @pytest.fixture
-def engine(served, monkeypatch):
-    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', served)
+def engine(monkeypatch):
+    """The stub engine, answering vox's client in-process."""
+    client = TestClient(stub.app)
+    monkeypatch.setattr(audio_engine, 'engine_options', lambda: {'client': client})
+    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://stub.test')
     monkeypatch.setattr(config, 'AUDIO_ENGINE_CONTRACT', {})
     stub.media.clear()
     stub.uploads.clear()
-    return served
+    yield 'http://stub.test'
+    client.close()
 
 
 def test_it_answers(engine):
