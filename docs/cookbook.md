@@ -918,6 +918,15 @@ real 320x240 file.
   changed ?project= without remounting anything -- so the first project
   opened was the only one that ever appeared, and no request was made.
 
+- **a stage chosen straight after a project keeps the project**
+
+  Choosing a stage on the rail changes the stage and keeps the rest of the
+  address, the project chosen a moment before included. The rail built
+  the new address from the router's route, which reads a change back a
+  tick after it is made; a stage chosen in that tick put back the address
+  from before the project, and the project was dropped. Here the tick is
+  held open, so the stage is chosen inside it every time.
+
 - **the timeline stays mounted across every stage**
 - **stage 3 refuses to render an empty timeline**
 - **stage 3 offers the render when there is something to render**

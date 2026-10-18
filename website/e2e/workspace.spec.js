@@ -19,6 +19,8 @@ const {
   test,
   expect,
   login,
+  holdTheRouter,
+  releaseTheRouter,
   LAYOUT_KEY,
   MEDIA_PROJECT,
   PANEL_IDS,
@@ -61,33 +63,6 @@ const box = async locator => {
   const b = await locator.boundingBox()
   return b && { x: b.x, y: b.y, width: b.width, height: b.height }
 }
-
-/**
- * Hold back what the page asks to run "as soon as possible" -- `setTimeout`
- * with no delay -- until `releaseTheRouter`.
- *
- * Among it is mithril's router reading the address back. `m.route.set` writes
- * the address at once and resolves the route it describes on that later tick,
- * and until then `m.route.param()` answers with the route from before. On a
- * busy page a redraw lands in between now and then; held, one lands there
- * every time the test makes one.
- */
-const holdTheRouter = page =>
-  page.evaluate(() => {
-    const later = window.setTimeout
-    const held = []
-    window.setTimeout = (run, delay, ...args) => {
-      if (delay !== undefined) return later(run, delay, ...args)
-      held.push(() => run(...args))
-      return 0
-    }
-    window.releaseTheRouter = () => {
-      window.setTimeout = later
-      for (const run of held.splice(0)) run()
-    }
-  })
-
-const releaseTheRouter = page => page.evaluate(() => window.releaseTheRouter())
 
 test.describe('the default workspace', () => {
   test('every panel is in it, once, under its registry id', async ({ authedPage }) => {

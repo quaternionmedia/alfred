@@ -84,10 +84,11 @@ export const Flow = {
   },
 
   go: id => {
-    m.route.set(m.route.get().split('?')[0], {
-      ...m.route.param(),
-      stage: id,
-    })
+    // Built on the address as it stands, not the route: a project opened or a
+    // tab chosen a moment ago is in the one and not yet in the other, and
+    // building on the route put the parameters from before it back.
+    const { path, params } = Flow.address()
+    m.route.set(path, { ...params, stage: id })
     for (const follower of Flow.followers) follower(id)
   },
 
