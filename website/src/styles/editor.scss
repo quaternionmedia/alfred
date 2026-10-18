@@ -21,6 +21,11 @@ $rule: 1px solid #2e2e2e;
 
 .viewer {
   display: flex;
+  // A row that wraps: the frame, and the settings beside it while there is
+  // room and under it when there is not. Said so, because every `section` is
+  // a column (style.css) -- which sized the frame's room by the frame and let
+  // it run past a phone's edge.
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: flex-start;
   gap: $gutter;
@@ -91,11 +96,16 @@ $rule: 1px solid #2e2e2e;
     min-width: 4.5rem;
   }
 
+  // Playback and speed side by side, and one under the other where they do
+  // not fit -- on a phone they ran past both edges of the screen.
   .transportcontrols {
     display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     align-items: center;
-    gap: $gutter;
-    flex: 0 0 auto;
+    gap: 0.35rem $gutter;
+    flex: 0 1 auto;
+    min-width: 0;
     margin-left: auto;
   }
 }

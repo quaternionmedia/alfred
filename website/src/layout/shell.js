@@ -5,7 +5,7 @@ import { StackedFlow } from './flow'
 import { PanelHosts } from './hosts'
 import { PanelsMenu } from './PanelsMenu'
 import { Workspace } from './workspace'
-import { StageRail } from '../Stages'
+import { Flow, StageRail } from '../Stages'
 import { DraftOffer } from '../Draft'
 import { Menu } from '../Menu'
 import { Footer } from '../Footer'
@@ -56,6 +56,12 @@ const WorkspacePage = {
 export const Shell = () => {
   let mode = null
   return {
+    // The flow's lists -- projects, media, destinations, renders -- whichever
+    // stage or panel is in front, as the stage panel loaded them on every
+    // stage, Edit included: a stage opened later has them already rather
+    // than drawing empty first. Again on later draws until a session exists.
+    oninit: () => Flow.load(),
+    onupdate: () => Flow.load(),
     oncreate: () => {
       if (wide) wide.addEventListener('change', redraw)
     },
