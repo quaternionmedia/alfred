@@ -338,16 +338,56 @@ class TestImagePinning:
     @pytest.mark.parametrize('dockerfile', ['Dockerfile', 'website/Dockerfile'])
     def test_base_image_is_pinned_by_digest(self, dockerfile):
         froms = [
-            line
+            line.split()
             for line in read(dockerfile).split('\n')
             if line.strip().upper().startswith('FROM ')
         ]
         assert froms, f'{dockerfile} has no FROM line'
-        for line in froms:
-            assert '@sha256:' in line, (
-                f'{dockerfile} must pin its base by digest, got: {line.strip()}. '
-                'An unpinned base makes the build depend on the day it runs.'
-            )
+        stages = set()
+        for words in froms:
+            image = next(word for word in words[1:] if not word.startswith('--'))
+            # `FROM api` names a stage built earlier in this file, not a base:
+            # it is as pinned as the line that stage started from.
+            if image not in stages:
+                assert '@sha256:' in image, (
+                    f'{dockerfile} must pin its base by digest, got: '
+                    f'{" ".join(words)}. An unpinned base makes the build '
+                    'depend on the day it runs.'
+                )
+            if len(words) >= 2 and words[-2].upper() == 'AS':
+                stages.add(words[-1])
+
+    def test_the_test_image_is_built_from_this_checkout(self):
+        """Not from a tag left behind by whatever ran last.
+
+        tests/Dockerfile was `FROM alfred_api`, which resolves to whichever
+        image last carried that tag on the machine. Every test image built for
+        the 0.3.x review sat on one two months older than the checkout, and a
+        machine that had never built the dev stack had none, so the build went
+        to Docker Hub for it. The suite runs on a stage of the root Dockerfile
+        instead, built from the commit under test.
+        """
+        pytest_service = service_block(read('pytest.yml'), 'pytest')
+        assert re.search(r'^\s*context:\s*\.\s*$', pytest_service, re.M), (
+            'pytest.yml must build from the repository root, where the '
+            'Dockerfile with the test stage is'
+        )
+        assert re.search(
+            r'^\s*target:\s*test\s*$', pytest_service, re.M
+        ), "pytest.yml must build the root Dockerfile's `test` stage"
+        froms = [
+            line
+            for line in strip_comments(read('Dockerfile')).split('\n')
+            if line.upper().startswith('FROM ')
+        ]
+        assert any(
+            re.search(r'(?i)\sAS\s+test\s*$', line) for line in froms
+        ), 'the root Dockerfile has no `test` stage'
+        assert not re.search(r'(?i)\sAS\s+test\s*$', froms[-1]), (
+            'the test stage must not be the last: a build that names no target '
+            '-- the api and renderer in every compose file -- gets the last '
+            'stage, and would get the test runner'
+        )
 
 
 class TestComposeHygiene:

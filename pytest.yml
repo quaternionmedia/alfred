@@ -1,7 +1,11 @@
 services:
   pytest:
+    # The `test` stage of the root Dockerfile: the api image this checkout
+    # builds, plus nox. See the comment above that stage for why it is not a
+    # Dockerfile of its own.
     build:
-      context: tests
+      context: .
+      target: test
     image: alfred_test
     command: -f tests/noxfile.py
     volumes:

@@ -2,7 +2,7 @@
 # on the day of the build, which reached Python 3.14 -- where setuptools is no
 # longer bundled, so `pip install` of a dependency needing pkg_resources fails
 # outright. Bump this deliberately, not implicitly.
-FROM python:3.11@sha256:d0199e2a90bf7a206a485b115323a75bc946f30b463d704c5435a454aca084dd
+FROM python:3.11@sha256:d0199e2a90bf7a206a485b115323a75bc946f30b463d704c5435a454aca084dd AS api
 
 WORKDIR /app
 RUN mkdir -p data
@@ -59,3 +59,27 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 CMD ["uvicorn", "alfred.main:app", "--host", "0.0.0.0", "--port", "80", "--reload"]
+
+
+# The test runner: this checkout's api image, plus the tools the suite is
+# driven with. pytest.yml builds this stage, so `./al pytest` and `./al nox`
+# run on the system the api runs on -- the same Python, ImageMagick policy and
+# fonts -- built from the same commit.
+#
+# It was a Dockerfile of its own in tests/, `FROM alfred_api`: a local tag,
+# resolved to whichever image last carried it on the machine running the
+# suite. Nothing tied that image to the checkout under test -- every test image
+# built during the 0.3.x review sat on one from two months before it -- and on
+# a machine that had never built the dev stack there was no such image at all,
+# so the build went to Docker Hub for `alfred_api` and was refused. The suite
+# installs the application into a virtualenv of its own; what this stage
+# contributes is the system underneath, and nothing kept that in step.
+FROM api AS test
+COPY tests/requirements-tests.txt .
+RUN pip3 install -r ./requirements-tests.txt
+ENTRYPOINT [ "nox" ]
+CMD [ "-f", "tests/noxfile.py" ]
+
+# Last, so a build that names no target -- the api and renderer in every
+# compose file -- gets the api image rather than the test runner.
+FROM api
