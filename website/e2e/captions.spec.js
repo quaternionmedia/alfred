@@ -279,6 +279,10 @@ test.describe('captions from a file', () => {
       await expect(review).toContainText('more.vtt: 1 caption')
       await authedPage.locator('#captions-review-append').click()
       await expect(rows(authedPage)).toHaveCount(3)
+      // Added at once, saved by a request of its own: the panel says the save
+      // has landed when its unsaved note goes. Read before then, the server
+      // still held the two from before.
+      await expect(authedPage.locator('#captions-unsaved')).toHaveCount(0)
 
       const saved = await captionsOf(request, token, project)
       expect(saved.captions.map(c => c.text)).toEqual([
