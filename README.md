@@ -17,9 +17,14 @@ A small **control plane** (`alfred/`) orchestrating two cooperating engines,
 side by side: **otto** draws the picture (the render engine, published
 separately as `al-otto`, vendored at `alfred/otto`), and **vox** carries the
 sound (QM's audio-engine seam, vendored at `alfred/vox`, which drives an
-engine such as joe over HTTP). The control plane owns auth, project and render
-lifecycle, and orchestration; it does not touch media itself. `website/` is a
-mithril SPA built with parcel.
+engine such as joe over HTTP). The control plane owns auth, project, render
+and caption lifecycle, and orchestration; it does not touch media itself.
+`website/` is a mithril SPA built with parcel.
+
+Captions -- typed, imported from SubRip, WebVTT or JSON, or transcribed from
+the timeline's own sound by the audio engine -- are drawn into renders by
+otto: [docs/captions.md](docs/captions.md), which also says how to point alfred
+at joe.
 
 The project is governed by the [Quaternion Media
 constitution](https://github.com/quaternionmedia/qm), vendored at
