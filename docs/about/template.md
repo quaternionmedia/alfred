@@ -14,7 +14,7 @@ A `Template` is a `Clip` whose picture is drawn rather than read from a file: te
 }
 ```
 
-A template clip needs `data`, and is otherwise placed and timed like any [Clip](clip.md): `start`, `duration`, `inpoint` and `outpoint`, `fadeIn` and `fadeOut`, `opacity`, `position`, and `clipsize`, the size the template is drawn at, which is the frame unless it says otherwise.
+A template clip needs `data`, and is otherwise placed and timed like any [Clip](clip.md): `start`, `duration`, `inpoint` and `outpoint`, `fadeIn` and `fadeOut`, `opacity`, `position`, and `clipsize`, the size the template is drawn at (the frame, by default).
 
 !!! info
     `GET /templates` lists the templates this server offers, each with a `description`, the `parameters` its template takes, and whether it is `deprecated`.
@@ -30,10 +30,10 @@ A template clip needs `data`, and is otherwise placed and timed like any [Clip](
     - `initial` (deprecated): the sentences of `text`, one after another
     - `makeColor`: the clip filled with one colour
 
-    Any other name is refused: a render or a preview naming it is a 422, and `GET /preview/template/{name}` a 404. That includes `final`, which otto draws but this server does not offer: the address, website and phone it shows come from otto's own defaults, and nothing in `data` can change them.
+    Any other name is refused: a 422 from a render or a preview, and a 404 from `GET /preview/template/{name}`. That includes `final`, which otto draws but this server does not offer: its address, website and phone come from otto's own defaults, and nothing in `data` changes them.
 
 ## `data`
-`data` holds the fields below. Any other key is dropped without an error, which is why some of the `parameters` `GET /templates` lists for a template, such as `opacity`, `fps` and `start`, cannot be set through it: the template keeps its own value.
+`data` holds the fields below. Any other key is dropped without an error, so some `parameters` that `GET /templates` lists, such as `opacity`, `fps` and `start`, cannot be set through it: the template keeps its own value.
 
 ``` python
 class TemplateData:
@@ -53,7 +53,7 @@ class TemplateData:
 ### `text`
 : `#!python str`
 
-    The words to draw. Every template but `makeColor` needs it: a preview without it is a 422, and a render fails, with the reason in its `error`.
+    The words to draw. Every template but `makeColor` needs it: without it, a preview is a 422, and a render fails with the reason in its `error`.
 
 ### `color`
 : `#!python str`
@@ -83,7 +83,7 @@ class TemplateData:
 ### `font`
 : `#!python str`
 
-    A font name as ImageMagick lists it on the server (`convert -list font`), such as `DejaVu-Sans`. A name it does not know is drawn in its default font, without an error.
+    A font name as ImageMagick lists it on the server (`convert -list font`), such as `DejaVu-Sans`. An unknown name is drawn in the default font, without an error.
 
 ### `method`
 : `#!python str = 'label'`

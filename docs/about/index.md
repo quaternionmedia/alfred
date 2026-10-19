@@ -1,26 +1,26 @@
 # About
 
 ## [Concepts](concepts.md)
-While no video experience is needed to use Alfred effectively, familiarity with the [concepts of video editing](concepts.md) will be helpful.
+Alfred needs no video experience, but the [concepts of video editing](concepts.md) help.
 
 
 ## Design
 
-Alfred is split into several components:
+Alfred has these components:
 
 ### website
-: The browser based tools to create and edit videos, including:
+: The browser tools to create and edit videos:
     
-    - "simple" single-track video editor
-    - "advanced" multi-track video editor
+    - a "simple" single-track video editor
+    - an "advanced" multi-track video editor
     - template rendering forms
-    - preview frame of video
-    - check renders status and download
+    - a preview frame of the video
+    - render status and downloads
 ### [API](../api/index.md)
-: The video rendering components, available as a backend service.
+: The video rendering components, as a backend service.
 
 ### Models
-This section provides information on the properties available in all the models.
+The properties each model takes:
 
 #### [Clip](clip.md)
 #### [Template](template.md)

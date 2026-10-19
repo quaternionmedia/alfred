@@ -24,7 +24,7 @@ class Clip:
 ## Properties
 Every field but `type` and `name` is optional.
 
-A clip the server will not touch, such as one of an unknown type, media outside the library or a template it does not offer, is refused with a 422 when the request arrives. One the engine cannot build, such as one whose `outpoint` comes before its `inpoint`, is a 422 from a preview and fails a render, with the reason in its `error`. Either way the message names the clip, counting from 1.
+A clip the server will not touch (an unknown type, media outside the library, a template it does not offer) is refused with a 422 when the request arrives. One the engine cannot build, such as an `outpoint` before its `inpoint`, is a 422 from a preview and fails a render, with the reason in its `error`. Either way the message names the clip, counting from 1.
 
 ### `type`
 : `#!python str`
@@ -74,12 +74,12 @@ A clip the server will not touch, such as one of an unknown type, media outside 
 ### `position`
 : `#!python tuple | str`
 
-    Where the clip sits in the frame: one of `center`, `left`, `right`, `top` or `bottom`, or an `(x, y)` pair. A number places the clip's top left corner along its axis; a word, `left`, `center` or `right` for x and `top`, `center` or `bottom` for y, lines the clip up with that side of the frame or centres it. A video or image clip without a position is centred. See [Adjust clip](../examples/adjust.md).
+    Where the clip sits in the frame: one of `center`, `left`, `right`, `top` or `bottom`, or an `(x, y)` pair. In a pair, a number places the clip's top left corner along its axis, and a word (`left`, `center` or `right` for x; `top`, `center` or `bottom` for y) lines the clip up with that side of the frame, or centres it. A video or image clip without a position is centred. See [Adjust clip](../examples/adjust.md).
 
 ### `relative`
 : `#!python bool = True`
 
-    Whether the numbers in `position` are fractions of the frame, so that `(0.5, 0)` is halfway across and at the top, or pixels from its top left corner (`false`).
+    Whether `position`'s numbers are fractions of the frame, so `(0.5, 0)` is halfway across at the top, or pixels from its top left corner (`false`).
 
 ### `resize`
 : `#!python float | tuple`
@@ -94,7 +94,7 @@ A clip the server will not touch, such as one of an unknown type, media outside 
 ### `data`
 : `#!python TemplateData`
 
-    What a template clip draws, which every template clip needs. See [template](template.md).
+    What a template clip draws; every template clip needs it. See [template](template.md).
 
     ??? example "Sample JSON Template"
           ``` json
