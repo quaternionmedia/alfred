@@ -1,5 +1,25 @@
 # The family dev loop
 
+```text
+$ ./al family
+alfred and family, from ~\repos\qm\alfred.worktrees\show-tell
+
+alfred            docs/show-then-tell@0ad08f5  6 changed; no upstream
+  ~\repos\qm\alfred.worktrees\show-tell  (this checkout)
+otto              detached@7ddbf10  clean; no upstream
+  ~\repos\qm\alfred.worktrees\show-tell\alfred\otto  (vendored here)
+vox               main@1721e6f  clean; 0 ahead, 0 behind upstream
+  ~\repos\qm\vox  (beside this checkout)
+  ! alfred pins faa81a2; this checkout is at 1721e6f: alfred runs the pin
+  ! faa81a2 is on no origin branch this machine knows of: push it before alfred, or a clone cannot check it out
+joe               demo/voice-loop-2026-10-04@f3faa67  clean; 0 ahead, 0 behind upstream
+  ~\repos\joe  (beside this checkout)
+  ! no media API (/api/media) on this branch: captions and audio analysis need one that has it (ALFRED_FAMILY_JOE)
+…
+```
+
+*`./al family` on a development machine, cut after joe, with the home directory written `~`.*
+
 alfred is the control plane, but it doesn't work alone:
 
 | Repository | Its part | Where alfred meets it |

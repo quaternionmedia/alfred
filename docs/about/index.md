@@ -1,5 +1,9 @@
 # About
 
+![The workspace with its Panels menu open: every panel, one marked closed, and Reset layout](../assets/screens/panels-menu.png)
+
+*The workspace and its Panels menu, which brings back a closed panel or resets the layout.*
+
 ## [Concepts](concepts.md)
 While no video experience is needed to use Alfred effectively, familiarity with the [concepts of video editing](concepts.md) will be helpful.
 

@@ -1,5 +1,9 @@
 # Captions
 
+![Captions imported from a subtitle file, the second drawn over the colour bars, with the Captions tab open](assets/screens/captions.png)
+
+*Captions imported from a SubRip file and drawn over the picture; the Captions tab sits beside Render and Deliver.*
+
 A project's captions are lines of text and the stretch of the timeline each is
 shown for, in timeline seconds -- the seconds the editor's playhead counts and
 a render's output runs in. They are typed in the editor, imported from a

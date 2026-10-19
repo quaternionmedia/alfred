@@ -1,5 +1,9 @@
 # Alfred
 
+![The editor on a wide screen: a workspace of docked panels](assets/screens/edit.png){ width="74%" } ![The editor on a phone: the Edit stage over the viewer](assets/screens/phone-edit.png){ width="21%" }
+
+*The editor on a wide screen, as a workspace of panels, and on a phone, one stage at a time.*
+
 Automatic video tools
 
 ![Alfred logo](./assets/al-white.svg){ loading=lazy width=200em style="background-color:#2E303E; border-radius: 1em;" }

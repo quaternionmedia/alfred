@@ -1,5 +1,9 @@
 # alfred
 
+![The editor at Edit: projects and media on the left, the viewer over the timeline, and the clip's settings with the Render, Deliver and Captions tabs on the right](docs/assets/screens/edit.png)
+
+*The editor at Edit, with a demo project open and its first caption over the picture.*
+
 > *"Drama is life with all the dull bits cut out."*
 >
 > ~ Alfred Hitchcock
