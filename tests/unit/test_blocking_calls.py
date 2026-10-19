@@ -93,6 +93,7 @@ BLOCKING = {
     # The engine, building or writing media.
     'otto.render.generateEdl': 'builds a timeline: opens and decodes its media',
     'otto.render.renderMultitrack': 'renders a video',
+    'otto.render.renderSound': "writes a timeline's sound",
 }
 
 BLOCKING_METHODS = {
