@@ -69,6 +69,15 @@ own video or audio handling, and only `alfred/core/utils/audio_engine.py`
 knows how the audio engine is reached (docs/captions.md). Keep it that way —
 see the control-plane record in `governance/qm/adr/`.
 
+Media work is otto's, through its public API: a render
+(`renderMultitrack`, by a named `preset` that a render's `quality` passes
+through to), a preview frame (`renderFrame`), a timeline's sound
+(`renderSound`), what a library file holds (`otto.media.probe`) and the demo
+clips (`otto.demo.demoClip`). `alfred/` imports no media library and runs no
+ffmpeg; what the engine needs that otto does not expose is a change to otto,
+pinned here. Each of those calls blocks, and
+`tests/unit/test_blocking_calls.py` lists it, so no coroutine calls one.
+
 - `alfred/core/routes/` — API surface (FastAPI routers)
 - `alfred/core/models/` — Beanie/Pydantic documents
 - `alfred/core/utils/` — DB, Celery tasks, storage, email, captions, and the

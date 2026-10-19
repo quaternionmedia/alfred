@@ -10,7 +10,8 @@ Two engines cooperate under alfred's control plane, side by side: **otto**
 renders the picture (vendored at `alfred/otto`), and **vox** carries the sound
 (vendored at `alfred/vox`), driving an audio engine -- joe, by default -- over
 HTTP. alfred owns the captions, the jobs and the routes; it does no audio or
-video work itself.
+video work itself. The timeline's sound below is mixed and written by otto,
+as its renders, preview frames, library probes and demo clips are.
 
 ## In the editor
 
