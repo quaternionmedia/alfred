@@ -102,8 +102,8 @@ tests/
     test_cookbook.py     docs/cookbook.md is what the specs generate, linking
                          only what git tracks
     test_docs_site.py    the docs build's strict checks and what it loads
-    test_docs_accounted.py the docs name every setting and every ./al command
-                         they give
+    test_docs_accounted.py the docs name every setting, and give no `./al`
+                         command that does not exist
     test_password_hashing.py alfred's off-the-loop copies of fastapi-users'
                          hashing, held to the release and the originals
     test_preview_slots.py  so many previews at once; the rest wait, then 503
