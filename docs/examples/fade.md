@@ -2,8 +2,7 @@
 
 A clip fades in and out over one second unless it says otherwise: `fadeIn` and `fadeOut` set the length of each fade in seconds, and `0` turns a fade off. A clip's own fades are the only ones it gets -- templates add none of their own. (The editor sends `0` for both unless a fade was chosen, so its renders cut where the timeline cuts.)
 
-## Fade In
-: fade a clip in
+## Fade in
 ``` json title="fade in" hl_lines="7"
 {
   "edl": {
@@ -18,8 +17,7 @@ A clip fades in and out over one second unless it says otherwise: `fadeIn` and `
 }
 ```
 
-## fade Out
-: fade a clip out
+## Fade out
 ``` json title="fade out" hl_lines="7"
 {
   "edl": {

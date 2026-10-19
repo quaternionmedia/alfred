@@ -33,6 +33,6 @@ The following generates a text clip which flies in from the right along a 2nd or
 }
 ```
 
-A curve moves the clip across the frame: only its x coordinates count, unless the curve's `data` also says `"axes": "xy"`, or `"y"`. So this clip starts a frame's width to the right and comes to rest, after a second, where it would otherwise have been. It also fades in over that second, as every clip does unless it says `"fadeIn": 0`.
+A curve moves the clip across the frame: only its x coordinates count, unless the curve's `data` also says `"axes": "xy"` or `"y"`. So this clip starts a frame's width to the right and comes to rest after a second where it would otherwise have been. It also fades in over that second, as every clip does unless it says `"fadeIn": 0`.
 
-`bezier2` is the one movement there is, and `textBox`, `initial` and `bullets` take it. `title` takes no `fxs`, and ignores any it is sent.
+`bezier2` is the only movement; `textBox`, `initial` and `bullets` take it. `title` takes no `fxs`, and ignores any it is sent.

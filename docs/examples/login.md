@@ -2,9 +2,7 @@
 Tokens can be acquired with a `POST` request, with a username (email address) and password as form data.
 
 !!! abstract "Register for new account"
-    If you have not already done so, register for a new account by visiting [https://alfred.quaternion.media/login](https://alfred.quaternion.media/login)
-    
-    Registering can also be performed as an API request:
+    Register at [https://alfred.quaternion.media/login](https://alfred.quaternion.media/login), or with an API request:
     
     ``` bash title="Register"
     curl -X POST \
@@ -13,14 +11,14 @@ Tokens can be acquired with a `POST` request, with a username (email address) an
       https://alfred.quaternion.media/auth/register
     ```
     
-    This returns an object with information about the user.
+    It answers the new user:
     ``` json
     {"id":"61db4127e2ab4bf1fd587ddc","email":"your@email","is_active":true,"is_superuser":false,"is_verified":false,"first_name":"yourname","birthdate":null,"address":null}
     ```
     
-    A token can be requested straight away: logging in does not wait for the address to be confirmed.
+    You can ask for a token straight away: logging in does not wait for the address to be confirmed.
 
-    A production server takes registrations only when `ALFRED_ALLOW_REGISTRATION` opens it to them. A closed one answers 403 with the reason, and its accounts are handed out by an administrator.
+    A production server takes registrations only when `ALFRED_ALLOW_REGISTRATION` opens it to them. A closed one answers 403 with the reason, and an administrator hands out its accounts.
 
 ## Request token
 ``` bash
@@ -37,7 +35,7 @@ curl -X POST \
 }
 ```
 
-Requests can now be made by providing this token in the headers.
+Send the token in the headers of each request:
 ``` bash
 export TOKEN=y0UrAPiT0k3N...
 curl \
@@ -49,7 +47,7 @@ A token works for an hour. `POST /auth/jwt/refresh`, sent with a token that stil
 
 
 !!! abstract "`curl | jq`"
-    The following is a bash one-liner to create a local `$TOKEN` variable using `curl` and `jq`.
+    A bash one-liner that sets `$TOKEN` with `curl` and `jq`:
     ``` bash
     export TOKEN=$(curl -X POST \
       -F "username=your@email" \
