@@ -38,14 +38,16 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `audio_engine_refused` | 422 | the audio engine would not take the file -- no sound in it, a type it does not read, too large; `detail` is the engine's reason | `GET /media/{name}/audio` |
 | `audio_engine_failed` | 502 | the audio engine could not be reached, broke, or answered something that is not an answer; asking again may work | `GET /media/{name}/audio` |
 | `previews_busy` | 503 | the server is drawing as many previews as it will (`ALFRED_PREVIEW_CONCURRENCY`), and none came free within `ALFRED_PREVIEW_WAIT` seconds; ask again after the seconds the `Retry-After` header gives | `POST /preview/`, `GET /preview/template/{name}` |
+| `mail_not_configured` | 503 | the server has no mail set up (`EMAIL_SERVER`, `EMAIL_USERNAME` and `EMAIL_SENDTO`), so nothing was made or queued | `POST /render/{id}/report`, `POST /invoice` |
+| `mail_not_queued` | 503 | the broker would not take the mail; nothing will be sent, and asking again later may queue it | `POST /render/{id}/report`, `POST /invoice` |
 
 `tests/unit/test_refusal_codes.py` holds this table to alfred's code: every code alfred has is here with its status, and each is answered, with its sentence, by a request through the API.
 
 ## What carries no code
 - **A request FastAPI refuses** before a route runs -- a body or parameter that does not fit the route's model -- answers 422 with a list of `{loc, msg, type}` as its `detail`, which already says where and what.
-- **No session**: 401, `{"detail": "Unauthorized"}`.
+- **No session**: 401, `{"detail": "Unauthorized"}`. **Not a superuser**, on a route only superusers may use, such as `POST /invoice`: 403, `{"detail": "Forbidden"}`.
 - **Signing in and accounts** (`/auth/...`, `/users/...`): fastapi-users answers its own codes as the `detail` itself, such as `LOGIN_BAD_CREDENTIALS`.
 - **A route alfred does not have**: FastAPI's 404, `{"detail": "Not Found"}`, which a client tells from `not_found` by the code it lacks.
-- **The routes not covered yet** answer `detail` alone: the media library (`GET /media`, `/videos`), though how a file sounds is covered; a preview's own refusals -- a timeline or template it cannot draw, a template it does not offer, a frame cleaned up -- though a busy server's `previews_busy` and the timeline check's `edl_refused` are covered; demo media; a signed link's refusal on the file routes; and issue reports and invoices.
+- **The routes not covered yet** answer `detail` alone: the media library (`GET /media`, `/videos`), though how a file sounds is covered; a preview's own refusals -- a timeline or template it cannot draw, a template it does not offer, a frame cleaned up -- though a busy server's `previews_busy` and the timeline check's `edl_refused` are covered; demo media; and a signed link's refusal on the file routes.
 
 A client that has to work with an alfred from before codes reads `detail`, as it always could; one that finds a `code` switches on it.

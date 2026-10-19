@@ -37,7 +37,8 @@ def sendInvoice(
 
     Answers 202 once the mail is queued, with the worker's `job` id; the
     worker sends it, and tries again for a while if the mail server is down.
-    503 when the server has no mail set up, or the queue will not take it.
+    503 when the server has no mail set up (`mail_not_configured`), or the
+    queue will not take it (`mail_not_queued`).
     """
     refuse_unless_configured()
     midnight = time(0)

@@ -343,7 +343,10 @@ class TestTheInvoice:
         monkeypatch.setattr(support_mail, 'support_mail_configured', lambda: False)
         res = admin_client.post(INVOICE)
         assert res.status_code == 503
-        assert res.json() == {'detail': support_mail.NOT_CONFIGURED}
+        assert res.json() == {
+            'detail': support_mail.NOT_CONFIGURED,
+            'code': 'mail_not_configured',
+        }
         assert invoices == []
 
     def test_is_for_superusers(self, queued, invoices):

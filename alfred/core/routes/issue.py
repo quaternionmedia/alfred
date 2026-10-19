@@ -36,7 +36,8 @@ async def reportIssue(
 
     Answers 202 once the mail is queued, with the worker's `job` id; the
     worker sends it, and tries again for a while if the mail server is down.
-    503 when the server has no mail set up, or the queue will not take it.
+    503 when the server has no mail set up (`mail_not_configured`), or the
+    queue will not take it (`mail_not_queued`).
 
     The render has to be one the caller may see -- their own, or any for a
     superuser -- and is looked up the way every other render route looks one

@@ -25,7 +25,7 @@ from alfred.core.models.render import Render
 from alfred.core.routes import captions as caption_routes
 from alfred.core.routes import render as render_routes
 from alfred.core.routes.templates import TEMPLATE_NAMES
-from alfred.core.utils import audio_engine, bucket, concurrency
+from alfred.core.utils import audio_engine, bucket, concurrency, support_mail
 from alfred.core.utils.captions import MAX_CAPTIONS, CaptionFormatError, parse
 from alfred.core.utils.concurrency import RETRY_AFTER
 from alfred.core.utils.encoding import QUALITIES
@@ -48,15 +48,18 @@ ROOT = Path(__file__).resolve().parents[2]
 TABLE = ROOT / 'docs' / 'api' / 'errors.md'
 
 # The modules whose every refusal carries a code: the project, captions and
-# render routes and the id refusals they share; how a library file sounds; and
-# the preview slots.
+# render routes and the id refusals they share; how a library file sounds; the
+# preview slots; and mail to support, from the issue report and the invoice.
 COVERED = [
+    'alfred/core/routes/admin.py',
     'alfred/core/routes/audio.py',
     'alfred/core/routes/captions.py',
+    'alfred/core/routes/issue.py',
     'alfred/core/routes/project.py',
     'alfred/core/routes/render.py',
     'alfred/core/utils/bucket.py',
     'alfred/core/utils/concurrency.py',
+    'alfred/core/utils/support_mail.py',
 ]
 
 
@@ -212,8 +215,21 @@ class World:
         self.monkeypatch.setattr(bucket, 'upload', lambda *args, **kwargs: None)
 
     def broker_down(self):
-        """Renders are sent to a broker that is not there."""
+        """Renders and mail are sent to a broker that is not there."""
         app.dependency_overrides[render_routes.get_render_queue] = lambda: BrokerDown()
+        app.dependency_overrides[support_mail.get_mail_queue] = lambda: BrokerDown()
+        self.overrides.append(support_mail.get_mail_queue)
+
+    def mail(self, configured=True):
+        self.monkeypatch.setattr(
+            support_mail, 'support_mail_configured', lambda: configured
+        )
+
+    def report(self):
+        """An issue reported with one of the caller's renders."""
+        render = make_render()
+        self.renders.renders[render.id] = render
+        return self.client.post(f'/render/{render.id}/report', json='It stutters.')
 
     def sound_of(self, name, features=None):
         query = f'?features={features}' if features else ''
@@ -447,6 +463,17 @@ def previews_busy(world):
     )
 
 
+def mail_not_configured(world):
+    world.mail(configured=False)
+    return world.report(), support_mail.NOT_CONFIGURED
+
+
+def mail_not_queued(world):
+    world.mail()
+    world.broker_down()
+    return world.report(), 'The mail could not be queued; try again later.'
+
+
 REQUESTS = {
     Code.INVALID_ID: invalid_id,
     Code.NOT_FOUND: not_found,
@@ -474,6 +501,8 @@ REQUESTS = {
     Code.AUDIO_ENGINE_REFUSED: audio_engine_refused,
     Code.AUDIO_ENGINE_FAILED: audio_engine_failed,
     Code.PREVIEWS_BUSY: previews_busy,
+    Code.MAIL_NOT_CONFIGURED: mail_not_configured,
+    Code.MAIL_NOT_QUEUED: mail_not_queued,
 }
 
 

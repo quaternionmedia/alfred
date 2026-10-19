@@ -35,4 +35,4 @@ It is mailed to the addresses in `EMAIL_SENDTO`, with the mail settings the rest
 
 The render worker sends it, waiting at most `ALFRED_SMTP_TIMEOUT` seconds on each step. When the mail server cannot be reached, does not answer, or says "not now" (a reply in the 400s), the worker tries again later, five more times over about a quarter of an hour; any other refusal fails the job at once. Either way its log says which mail and why, and nothing of the mail itself. So a report waits for a worker: on a stack with none -- the thin stack -- it is queued and not sent until one starts.
 
-`503` when the server has no mail set up (`EMAIL_SERVER`, `EMAIL_USERNAME` and `EMAIL_SENDTO`), or the queue will not take the job. `POST /invoice`, for superusers, makes an invoice and queues its mail the same way.
+`503` when the server has no mail set up (`EMAIL_SERVER`, `EMAIL_USERNAME` and `EMAIL_SENDTO`; `mail_not_configured`), or the queue will not take the job (`mail_not_queued`). `POST /invoice`, for superusers, makes an invoice and queues its mail the same way.

@@ -65,6 +65,9 @@ class Code(StrEnum):
     AUDIO_ENGINE_FAILED = 'audio_engine_failed'
     # Previews.
     PREVIEWS_BUSY = 'previews_busy'
+    # Mail to support: issue reports and invoices.
+    MAIL_NOT_CONFIGURED = 'mail_not_configured'
+    MAIL_NOT_QUEUED = 'mail_not_queued'
 
 
 class Meaning(NamedTuple):
@@ -100,6 +103,8 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.AUDIO_ENGINE_REFUSED: Meaning(422, 'the audio engine would not take it'),
     Code.AUDIO_ENGINE_FAILED: Meaning(502, 'the audio engine failed'),
     Code.PREVIEWS_BUSY: Meaning(503, 'no preview slot came free in time'),
+    Code.MAIL_NOT_CONFIGURED: Meaning(503, 'no mail is set up on this server'),
+    Code.MAIL_NOT_QUEUED: Meaning(503, 'the broker would not take the mail'),
 }
 
 
