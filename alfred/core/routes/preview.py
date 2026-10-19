@@ -133,9 +133,10 @@ _FRAME_PARAMS = frozenset({'width', 'height', 't', 'fadeIn', 'fadeOut', 'length'
 
 
 # A plain function, not a coroutine, like the template preview below: it runs
-# in the thread pool, once `preview_slot` has a slot for it. Making a frame opens and decodes the timeline's
-# media, fetches any that is remote, composites the frame and encodes it, and
-# as a coroutine it did all of that on the event loop. The api is one process
+# in the thread pool, once `preview_slot` has a slot for it. Making a frame
+# opens and decodes the timeline's media, fetches any that is remote,
+# composites the frame and encodes it, and as a coroutine it did all of that
+# on the event loop. The api is one process
 # with one loop, so every other request -- `/healthz` among them -- waited
 # for each preview, and the editor asks for one on every playhead move.
 @previewAPI.post('/')
