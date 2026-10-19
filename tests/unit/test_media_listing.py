@@ -7,15 +7,21 @@ with what the editor needs to place each one, and a signed URL to load it.
 
 import pytest
 from fastapi.testclient import TestClient
+from otto.media import UNKNOWN, MediaInfo
 
 from alfred import config
 from alfred.core.models.render import Render
 from alfred.core.utils import probe as probing
 from alfred.main import app
-from tests.unit.ffmpeg_samples import MP3, MP4_WITH_SOUND, PNG
 from tests.unit.render_harness import OWNER, anonymous, as_user, offline_documents
 
-SAMPLES = {'.mp4': MP4_WITH_SOUND, '.mp3': MP3, '.png': PNG}
+# What the engine answers for each extension: a 3.02-second 320x180 video at
+# 24 fps with sound, a 1.54-second sound, a 40x30 still.
+ANSWERS = {
+    '.mp4': MediaInfo(duration=3.02, width=320, height=180, fps=24.0, sound=True),
+    '.mp3': MediaInfo(duration=1.54, sound=True),
+    '.png': MediaInfo(width=40, height=30),
+}
 
 
 @pytest.fixture
@@ -32,14 +38,15 @@ def library(tmp_path, monkeypatch):
 
 @pytest.fixture
 def described(monkeypatch):
-    """ffmpeg answering with a sample for each file's extension."""
+    """The engine answering for each file by its extension. Records what it
+    was asked: each file's path, and the kind of clip it was asked as."""
     calls = []
 
-    def describe(path):
-        calls.append(str(path))
-        return SAMPLES.get(str(path)[-4:], '')
+    def probe_file(path, kind=None):
+        calls.append((str(path), kind))
+        return ANSWERS.get(str(path)[-4:], UNKNOWN)
 
-    monkeypatch.setattr(probing, 'describe', describe)
+    monkeypatch.setattr(probing, 'probe_file', probe_file)
     monkeypatch.setattr(probing, '_cache', probing.ProbeCache())
     return calls
 
@@ -54,12 +61,15 @@ def client(monkeypatch, library, described):
 
 
 class TestTheListing:
-    def test_each_file_is_described(self, client, library):
+    def test_each_file_is_described(self, client, library, described):
         (library / 'clip.mp4').write_bytes(b'v' * 1234)
         (library / 'tone.mp3').write_bytes(b'a' * 10)
         (library / 'still.png').write_bytes(b'i' * 20)
 
         items = {item['name']: item for item in client.get('/media').json()}
+
+        # The engine is asked about each file as the clip that would open it.
+        assert sorted(kind for _, kind in described) == ['audio', 'image', 'video']
 
         clip = items['videos/clip.mp4']
         assert {k: v for k, v in clip.items() if k != 'url'} == {

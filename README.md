@@ -19,6 +19,9 @@ separately as `al-otto`, vendored at `alfred/otto`), and **vox** carries the
 sound (QM's audio-engine seam, vendored at `alfred/vox`, which drives an
 engine such as joe over HTTP). The control plane owns auth, project, render
 and caption lifecycle, and orchestration; it does not touch media itself.
+Every frame, render and timeline sound is otto's, and so is what a library
+file holds, the demo clips and what a render's quality means to the encoder:
+alfred calls the engines and imports no media library, and runs no ffmpeg.
 `website/` is a mithril SPA built with parcel.
 
 Captions -- typed, imported from SubRip, WebVTT or JSON, or transcribed from
@@ -89,10 +92,10 @@ way. See the dev-server notes in [AGENTS.md](AGENTS.md).
 ## First run
 
 There is nothing to download. Open the app, go to the **Source** stage, and
-press *Generate a demo project* and *Generate demo media* — both are
-synthesised locally with ffmpeg, so a first run needs no network access. `./al
-demo` still fetches the original sample footage from a cloud bucket if you want
-it.
+press *Generate a demo project* and *Generate demo media* — both are made
+locally, the media by the engine from ffmpeg's own test sources, so a first run
+needs no network access. `./al demo` still fetches the original sample footage
+from a cloud bucket if you want it.
 
 To work without logging in, `ALFRED_DEV_SKIP_AUTH=1 ./al dev` serves every
 request as a fixed superuser and skips the login screen. It refuses to start

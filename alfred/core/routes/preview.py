@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from otto.exceptions import EdlException
 from otto.models import Clip, Edl, TemplateData
-from otto.render import generateEdl
+from otto.render import renderFrame
 from starlette.background import BackgroundTask
 from starlette.concurrency import run_in_threadpool
 
@@ -161,16 +161,18 @@ def previewFrame(t: float, render: Render):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     # TODO: reduce clips to active clips
     # active = [c for c in render.edl.clips if t >= (c.start or 0) + (c.offset or 0)]
+    frame_name = frame_path()
+    print(f'saving frame {t} as: {frame_name}')
     try:
-        video = generateEdl(timeline, moviesize=(render.width, render.height))
+        # The engine draws the frame and writes it: one call, which builds the
+        # whole timeline and refuses a clip it cannot build before writing
+        # anything.
+        renderFrame(timeline, t, frame_name, moviesize=(render.width, render.height))
     except EdlException as exc:
         # The engine's own refusal of a clip it cannot build (contract C8) is
         # the request's fault, and names the clip: a 422 with that message,
         # not a 500.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    frame_name = frame_path()
-    print(f'saving frame {t} as: {frame_name}', video)
-    video.save_frame(frame_name, t=t, withmask=False)
     sweep_frames()
     # A preview is where the api fetches remote media, so it is where the
     # api keeps that cache within its TTL.
@@ -283,8 +285,7 @@ def previewTemplate(
     # for good: every frame anyone previewed stayed public.
     frame_name = private_frame_path()
     try:
-        video = generateEdl(Edl(clips=[clip]), moviesize=(width, height))
-        video.save_frame(frame_name, t=t, withmask=False)
+        renderFrame(Edl(clips=[clip]), t, frame_name, moviesize=(width, height))
     except Exception as exc:
         remove_quietly(frame_name)
         raise HTTPException(

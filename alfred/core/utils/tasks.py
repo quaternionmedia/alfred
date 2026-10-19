@@ -122,9 +122,9 @@ def renderRemote(
 
     Arguments arrive as JSON (contract C7): the EDL as a dict, which is parsed
     back into an `Edl` here, the render id as a string, the size as a list.
-    Encoding comes from the named `quality` preset (C5). Any `bitrate` or
-    `ffmpeg_params` in `kwargs` -- from a job queued before presets -- is
-    ignored rather than handed to ffmpeg.
+    Encoding is the engine's preset that `quality` names (C5). Any `bitrate`
+    or `ffmpeg_params` in `kwargs` -- from a job queued before presets -- is
+    ignored rather than handed to the engine.
     """
     # A local, not `self.log`: the task object outlives the job.
     log = DbLogger(self, renderId)

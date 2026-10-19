@@ -18,6 +18,7 @@ import json
 import pytest
 from bson import ObjectId
 from fastapi.testclient import TestClient
+from otto.render import PRESETS as ENGINE_PRESETS
 from otto.render import renderMultitrack
 
 from alfred.core.models.render import (
@@ -121,22 +122,21 @@ class TestQualityPresets:
     def test_the_presets_are_the_contract(self):
         assert QUALITIES == ('draft', 'standard', 'high')
 
+    def test_every_quality_is_one_of_the_engine_s_presets(self):
+        """They share their names, so a quality passes through as it is."""
+        assert set(QUALITIES) <= set(ENGINE_PRESETS)
+        for quality, preset in PRESETS.items():
+            assert preset.encoder_args() == {'preset': quality}
+
     def test_presets_map_onto_the_engine_s_own_parameters(self):
-        """Nothing new is asked of otto (contract C8)."""
         accepted = set(inspect.signature(renderMultitrack).parameters)
         for preset in PRESETS.values():
             assert set(preset.encoder_args()) <= accepted
 
-    def test_a_preset_s_bitrate_is_one_string_or_none(self):
-        """`Render.bitrate` was a list, which is not what ffmpeg takes."""
-        for preset in PRESETS.values():
-            assert preset.bitrate is None or isinstance(preset.bitrate, str)
-
     def test_better_quality_asks_for_a_lower_rate_factor(self):
-        crf = {
-            name: int(p.ffmpeg_params[p.ffmpeg_params.index('-crf') + 1])
-            for name, p in PRESETS.items()
-        }
+        """What the encoder does with each quality is otto's; that a better
+        one asks for more is the contract's."""
+        crf = {name: ENGINE_PRESETS[name].crf for name in QUALITIES}
         assert crf['draft'] > crf['standard'] > crf['high']
 
     def test_unknown_quality_raises_when_strict(self):
@@ -190,8 +190,11 @@ class TestTheWorkerEncodesFromThePreset:
         self, monkeypatch, recorded_encode, quality
     ):
         call = self.run(monkeypatch, recorded_encode, quality=quality)
-        assert call['ffmpeg_params'] == list(PRESETS[quality].ffmpeg_params)
-        assert call['audio_bitrate'] == PRESETS[quality].audio_bitrate
+        engine = ENGINE_PRESETS[quality]
+        assert call['preset'] == engine.x264_preset
+        assert call['ffmpeg_params'] == ['-crf', str(engine.crf)]
+        assert call['audio_bitrate'] == engine.audio_bitrate
+        assert call['bitrate'] is None
 
     def test_encoder_options_from_an_old_job_are_ignored(
         self, monkeypatch, recorded_encode

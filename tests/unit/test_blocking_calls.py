@@ -99,8 +99,11 @@ BLOCKING = {
     'shutil.rmtree': 'removes a directory tree',
     # The engine, building or writing media.
     'otto.render.generateEdl': 'builds a timeline: opens and decodes its media',
+    'otto.render.renderFrame': 'builds a timeline, and draws and encodes a frame',
     'otto.render.renderMultitrack': 'renders a video',
     'otto.render.renderSound': "writes a timeline's sound",
+    'otto.media.probe': 'runs ffmpeg to describe a file',
+    'otto.demo.demoClip': 'runs ffmpeg to write a clip',
 }
 
 BLOCKING_METHODS = {
@@ -319,6 +322,7 @@ class TestTheApi:
         helpers = {
             'alfred.core.routes.demo.generate_clip',
             'alfred.core.routes.preview.sweep_frames',
+            'alfred.core.utils.probe.probe',
             'alfred.core.utils.email.sendMail',
             'alfred.core.utils.media.library_files',
             'alfred.core.utils.audio_engine.analyze',
