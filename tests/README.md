@@ -98,6 +98,8 @@ tests/
     test_stack_settings.py every setting reaches the services that read it
     test_event_loop.py   the api answers while slow work is being done
     test_blocking_calls.py no coroutine in the api calls something that blocks
+    test_refusal_codes.py every refusal code is in docs/api/errors.md and is
+                         answered by a request; covered routes raise none without
   pipeline/            needs ffmpeg, no DB, no network
     test_render_pipeline.py
   integration/         needs MongoDB at DB_URL: the app in-process, real auth

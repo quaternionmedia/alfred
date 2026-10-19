@@ -4,11 +4,11 @@ from typing import Optional, Tuple
 from urllib.parse import unquote, urlsplit
 
 from bson import ObjectId
-from fastapi import HTTPException
 from google.cloud import storage
 
 from alfred.config import BUCKET_NAME, DEFAULT_CHUNK_SIZE
 
+from ..errors import Code, Refusal
 from .db import get_sync_db
 
 # Where v4 signed URLs point. Recognised in stored links, which held a signed
@@ -17,21 +17,19 @@ GCS_HOST = 'storage.googleapis.com'
 
 # The canonical answers, for comparing against. Raise `fresh(...)` copies of
 # them, not these instances themselves -- see `fresh`.
-NOT_FOUND = HTTPException(status_code=404, detail="Item not found")
-INVALID_ID = HTTPException(status_code=422, detail="Not a valid identifier")
+NOT_FOUND = Refusal(Code.NOT_FOUND, "Item not found")
+INVALID_ID = Refusal(Code.INVALID_ID, "Not a valid identifier")
 
 
-def fresh(exc: HTTPException) -> HTTPException:
-    """A new exception with `exc`'s status and detail, to raise in its place.
+def fresh(exc: Refusal) -> Refusal:
+    """A new refusal with `exc`'s code, status and detail, to raise in its place.
 
     Raising one shared instance over and over appends each raise's traceback
     to the one it already carries, so every 404 and 422 answered this way kept
     its request's frames -- and everything they referenced -- alive for the
     life of the process. A copy per raise leaves nothing behind.
     """
-    return HTTPException(
-        status_code=exc.status_code, detail=exc.detail, headers=exc.headers
-    )
+    return exc.again()
 
 
 def get_bucket(bucket=BUCKET_NAME):

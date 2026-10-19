@@ -4,7 +4,6 @@ from textwrap import wrap
 
 from beanie import init_beanie
 from fastapi import Depends, FastAPI
-from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 from starlette.concurrency import run_in_threadpool
 from starlette.staticfiles import StaticFiles
@@ -17,6 +16,7 @@ from alfred.config import (
     STATIC_DIR,
     secret_key_problem,
 )
+from alfred.core import errors
 from alfred.core.models.users import UserRead, UserUpdate
 from alfred.core.responses import MediaAwareGZipMiddleware
 from alfred.core.routes import (
@@ -48,6 +48,7 @@ from alfred.core.routes.users import (
 
 # from otto.main import app as ottoApi
 from alfred.core.utils import get_db
+from alfred.core.utils.bucket import INVALID_ID
 from alfred.core.utils.db import User
 
 app = FastAPI(
@@ -61,6 +62,8 @@ app = FastAPI(
 # GZip for JSON and the SPA's assets; media and byte ranges go out as they are
 # (see `responses/compression.py`).
 app.add_middleware(MediaAwareGZipMiddleware)
+# A refusal's `code` beside its `detail` (`core/errors.py`, docs/api/errors.md).
+errors.install(app)
 
 
 @app.on_event('startup')
@@ -177,10 +180,8 @@ async def malformedIdentifier(request, exc):
     """
     if not _isIdentifierParseError(exc):
         raise exc
-    return JSONResponse(
-        status_code=422,
-        content={'detail': 'Not a valid identifier'},
-    )
+    # The refusal the routes that check an id themselves answer, code and all.
+    return await errors.answer_refusal(request, INVALID_ID)
 
 
 def _isIdentifierParseError(exc):

@@ -12,13 +12,14 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Literal, Optional
 
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from otto.models import Edl
 from pydantic import BaseModel, ValidationError, constr
 from starlette.concurrency import run_in_threadpool
 
 from alfred import config
 
+from ..errors import Code, Refusal
 from ..models.captions import RUNNING, Caption, CaptionsJob, CaptionStyle
 from ..models.project import Project
 from ..utils import audio_engine
@@ -211,7 +212,7 @@ async def saveProjectCaptions(
     try:
         captions = checked_captions(update.captions)
     except TooManyCaptions as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise Refusal(Code.TOO_MANY_CAPTIONS, str(exc)) from exc
     fields = {'captions': [caption.dict() for caption in captions]}
     style = style_to_store(update.style, project.get('caption_style'))
     if style is not None:
@@ -243,7 +244,7 @@ async def importProjectCaptions(
         # liked.
         parsed = await run_in_threadpool(parse, upload.format, upload.text)
     except CaptionFormatError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise Refusal(Code.CAPTION_FILE_UNREADABLE, str(exc)) from exc
     return ImportedCaptions(captions=parsed.captions, skipped=parsed.skipped)
 
 
@@ -252,24 +253,22 @@ def timeline_to_transcribe(project: dict) -> Edl:
     422 saying why not otherwise."""
     stored = project.get('edl') or {}
     if not stored.get('clips'):
-        raise HTTPException(
-            status_code=422,
-            detail='The project has no saved timeline to transcribe; save one first.',
+        raise Refusal(
+            Code.TIMELINE_EMPTY,
+            'The project has no saved timeline to transcribe; save one first.',
         )
     try:
         edl = Edl.parse_obj(stored)
         check_edl(edl, TEMPLATE_NAMES)
     except (ValidationError, RefusedEdl) as exc:
-        raise HTTPException(
-            status_code=422, detail=f'The saved timeline cannot be played: {exc}'
+        raise Refusal(
+            Code.TIMELINE_UNPLAYABLE, f'The saved timeline cannot be played: {exc}'
         ) from exc
     if not sounding_clips(edl):
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                'The timeline has no video or audio clips, so there is nothing '
-                'to transcribe.'
-            ),
+        raise Refusal(
+            Code.TIMELINE_SILENT,
+            'The timeline has no video or audio clips, so there is nothing '
+            'to transcribe.',
         )
     return edl
 
@@ -281,7 +280,7 @@ def timeline_to_transcribe(project: dict) -> Edl:
     responses={
         409: {'description': 'a transcription of this project is under way'},
         422: {'description': 'nothing in the saved timeline to transcribe'},
-        503: {'description': 'no audio engine to transcribe with, and why'},
+        503: {'description': 'no audio engine, or the job was not queued; and why'},
     },
 )
 async def transcribeProjectCaptions(
@@ -299,14 +298,17 @@ async def transcribeProjectCaptions(
     `done` -- with how many `segments` were heard -- or `failed`, with the
     reason in `error`.
 
-    503, saying why, when there is no audio engine to ask; 409 while a
-    transcription of this project is under way; 422 when the saved timeline
-    has nothing to hear.
+    503, saying why, when there is no audio engine to ask
+    (`audio_engine_missing`) or the job could not be queued
+    (`transcription_not_queued`); 409 while a transcription of this project
+    is under way (`transcription_running`); 422 when the saved timeline has
+    nothing to hear. Each refusal's `code` says which; docs/api/errors.md
+    lists them.
     """
     project = await owned(store, item_id, user)
     reason = audio_engine.problem()
     if reason:
-        raise HTTPException(status_code=503, detail=reason)
+        raise Refusal(Code.AUDIO_ENGINE_MISSING, reason)
     timeline_to_transcribe(project)
 
     now = datetime.now(timezone.utc)
@@ -318,12 +320,10 @@ async def transcribeProjectCaptions(
         'updated_at': now,
     }
     if not await store.claim(project['_id'], job, stale_before=now - stale_after()):
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "This project's timeline is already being transcribed; wait for "
-                'that to finish.'
-            ),
+        raise Refusal(
+            Code.TRANSCRIPTION_RUNNING,
+            "This project's timeline is already being transcribed; wait for "
+            'that to finish.',
         )
     try:
         # Off the event loop, as a render is queued (routes.render).
@@ -336,7 +336,8 @@ async def transcribeProjectCaptions(
             'updated_at': datetime.now(timezone.utc),
         }
         await store.set(project['_id'], {'captions_job': failed})
-        raise HTTPException(
-            status_code=503, detail=f'The transcription could not be queued: {exc}'
+        raise Refusal(
+            Code.TRANSCRIPTION_NOT_QUEUED,
+            f'The transcription could not be queued: {exc}',
         ) from exc
     return Transcribing(job=CaptionsJob.parse_obj(job))

@@ -156,6 +156,24 @@ class TestTheRestOfTheProject:
         assert project['captions_job'] is None
         assert project['caption_style']['enabled'] is False
 
+    def test_a_new_project_with_more_than_it_carries_is_refused_by_code(
+        self, api, alice
+    ):
+        """As the captions route refuses them: the sentence, and its code."""
+        many = [{'start': n, 'end': n + 0.5, 'text': 'x'} for n in range(1001)]
+        res = api.post(
+            '/project',
+            json={'name': 'too many', 'logic': {}, 'captions': many},
+            headers=alice.headers,
+        )
+        assert (res.status_code, res.json()) == (
+            422,
+            {
+                'detail': '1001 captions is more than the 1000 a project may carry',
+                'code': 'too_many_captions',
+            },
+        )
+
     def test_the_project_says_whether_its_captions_are_drawn(
         self, api, alice, make_project
     ):
@@ -188,6 +206,7 @@ class TestTranscribing:
             f'/project/{project["_id"]}/captions/transcribe', headers=alice.headers
         )
         assert res.status_code == 503
+        assert res.json()['code'] == 'audio_engine_missing'
         assert queue.sent == []
 
     def test_the_whole_lifecycle(

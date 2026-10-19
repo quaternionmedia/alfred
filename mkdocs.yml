@@ -41,6 +41,7 @@ nav:
       - api/auth.md
       - api/otto.md
       - api/render.md
+      - api/errors.md
 
 markdown_extensions:
   - pymdownx.highlight
