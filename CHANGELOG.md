@@ -188,6 +188,10 @@ production stack needs its own signing key.
   exports describe the engine the image runs. No locked version changed.
 - **A delivery to an unknown destination** is told apart from a failed one by
   its code (`destination_unknown`, `delivery_failed`); both still answer 502.
+- **A render the broker will not take is a 503 that says so, and is failed.**
+  `POST /render` and `POST /render/rerender/{id}` answered a plain-text 500
+  and left the render `queued` for good; they answer 503 `render_not_queued`
+  and record the render `failed` with the reason, as transcription does.
 - **`./al pytest` and `./al nox` run as their own compose project**,
   `<project>-pytest`: their throwaway database is a service named `db`, as the
   dev stack's is, so a test run recreated a running dev stack's database.
@@ -365,7 +369,11 @@ production stack needs its own signing key.
 - **A code beside every refusal of the project, captions and render routes**:
   `{"detail": "<the same sentence>", "code": "<a word>"}`. docs/api/errors.md
   lists the codes, and `tests/unit/test_refusal_codes.py` holds the table to
-  the routes and the routes to raising nothing without one.
+  the routes and the routes to raising nothing without one. The preview cap
+  (`previews_busy`), mail to support (`mail_not_configured`,
+  `mail_not_queued`) and `GET /media/{name}/audio` (`unknown_feature`,
+  `media_silent`, `audio_engine_refused`, `audio_engine_failed`) carry codes
+  too; the page lists what is not covered yet.
 - **A cap on concurrent previews.** At most `ALFRED_PREVIEW_CONCURRENCY` (4)
   previews are drawn at once; the rest wait their turn without holding a
   thread, for up to `ALFRED_PREVIEW_WAIT` (10 s), then get 503 with
