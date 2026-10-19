@@ -10,7 +10,12 @@ access and storage, the editor again, accounts and the timeline API,
 dependencies, and the engine (otto pinned at e050396, `fix/engine-wave2`).
 The third, on `integrate/wave-3`: captions through an audio engine -- vox
 vendored at `alfred/vox` beside otto, driving joe -- and a Golden Layout
-workspace for the editor. Read **Security** and **Changed** before
+workspace for the editor. The fourth, on `integrate/wave-4`: the review's
+fix round -- every setting reaching the services that read it, CI installing
+what the image installs, the workspace's tab race and the suite's timing
+races, docs that describe the API as it answers, the timeline's sound written
+by otto (pinned at f3ceca3, `fix/engine-sound`), and an api whose one event
+loop no longer waits on a preview. Read **Security** and **Changed** before
 deploying: several requests that used to be accepted are now refused, and a
 production stack needs its own signing key.
 
@@ -68,6 +73,9 @@ production stack needs its own signing key.
   9.5.0), python-jose, ecdsa and rsa removed, and the lock refreshed within
   its ranges: open advisories in the image's dependencies go from 82 to 20.
   The icon font is served by the app, not fetched from Google.
+- **flower and `./al docs` listen on loopback** unless `ALFRED_BIND` says
+  otherwise, as the dev stack does. A test holds every port every compose file
+  publishes to loopback by default.
 
 ### Changed
 
@@ -122,6 +130,26 @@ production stack needs its own signing key.
   its main has mithril 2.2 and Playwright 1.61. json-logic-engine stays at
   1.3.9 (its 2.x changes how stored project logic evaluates); unused babel and
   cssnano packages are gone.
+- **The engine is otto f3ceca3, and it writes a transcription's sound.** The
+  worker has otto's `renderSound` write the timeline's mix -- its video and
+  audio clips, as long as the whole timeline, as a 16 kHz mono 16-bit WAV.
+  alfred names only the rate: no codec, ffmpeg option or moviepy call is left
+  in the transcription path. A clip otto cannot play is named by its place in
+  the whole timeline, and its refusal reaches the Captions panel in otto's own
+  words, without an exception's name in front.
+- **vox moves to 771c154**, its docs and test text only: nothing under `vox/`
+  changes. Its HANDOFF is restamped, and its README says which of joe's media
+  refusals the offline engine holds a caller to.
+- **production.yml maps `host.docker.internal` to the host**, as dev.yml
+  does, so an audio engine beside the stack is reached at the documented
+  address on a Linux host too.
+- **An empty setting is an unset one** for `ALFRED_RENDER_DIR`,
+  `ALFRED_DELIVERY_DIR`, `ALFRED_DEV_USER_EMAIL` and `ALFRED_BUCKET_NAME`,
+  which took it literally -- the working directory, nobody, no bucket. Every
+  setting but the signing key now reads empty as unset.
+- **The published `al[render]` extra asks for gizeh**, the vendored engine's
+  own render extra, rather than `al-otto[render]` from PyPI, whose 0.2.2 still
+  brought bezier.
 
 ### Fixed
 
@@ -158,6 +186,46 @@ production stack needs its own signing key.
   clips on one row, a Deliver-stage reload no longer sends an unauthenticated
   request, and `./al test` renews its anonymous volumes after a dependency
   change.
+- **The api answers while a preview is drawn.** `POST /preview/`, `GET
+  /preview/template/{name}`, `POST /demo/media`, `POST /invoice` and `GET
+  /videos` run in FastAPI's thread pool; queueing a render or a
+  transcription, mailing an issue report, reading a subtitle file, and the
+  startup font probe and frame sweep are handed to it too. Each held the api's
+  one event loop for as long as it took, `/healthz` and `/health` included; a
+  send to a broker that does not answer took thirty seconds.
+- **Demo media is made once, and listed only when whole**: two presses at once
+  make each clip once, and each is written under a hidden name and moved into
+  place when ffmpeg finishes.
+- **A tab chosen in the workspace stays chosen.** Now and then the tab just
+  clicked went behind again -- Render back over Captions, with the rail on
+  Edit -- because the workspace compared the stage it had written into the
+  address with the router's copy, a tick behind. Both sides read the address
+  itself now; a second tab chosen in that tick is written too, and a stage
+  chosen on the rail keeps a project opened a moment before.
+- **The Captions panel says it is checking the audio engine** until the
+  server's health answer arrives, with Transcribe disabled, rather than offer
+  a transcription a busy server might then refuse.
+- **Every setting alfred reads reaches the api and the renderer.** dev.yml and
+  production.yml pass them by bare name from one list per file --
+  `ALFRED_ALLOW_REGISTRATION`, the only way to open registration in
+  production, among those that were ignored -- and a test fails when the code
+  reads one a stack does not pass.
+- **The browser suite keeps its renders, deliveries and preview frames on a
+  volume**, not in the working tree, and `./al test` runs under
+  `<project>-e2e` after removing its last run's containers and volumes, so it
+  no longer takes over a running dev stack or leaves anonymous volumes behind.
+- **`./al` lists every command it runs**, and its port guard checks
+  `ALFRED_HMR_PORT` and `ALFRED_DB_PORT` as well as `ALFRED_PORT`, names the
+  container in the way, and runs for `./al thin` too.
+- **bezier is no longer locked**: the `render` group restates the vendored
+  engine's extra (`gizeh~=0.1`), and no locked version changes.
+- **The API docs describe the API as it answers.** Render settings go in the
+  request body; status is `GET /render/{id}/status` and downloads use the
+  signed `download_url`; the preview is `POST /preview/`, with its slash;
+  issues go to `POST /render/{id}/report`; `final` is not offered, and a clip's
+  `data` carries only otto's `TemplateData` fields. Examples name library media
+  and say what a URL needs. `mkdocs build --strict` passes: the preview images
+  are frames the server makes, and every relative link names its page.
 
 ### Added
 
@@ -219,6 +287,14 @@ production stack needs its own signing key.
   `?stage=` links and the rail bring a stage's panel forward. Narrower screens
   keep the stage flow, built from the same panels.
 - **The browser suite runs a `phone` project** (390x844) beside `chromium`.
+- **`docs/configuration.md`**: every setting, with its default, what reads it
+  and how to set it, and what a Linux Docker host needs to reach joe.
+- **Guards against drift.** `tests/unit/test_stack_settings.py` fails when the
+  code reads a setting a stack does not pass; `test_blocking_calls.py` when a
+  coroutine in the api calls something that blocks; `test_event_loop.py`
+  shows `/healthz` answering while a preview and demo media are being made.
+  Four browser tests no longer depend on timing, and the stub audio engine
+  takes what joe takes -- its twenty content types, its limits, its refusals.
 
 ### CI and release
 
@@ -240,6 +316,16 @@ production stack needs its own signing key.
   and both vendored engines), all through the pytest workflow's `pip_args`.
 - **CI installs `alfred/vox` editable** beside the engine; the e2e stack runs a
   deterministic stub audio engine, and both browser projects.
+- **CI installs the engine's render extra, pinned.** `requirements-render.lock`
+  (gizeh 0.1.12, cairocffi 1.7.1), exported from pdm.lock's `render` group,
+  is installed `--no-deps` by CI.yml and publish.yml, the image and nox, with
+  the engine itself `--no-deps -e alfred/otto`: nothing resolves the engine's
+  dependencies on the day any more. CI could not import the text templates
+  before. The runner has no ImageMagick, so the text-drawing tests skip there
+  and run in the image.
+- **The deploy workflow passes `submodules: recursive`**, the string
+  `build.yml` takes, where it passed the boolean `true`; haiku.yml checks out
+  with `actions/checkout@v7`.
 
 ### Measured
 

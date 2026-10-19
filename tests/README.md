@@ -95,6 +95,9 @@ tests/
     test_output_selection.py
     test_db_layer.py     the DB helpers, without a database
     test_stack_config.py compose files and Dockerfiles
+    test_stack_settings.py every setting reaches the services that read it
+    test_event_loop.py   the api answers while slow work is being done
+    test_blocking_calls.py no coroutine in the api calls something that blocks
   pipeline/            needs ffmpeg, no DB, no network
     test_render_pipeline.py
   integration/         needs MongoDB at DB_URL: the app in-process, real auth
