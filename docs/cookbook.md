@@ -1526,7 +1526,8 @@ Below 1024 pixels the editor is not a workspace. The rail chooses a stage,
 the stage's panels sit under it, and the viewer and the timeline are always
 below them -- built from the same panel modules the workspace docks
 (workspace.spec.js). Run by the `phone` project, at 390x844, with the
-flow, editor, timeline-tools and deliver specs.
+flow, editor, timeline-tools and deliver specs; the picture's room is also
+checked on a smaller phone, and on one held sideways.
 
 ### the phone flow
 
@@ -1558,6 +1559,33 @@ regions under it.
   resolution, where they always were, and nothing at all while no template
   clip is selected.
 
+### the picture keeps its room
+
+In every stage the whole picture is on the screen, and the stage's own
+panels and the timeline give way to it, scrolling inside themselves --
+at 390x844 all on one screen, the page itself not scrolling. The
+viewer's region was a scroller the column could squeeze like any other,
+and it was squeezed, under the stage's panels at their full share: to a
+few dozen pixels of a 203-pixel picture at 390x844, and to none of it
+at 375x667.
+
+- **every stage shows the whole picture on one screen at a phone's size**
+### on a smaller phone
+
+At 375x667 the stage's panels and the timeline would share about 100
+pixels, which holds a heading of the one and a row of tools of the
+other. They keep a floor instead, and the page scrolls past it -- by
+the window, from anywhere that does not scroll itself.
+
+- **every stage shows the whole picture, and the page scrolls to the rest**
+### held sideways
+
+The frame's room is two-fifths of the screen held sideways, and the
+header, the rail, the room, the transport and the footer are taller
+than the screen on their own, so this page has to scroll. The column
+used to run on past the window's edge instead, out of reach.
+
+- **every stage shows the whole picture, and the page scrolls to the rest**
 
 ## templates
 

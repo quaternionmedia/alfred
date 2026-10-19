@@ -46,8 +46,9 @@ gate runs both:
   below marks those four; every other spec runs in `chromium` alone.
 
 A spec about one layout's own shape sets the viewport it means --
-`appearance.spec.js` does for the phone flow's rail and panels -- and the
-rest read the same either way.
+`appearance.spec.js` does for the phone flow's rail and panels, and
+`stacked.spec.js` for the picture on a smaller phone and one held
+sideways -- and the rest read the same either way.
 
 `E2E_BASE_URL` defaults to `http://localhost:8000`. Before the first test,
 `global-setup.js` fetches `/openapi.json` from it and fails the run unless the
@@ -163,7 +164,7 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Demo project and media, empty states | `demo.spec.js` | UI + API |
 | The four-stage flow, delivery with real bytes (both layouts) | `flow.spec.js` | UI + API |
 | The desktop workspace: every panel under its registry id, `?stage=` bringing a panel forward, a tab chosen staying in front and named in the address however quickly the router reads it back, Back and Forward, a panel dragged by its tab or resized and the arrangement kept, a broken one dropped for the default, the Panels menu reopening without doubling, Reset layout, tabs and menu from the keyboard, the viewer keeping its shape, swapping with the phone flow without losing work | `workspace.spec.js` | UI |
-| The phone flow: one stage's panels over the viewer and the timeline, a long list scrolling inside its panel | `stacked.spec.js` | UI, `phone` |
+| The phone flow: one stage's panels over the viewer and the timeline, a long list scrolling inside its panel, the whole picture on the screen in every stage at 390x844, 375x667 and held sideways, and a screen too short for the flow scrolling to the rest | `stacked.spec.js` | UI, `phone` |
 | Timeline editor with a project open (both layouts) | `editor.spec.js` | UI |
 | The timeline tools and the media they act on, the transport, saving; the toolbar | `tools.spec.js`, `otto.spec.js` | UI |
 | Trim, cut, slip, slide and roll, by mouse and touch (both layouts) | `timeline-tools.spec.js` | UI |

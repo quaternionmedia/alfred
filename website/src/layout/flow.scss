@@ -2,6 +2,14 @@
 //
 // Each panel sits in a slot, inside a box of its own (hosts.js). Neither box
 // is meant to be seen: what lays out is the panel.
+//
+// The flow is one screen where it can be: the page column (style.css), whose
+// regions give way and scroll inside themselves. What gives way, and how far,
+// is decided here. The picture does not: the viewer's region keeps the
+// frame's whole room. The header, the rail, the transport and the footer keep
+// their height. The stage's own panels and the timeline share what is left,
+// each in proportion to its height and neither below a floor at which it
+// still shows something, and a screen too short for the floors scrolls.
 
 // The viewer and the timeline keep the page's own shape. Their sections are
 // regions of the page column (style.css, editor.scss) -- each shrinks to fit
@@ -19,25 +27,54 @@
 // a quarter of an upright screen, two-fifths of one held sideways. A room
 // with no height of its own would be as tall as the frame in it, and a frame
 // fitted to that could shrink and never grow back.
+$room: 24vh;
+$room-sideways: 40vh;
+
 .flowpanel--viewer .viewerframe {
-  height: 24vh;
+  height: $room;
+}
+
+// The viewer's region gives way down to the frame's room and no further: the
+// settings beside or under the frame scroll inside it, and the picture stays.
+// Every `section` is a scroller (style.css), and a scroller in a column can
+// be squeezed to nothing, so this one was: to 12 pixels at 375x667, none of
+// them picture, under the stage's panels at their full share. The height is
+// the content box's, below the region's top padding (editor.scss), so the
+// whole room fits under it.
+.flowpanel--viewer .viewer {
+  min-height: $room;
 }
 
 @media (orientation: landscape) {
   .flowpanel--viewer .viewerframe {
-    height: 40vh;
+    height: $room-sideways;
+  }
+
+  .flowpanel--viewer .viewer {
+    min-height: $room-sideways;
   }
 }
 
+// The rail is how a stage is reached, so it keeps its height. It scrolls
+// sideways inside itself (stages.scss), which makes it a scroller too, and
+// the column squeezed it to a quarter of its height, through its labels. It
+// is the page's own here; in the workspace it sits in a bar (workspace.scss).
+body > .stagerail {
+  flex-shrink: 0;
+}
+
 // The stage's own panels: as tall as they need, up to a share of the screen,
-// and past that they scroll inside themselves. They are what the stage is
-// for, so they keep their height and the viewer and the timeline give way --
-// but only so far: unbounded, a long project list took the whole column and
-// squeezed the viewer and the timeline out of it.
+// and past that they scroll inside themselves -- unbounded, a long project
+// list took the whole column and squeezed the viewer and the timeline out of
+// it. Where the screen cannot spare that share they give way as well, with
+// the timeline, down to room for a heading and the start of a list -- or a
+// fifth of a screen held sideways, so that the picture under them is still on
+// the first screen.
 .flowstage {
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
+  flex: 0 1 auto;
+  min-height: min(6rem, 20vh);
   max-height: 45vh;
 }
 
@@ -58,4 +95,30 @@
   flex: 0 1 auto;
   min-height: 0;
   overflow: auto;
+}
+
+// The timeline's region gives way with the stage's panels, down to its rows
+// of tools, and the timeline under them scrolls inside it. The content box's
+// height, as the viewer's: the region's padding is on top of it.
+.flowpanel--timeline .editor {
+  min-height: 6rem;
+}
+
+// Past the floors the page scrolls, rather than squeezing a region to nothing
+// or running the column on past the window's edge -- which, with the page's
+// `overflow: hidden` (style.css), put the bottom of it out of reach.
+//
+// Held sideways it has to: the header, the rail, the frame's room, the
+// transport and the footer alone are taller than a phone is. Upright, a
+// 375x667 screen leaves about 100 pixels for the stage's panels and the
+// timeline together: shared, a heading of the one and a row of tools of the
+// other, a screen that holds everything and shows nothing of it. So it
+// scrolls too, by about 100 pixels. At 390x844 the floors fit, just, and the
+// flow is one screen.
+//
+// The body's overflow is the window's (CSS Overflow's viewport propagation),
+// so it is the window that scrolls, as on any page -- and only while the flow
+// is drawn, so the workspace stays a fixed frame.
+body:has(> .flowstage) {
+  overflow-y: auto;
 }
