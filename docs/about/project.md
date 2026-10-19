@@ -1,6 +1,6 @@
 # Project
 
-A `Project` is a special type of `Edl` template, designed to add user data dynamically by specifying rules to create an `Edl` when **data** is applied. The end result is generates an `Edl` that is ready to be rendered.
+A `Project` is a special type of `Edl` template, designed to add user data dynamically by specifying rules to create an `Edl` when **data** is applied. The result is an `Edl` ready to render.
 
 ``` json title="`Project` data format"
 {
