@@ -26,11 +26,13 @@ Its limits, and what covers each:
 
 - A call made through something the scan cannot see into is invisible: a
   dependency FastAPI injects (`queue=Depends(get_render_queue)` is Celery's
-  `delay`), a method outside BLOCKING_METHODS (`self.password_helper.hash`), a
-  function passed in as an argument. test_event_loop.py checks each queue
-  send, injected as it is, one by one.
+  `delay`), a method outside BLOCKING_METHODS, a function passed in as an
+  argument. test_event_loop.py checks each queue send, injected as it is, one
+  by one.
 - Only alfred's own code is read. A library coroutine that blocks inside itself
-  is not seen: fastapi-users hashes passwords inline in `authenticate`.
+  is not seen: fastapi-users hashes passwords inline, which is why alfred
+  carries copies of those methods that do not (utils/passwords.py, held to the
+  library by test_password_hashing.py).
 - A function or lambda defined inside a coroutine is not counted against it,
   as it is almost always what goes to the thread pool. One that the coroutine
   calls directly is missed.
@@ -81,6 +83,11 @@ BLOCKING = {
     'alfred.core.utils.tasks.pending_count': 'asks the broker',
     # The database, synchronously: every query on the handle blocks.
     'alfred.core.utils.db.get_sync_db': 'queries the synchronous database client',
+    # A password, hashed or checked: bcrypt is slow on purpose.
+    'bcrypt.hashpw': 'hashes a password, slowly on purpose',
+    'bcrypt.checkpw': 'checks a password, slowly on purpose',
+    'passlib.hash.bcrypt.hash': 'hashes a password, slowly on purpose',
+    'passlib.hash.bcrypt.verify': 'checks a password, slowly on purpose',
     # Whole directories and files.
     'os.listdir': 'lists a directory',
     'os.scandir': 'lists a directory',
@@ -103,6 +110,9 @@ BLOCKING_METHODS = {
     'delay': 'sends a job to the broker',
     'apply_async': 'sends a job to the broker',
     'deliver': 'copies or uploads a whole render',
+    # fastapi-users' password helper, and passlib's CryptContext under it.
+    'hash': 'hashes a password, slowly on purpose',
+    'verify_and_update': 'checks a password, slowly on purpose',
 }
 
 

@@ -18,6 +18,8 @@ code is safe only while it matches its original, so this file holds it there.
   an outdated hash is upgraded at login.
 - `TestTheApiAnswersWhile`: `/healthz` answers while a login, a registration
   or a reset is held in its hash or check, as in test_event_loop.py.
+- `TestTheBlockingCallsScan`: test_blocking_calls.py catches a coroutine that
+  hashes on the loop, so a regression fails there as well.
 """
 
 import ast
@@ -45,6 +47,7 @@ from alfred.core.routes import users
 from alfred.core.routes.users import UserManager
 from alfred.core.utils import passwords
 from alfred.core.utils.passwords import HashesOffTheLoop
+from tests.unit.test_blocking_calls import Module, Scan, alfred_modules
 from tests.unit.test_event_loop import HeavyWork, answers_meanwhile, on_the_loop
 
 # Signs the parity cases' tokens. A test value, used nowhere else.
@@ -614,3 +617,73 @@ class TestTheApiAnswersWhile:
         assert res.status_code == 400
         assert res.json() == {'detail': 'LOGIN_BAD_CREDENTIALS'}
         assert held.helper.calls[0][0] == 'verify_and_update'
+
+
+def scanned(source):
+    """What test_blocking_calls.py's scan finds in one made-up module."""
+    return Scan([Module('alfred.made_up', dedent(source))]).violations()
+
+
+class TestTheBlockingCallsScan:
+    """test_blocking_calls.py knows a password hash blocks, so a coroutine
+    that hashes on the loop again fails the suite there."""
+
+    def test_a_password_checked_in_a_coroutine(self):
+        found = scanned(
+            '''
+            async def authenticate(self, credentials, user):
+                self.password_helper.verify_and_update(credentials.password, user)
+            '''
+        )
+        assert found == [
+            'alfred.made_up:3 authenticate() calls .verify_and_update() '
+            '(checks a password, slowly on purpose)'
+        ]
+
+    def test_a_password_hashed_in_a_coroutine(self):
+        found = scanned(
+            '''
+            async def create(self, password):
+                return self.password_helper.hash(password)
+            '''
+        )
+        assert found == [
+            'alfred.made_up:3 create() calls .hash() '
+            '(hashes a password, slowly on purpose)'
+        ]
+
+    def test_bcrypt_itself(self):
+        found = scanned(
+            '''
+            import bcrypt
+            async def create(password):
+                return bcrypt.hashpw(password, bcrypt.gensalt())
+            '''
+        )
+        assert found == [
+            'alfred.made_up:4 create() calls bcrypt.hashpw '
+            '(hashes a password, slowly on purpose)'
+        ]
+
+    def test_handed_to_the_thread_pool_it_is_not_counted(self):
+        found = scanned(
+            '''
+            from starlette.concurrency import run_in_threadpool
+            async def create(self, password):
+                return await run_in_threadpool(self.password_helper.hash, password)
+            '''
+        )
+        assert found == []
+
+    def test_the_scan_reads_the_copies(self):
+        [module] = [
+            module
+            for module in Scan(alfred_modules()).modules.values()
+            if module.name == 'alfred.core.utils.passwords'
+        ]
+        coroutines = {
+            node.name
+            for node in ast.walk(module.tree)
+            if isinstance(node, ast.AsyncFunctionDef)
+        }
+        assert set(passwords.REPLACED) <= coroutines
