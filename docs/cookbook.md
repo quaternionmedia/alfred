@@ -1273,22 +1273,33 @@ you work: the **viewer** with the output settings beside it, the
 timeline sits with its tools and the media bin beneath.
 
 - **recipe: open the editor and look around**
+
+  ![Recording pending: open the editor and look around](recipes/open-the-editor-and-look-around.svg)
+
 - **recipe: generate a demo from an empty install**
+
+  ![Recording pending: generate a demo from an empty install](recipes/generate-a-demo-from-an-empty-install.svg)
 
   A first run needs no downloads. The Source stage offers to generate both
   a project and its media, synthesised locally with ffmpeg's test sources.
 
 - **recipe: choose a project and edit its timeline**
 
+  ![Recording pending: choose a project and edit its timeline](recipes/choose-a-project-and-edit-its-timeline.svg)
+
   Choosing a project on the Source stage loads its timeline. The clips are
   laid out left to right, and each one is as wide as it is long.
 
 - **recipe: pick a tool and move the playhead**
 
+  ![Recording pending: pick a tool and move the playhead](recipes/pick-a-tool-and-move-the-playhead.svg)
+
   The tools that change clips sit beside the timeline; the ones that move
   the playhead sit above it, in the transport.
 
 - **recipe: render the timeline and deliver the result**
+
+  ![Recording pending: render the timeline and deliver the result](recipes/render-the-timeline-and-deliver-the-result.svg)
 
   The Render stage turns the timeline into a video; the Deliver stage
   sends it somewhere. Delivery is local by default, so this works on a
