@@ -438,7 +438,13 @@ install, emulated in a clean container, 1378 passed, 191 skipped (the
 database tier and the text-drawing tests), none failed; `mkdocs build
 --strict` without a warning. Live, against joe on the host: the 28 checks of
 the API pass, and qmcp's tools queued a render with the project's captions and
-were handed its signed download.
+were handed its signed download. Fifth round, on `integrate/wave-5`: `./al
+pytest` 1810 passed, 2 skipped, 8 xfailed from a fresh clone; `./al test` 391
+passed, 1 skipped, none passed only on retry; CI's install, emulated, 1619
+passed, 193 skipped, none failed; `mkdocs build --strict` without a warning.
+`./al family loop` against the round's branches of joe, qmcp and vox: every
+repository's quick suite green, and the live check's nine checks passing
+against a joe with nothing but its media API turned on.
 
 ## 0.3.0 — breaking
 
