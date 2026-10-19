@@ -98,6 +98,8 @@ tests/
     test_stack_settings.py every setting reaches the services that read it
     test_event_loop.py   the api answers while slow work is being done
     test_blocking_calls.py no coroutine in the api calls something that blocks
+    test_preview_slots.py  so many previews at once; the rest wait, then 503
+    test_support_mail.py   support mail is queued, sent by the worker, retried
   pipeline/            needs ffmpeg, no DB, no network
     test_render_pipeline.py
   integration/         needs MongoDB at DB_URL: the app in-process, real auth
