@@ -359,6 +359,11 @@ class TestDependencyPinning:
         overrides = pyproject()['tool']['pdm']['resolution']['overrides']
         exported = exported_pins('requirements.lock')
         for name, spec in overrides.items():
+            if '://' in spec:
+                # A source rather than a version range: al-otto, from the
+                # submodule, which test_pdm_resolves_the_engine_from_the_
+                # submodule holds the lock to.
+                continue
             version = exported.get(canonicalize_name(name))
             assert version and SpecifierSet(spec).contains(version), (
                 f'{name} is exported at {version}, outside its override {spec}. '
@@ -388,58 +393,109 @@ class TestDependencyPinning:
             'Fix with: pip install -e alfred/otto --no-deps'
         )
 
-    def test_al_otto_is_not_pinned_in_the_export(self):
+    @pytest.mark.parametrize('export', EXPORTS)
+    def test_al_otto_is_not_in_the_export(self, export):
         """The vendored submodule must win.
 
-        The image installs alfred/otto editable. If requirements.lock also
-        pinned the published al-otto, pip would install that too and the
-        editable checkout would be shadowed -- so a fix made in the submodule
-        would appear to have no effect.
+        The image installs alfred/otto editable. If an export also named
+        al-otto, pip would install that too and the editable checkout would be
+        shadowed -- so a fix made in the submodule would appear to have no
+        effect. pdm resolves al-otto from the submodule, so the line it
+        exports names a path on the machine that ran it: filtered out, and no
+        `file:` URL may survive in an export at all.
         """
-        for line in read('requirements.lock').split('\n'):
-            assert not line.strip().lower().startswith('al-otto=='), (
-                'al-otto is pinned in requirements.lock; it would shadow the '
-                'vendored submodule the image installs editable'
+        for line in read(export).split('\n'):
+            line = line.strip().lower()
+            assert not line.startswith('al-otto'), (
+                f'al-otto is in {export}; it would shadow the vendored '
+                'submodule the image installs editable'
             )
+            assert 'file:' not in line, f'{export} names a local path: {line}'
 
     def test_the_render_group_is_the_engine_render_extra(self):
-        """pdm locks what the vendored engine draws with, not what PyPI's does.
+        """`al[render]` asks for the engine's own extra, by reference.
 
-        The group was `al-otto[render]`, which pdm resolves against the
-        published al-otto -- and 0.2.2's render extra still names bezier,
-        which the engine in alfred/otto has since dropped. So the lock carried
-        a package nothing imports, with no wheel for this Python. The group
-        restates the submodule's own extra instead, and this holds the two
-        together: a requirement otto's extra gains, loses or retunes shows up
-        here, rather than as a lock describing some other engine.
+        Restated -- `gizeh~=0.1` copied from alfred/otto/pyproject.toml -- it
+        was a second list to keep in step with the engine's. By reference
+        there is one, and its floor moves with the core dependency's: both
+        name the release `pip` would install, so they are raised together.
         """
-        engine = tomllib.loads(read('alfred/otto/pyproject.toml'))['project'][
-            'optional-dependencies'
-        ]['render']
-        ours = pyproject()['project']['optional-dependencies']['render']
+        engine = [
+            Requirement(spec)
+            for spec in pyproject()['project']['dependencies']
+            if canonicalize_name(Requirement(spec).name) == 'al-otto'
+        ]
+        render = [
+            Requirement(spec)
+            for spec in pyproject()['project']['optional-dependencies']['render']
+        ]
+        assert len(engine) == 1, 'pyproject.toml should depend on al-otto once'
+        assert [canonicalize_name(r.name) for r in render] == ['al-otto'] and (
+            render[0].extras == {'render'}
+        ), (
+            "pyproject.toml's render group should be the engine's render extra, "
+            f'`al-otto[render]`, and nothing else; it is {render}'
+        )
+        assert render[0].specifier == engine[0].specifier, (
+            f'al-otto is {engine[0].specifier} but al-otto[render] is '
+            f'{render[0].specifier}; raise the two together'
+        )
+
+    def test_pdm_resolves_the_engine_from_the_submodule(self):
+        """pdm.lock describes the engine every install path runs.
+
+        Resolved from PyPI, the lock described al-otto 0.2.2 as published:
+        older than alfred/otto, with a render extra that still named bezier
+        (no wheel for this Python; the submodule dropped it). The override
+        points pdm at the submodule, and this holds the lock to it -- so a
+        dependency otto gains, loses or retunes after a pin bump shows up
+        here as a stale lock, rather than as a lock describing another engine.
+
+        Relock with `pdm update --update-reuse al-otto` (pdm 2.29 or later)
+        and regenerate the exports.
+        """
+        override = pyproject()['tool']['pdm']['resolution']['overrides']
+        assert override.get('al-otto') == 'file:///${PROJECT_ROOT}/alfred/otto', (
+            'pyproject.toml must override al-otto to the submodule, or pdm '
+            'locks the release on PyPI instead of the engine the image runs'
+        )
+        engine = tomllib.loads(read('alfred/otto/pyproject.toml'))['project']
 
         def normalised(specs):
             return sorted(
-                (canonicalize_name(r.name), str(r.specifier), str(r.marker or ''))
+                (
+                    canonicalize_name(r.name),
+                    sorted(str(s) for s in r.specifier),
+                    str(r.marker or ''),
+                )
                 for r in map(Requirement, specs)
+                if canonicalize_name(r.name) != 'al-otto'
             )
 
-        assert normalised(ours) == normalised(engine), (
-            f"pyproject.toml's render group is {ours}, but alfred/otto's render "
-            f'extra is {engine}. Restate the extra, then relock with '
-            '`pdm lock --update-reuse` and regenerate requirements-render.lock.'
-        )
-        locked = {
-            canonicalize_name(package['name'])
-            for package in tomllib.loads(read('pdm.lock'))['package']
-            if 'render' in package.get('groups', [])
+        wanted = {
+            (): normalised(engine['dependencies']),
+            ('render',): normalised(engine['optional-dependencies']['render']),
         }
-        unlocked = [
-            spec
-            for spec in ours
-            if canonicalize_name(Requirement(spec).name) not in locked
-        ]
-        assert not unlocked, f"pdm.lock's render group lacks {unlocked}; relock"
+        locked = {
+            tuple(package.get('extras', [])): package
+            for package in tomllib.loads(read('pdm.lock'))['package']
+            if canonicalize_name(package['name']) == 'al-otto'
+        }
+        assert sorted(locked) == sorted(wanted), (
+            f'pdm.lock has al-otto with extras {sorted(locked)}; expected the '
+            'engine and its render extra. Relock.'
+        )
+        for extras, package in locked.items():
+            label = f"al-otto[{','.join(extras)}]" if extras else 'al-otto'
+            assert package.get('path') == './alfred/otto', (
+                f'pdm.lock resolves {label} from {package.get("path") or "an index"}'
+                ', not the submodule. Relock.'
+            )
+            assert normalised(package.get('dependencies', [])) == wanted[extras], (
+                f"pdm.lock's {label} is not what alfred/otto/pyproject.toml "
+                'declares, so the lock is stale. Relock with `pdm update '
+                '--update-reuse al-otto` and regenerate the exports.'
+            )
 
     def test_what_the_engine_depends_on_is_locked(self):
         """otto is installed with --no-deps as well, so everything it declares
@@ -467,8 +523,8 @@ class TestDependencyPinning:
             elif not requirement.specifier.contains(pins[name], prereleases=True):
                 problems.append(f'otto needs {spec}; {export} has {pins[name]}')
         assert not problems, (
-            f'{problems}. Add what the engine needs to pyproject.toml (its core) '
-            'or restate its render extra, then relock and regenerate the exports.'
+            f'{problems}. pdm resolves the engine from the submodule, so relock '
+            'with `pdm update --update-reuse al-otto` and regenerate the exports.'
         )
 
     def test_the_installed_vox_is_the_vendored_one(self):

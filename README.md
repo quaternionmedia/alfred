@@ -112,11 +112,12 @@ npx playwright install chromium
 yarn e2e                          # end-to-end, against a running ./al dev
 ```
 
-On the host, `pdm install` takes `al-otto` from PyPI and has no vox at all.
-`pip install -e alfred/otto --no-deps` and `pip install -e alfred/vox
---no-deps` in that environment make the suite test the vendored engines the
-image runs, which `tests/unit/test_stack_config.py` checks; `pdm install -G
-render` adds gizeh, which the engine's text templates draw with.
+On the host, `pdm install` takes `al-otto` from `alfred/otto` as a copy
+rather than editable, and has no vox at all. `pip install -e alfred/otto
+--no-deps` and `pip install -e alfred/vox --no-deps` in that environment make
+the suite test the vendored engines the image runs, which
+`tests/unit/test_stack_config.py` checks; `pdm install -G render` adds the
+engine's render extra (gizeh), which its text templates draw with.
 
 Strategy and known gaps: [tests/README.md](tests/README.md) for the backend,
 [website/e2e/README.md](website/e2e/README.md) for the browser suite. Both
