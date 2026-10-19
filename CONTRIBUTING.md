@@ -86,17 +86,22 @@ walkthroughs in it are what the recordings capture:
 ./al recipes       # record the @recipe walkthroughs as video, then regenerate
 ```
 
-The recordings stay on your machine: `docs/recipes/*.webm` is gitignored. The
-collector also writes an SVG stub per passing recipe into `docs/recipes/`,
-meant to be committed in their place; none has been yet.
+`./al recipes` runs against a dev stack you already have up (`E2E_BASE_URL`
+if it is not on :8000). The recordings stay on your machine: each passing
+recipe's is copied to `docs/recipes/<recipe>.webm`, which git ignores, beside
+an SVG stub that names the recipe and says a polished recording is pending.
+The stubs are committed, and the cookbook shows each under its recipe. It
+links only what git tracks, so a committed cookbook never names a file a clean
+checkout lacks; a new recipe's stub appears once you `git add docs/recipes`
+and regenerate.
 
 So **do not edit `docs/cookbook.md` by hand** — change the tests and
 regenerate. `tests/unit/test_cookbook.py` fails if the committed file drifts
 from the specs, including a check that regenerating produces it byte for byte.
 
 The reasoning: prose describing behaviour goes stale silently, and a test
-describing behaviour goes red. A recipe that breaks has no video rather than a
-misleading one.
+describing behaviour goes red. A recipe that breaks has no stub or video
+rather than a misleading one.
 
 ## Before opening a pull request
 

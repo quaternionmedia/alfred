@@ -30,6 +30,12 @@ yarn e2e:ui          # interactive runner
 yarn e2e:report      # last HTML report
 ```
 
+The `@recipe` walkthroughs run in the `docs` project, one worker, recording
+video. `./al recipes` runs it, copies each passing recipe's recording to
+`docs/recipes/<recipe>.webm` (git-ignored), writes the SVG stub beside it that
+is committed in its place, and regenerates the cookbook, which links only the
+files git tracks -- the stubs.
+
 ## Two layouts, two projects
 
 The editor is one set of panels laid out two ways (`src/layout/`): a Golden

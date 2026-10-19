@@ -1,5 +1,5 @@
 # Otto
-`otto` is the *otto*matic :wink: rendering engine behind alfred's renders, its previews and its [`Template`](../about/template.md) logic. It is vendored at `alfred/otto`: alfred decides what a caller may ask for, and otto draws it.
+`otto` is the *otto*matic rendering engine behind alfred's renders, its previews and its [`Template`](../about/template.md) logic. It is vendored at `alfred/otto`: alfred decides what a caller may ask for, and otto draws it.
 
 ## `POST /preview/`
 Builds the `Edl` in the body and answers a signed URL for its frame at `t` seconds, `?t=` being required. Useful to check a timeline before rendering it in full.
