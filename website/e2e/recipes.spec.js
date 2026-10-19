@@ -19,7 +19,26 @@
  * not pay for the pauses.
  */
 
-const { test, expect, MEDIA_PROJECT } = require('./fixtures')
+const { test: base, expect, login, MEDIA_PROJECT } = require('./fixtures')
+
+/**
+ * The fixture's logged-in page, noting where the recipe starts.
+ *
+ * A recording starts with the page, so each one opens on the login in front
+ * of its recipe. The seconds that took are noted on the test, and
+ * `./al recipes` starts the recipe's GIF there.
+ */
+const test = base.extend({
+  authedPage: async ({ page }, use, testInfo) => {
+    const opened = Date.now()
+    await login(page)
+    testInfo.annotations.push({
+      type: 'recipe-starts',
+      description: ((Date.now() - opened) / 1000).toFixed(2),
+    })
+    await use(page)
+  },
+})
 
 // Long enough to read what changed, short enough that a full recording is
 // still a couple of minutes.
@@ -28,6 +47,16 @@ const BEAT = 900
 async function beat(page, ms = BEAT) {
   await page.waitForTimeout(ms)
 }
+
+// The subtitle file the captions recipe imports.
+const RECIPE_SRT = `1
+00:00:00,500 --> 00:00:02,600
+Read from a subtitle file
+
+2
+00:00:03,000 --> 00:00:05,600
+and drawn over the picture
+`
 
 test.describe('@recipe walkthroughs', () => {
   test('recipe: open the editor and look around', async ({ authedPage }) => {
@@ -179,5 +208,80 @@ test.describe('@recipe walkthroughs', () => {
       timeout: 30_000,
     })
     await beat(authedPage, 2000)
+  })
+
+  test('recipe: import captions and show them over the picture', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * The Captions panel reads a subtitle file and shows what it found before
+     * anything is kept. Use them, tick **Draw into renders** and save, and
+     * the caption under the playhead is drawn over the picture as it plays.
+     */
+    const headers = { Authorization: token }
+    await request.post('/demo/media', { headers })
+    const videos = (await (await request.get('/videos', { headers })).json()).map(String)
+    const bars = videos.find(v => v.endsWith('demo-bars.mp4'))
+    const testcard = videos.find(v => v.endsWith('demo-testcard.mp4'))
+    test.skip(!bars || !testcard, 'the demo media is not present')
+
+    const created = await request.post('/project', {
+      headers,
+      data: {
+        name: 'Captions recipe',
+        logic: {},
+        fields: [],
+        edl: {
+          clips: [
+            { type: 'video', name: bars, duration: 3, start: 0, inpoint: 0, outpoint: 3 },
+            { type: 'video', name: testcard, duration: 3, start: 3, inpoint: 0, outpoint: 3 },
+          ],
+          duration: 6,
+        },
+      },
+    })
+    expect(created.status(), await created.text()).toBe(200)
+    const project = await created.json()
+
+    try {
+      await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(2)
+      await authedPage.locator('#paneltab-captions').click()
+      await expect(authedPage.locator('#panel-captions')).toBeVisible()
+      await beat(authedPage)
+
+      await authedPage.locator('#captions-file').setInputFiles({
+        name: 'film.srt',
+        mimeType: 'application/x-subrip',
+        buffer: Buffer.from(RECIPE_SRT),
+      })
+      await expect(authedPage.locator('#captions-review')).toContainText(
+        'film.srt: 2 captions'
+      )
+      await beat(authedPage, 1400)
+      await authedPage.locator('#captions-review-replace').click()
+      await expect(authedPage.locator('#captions-list .captionrow')).toHaveCount(2)
+      await beat(authedPage)
+
+      await authedPage.locator('#caption-enabled').check()
+      await authedPage.locator('#captions-save').click()
+      await expect(authedPage.locator('#captions-unsaved')).toHaveCount(0)
+      await beat(authedPage)
+
+      // Played from the start, the first caption shows over the picture; on
+      // the second clip, the second.
+      await authedPage.locator('#playpause').click()
+      const overlay = authedPage.locator('#caption-overlay')
+      await expect(overlay).toHaveText('Read from a subtitle file')
+      await expect(overlay).toHaveAttribute('data-drawn', 'true')
+      await beat(authedPage, 1400)
+      await authedPage.locator('#timeline .clip').nth(1).click()
+      await expect(overlay).toHaveText('and drawn over the picture')
+      await beat(authedPage, 1800)
+    } finally {
+      await request.delete(`/project/${project._id}`, { headers })
+    }
   })
 })

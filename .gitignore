@@ -100,16 +100,20 @@ build/
 
 # Data
 data/
-# Playwright JSON report, an intermediate for the recipe video collector.
+# Playwright JSON report, an intermediate for the recipe video collector, and
+# the collector's list for the GIF converter.
 website/recipe-report.json
+website/recipe-videos.json
 
 # Recipe recordings. `./al recipes` copies each passing recipe's recording
-# here for watching and for cutting a polished version from; they are not
-# committed, so generated multi-megabyte binaries do not accumulate in
-# history. The SVG stub written beside each one is committed in its place, and
-# the cookbook links only what git tracks, so it never names a recording that
-# exists on one machine.
+# here and turns it into a GIF beside it. The recordings are not committed:
+# the GIFs are, at a fraction of the size, and the cookbook links only what
+# git tracks, so it never names a file that exists on one machine.
 docs/recipes/*.webm
+
+# The docs' screenshots, which `./al recipes` takes (screens.spec.js), are
+# committed despite *.png above.
+!docs/assets/screens/*.png
 
 # Test-render output moved aside during review prep; regenerable, never shipped.
 videos-test-output/

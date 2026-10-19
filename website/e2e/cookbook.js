@@ -118,21 +118,22 @@ function parseSpec(file) {
 const RECIPE_DIR = path.join(REPO, 'docs', 'recipes')
 
 /**
- * The files in docs/recipes that a clean checkout has.
+ * The GIFs in docs/recipes that a clean checkout has.
  *
  * The cookbook is committed, so it may only link what is committed with it.
- * `./al recipes` writes a stub per passing recipe beside its recording, and
- * the recordings are ignored: asking the directory would link a recording
- * that exists on one machine, and the committed cookbook would then depend on
- * it. So git is asked what it tracks, and a file counts only while it is also
- * on disk -- a stub cleared because its recipe failed stops being linked at
- * once, rather than when the deletion is committed.
+ * `./al recipes` writes a GIF per passing recipe beside its recording, and
+ * the recordings are ignored: asking the directory would link a file that
+ * exists on one machine, and the committed cookbook would then depend on it.
+ * So git is asked what it tracks, and a file counts only while it is also on
+ * disk -- a GIF cleared because its recipe failed stops being linked at once,
+ * rather than when the deletion is committed.
  *
- * Without git (an exported tree, say) the directory is all there is, and only
- * the stubs are taken from it: a recording is linked only once committed.
+ * Without git (an exported tree, say) the directory is all there is.
  */
 function recipeFiles() {
-  const present = fs.existsSync(RECIPE_DIR) ? fs.readdirSync(RECIPE_DIR) : []
+  const present = fs.existsSync(RECIPE_DIR)
+    ? fs.readdirSync(RECIPE_DIR).filter(file => file.endsWith('.gif'))
+    : []
   let tracked
   try {
     tracked = execFileSync('git', ['ls-files', '-z', '--', 'docs/recipes'], {
@@ -144,7 +145,7 @@ function recipeFiles() {
       .filter(Boolean)
       .map(file => path.posix.basename(file))
   } catch {
-    tracked = present.filter(file => file.endsWith('.svg'))
+    tracked = present
   }
   return new Set(tracked.filter(file => present.includes(file)))
 }
@@ -157,21 +158,12 @@ function slugFor(title) {
     .toLowerCase()
 }
 
-/**
- * What the cookbook shows under a recipe: its recording once one is
- * committed, else its stub -- a card saying a polished recording is pending
- * -- else nothing.
- */
+/** What the cookbook shows under a recipe: its GIF, once one is committed. */
 function artefactFor(title, files) {
   const slug = slugFor(title)
-  if (files.has(`${slug}.webm`)) {
-    return `[▶ watch](recipes/${slug}.webm)`
-  }
-  if (files.has(`${slug}.svg`)) {
-    const name = title.replace(/^recipe:\s*/i, '').replace(/[[\]]/g, '\\$&')
-    return `![Recording pending: ${name}](recipes/${slug}.svg)`
-  }
-  return null
+  if (!files.has(`${slug}.gif`)) return null
+  const name = title.replace(/^recipe:\s*/i, '').replace(/[[\]]/g, '\\$&')
+  return `![${name}](recipes/${slug}.gif)`
 }
 
 function render(specs, files) {
@@ -213,9 +205,9 @@ function render(specs, files) {
       }
       out.push(`- **${entry.title}**`)
       const blocks = []
-      // The stub and the recording are made by the same test, so a broken
-      // recipe has neither rather than a stale one -- which is why this
-      // checks for the file rather than assuming it.
+      // The GIF is made from the test's own recording, so a broken recipe
+      // has none rather than a stale one -- which is why this checks for the
+      // file rather than assuming it.
       const artefact = artefactFor(entry.title, files)
       if (artefact) {
         blocks.push(`  ${artefact}`)
@@ -266,10 +258,10 @@ function main() {
   )
   console.log(`${outfile}: ${specs.length} specs, ${steps} recipes`)
 
-  // A stub `./al recipes` has just written is not linked until git tracks
+  // A GIF `./al recipes` has just written is not linked until git tracks
   // it. Say so, rather than leave it to be noticed in review.
   const untracked = fs.existsSync(RECIPE_DIR)
-    ? fs.readdirSync(RECIPE_DIR).filter(f => f.endsWith('.svg') && !files.has(f))
+    ? fs.readdirSync(RECIPE_DIR).filter(f => f.endsWith('.gif') && !files.has(f))
     : []
   if (untracked.length) {
     console.log(
