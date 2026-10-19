@@ -205,6 +205,10 @@ class World:
     def uploads_accepted(self):
         self.monkeypatch.setattr(bucket, 'upload', lambda *args, **kwargs: None)
 
+    def broker_down(self):
+        """Renders are sent to a broker that is not there."""
+        app.dependency_overrides[render_routes.get_render_queue] = lambda: BrokerDown()
+
 
 @pytest.fixture
 def world(monkeypatch, tmp_path):
@@ -332,6 +336,15 @@ def edl_refused(world):
     return res, refused_edl(edl)
 
 
+def render_not_queued(world):
+    world.broker_down()
+    res = world.client.post('/render', json=render_request())
+    (render,) = world.renders.renders.values()
+    reason = 'ConnectionError: [Errno 111] Connection refused'
+    assert (render.status, render.error) == ('failed', f'could not be queued: {reason}')
+    return res, f'The render could not be queued: {reason}'
+
+
 def render_not_finished(world):
     render = make_render()
     world.renders.renders[render.id] = render
@@ -390,6 +403,7 @@ REQUESTS = {
     Code.FPS_OUT_OF_RANGE: fps_out_of_range,
     Code.UNKNOWN_QUALITY: unknown_quality,
     Code.EDL_REFUSED: edl_refused,
+    Code.RENDER_NOT_QUEUED: render_not_queued,
     Code.RENDER_NOT_FINISHED: render_not_finished,
     Code.DESTINATION_UNKNOWN: destination_unknown,
     Code.DELIVERY_FAILED: delivery_failed,

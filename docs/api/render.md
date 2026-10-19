@@ -15,6 +15,8 @@ The `render` routes accept an `Edl` with its render settings, queue a server ren
 
 [examples/render](../examples/render.md) follows one render from request to download. A refusal carries a `code` beside its `detail`, such as `render_not_finished` for the 409: [Refusals](errors.md) lists them.
 
+`POST /render` and `POST /render/rerender/{id}` answer `503` with `render_not_queued` when the broker will not take the job. The render is stored all the same, and recorded `failed` with the reason, so `GET /render` lists it and `POST /render/rerender/{id}` can queue it again.
+
 ## Issues
 Report an issue with one of your renders with `POST /render/{id}/report`, whose body is the report as a JSON string:
 

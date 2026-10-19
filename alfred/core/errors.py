@@ -51,6 +51,7 @@ class Code(StrEnum):
     FPS_OUT_OF_RANGE = 'fps_out_of_range'
     UNKNOWN_QUALITY = 'unknown_quality'
     EDL_REFUSED = 'edl_refused'
+    RENDER_NOT_QUEUED = 'render_not_queued'
     RENDER_NOT_FINISHED = 'render_not_finished'
     DESTINATION_UNKNOWN = 'destination_unknown'
     DELIVERY_FAILED = 'delivery_failed'
@@ -80,6 +81,7 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.FPS_OUT_OF_RANGE: Meaning(422, 'a frame rate out of range'),
     Code.UNKNOWN_QUALITY: Meaning(422, 'not one of the qualities'),
     Code.EDL_REFUSED: Meaning(422, 'a clip this server will not render'),
+    Code.RENDER_NOT_QUEUED: Meaning(503, 'the broker would not take the render'),
     Code.RENDER_NOT_FINISHED: Meaning(409, 'the render has no finished file yet'),
     Code.DESTINATION_UNKNOWN: Meaning(502, 'no destination of that name'),
     Code.DELIVERY_FAILED: Meaning(502, 'the destination would not take it'),

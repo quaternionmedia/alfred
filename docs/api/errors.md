@@ -27,6 +27,7 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `fps_out_of_range` | 422 | an `fps` outside 1 to 120 | `POST /render` |
 | `unknown_quality` | 422 | a `quality` that is not one of the presets | `POST /render` |
 | `edl_refused` | 422 | a clip this server will not render: media outside the library, a template it does not offer, a type it does not know; `detail` names the clip | `POST /render`, `POST /render/rerender/{id}` |
+| `render_not_queued` | 503 | the broker would not take the render; the render is recorded `failed` with the reason, which `GET /render/{id}/status` gives as `error`, and `POST /render/rerender/{id}` queues it again | `POST /render`, `POST /render/rerender/{id}` |
 | `render_not_finished` | 409 | the render has no finished file yet | `POST /render/{id}/deliver`, `GET /render/{id}/download` |
 | `destination_unknown` | 502 | no destination has that name; `detail` lists those that do | `POST /render/{id}/deliver` |
 | `delivery_failed` | 502 | the destination would not take the render; asking again may deliver it | `POST /render/{id}/deliver` |
