@@ -13,6 +13,7 @@ from otto.exceptions import EdlException
 from otto.models import Clip, Edl, TemplateData
 from otto.render import generateEdl
 from starlette.background import BackgroundTask
+from starlette.concurrency import run_in_threadpool
 
 from alfred import config
 
@@ -32,6 +33,9 @@ FRAME_NAME = re.compile(r'[0-9a-f]{32}\.jpg')
 # list the directory many times a second for nothing.
 SWEEP_INTERVAL = 60
 
+# Read and written by previews in the thread pool, so two finishing together
+# can both find a sweep due. The second finds little or nothing to remove, and
+# a frame the first removed meanwhile is passed over (`storage.remove`).
 _last_sweep = float('-inf')
 
 
@@ -55,8 +59,12 @@ def sweep_frames(now=None, force=False) -> int:
 
 
 async def sweep_frames_at_startup():
-    """Frames left from before a restart are swept at once, not a minute in."""
-    removed = sweep_frames(force=True)
+    """Frames left from before a restart are swept at once, not a minute in.
+
+    Off the event loop, as the remote media cache's sweep at startup is: it
+    lists the directory and removes what has expired.
+    """
+    removed = await run_in_threadpool(sweep_frames, force=True)
     if removed:
         print(f'removed {removed} expired preview frames', flush=True)
 
@@ -117,8 +125,14 @@ def remove_quietly(path):
 _FRAME_PARAMS = frozenset({'width', 'height', 't', 'fadeIn', 'fadeOut', 'length'})
 
 
+# A plain function, not a coroutine, like the template preview below: FastAPI
+# runs it in its thread pool. Making a frame opens and decodes the timeline's
+# media, fetches any that is remote, composites the frame and encodes it, and
+# as a coroutine it did all of that on the event loop. The api is one process
+# with one loop, so every other request -- `/healthz` among them -- waited
+# for each preview, and the editor asks for one on every playhead move.
 @previewAPI.post('/')
-async def previewFrame(t: float, render: Render):
+def previewFrame(t: float, render: Render):
     """# Preview frame
     Generates a frame of a given `edl` at time `t`, with `width` and `height`.
 
@@ -183,8 +197,11 @@ async def previewFrameFile(name: str, access: MediaAccess = Depends(media_access
     return FileResponse(path, media_type='image/jpeg')
 
 
+# A plain function for the same reason as `previewFrame`: drawing a template
+# is ImageMagick or gizeh, then an encoder, and the editor asks again on every
+# playhead move and every keystroke in the template's text.
 @previewAPI.get('/template/{name}')
-async def previewTemplate(
+def previewTemplate(
     name: str,
     request: Request,
     width: int = 1920,

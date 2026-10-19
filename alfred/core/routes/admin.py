@@ -11,8 +11,12 @@ from .invoicer import generate_invoice
 adminAPI = APIRouter()
 
 
+# A plain function, not a coroutine: FastAPI runs it in its thread pool. Every
+# step of it blocks -- the invoice reads renders with the synchronous database
+# client and draws and writes PDFs, and the mail goes out over SMTP with no
+# timeout -- and as a coroutine each step held the event loop.
 @adminAPI.post('/invoice')
-async def sendInvoice(client: str, startDate: date, endDate: date):
+def sendInvoice(client: str, startDate: date, endDate: date):
     """# Send Invoice
     Generates a PDF invoice and sends an email to the client
     for all renders executed in the specified period

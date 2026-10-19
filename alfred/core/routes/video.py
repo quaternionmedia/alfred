@@ -17,8 +17,13 @@ videoAPI = APIRouter()
 videoFileAPI = APIRouter()
 
 
+# A plain function, not a coroutine: FastAPI runs it in its thread pool.
+# Listing the library looks up every entry in it, and as a coroutine that ran
+# on the event loop: on a Docker Desktop bind mount a library of 120 files
+# took a fifth of a second, in which the api answered nothing else. `GET
+# /media` lists the same files, and more slowly, in the thread pool too.
 @videoAPI.get('/videos')
-async def getVideos():
+def getVideos():
     """# videos
     Get a list of all videos available locally on this instance.
 
