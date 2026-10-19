@@ -79,7 +79,9 @@ A repository that can't run its suite here, because it wasn't found, or uv, dock
 
 `./al family down` stops the dev stack, and the joe that `up` started, if it did. It leaves alone a joe that `up` found already running.
 
-joe has no authentication: anything that can reach its port can use it. `up` binds it to loopback, or to docker0 on Linux, which only this machine's containers reach. Don't set `ALFRED_JOE_HOST=0.0.0.0` on a network you don't trust. joe's own security notes say what it exposes.
+joe has no authentication: anything that can reach its port can use what it serves. `up` binds it to loopback, or to docker0 on Linux, which only this machine's containers reach. Don't set `ALFRED_JOE_HOST=0.0.0.0` on a network you don't trust.
+
+A fresh joe serves only its media API, which is all alfred uses, so `up` sets nothing on it. Its microphone, transcripts and audio library stay off unless you start the loop with `JOE_ALLOW_MICROPHONE`, `JOE_ALLOW_TRANSCRIPTS` or `JOE_ALLOW_LIBRARY` set to 1. qmcp's and vox's voice loops need the microphone. Each one you turn on is announced with a warning in `.family/logs/joe.log`. joe's `docs/security.md` says what each exposes.
 
 ## The live check
 

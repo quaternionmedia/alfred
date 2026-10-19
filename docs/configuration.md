@@ -116,11 +116,20 @@ Desktop forwards to and a Linux bridge cannot reach. On Linux, either
 
 - listen on every interface, `--host 0.0.0.0`, on a network you trust.
 
-joe asks for no login. Whoever can reach its port can use all of it: upload
-and fetch media, list its recordings -- and record from the machine's own
-microphone, through its capture and voice routes. Listening on every
-interface offers that to the whole network, and a host firewall is then the
-only thing in the way.
+joe asks for no login: whoever can reach its port can use what it serves.
+A fresh joe serves its media API alone -- what alfred uses, and all alfred
+needs, so alfred asks nothing of joe's settings. The microphone (capture and
+the voice routes), the transcripts and the audio library each stay off until
+joe is started with `JOE_ALLOW_MICROPHONE`, `JOE_ALLOW_TRANSCRIPTS` or
+`JOE_ALLOW_LIBRARY` set to 1 (or `--allow`), and a route that is off answers
+403 naming its setting. Listening on every interface offers whatever is on to
+the whole network, and a host firewall is then the only thing in the way.
+joe's `docs/security.md` is its threat model.
+
+joe also answers only to a Host it knows -- loopback names, any IP address,
+and `host.docker.internal` -- so `ALFRED_AUDIO_ENGINE_URL` should use one of
+those. A hostname such as a compose service name or a LAN name needs joe's
+`JOE_ALLOWED_HOSTS` to list it, or joe answers 400.
 
 Then check what is answering before trusting it: `GET /health`, with a
 session, reports `audio_engine: {configured, ok, detail}`.
