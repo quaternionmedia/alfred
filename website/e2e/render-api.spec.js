@@ -56,7 +56,10 @@ test.describe('a render request is checked before it is queued', () => {
         data: renderBody([{ type: 'video', name, duration: 1.0, start: 0.0 }]),
       })
       expect(res.status()).toBe(422)
-      expect((await res.json()).detail).toContain('clip 1')
+      const refused = await res.json()
+      expect(refused.detail).toContain('clip 1')
+      // What a client switches on, beside the sentence (docs/api/errors.md).
+      expect(refused.code).toBe('edl_refused')
     })
   }
 
@@ -84,6 +87,7 @@ test.describe('a render request is checked before it is queued', () => {
       data: renderBody([{ ...TEMPLATE, name: 'rgbToDec' }]),
     })
     expect(res.status()).toBe(422)
+    expect((await res.json()).code).toBe('edl_refused')
   })
 
   test('the EDL preview checks the same things', async ({ request, token }) => {
@@ -94,10 +98,10 @@ test.describe('a render request is checked before it is queued', () => {
     expect(res.status()).toBe(422)
   })
 
-  for (const extra of [
-    { ffmpeg_params: ['-b:v', '25M'] },
-    { bitrate: ['5000k'] },
-    { quality: 'TV' },
+  for (const [extra, code] of [
+    [{ ffmpeg_params: ['-b:v', '25M'] }, 'encoder_options_refused'],
+    [{ bitrate: ['5000k'] }, 'encoder_options_refused'],
+    [{ quality: 'TV' }, 'unknown_quality'],
   ]) {
     test(`encoder options are not the client's: ${JSON.stringify(extra)}`, async ({
       request,
@@ -108,7 +112,9 @@ test.describe('a render request is checked before it is queued', () => {
         data: renderBody([TEMPLATE], extra),
       })
       expect(res.status()).toBe(422)
-      expect((await res.json()).detail).toContain('draft')
+      const refused = await res.json()
+      expect(refused.detail).toContain('draft')
+      expect(refused.code).toBe(code)
     })
   }
 })
