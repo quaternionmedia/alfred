@@ -35,6 +35,11 @@ const emit = down => {
 export const Health = {
   /** The last answer, or null before one (or from a server without the route). */
   state: null,
+  /**
+   * Whether a check has come back yet: an answer, a 404, or a failure. Until
+   * one has, nothing is known -- which is not the same as nothing wrong.
+   */
+  answered: false,
   /** False once the server has said it has no such route. */
   supported: true,
   watchers: new Set(),
@@ -74,6 +79,7 @@ export const Health = {
       )
       .then(() => {
         Health.inflight = null
+        Health.answered = true
         const down = Health.rendererDown()
         if (down !== wasDown) emit(down)
         m.redraw()

@@ -270,7 +270,8 @@ so the answer does not confirm the id is real.
 Captions: typed, imported, transcribed, and drawn into renders.
 
 A project's captions are text and the stretch of the timeline it is shown
-for. The Captions panel, folded under the stage rail on the Edit stage,
+for. The Captions panel -- on a wide screen a tab in the workspace, beside
+Render and Deliver; on a phone the Edit stage's panel, above the viewer --
 edits them by hand, reads them from a SubRip, WebVTT or JSON file -- the
 server reads it, the panel shows what it found, and saving keeps it -- or
 has the timeline's own sound transcribed by the server's audio engine. The
@@ -326,8 +327,8 @@ project's captions are drawn only once someone says so.
 - **the style is saved with the captions, and off until someone says**
 - **the caption under the playhead shows over the viewer**
 
-  Whether or not the panel is open, the caption under the playhead is
-  drawn over the viewer in its style; past it, nothing is.
+  Whether or not the Captions panel is in view, the caption under the
+  playhead is drawn over the viewer in its style; past it, nothing is.
 
 - **renders carry the captions once they are drawn, and not before**
 
@@ -340,7 +341,9 @@ project's captions are drawn only once someone says so.
 ### transcribing the timeline
 
 Transcribing needs an audio engine that answers and a renderer to mix
-the timeline's sound. Without one, the button says which is missing.
+the timeline's sound. Until the server has said whether there is one,
+the button waits and says it is checking; without one, it says which
+is missing.
 
 - **transcribing says why it cannot**
 ### @slow transcribing through the worker
@@ -918,6 +921,15 @@ real 320x240 file.
   changed ?project= without remounting anything -- so the first project
   opened was the only one that ever appeared, and no request was made.
 
+- **a stage chosen straight after a project keeps the project**
+
+  Choosing a stage on the rail changes the stage and keeps the rest of the
+  address, the project chosen a moment before included. The rail built
+  the new address from the router's route, which reads a change back a
+  tick after it is made; a stage chosen in that tick put back the address
+  from before the project, and the project was dropped. Here the tick is
+  held open, so the stage is chosen inside it every time.
+
 - **the timeline stays mounted across every stage**
 - **stage 3 refuses to render an empty timeline**
 - **stage 3 offers the render when there is something to render**
@@ -1402,6 +1414,11 @@ makes the Deliver button a guess.
   the worker: other specs queue renders, so a render chosen as unfinished
   could complete between the API read and the assertion, and the test
   failed for having been right a moment earlier.
+
+  The snapshot is taken once the list has arrived, with a render of the
+  test's own on it -- queued, rendering or done by then; the rule holds
+  for each. Taken at a fixed 300 ms, a list slower than that read as
+  nothing rendered, and the test skipped itself.
 
 - **a delivered render says where it went**
 
@@ -1999,6 +2016,29 @@ focused and leaves its stack showing whichever tab it showed.)
   A tab chosen writes its panel's stage into the address, replacing the
   entry rather than adding one, so the rail follows and Back does not walk
   through every tab chosen.
+
+- **a tab chosen stays in front while the address catches up**
+
+  Choosing a tab writes its stage into the address, which the router reads
+  back a moment later. A redraw in that moment brought the stage from
+  before back over the tab just chosen: Render in front again, the rail on
+  Edit, until something else was chosen. On a loaded machine the rail
+  test above did this in one run of ten to twenty; here the moment is
+  held open and a redraw put in it, so it would happen every time.
+
+- **the address follows the last tab chosen, however quick**
+
+  Two tabs chosen before the router has read the first back: the address
+  names the second one's stage, as the rail does. Render chosen after
+  Captions was taken for the stage the route still said -- Render, from
+  before -- and never written, so the address and the rail stayed on
+  Captions' Edit while Render was in front.
+
+- **Back and Forward bring the stage forward**
+
+  A stage chosen on the rail is a page visited: Back returns to the stage
+  before, with its panel in front, and Forward to the one after. (A tab
+  chosen replaces the address rather than adding to it.)
 
 ### the arrangement is kept
 
