@@ -272,3 +272,24 @@ class TestTheBrowserSuite:
             'docker compose -p checkout-e2e -f test_e2e.yml up --build'
         ), compose
         assert '--exit-code-from e2e' in compose[1]
+
+
+class TestTheApiSuite:
+    @pytest.mark.parametrize(
+        'args, expected',
+        [
+            (('pytest',), 'docker compose -p checkout-pytest -f pytest.yml up'),
+            (
+                ('nox', '-s', 'lint'),
+                'docker compose -p checkout-pytest -f pytest.yml run',
+            ),
+        ],
+    )
+    def test_it_runs_under_a_project_of_its_own(self, run_al, args, expected):
+        """pytest.yml's throwaway database is a service named `db`, as the dev
+        stack's is: under the checkout's own project a run recreated a running
+        dev stack's database container with the test's."""
+        result = run_al(*args)
+        assert result.returncode == 0, result.stderr
+        compose = [call for call in result.calls if 'compose' in call]
+        assert compose and compose[0].startswith(expected), compose

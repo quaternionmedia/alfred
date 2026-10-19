@@ -86,10 +86,13 @@ def coverage(session):
     session.run('mkdir', '-p', 'site')
     session.run('touch', join('dist', 'index.html'))
     session.env['STATIC_DIR'] = './dist'
+    # Arguments after `--` narrow the run: `./al nox -s coverage -- unit` is
+    # the unit tier alone, alfred's quick suite in `./al family test`.
     session.run(
         'pytest',
         '-vv',
         '--timeout=600',
         '-n',
         'auto',
+        *session.posargs,
     )

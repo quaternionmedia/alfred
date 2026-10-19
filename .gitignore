@@ -115,3 +115,6 @@ videos-test-output/
 
 # This checkout's own development signing key, created by ./al (see dev.yml).
 .secret_key.local
+
+# `./al family`'s logs and the record of the joe it started (scripts/family.py).
+.family/
