@@ -149,6 +149,26 @@ class TestThePagesShowFirst:
             f'caption: {caption!r}'
         )
 
+    @pytest.mark.parametrize('name', SHOWN_FIRST)
+    def test_the_picture_reads_the_same_on_github_and_the_site(self, name):
+        """No attr_list on it, and raw `<img>` only where its path holds.
+
+        GitHub prints an attr_list (`{ width=... }`) as text. mkdocs rewrites
+        a Markdown image's path for the page's URL, a directory deeper than
+        its file, but leaves a raw `<img>` as written -- so a relative `src`
+        reaches the same file on both only from an index page or the README.
+        """
+        picture = lines_after_title(REPO / name)[0]
+        assert not re.search(r'\)\s*\{', picture), (
+            f'{name}: an attr_list on its picture shows as text on GitHub; '
+            'use <img width=...> on an index page, or a plain image'
+        )
+        if HTML_IMAGE.search(picture):
+            assert Path(name).name in ('index.md', 'README.md'), (
+                f'{name}: a raw <img> on a page that is not an index has a '
+                'src the docs site resolves a directory too deep'
+            )
+
     def test_the_family_page_opens_with_what_the_command_prints(self):
         lines = lines_after_title(REPO / SHOWN_AS_OUTPUT)
         assert lines[0].strip() == '```text' and lines[1].startswith(

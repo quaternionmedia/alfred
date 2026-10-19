@@ -1,8 +1,8 @@
 # Alfred
 
-![The editor on a wide screen: a workspace of docked panels](assets/screens/edit.png){ width="74%" } ![The editor on a phone: the Edit stage over the viewer](assets/screens/phone-edit.png){ width="21%" }
+<img src="assets/screens/edit.png" alt="The editor on a wide screen: a workspace of docked panels" width="60%"> <img src="assets/screens/phone-edit.png" alt="The editor on a phone: the Edit stage over the viewer" width="17%"> <img src="assets/screens/phone-render.png" alt="The editor on a phone: the Render stage over the viewer" width="17%">
 
-*The editor on a wide screen, as a workspace of panels, and on a phone, one stage at a time.*
+*The editor on a wide screen, as a workspace of panels, and on a phone, one stage at a time: Edit, then Render.*
 
 Automatic video tools
 

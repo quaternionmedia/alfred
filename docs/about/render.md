@@ -1,8 +1,8 @@
 # Render
 
-![The Render stage on a wide screen](../assets/screens/render.png){ width="74%" } ![The Render stage on a phone](../assets/screens/phone-render.png){ width="21%" }
+![The Render stage: the output's width and height, and Queue render](../assets/screens/render.png)
 
-*The Render stage on a wide screen and on a phone: the output's size, then Queue render.*
+*The Render stage: the output's size, then Queue render.*
 
 A `Render` is one request to make a video: an `Edl`, and how to render it. These are the fields a request may set. Every one but `edl` is optional.
 
