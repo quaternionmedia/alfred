@@ -33,7 +33,9 @@ timeline.
   server's audio engine and replaces the captions with what it said, asking
   first when there are captions to replace. It is unavailable, and says why,
   when the server has no audio engine, when the engine is not answering, or
-  when no renderer is running to mix the timeline's sound. The panel follows
+  when no renderer is running to mix the timeline's sound -- and until the
+  server has said which, it waits, with "Checking the audio engine…" in
+  place of a reason. The panel follows
   the job until it is done -- how many segments of speech were heard -- or has
   failed, with the reason.
 - **Style**: whether the captions are drawn into renders at all, their size,
