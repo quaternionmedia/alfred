@@ -61,9 +61,11 @@ def announce_token(purpose, user, token, mailed=False):
     ALFRED_PRODUCTION the event is logged, with whether the link was mailed
     and why not, and the token is not.
 
-    In development the token stays in the log on purpose: a development stack
-    rarely has mail configured, and then the log is the only way to finish a
-    reset or a verification.
+    In development the token is logged only when it was not mailed: a
+    development stack rarely has mail configured, and then the log is the only
+    way to finish a reset or a verification. When the link did go by mail, the
+    log has no reason to hold a credential, so it says so instead (AGENTS.md,
+    "Logging and secrets").
 
     Read through the module at call time, so the tests can switch modes
     without re-importing.
@@ -73,6 +75,12 @@ def announce_token(purpose, user, token, mailed=False):
         print(
             f'{purpose} requested for user {user.id}; {delivery}. The token is '
             'not logged in production.',
+            flush=True,
+        )
+    elif mailed:
+        print(
+            f'{purpose} requested for user {user.id}; {delivery}. The token went '
+            'by mail, so it is not logged.',
             flush=True,
         )
     else:

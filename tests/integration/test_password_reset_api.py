@@ -113,6 +113,22 @@ class TestResettingAPassword:
         assert 'Password reset requested' in out
         assert token not in out
 
+    def test_development_does_not_log_a_token_it_mailed(
+        self, api, make_account, mailbox, monkeypatch, capsys
+    ):
+        """The log is where a development stack without mail finishes a reset;
+        with mail, it has no reason to hold the credential."""
+        monkeypatch.setattr(config, 'PRODUCTION', None)
+        alice = make_account('alice')
+        capsys.readouterr()
+
+        forgot(api, alice.email)
+
+        token = token_from(link_in(mailbox[0]))
+        out = capsys.readouterr().out
+        assert 'Password reset requested' in out
+        assert token not in out
+
 
 class TestWithoutMail:
     def test_nothing_is_sent_and_development_logs_the_token(
