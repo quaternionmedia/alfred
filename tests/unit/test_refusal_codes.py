@@ -45,8 +45,9 @@ ROOT = Path(__file__).resolve().parents[2]
 TABLE = ROOT / 'docs' / 'api' / 'errors.md'
 
 # The modules whose every refusal carries a code: the project, captions and
-# render routes, and the id refusals they share.
+# render routes and the id refusals they share, and how a library file sounds.
 COVERED = [
+    'alfred/core/routes/audio.py',
     'alfred/core/routes/captions.py',
     'alfred/core/routes/project.py',
     'alfred/core/routes/render.py',
@@ -208,6 +209,19 @@ class World:
     def broker_down(self):
         """Renders are sent to a broker that is not there."""
         app.dependency_overrides[render_routes.get_render_queue] = lambda: BrokerDown()
+
+    def sound_of(self, name, features=None):
+        query = f'?features={features}' if features else ''
+        return self.client.get(f'/media/videos/{name}/audio{query}')
+
+    def engine_says(self, failure):
+        """An engine that answers every analysis with `failure`."""
+        self.an_engine()
+
+        def analyze(*args):
+            raise failure
+
+        self.monkeypatch.setattr(audio_engine, 'analyze', analyze)
 
 
 @pytest.fixture
@@ -387,6 +401,29 @@ def cloud_link_unavailable(world):
     )
 
 
+def unknown_feature(world):
+    return world.sound_of('talk.wav', features='tempo,key'), (
+        f'key: not a feature; ask for any of {", ".join(audio_engine.FEATURES)}'
+    )
+
+
+def media_silent(world):
+    (Path(config.VIDEO_DIR) / 'still.png').write_bytes(b'not really a picture')
+    return world.sound_of('still.png'), 'videos/still.png is an image: it has no sound'
+
+
+def audio_engine_refused(world):
+    why = 'the audio engine at http://engine.test:8010: it refused this (415): no'
+    world.engine_says(audio_engine.AudioEngineRefused(why))
+    return world.sound_of('talk.wav'), why
+
+
+def audio_engine_failed(world):
+    why = 'the audio engine at http://engine.test:8010: it failed (500): broke'
+    world.engine_says(audio_engine.AudioEngineFailed(why))
+    return world.sound_of('talk.wav'), why
+
+
 REQUESTS = {
     Code.INVALID_ID: invalid_id,
     Code.NOT_FOUND: not_found,
@@ -409,6 +446,10 @@ REQUESTS = {
     Code.DELIVERY_FAILED: delivery_failed,
     Code.DELIVERED_WITHOUT_LINK: delivered_without_link,
     Code.CLOUD_LINK_UNAVAILABLE: cloud_link_unavailable,
+    Code.UNKNOWN_FEATURE: unknown_feature,
+    Code.MEDIA_SILENT: media_silent,
+    Code.AUDIO_ENGINE_REFUSED: audio_engine_refused,
+    Code.AUDIO_ENGINE_FAILED: audio_engine_failed,
 }
 
 
