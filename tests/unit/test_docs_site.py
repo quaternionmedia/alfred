@@ -1,4 +1,4 @@
-"""What the docs site's build checks.
+"""What the docs site's build checks, and what its pages load.
 
 mkdocs can report a page left out of the nav, a link to no page or file, an
 anchor no heading makes, and an absolute link -- each at the level mkdocs.yml
@@ -6,6 +6,10 @@ gives it, and most of them at `info` by default, which nobody reads. Two
 pages sat outside the nav for years that way. These hold every check at
 `warn`, and the docs workflow's build at `--strict`, which makes a warning
 fatal before mike deploys anything.
+
+Separately, the site loaded Google Fonts on every page view and an emoji from
+a CDN; the open-license record asks that frontend assets come from the site's
+own origin.
 """
 
 from pathlib import Path
@@ -78,3 +82,22 @@ class TestTheBuildChecksEverything:
         assert (
             condition == "github.event_name == 'push'"
         ), 'deploy from pushes only: a pull request builds, and never publishes'
+
+
+class TestThePagesLoadNothingFromAnotherHost:
+    def test_the_theme_uses_the_readers_fonts(self):
+        """Material's default fonts are fetched from Google Fonts per view."""
+        assert (
+            load('mkdocs.yml')['theme'].get('font') is False
+        ), 'set `theme: font: false`; the default loads Google Fonts'
+
+    def test_no_emoji_extension_turns_a_shortcode_into_a_cdn_image(self):
+        """`:wink:` became an <img> from cdn.jsdelivr.net."""
+        extensions = [
+            next(iter(entry)) if isinstance(entry, dict) else entry
+            for entry in load('mkdocs.yml').get('markdown_extensions', [])
+        ]
+        assert 'pymdownx.emoji' not in extensions, (
+            'pymdownx.emoji draws emoji as images from a CDN; write the '
+            'character itself'
+        )

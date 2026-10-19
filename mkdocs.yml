@@ -63,9 +63,6 @@ markdown_extensions:
       alternate_style: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - def_list
   - admonition
   - pymdownx.details
@@ -73,8 +70,14 @@ markdown_extensions:
   - md_in_html
   - tables
 
+# Nothing loaded from another host (P1; the open-license record's rule for
+# frontend assets). Material's default fonts come from Google Fonts on every
+# page view, so the theme uses the reader's system fonts; and there is no
+# emoji extension, whose emoji are images from a CDN -- an icon or emoji in
+# the prose is written as the character itself.
 theme:
   name: material
+  font: false
   logo: assets/al-white.png
   favicon: assets/al-white.png
   palette:
