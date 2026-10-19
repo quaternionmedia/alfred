@@ -1283,36 +1283,44 @@ timeline sits with its tools and the media bin beneath.
 
 - **recipe: open the editor and look around**
 
-  ![Recording pending: open the editor and look around](recipes/open-the-editor-and-look-around.svg)
+  ![open the editor and look around](recipes/open-the-editor-and-look-around.gif)
 
 - **recipe: generate a demo from an empty install**
 
-  ![Recording pending: generate a demo from an empty install](recipes/generate-a-demo-from-an-empty-install.svg)
+  ![generate a demo from an empty install](recipes/generate-a-demo-from-an-empty-install.gif)
 
   A first run needs no downloads. The Source stage offers to generate both
   a project and its media, synthesised locally with ffmpeg's test sources.
 
 - **recipe: choose a project and edit its timeline**
 
-  ![Recording pending: choose a project and edit its timeline](recipes/choose-a-project-and-edit-its-timeline.svg)
+  ![choose a project and edit its timeline](recipes/choose-a-project-and-edit-its-timeline.gif)
 
   Choosing a project on the Source stage loads its timeline. The clips are
   laid out left to right, and each one is as wide as it is long.
 
 - **recipe: pick a tool and move the playhead**
 
-  ![Recording pending: pick a tool and move the playhead](recipes/pick-a-tool-and-move-the-playhead.svg)
+  ![pick a tool and move the playhead](recipes/pick-a-tool-and-move-the-playhead.gif)
 
   The tools that change clips sit beside the timeline; the ones that move
   the playhead sit above it, in the transport.
 
 - **recipe: render the timeline and deliver the result**
 
-  ![Recording pending: render the timeline and deliver the result](recipes/render-the-timeline-and-deliver-the-result.svg)
+  ![render the timeline and deliver the result](recipes/render-the-timeline-and-deliver-the-result.gif)
 
   The Render stage turns the timeline into a video; the Deliver stage
   sends it somewhere. Delivery is local by default, so this works on a
   machine with no cloud account.
+
+- **recipe: import captions and show them over the picture**
+
+  ![import captions and show them over the picture](recipes/import-captions-and-show-them-over-the-picture.gif)
+
+  The Captions panel reads a subtitle file and shows what it found before
+  anything is kept. Use them, tick **Draw into renders** and save, and
+  the caption under the playhead is drawn over the picture.
 
 
 ## render api
@@ -1441,6 +1449,41 @@ makes the Deliver button a guess.
   nothing rendered, and the test skipped itself.
 
 - **a delivered render says where it went**
+
+## screens
+
+The screenshots the docs open with, taken from the running app.
+
+# Screens
+
+Tagged `@screens` and run by the `docs` project beside the recipes:
+`./al recipes` takes each one and saves it as
+`docs/assets/screens/<name>.png`, which the README and the docs pages show
+under their titles. Like a recipe's recording, a screenshot made this way
+shows the app as it is: when a screen cannot be reached, its test fails and
+its file is gone rather than stale.
+
+The state they show is built here, through the API, so they need no audio
+engine and none of anyone's data: the demo media, a project made from it,
+captions imported from a SubRip file and turned on, and one finished
+render to deliver. The page's lists are narrowed to those, so a screen
+taken on someone's own stack shows none of their projects, files or
+renders.
+
+Desktop screens are 1280x800 and phone screens 390x844. Excluded from the
+`chromium` and `phone` projects, like the recipes.
+
+### @screens
+
+- **screen: the workspace at Edit**
+- **screen: captions over the picture**
+- **screen: Render**
+- **screen: Deliver**
+- **screen: the Panels menu**
+### on a phone
+
+- **screen: Edit on a phone**
+- **screen: Render on a phone**
 
 ## session
 

@@ -13,7 +13,6 @@ happened to run.
 import re
 import shutil
 import subprocess
-import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
 import pytest
@@ -162,12 +161,13 @@ class TestTheDocsSiteCarriesIt:
 
 
 class TestTheCookbookLinksOnlyWhatIsCommitted:
-    def test_every_recipe_file_it_links_is_tracked(self):
+    def test_every_recipe_file_it_links_is_a_tracked_gif(self):
         """The committed cookbook cannot name a file a clean checkout lacks.
 
         It linked `recipes/<slug>.webm` whenever a recording existed locally,
         and recordings are git-ignored -- so a cookbook regenerated on a
         machine that had recorded the recipes linked files nobody else had.
+        It links a recipe's GIF, and only once git tracks it.
         """
         linked = re.findall(
             r'\]\((recipes/[^)\s]+)\)', COOKBOOK.read_text(encoding='utf-8')
@@ -176,63 +176,61 @@ class TestTheCookbookLinksOnlyWhatIsCommitted:
         problems = []
         for link in linked:
             name = link.split('/', 1)[1]
-            if not (RECIPES / name).is_file():
+            if not name.endswith('.gif'):
+                problems.append(f'{link} is not a GIF')
+            elif not (RECIPES / name).is_file():
                 problems.append(f'{link} does not exist')
             elif tracked is not None and name not in tracked:
                 problems.append(f'{link} is not tracked by git')
         assert not problems, (
-            f'docs/cookbook.md links {problems}. Commit the stub, or regenerate '
+            f'docs/cookbook.md links {problems}. Commit the GIF, or regenerate '
             'with `node website/e2e/cookbook.js`.'
         )
 
 
-class TestTheRecipeStubs:
-    """The stubs are committed, so they are reviewed like any other file."""
+class TestTheRecipeGifs:
+    """The GIFs are committed, so they are held to their recipes and a size.
 
-    def stubs(self):
-        return sorted(RECIPES.glob('*.svg'))
+    `./al recipes` makes one from each passing recipe's recording
+    (scripts/recipe_gifs.py): 720 pixels wide, and at most MAX_BYTES, so the
+    repository grows by what the docs need and no more.
+    """
 
-    def test_each_stub_is_for_a_recipe_the_suite_has(self):
+    MAX_BYTES = 1_500_000
+
+    def gifs(self):
+        return sorted(RECIPES.glob('*.gif'))
+
+    def test_each_gif_is_for_a_recipe_the_suite_has(self):
         recipes = {
             recipe_slug(title)
             for title in titles_in(E2E / 'recipes.spec.js')
             if title.lower().startswith('recipe:')
         }
-        orphans = [stub.name for stub in self.stubs() if stub.stem not in recipes]
+        orphans = [gif.name for gif in self.gifs() if gif.stem not in recipes]
         assert not orphans, (
-            f'stubs for recipes recipes.spec.js no longer has: {orphans}. '
+            f'GIFs for recipes recipes.spec.js no longer has: {orphans}. '
             'Run ./al recipes, which clears them, or delete them.'
         )
 
-    def test_each_stub_names_its_recipe_and_says_a_recording_is_pending(self):
-        titles = {
-            recipe_slug(title): re.sub(r'^recipe:\s*', '', title, flags=re.I)
-            for title in titles_in(E2E / 'recipes.spec.js')
-        }
+    def test_each_gif_is_a_gif_of_the_width_and_size_the_docs_take(self):
         problems = []
-        for stub in self.stubs():
-            svg = ElementTree.fromstring(stub.read_text(encoding='utf-8'))
-            text = ' '.join(''.join(svg.itertext()).split())
-            label = svg.get('aria-label', '')
-            if titles.get(stub.stem, '') not in text:
-                problems.append(f'{stub.name} does not name its recipe')
-            if 'polished recording is pending' not in text.lower():
-                problems.append(f'{stub.name} does not say a recording is pending')
-            if not label.startswith('Recording pending:'):
-                problems.append(f'{stub.name} has no accessible name')
+        for gif in self.gifs():
+            head = gif.read_bytes()[:10]
+            width = int.from_bytes(head[6:8], 'little')
+            size = gif.stat().st_size
+            if head[:6] not in (b'GIF87a', b'GIF89a'):
+                problems.append(f'{gif.name} is not a GIF')
+            elif not 700 <= width <= 740:
+                problems.append(f'{gif.name} is {width} pixels wide, not about 720')
+            if size > self.MAX_BYTES:
+                problems.append(f'{gif.name} is {size} bytes, over {self.MAX_BYTES}')
         assert not problems, problems
 
-    def test_no_stub_carries_anything_from_the_machine_that_made_it(self):
-        """Fixed text and the recipe's title, nothing else: no path or date."""
-        machine = re.compile(
-            r'(?<![A-Za-z])[A-Za-z]:[\\/]|/(home|Users|tmp|var|app)/|file:|'
-            r'test-results|'
-            r'\b\d{4}-\d{2}-\d{2}\b'
-        )
-        leaks = [
-            f'{stub.name}: {match.group(0)}'
-            for stub in self.stubs()
-            for match in [machine.search(stub.read_text(encoding='utf-8'))]
-            if match
-        ]
-        assert not leaks, f'stubs carry machine details: {leaks}'
+    def test_no_stub_or_recording_is_committed_in_their_place(self):
+        """docs/recipes commits GIFs: no SVG stub, and no recording."""
+        tracked = tracked_recipe_files()
+        if tracked is None:
+            pytest.skip('git cannot say what docs/recipes tracks here')
+        others = sorted(name for name in tracked if not name.endswith('.gif'))
+        assert not others, f'docs/recipes tracks {others}; it commits GIFs only'

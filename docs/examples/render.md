@@ -1,4 +1,9 @@
 # Render video
+
+![A finished render on the Deliver stage, with Download and Deliver](../assets/screens/deliver.png)
+
+*A finished render on the editor's Deliver stage, ready to download or deliver.*
+
 Render an `Edl` with a single video and download the result when it is finished.
 
 See [about/render](../about/render.md) for every field a render request takes, and [about/edl](../about/edl.md) for the timeline itself.
