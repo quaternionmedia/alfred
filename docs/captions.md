@@ -59,13 +59,14 @@ not -- as the timeline itself is sent.
 | `GET /project/{id}/captions` | `{captions, style, job}` |
 | `PUT /project/{id}/captions` | `{captions, style?}`: stores those and nothing else; answers as `GET` does |
 | `POST /project/{id}/captions/import` | `{format: "srt"\|"vtt"\|"json", text}` → `{captions, skipped}`; stores nothing |
-| `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine; `409` while one runs; `422` when the saved timeline has nothing to hear |
+| `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine (`audio_engine_missing`) or the job could not be queued (`transcription_not_queued`); `409` while one runs; `422` when the saved timeline has nothing to hear |
 | `GET /media/{name}/audio` | the engine's analysis of a library file |
 | `GET /health` | gains `audio_engine: {configured, ok, detail}` |
 
 Each project route is scoped to the caller as every project route is: a
 project that is not yours answers 404. `GET /project/{id}` carries `captions`
-and `caption_style` too.
+and `caption_style` too. A refusal carries a `code` beside its `detail`, to
+switch on rather than the wording: [Refusals](api/errors.md) lists them.
 
 A caption is `{start, end, text}`: `start` at or after 0, `end` after it, text
 that says something and at most 500 characters of it. A project carries at
