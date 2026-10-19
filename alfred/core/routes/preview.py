@@ -19,6 +19,7 @@ from alfred import config
 
 from ..models.render import Render
 from ..utils import storage
+from ..utils.concurrency import preview_slot
 from ..utils.media import RefusedEdl, resolve_edl
 from ..utils.signing import media_url
 from .media import MediaAccess, media_access
@@ -69,8 +70,14 @@ async def sweep_frames_at_startup():
         print(f'removed {removed} expired preview frames', flush=True)
 
 
-# Mounted behind the session.
-previewAPI = APIRouter()
+# Mounted behind the session. Each preview takes one of a few slots first
+# (`preview_slot`, ALFRED_PREVIEW_CONCURRENCY), and is turned away when none
+# comes free in time.
+previewAPI = APIRouter(
+    responses={
+        503: {'description': 'too many previews at once; ask again after Retry-After'}
+    }
+)
 
 # The frames `POST /preview/` makes, on a router of their own: the form flow
 # shows one in a bare `<img>`, which carries no session, so it is fetched with
@@ -125,13 +132,14 @@ def remove_quietly(path):
 _FRAME_PARAMS = frozenset({'width', 'height', 't', 'fadeIn', 'fadeOut', 'length'})
 
 
-# A plain function, not a coroutine, like the template preview below: FastAPI
-# runs it in its thread pool. Making a frame opens and decodes the timeline's
+# A plain function, not a coroutine, like the template preview below: it runs
+# in the thread pool, once `preview_slot` has a slot for it. Making a frame opens and decodes the timeline's
 # media, fetches any that is remote, composites the frame and encodes it, and
 # as a coroutine it did all of that on the event loop. The api is one process
 # with one loop, so every other request -- `/healthz` among them -- waited
 # for each preview, and the editor asks for one on every playhead move.
 @previewAPI.post('/')
+@preview_slot
 def previewFrame(t: float, render: Render):
     """# Preview frame
     Generates a frame of a given `edl` at time `t`, with `width` and `height`.
@@ -201,6 +209,7 @@ async def previewFrameFile(name: str, access: MediaAccess = Depends(media_access
 # is ImageMagick or gizeh, then an encoder, and the editor asks again on every
 # playhead move and every keystroke in the template's text.
 @previewAPI.get('/template/{name}')
+@preview_slot
 def previewTemplate(
     name: str,
     request: Request,

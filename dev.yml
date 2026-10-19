@@ -40,6 +40,10 @@ x-alfred-settings: &alfred-settings
   ALFRED_DELIVERY_DIR:
   ALFRED_PREVIEW_DIR:
   ALFRED_FRAME_TTL:
+  # How many previews the api draws at once, and how long one waits for its
+  # turn before a 503 with Retry-After.
+  ALFRED_PREVIEW_CONCURRENCY:
+  ALFRED_PREVIEW_WAIT:
   ALFRED_MEDIA_URL_TTL:
   ALFRED_BUCKET_NAME:
   # The audio engine captions are transcribed with, none unless you ask for

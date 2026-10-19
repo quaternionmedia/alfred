@@ -82,6 +82,11 @@ class TestHealth:
             'db': 'ok',
             'renderer': {'ok': True, 'workers': 2},
             'queue': {'pending': 3},
+            'previews': {
+                'running': 0,
+                'waiting': 0,
+                'limit': config.PREVIEW_CONCURRENCY,
+            },
             'audio_engine': {
                 'configured': False,
                 'ok': False,
