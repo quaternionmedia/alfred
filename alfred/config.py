@@ -83,6 +83,19 @@ def _given(value):
     return value is not None and str(value).strip() != ''
 
 
+def resolve_text(env, name, default):
+    """`env[name]` without surrounding space, or `default` when unset or empty.
+
+    For the settings an empty value would otherwise be taken literally by: an
+    empty ALFRED_RENDER_DIR or ALFRED_DELIVERY_DIR is the working directory,
+    an empty ALFRED_DEV_USER_EMAIL is nobody, and an empty ALFRED_BUCKET_NAME
+    is no bucket -- none of which anybody means by emptying a variable. Empty
+    is unset here, as it is for every other setting but the signing key.
+    """
+    value = env.get(name)
+    return str(value).strip() if _given(value) else default
+
+
 def resolve_seconds(env, name, default):
     """A whole, positive number of seconds from `env[name]`, else `default`.
 
@@ -171,7 +184,7 @@ DEV_SKIP_AUTH = resolve_dev_skip_auth(environ)
 # pydantic's validator rejects reserved TLDs outright. RFC 2606 also reserves
 # the second-level domains example.com/net/org, which do validate.
 DEFAULT_DEV_USER_EMAIL = 'dev@example.com'
-DEV_USER_EMAIL = environ.get('ALFRED_DEV_USER_EMAIL', DEFAULT_DEV_USER_EMAIL)
+DEV_USER_EMAIL = resolve_text(environ, 'ALFRED_DEV_USER_EMAIL', DEFAULT_DEV_USER_EMAIL)
 
 
 def resolve_seed_owner(env):
@@ -193,7 +206,7 @@ def resolve_seed_owner(env):
         return explicit.strip()
     if env.get('ALFRED_PRODUCTION'):
         return None
-    return env.get('ALFRED_DEV_USER_EMAIL', DEFAULT_DEV_USER_EMAIL)
+    return resolve_text(env, 'ALFRED_DEV_USER_EMAIL', DEFAULT_DEV_USER_EMAIL)
 
 
 SEED_OWNER = resolve_seed_owner(environ)
@@ -233,13 +246,13 @@ STATIC_DIR = environ.get('STATIC_DIR', 'dist')
 # `GET /videos` nor `GET /videos/{file}` reaches into. Renders used to be
 # written beside the media, so every user's output was listed to everyone
 # signed in and served to anyone who asked for it by name.
-RENDER_DIR = environ.get('ALFRED_RENDER_DIR', join(VIDEO_DIR, 'renders'))
+RENDER_DIR = resolve_text(environ, 'ALFRED_RENDER_DIR', join(VIDEO_DIR, 'renders'))
 
 # Where the `local` destination copies a delivered render. Not anywhere a
 # static mount serves: a local delivery used to land under the public /data
 # mount, which made it a link to somebody's video for anyone who had it. A
 # delivered render's `link` is the download route instead.
-DELIVERY_DIR = environ.get('ALFRED_DELIVERY_DIR', 'deliveries')
+DELIVERY_DIR = resolve_text(environ, 'ALFRED_DELIVERY_DIR', 'deliveries')
 
 # Where EDL preview frames are written, and `GET /preview/frames/{name}` reads
 # them from. Outside every directory the app serves statically: frames used to
@@ -360,7 +373,7 @@ DB_NAME = environ.get('DB_NAME', 'db')
 CELERY_BROKER = environ.get('CELERY_BROKER')
 CELERY_BACKEND = environ.get('CELERY_BACKEND')
 
-BUCKET_NAME = environ.get('ALFRED_BUCKET_NAME', 'tower-renders')
+BUCKET_NAME = resolve_text(environ, 'ALFRED_BUCKET_NAME', 'tower-renders')
 DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024  # 5MB
 
 EMAIL_USERNAME = environ.get('EMAIL_USERNAME')

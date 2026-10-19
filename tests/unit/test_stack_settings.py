@@ -210,10 +210,10 @@ def test_a_setting_arrives_as_the_shell_has_it(name):
 
     A bare name hands over the shell's value, or leaves the setting unset so
     the code's own default holds. `${NAME:-}` would hand over an empty string
-    instead, which is not the default for every setting: an empty
-    ALFRED_RENDER_DIR or ALFRED_DELIVERY_DIR is the working directory, and an
-    empty ALFRED_DEV_USER_EMAIL is nobody. OWN_VALUES lists the few a stack
-    sets itself.
+    instead. alfred reads an empty value as unset for every setting but the
+    signing key, so that would mostly be harmless -- but a stack that writes
+    a value is a stack choosing one, and the place for a default is the code.
+    OWN_VALUES lists the few a stack sets itself.
     """
     kind = STACKS[name][1]
     merged = stack(name)

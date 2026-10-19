@@ -25,12 +25,10 @@ again for a change to take effect.
 - **Unset is the default.** The stacks pass each setting by its bare name, so
   one the shell does not set stays unset in the containers and alfred's own
   default applies -- the one in the table.
-- **Empty is not always unset.** For most settings an empty value counts as
-  unset, but `ALFRED_RENDER_DIR`, `ALFRED_DELIVERY_DIR`,
-  `ALFRED_DEV_USER_EMAIL` and `ALFRED_BUCKET_NAME` take it literally: the
-  working directory (for the api, the checkout itself), no address, no
-  bucket. Unset them (`unset ALFRED_RENDER_DIR`) rather than emptying them. An
-  empty `ALFRED_SECRET_KEY` is worse: see the table.
+- **Empty is unset**, for every setting but one: an empty value (or one of
+  spaces) gives the default in the table, as if the variable were not there.
+  The exception is `ALFRED_SECRET_KEY`, where empty is a key anyone can
+  reproduce: see the table.
 - **Paths are inside the containers.** Both containers mount this checkout's
   `videos/` at `/app/videos`, and only the api mounts the checkout itself at
   `/app`. A directory the renderer writes and the api reads,
@@ -56,18 +54,18 @@ not use it.
 | `ALFRED_SECRET_KEY` | none | Signs every session, password-reset and verification token, and the media URLs the api hands out. Unset, every login fails with a 500; empty, tokens are signed with a key anyone can reproduce; under production, shorter than 32 characters is reported as guessable. | api | Development: `.secret_key.local`, a random key `./al init`, `./al dev` and `./al thin` create for this checkout, loaded over the committed empty stub `.secret_key`. Exporting it does nothing in development. Production: required; export it before `./al prod`, which refuses to start without it. |
 | `ALFRED_ALLOW_REGISTRATION` | open in development, closed under `ALFRED_PRODUCTION` | Whether `POST /auth/register` creates accounts. `1`, `true`, `yes` or `on` open it; any other value closes it. | api | The only way to open registration on a production stack: `ALFRED_ALLOW_REGISTRATION=1 ./al prod`. |
 | `ALFRED_DEV_SKIP_AUTH` | off | Serves every request as a fixed superuser, the dev user, and skips the login screen. `1`, `true`, `yes` or `on` turn it on. See [Development auth](dev-auth.md). | api | Development only. `production.yml` does not pass it, and a process that sees it with `ALFRED_PRODUCTION` refuses to start. `./al dev` warns when it is combined with `ALFRED_BIND` beyond loopback. |
-| `ALFRED_DEV_USER_EMAIL` | `dev@example.com` | The account the auth bypass acts as. It is reserved in every mode: it cannot be registered, logged into or reset. Development seeds belong to it unless `ALFRED_SEED_OWNER` says otherwise. | api | Both. Do not set it empty. |
+| `ALFRED_DEV_USER_EMAIL` | `dev@example.com` | The account the auth bypass acts as. It is reserved in every mode: it cannot be registered, logged into or reset. Development seeds belong to it unless `ALFRED_SEED_OWNER` says otherwise. | api | Both. |
 | `ALFRED_SEED_OWNER` | the dev user in development; nobody under production | The account that owns the demo projects seeded into an empty database at startup, and by `./al seed` and `./al reseed`. With no owner they are visible to superusers only. | api | Both. |
 | `ALFRED_PUBLIC_URL` | unset in development; `https://alfred.quaternion.media` in `production.yml` | The address account mail links to (password reset, confirmation), never taken from a request's Host header. An `http` or `https` URL; anything else is unset, and no mail with a link is sent. Mail also needs `EMAIL_SERVER` and `EMAIL_USERNAME`, from the `.email` env file. | api | Production: export it to deploy anywhere but the host traefik serves. |
 | `ALFRED_REMOTE_MEDIA_HOSTS` | none: only the media library renders | Hosts a clip may name remote media on, comma-separated (`storage.googleapis.com`). The api refuses any other URL, and the worker refuses it rather than downloading it. | api, renderer | Both. A clip on storage.googleapis.com, or any other host, needs its host listed here. |
 | `ALFRED_REMOTE_CACHE_DIR` | `/app/videos/.remote-cache` | Where fetched remote media is kept: a hidden directory, never listed or served. The stacks also pass it as `OTTO_DOWNLOAD_DIR`, the engine's name for it. | api, renderer | Both. A path both containers see. |
 | `ALFRED_REMOTE_CACHE_TTL` | `604800` (a week) | Seconds fetched remote media is kept. Swept when the api starts, at most hourly by the api and the worker as they fetch, and on demand by `./al storage cache`. | api, renderer | Both. |
-| `ALFRED_RENDER_DIR` | `/app/videos/renders` | Where the worker writes finished renders and the api reads them. Not listed or served by `GET /videos`. | api, renderer | Both. A path both containers see; not empty. |
-| `ALFRED_DELIVERY_DIR` | `deliveries` under the working directory: the checkout's `deliveries/` | Where the `local` destination copies a delivered render. Refused if it is inside the site's directory, which is served publicly. | api | Both. Not empty. |
+| `ALFRED_RENDER_DIR` | `/app/videos/renders` | Where the worker writes finished renders and the api reads them. Not listed or served by `GET /videos`. | api, renderer | Both. A path both containers see. |
+| `ALFRED_DELIVERY_DIR` | `deliveries` under the working directory: the checkout's `deliveries/` | Where the `local` destination copies a delivered render. Refused if it is inside the site's directory, which is served publicly. | api | Both. |
 | `ALFRED_PREVIEW_DIR` | `/tmp/alfred-previews` in the api's container | Where EDL preview frames are written and fetched from. | api | Both. |
 | `ALFRED_FRAME_TTL` | `3600` | Seconds a preview frame is kept. Older ones are swept when a frame is written and when the api starts. | api | Both. |
 | `ALFRED_MEDIA_URL_TTL` | `900` | Seconds a signed media URL works. A URL is reissued with every listing and status. | api | Both. |
-| `ALFRED_BUCKET_NAME` | `tower-renders` | The Google Cloud Storage bucket the worker uploads each finished render to, and bucket delivery and cloud links use. Needs a service account key: `./cred.json` for the worker, `./cred_api.json` for the api. Without one the worker's upload fails, is logged, and the render stands. | api, renderer | Both. Not empty. |
+| `ALFRED_BUCKET_NAME` | `tower-renders` | The Google Cloud Storage bucket the worker uploads each finished render to, and bucket delivery and cloud links use. Needs a service account key: `./cred.json` for the worker, `./cred_api.json` for the api. Without one the worker's upload fails, is logged, and the render stands. | api, renderer | Both. |
 | `ALFRED_AUDIO_ENGINE_URL` | unset: no engine | The audio engine's base address, which captions are transcribed and media analysed with. Unset, captions are still typed and imported, and transcribing says why it cannot. See [Captions](captions.md). | api, renderer | Both. joe beside the stack: `http://host.docker.internal:8010`; see [Docker hosts and joe](#docker-hosts-and-joe). |
 | `ALFRED_AUDIO_ENGINE_TIMEOUT` | `1800` | Seconds one request to the engine may take. | api, renderer | Both. |
 | `ALFRED_AUDIO_ENGINE_CONTRACT_<FIELD>` | vox's | One field of vox's `EngineContract`, for an engine that spells its API differently from joe: `ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_UPLOAD=/v2/upload`. `none` says the engine does not offer it. A name that is not a field is reported by `GET /health`. | api, renderer | Both. The stacks pass one variable per field, listed in each file. |

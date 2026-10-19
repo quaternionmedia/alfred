@@ -5,11 +5,13 @@ do, so it can be tested without reimporting the module.
 """
 
 import os
+import subprocess
+import sys
 
 import pytest
 
 from alfred import config
-from alfred.config import resolve_remote_cache_dir, resolve_seconds
+from alfred.config import resolve_remote_cache_dir, resolve_seconds, resolve_text
 
 
 class TestSeconds:
@@ -28,6 +30,48 @@ class TestSeconds:
         asked for."""
         assert resolve_seconds({'X': value}, 'X', 900) == 900
         assert 'X=' in capsys.readouterr().err
+
+
+class TestText:
+    def test_unset_or_empty_is_the_default(self):
+        assert resolve_text({}, 'X', 'deliveries') == 'deliveries'
+        assert resolve_text({'X': ''}, 'X', 'deliveries') == 'deliveries'
+        assert resolve_text({'X': '   '}, 'X', 'deliveries') == 'deliveries'
+
+    def test_a_value_is_taken_without_its_surrounding_space(self):
+        assert resolve_text({'X': ' /srv/out '}, 'X', 'deliveries') == '/srv/out'
+
+    def test_the_settings_an_empty_value_used_to_mean_literally(self):
+        """An empty ALFRED_RENDER_DIR or ALFRED_DELIVERY_DIR was the working
+        directory, an empty ALFRED_DEV_USER_EMAIL nobody and an empty
+        ALFRED_BUCKET_NAME no bucket. Read as config.py reads them at import,
+        in a process of their own so this one's settings stay as they are."""
+        names = {
+            'ALFRED_RENDER_DIR': 'RENDER_DIR',
+            'ALFRED_DELIVERY_DIR': 'DELIVERY_DIR',
+            'ALFRED_DEV_USER_EMAIL': 'DEV_USER_EMAIL',
+            'ALFRED_BUCKET_NAME': 'BUCKET_NAME',
+        }
+        env = {key: value for key, value in os.environ.items() if key not in names}
+        env.update({name: '' for name in names})
+        env.pop('ALFRED_PRODUCTION', None)
+        script = (
+            'from alfred import config; '
+            f"print('|'.join(str(getattr(config, n)) for n in {list(names.values())!r}))"
+        )
+        run = subprocess.run(
+            [sys.executable, '-c', script],
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        last_line = run.stdout.strip().splitlines()[-1]
+        render_dir, delivery_dir, dev_email, bucket = last_line.split('|')
+        assert render_dir == os.path.join(config.VIDEO_DIR, 'renders')
+        assert delivery_dir == 'deliveries'
+        assert dev_email == config.DEFAULT_DEV_USER_EMAIL
+        assert bucket == 'tower-renders'
 
 
 class TestTheRemoteCache:
