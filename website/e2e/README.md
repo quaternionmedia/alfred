@@ -25,14 +25,15 @@ cd website
 yarn install
 npx playwright install --with-deps chromium
 
-yarn e2e             # the gate: everything except @perf and @recipe
+yarn e2e             # the gate: everything except @perf, @recipe and @screens
 yarn e2e:perf        # page-load budget, on request
 yarn e2e:ui          # interactive runner
 yarn e2e:report      # last HTML report
 ```
 
-The `@recipe` walkthroughs run in the `docs` project, one worker, recording
-video. `./al recipes` runs it and regenerates the cookbook;
+The `@recipe` walkthroughs and the `@screens` screenshots run in the `docs`
+project, one worker. `./al recipes` runs it, makes the GIFs and screenshots
+the docs open with, and regenerates the cookbook;
 [CONTRIBUTING.md](../../CONTRIBUTING.md#the-docs-are-generated-from-the-tests)
 says what it keeps and what it commits.
 
@@ -175,7 +176,8 @@ in and logout; `views.spec.js`, that a reload keeps the session.
 | Views render, no uncaught page errors, reload | `views.spec.js` | UI |
 | Layout at every width | `appearance.spec.js` | UI |
 | Icons drawn by a self-hosted font; nothing loaded from a CDN | `assets.spec.js` | UI |
-| Recipe walkthroughs (the cookbook) | `recipes.spec.js` | UI, `@recipe` |
+| Recipe walkthroughs (the cookbook's GIFs) | `recipes.spec.js` | UI, `@recipe` |
+| The docs' screenshots | `screens.spec.js` | UI, `@screens` |
 | Page-load budget | `performance.spec.js` | UI, `@perf` |
 
 The project assertions read the expected set from `GET /project` rather than

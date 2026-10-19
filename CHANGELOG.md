@@ -172,7 +172,7 @@ accepted are now refused, and a production stack needs its own signing key.
   over a running dev stack nor leaves anonymous volumes behind.
 - **The docs site loads nothing from another host** (system fonts, no emoji
   extension), and **the cookbook links only what git tracks**, so each recipe
-  shows its committed stub.
+  shows its committed GIF.
 
 ### Fixed
 
@@ -351,8 +351,10 @@ accepted are now refused, and a production stack needs its own signing key.
   Linux Docker host needs to reach joe; `test_docs_accounted.py` fails when it
   misses a setting alfred reads, docs/family.md one `./al family` reads, or a
   document gives an `./al` command that does not exist.
-- **A stub per recipe in docs/recipes**, five in all; `./al recipes` keeps the
-  recordings beside them, git-ignored.
+- **Docs that show first.** `./al recipes` records each recipe as a GIF in
+  `docs/recipes/` and takes the screenshots in `docs/assets/screens/`, from
+  demo data it builds; the README and the main docs pages open with them, and
+  `test_docs_images.py` holds every image to a page that uses it.
 
 ### CI and release
 

@@ -62,7 +62,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al prod` | Production stack; expects a running traefik and the production `ALFRED_SECRET_KEY` exported |
 | `./al flower` | Celery monitoring on :5555; needs the dev stack for its broker |
 | `./al cookbook` | Regenerate `docs/cookbook.md` from the e2e specs |
-| `./al recipes` | Record the `@recipe` walkthroughs against a running stack, write their stubs into `docs/recipes/`, and regenerate the cookbook |
+| `./al recipes` | Against a running stack: record the recipes as GIFs into `docs/recipes/`, take the screenshots into `docs/assets/screens/`, and regenerate the cookbook |
 | `./al install <pkg>` | Add a website dependency |
 | `./al family` | alfred with otto, vox, joe, qmcp and the rest: status, quick suites, the stack wired to joe, a live check ([docs/family.md](docs/family.md)) |
 

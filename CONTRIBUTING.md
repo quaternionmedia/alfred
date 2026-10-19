@@ -71,35 +71,35 @@ Before you change a test:
   `needs_ffmpeg`, `needs_imagemagick`. `conftest.py` probes for the capability,
   not the binary, because ffmpeg reaches moviepy through `imageio_ffmpeg` and
   is usually not on PATH.
-- **The `@recipe` walkthroughs are excluded.** They pause between steps so the
-  recordings are watchable; `./al recipes` runs them.
+- **The `@recipe` and `@screens` specs are excluded.** Recipes pause between
+  steps so their GIFs are watchable; `./al recipes` runs both.
 - **Known defects are pinned as strict `xfail`.** Fixing one turns the suite
   red as `XPASS(strict)`, the prompt to remove the marker. That is not a broken
   test. [tests/README.md](tests/README.md) says how to record one.
 
 ## The docs are generated from the tests
 
-`docs/cookbook.md` is generated from the end-to-end suite, and the `@recipe`
-walkthroughs in it are what the recordings capture:
+The docs' prose, GIFs and screenshots all come from the end-to-end suite:
 
 ```sh
-./al cookbook      # regenerate the prose from the specs
-./al recipes       # record the @recipe walkthroughs as video, then regenerate
+./al cookbook      # regenerate docs/cookbook.md from the specs
+./al recipes       # record the @recipe GIFs and the @screens screenshots, then regenerate
 ```
 
 `./al recipes` runs against a dev stack you already have up (`E2E_BASE_URL` if
-it is not on :8000). The recordings stay on your machine: each passing
-recipe's is copied to `docs/recipes/<recipe>.webm`, which git ignores, beside a
-committed SVG stub that names the recipe and says a polished recording is
-pending. The cookbook shows each stub under its recipe and links only what git
-tracks, so a committed cookbook never names a file a clean checkout lacks; a
-new recipe's stub appears once you `git add docs/recipes` and regenerate.
+it is not on :8000). It writes each passing recipe as `docs/recipes/<recipe>.gif`
+and each screen as `docs/assets/screens/<name>.png`, converting with the
+ffmpeg in the api container, and exits non-zero if any step fails. Both build
+their own demo data and show nothing else, so recording on your own stack
+publishes none of your projects. Commit what it writes; the cookbook links only
+what git tracks, and `tests/unit/test_docs_images.py` holds every image to a
+page that uses it.
 
 So **do not edit `docs/cookbook.md` by hand**: change the tests and
 regenerate. `tests/unit/test_cookbook.py` fails if the committed file drifts
 from the specs, or regenerating does not produce it byte for byte. Prose
 describing behaviour goes stale silently; a test describing behaviour goes red.
-A recipe that breaks has no stub or video rather than a misleading one.
+A recipe that breaks leaves no GIF rather than a misleading one.
 
 ## Before opening a pull request
 
