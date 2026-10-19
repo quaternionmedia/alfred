@@ -78,6 +78,7 @@ class TestAsking:
     def test_an_unknown_feature_is_422_and_not_asked(self, client, analysed, features):
         res = client.get(f'/media/videos/song.mp3/audio?features={features}')
         assert res.status_code == 422
+        assert res.json()['code'] == 'unknown_feature'
         assert analysed == []
 
     @pytest.mark.parametrize(
@@ -90,13 +91,19 @@ class TestAsking:
         ],
     )
     def test_what_the_library_does_not_hold_is_404(self, client, analysed, name):
-        assert client.get(f'/media/{name}/audio').status_code == 404
+        res = client.get(f'/media/{name}/audio')
+        assert res.status_code == 404
+        assert res.json() == {
+            'detail': 'No such file in the media library',
+            'code': 'not_found',
+        }
         assert analysed == []
 
     def test_an_image_has_no_sound(self, client, analysed):
         res = client.get('/media/videos/still.png/audio')
         assert res.status_code == 422
         assert 'image' in res.json()['detail']
+        assert res.json()['code'] == 'media_silent'
 
     def test_it_needs_a_session(self, client, analysed):
         anonymous(app)
@@ -109,6 +116,26 @@ class TestTheEngine:
         res = client.get('/media/videos/song.mp3/audio')
         assert res.status_code == 503
         assert 'ALFRED_AUDIO_ENGINE_URL' in res.json()['detail']
+        assert res.json()['code'] == 'audio_engine_missing'
+
+    def test_one_that_does_not_offer_analysis_is_503_too(
+        self, client, analysed, monkeypatch
+    ):
+        """The engine's contract has no analysis route: configuration, so the
+        same code as having no engine at all."""
+
+        def not_offered(*args):
+            raise audio_engine.NoAudioEngine(
+                'the audio engine at http://e: the contract offers no analyze'
+            )
+
+        monkeypatch.setattr(audio_engine, 'analyze', not_offered)
+        res = client.get('/media/videos/song.mp3/audio')
+        assert res.status_code == 503
+        assert res.json() == {
+            'detail': 'the audio engine at http://e: the contract offers no analyze',
+            'code': 'audio_engine_missing',
+        }
 
     def test_a_refusal_of_the_file_is_422(self, client, analysed, monkeypatch):
         def refuse(*args):
@@ -120,6 +147,7 @@ class TestTheEngine:
         res = client.get('/media/videos/song.mp3/audio')
         assert res.status_code == 422
         assert 'no decodable audio' in res.json()['detail']
+        assert res.json()['code'] == 'audio_engine_refused'
 
     def test_a_failure_is_502_with_the_reason(self, client, analysed, monkeypatch):
         def fail(*args):
@@ -131,6 +159,7 @@ class TestTheEngine:
         res = client.get('/media/videos/song.mp3/audio')
         assert res.status_code == 502
         assert 'http://e' in res.json()['detail']
+        assert res.json()['code'] == 'audio_engine_failed'
 
 
 class TestTheCache:

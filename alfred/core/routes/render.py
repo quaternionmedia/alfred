@@ -45,6 +45,7 @@ from ..utils.destinations import (
     get_destination,
 )
 from ..utils.encoding import QUALITIES, UnknownQuality, preset_for
+from ..utils.logger import failure_reason
 from ..utils.media import RefusedEdl, check_edl, output_path
 from ..utils.ownership import may_access, owner_filter, owner_key
 from ..utils.signing import media_url
@@ -341,6 +342,32 @@ def refuse_unrenderable(edl):
         raise Refusal(Code.EDL_REFUSED, str(exc)) from exc
 
 
+async def send_to_worker(queue, store: RenderStore, render: Render) -> None:
+    """Hand a stored render to the worker; 503 if the broker would not take it.
+
+    Off the event loop: sending is a round trip to the broker, and MongoDB's
+    client waits thirty seconds for one that does not answer before the send
+    fails. Inline, the api answered nothing else meanwhile.
+
+    A render the broker would not take was a plain-text 500, and its document
+    stayed `queued` for good, so anything following it waited for a render
+    that would never start. It is recorded `failed` now, with the reason, and
+    the caller is answered 503 with `render_not_queued`: as a transcription
+    that could not be queued is (`routes.captions`).
+    """
+    payload = task_payload(render)
+    try:
+        await run_in_threadpool(queue, **payload)
+    except Exception as exc:  # noqa: BLE001 - the broker is down, or worse
+        reason = failure_reason(exc)
+        await store.update(
+            render.id, {'status': 'failed', 'error': f'could not be queued: {reason}'}
+        )
+        raise Refusal(
+            Code.RENDER_NOT_QUEUED, f'The render could not be queued: {reason}'
+        ) from exc
+
+
 class RenderLabels(BaseModel):
     """What `PUT /render/{id}` may change: the labels, and nothing else.
 
@@ -439,11 +466,7 @@ class RenderAPI(MotorCRUDRouter):
             render.filename = output_filename(render.id)
             render.display_name = display_name_for(render)
             await store.insert(render)
-            # Off the event loop: sending is a round trip to the broker, and
-            # MongoDB's client waits thirty seconds for one that does not
-            # answer before the send fails. Inline, the api answered nothing
-            # else meanwhile.
-            await run_in_threadpool(queue, **task_payload(render))
+            await send_to_worker(queue, store, render)
             return str(render.id)
 
         @self.post('/rerender/{id}', *args, **kwargs)
@@ -480,8 +503,7 @@ class RenderAPI(MotorCRUDRouter):
             await store.update(render.id, changes)
             for name, value in changes.items():
                 setattr(render, name, value)
-            # Off the event loop, as a first render is queued.
-            await run_in_threadpool(queue, **task_payload(render))
+            await send_to_worker(queue, store, render)
             return str(render.id)
 
         @self.get('/{item_id}/status', response_model=RenderStatus)

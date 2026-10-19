@@ -217,9 +217,11 @@ analysis: `duration`, `tempo` (beats a minute), `beats` and `onsets` (seconds),
 `loudness` (`rms_db`, `peak_db`, `lufs`), `silences` (`[{start, end}]`) and
 `peaks` (`{rate, values}`, 0 to 1). `features` asks for some of `tempo`,
 `beats`, `onsets`, `loudness`, `silences` and `peaks`; all by default. The
-answer is kept until the file changes. 404 for what the library does not hold,
-422 for an image or a file the engine will not read, 502 when the engine
-fails, 503 when there is none.
+answer is kept until the file changes. 404 for what the library does not hold
+(`not_found`), 422 for an image (`media_silent`), a file the engine will not
+read (`audio_engine_refused`) or a feature it is not asked for
+(`unknown_feature`), 502 when the engine fails (`audio_engine_failed`), 503
+when there is none (`audio_engine_missing`): [Refusals](api/errors.md).
 
 ## Testing
 

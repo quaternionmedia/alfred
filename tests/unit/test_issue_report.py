@@ -111,7 +111,10 @@ def test_without_mail_set_up_it_is_a_503_and_nothing_is_queued(
     monkeypatch.setattr(support_mail, 'support_mail_configured', lambda: False)
     res = report(serve(OWNER), render.id)
     assert res.status_code == 503
-    assert res.json() == {'detail': support_mail.NOT_CONFIGURED}
+    assert res.json() == {
+        'detail': support_mail.NOT_CONFIGURED,
+        'code': 'mail_not_configured',
+    }
     assert mail == []
 
 
@@ -126,7 +129,10 @@ def test_a_queue_that_will_not_take_it_is_a_503_that_logs_no_report(
     app.dependency_overrides[support_mail.get_mail_queue] = lambda: broken
     res = report(serve(OWNER), render.id)
     assert res.status_code == 503
-    assert res.json() == {'detail': 'The mail could not be queued; try again later.'}
+    assert res.json() == {
+        'detail': 'The mail could not be queued; try again later.',
+        'code': 'mail_not_queued',
+    }
     logged = capsys.readouterr().out
     assert 'ConnectionError' in logged
     assert 'out of sync' not in logged

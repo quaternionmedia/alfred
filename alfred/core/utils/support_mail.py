@@ -15,9 +15,9 @@ EMAIL_SENDTO itself.
 from base64 import b64encode
 from typing import Literal, Optional
 
-from fastapi import HTTPException
 from pydantic import BaseModel
 
+from ..errors import Code, Refusal
 from .email import support_mail_configured
 from .tasks import mailSupport
 
@@ -46,10 +46,11 @@ NOT_CONFIGURED = (
 
 
 def refuse_unless_configured():
-    """503 when there is no mail to send with: checked before anything is
-    made or queued, so the caller hears it now rather than never."""
+    """503 when there is no mail to send with (`mail_not_configured`):
+    checked before anything is made or queued, so the caller hears it now
+    rather than never."""
     if not support_mail_configured():
-        raise HTTPException(status_code=503, detail=NOT_CONFIGURED)
+        raise Refusal(Code.MAIL_NOT_CONFIGURED, NOT_CONFIGURED)
 
 
 def attachment(filename, data: bytes) -> dict:
@@ -58,7 +59,8 @@ def attachment(filename, data: bytes) -> dict:
 
 
 def queue_mail(queue, about, subject, message, attachments=()) -> MailQueued:
-    """Queue a mail to support; 503 if the broker would not take it.
+    """Queue a mail to support; 503 if the broker would not take it
+    (`mail_not_queued`).
 
     Blocking: a send to the broker. `about` names the mail in the worker's
     log, and must hold nothing a mail does -- no address, no text.
@@ -73,7 +75,7 @@ def queue_mail(queue, about, subject, message, attachments=()) -> MailQueued:
     except Exception as exc:  # noqa: BLE001 - the broker is down, or worse
         # The kind only: a serializer's complaint can quote what it was given.
         print(f'could not queue the mail about {about}:', type(exc).__name__)
-        raise HTTPException(
-            status_code=503, detail='The mail could not be queued; try again later.'
+        raise Refusal(
+            Code.MAIL_NOT_QUEUED, 'The mail could not be queued; try again later.'
         ) from exc
     return MailQueued(state='queued', job=getattr(job, 'id', None))

@@ -51,11 +51,23 @@ class Code(StrEnum):
     FPS_OUT_OF_RANGE = 'fps_out_of_range'
     UNKNOWN_QUALITY = 'unknown_quality'
     EDL_REFUSED = 'edl_refused'
+    RENDER_NOT_QUEUED = 'render_not_queued'
     RENDER_NOT_FINISHED = 'render_not_finished'
     DESTINATION_UNKNOWN = 'destination_unknown'
     DELIVERY_FAILED = 'delivery_failed'
     DELIVERED_WITHOUT_LINK = 'delivered_without_link'
     CLOUD_LINK_UNAVAILABLE = 'cloud_link_unavailable'
+    # How a library file sounds (`GET /media/{name}/audio`), beside NOT_FOUND
+    # and AUDIO_ENGINE_MISSING.
+    UNKNOWN_FEATURE = 'unknown_feature'
+    MEDIA_SILENT = 'media_silent'
+    AUDIO_ENGINE_REFUSED = 'audio_engine_refused'
+    AUDIO_ENGINE_FAILED = 'audio_engine_failed'
+    # Previews.
+    PREVIEWS_BUSY = 'previews_busy'
+    # Mail to support: issue reports and invoices.
+    MAIL_NOT_CONFIGURED = 'mail_not_configured'
+    MAIL_NOT_QUEUED = 'mail_not_queued'
 
 
 class Meaning(NamedTuple):
@@ -80,11 +92,19 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.FPS_OUT_OF_RANGE: Meaning(422, 'a frame rate out of range'),
     Code.UNKNOWN_QUALITY: Meaning(422, 'not one of the qualities'),
     Code.EDL_REFUSED: Meaning(422, 'a clip this server will not render'),
+    Code.RENDER_NOT_QUEUED: Meaning(503, 'the broker would not take the render'),
     Code.RENDER_NOT_FINISHED: Meaning(409, 'the render has no finished file yet'),
     Code.DESTINATION_UNKNOWN: Meaning(502, 'no destination of that name'),
     Code.DELIVERY_FAILED: Meaning(502, 'the destination would not take it'),
     Code.DELIVERED_WITHOUT_LINK: Meaning(502, 'uploaded, but no link was signed'),
     Code.CLOUD_LINK_UNAVAILABLE: Meaning(502, 'no cloud link can be signed'),
+    Code.UNKNOWN_FEATURE: Meaning(422, 'not a feature the engine is asked for'),
+    Code.MEDIA_SILENT: Meaning(422, 'an image, which has no sound'),
+    Code.AUDIO_ENGINE_REFUSED: Meaning(422, 'the audio engine would not take it'),
+    Code.AUDIO_ENGINE_FAILED: Meaning(502, 'the audio engine failed'),
+    Code.PREVIEWS_BUSY: Meaning(503, 'no preview slot came free in time'),
+    Code.MAIL_NOT_CONFIGURED: Meaning(503, 'no mail is set up on this server'),
+    Code.MAIL_NOT_QUEUED: Meaning(503, 'the broker would not take the mail'),
 }
 
 

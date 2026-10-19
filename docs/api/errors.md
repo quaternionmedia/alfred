@@ -13,10 +13,10 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | Code | Status | Means | Answered by |
 |---|---|---|---|
 | `invalid_id` | 422 | the id in the path is not an id -- not an ObjectId's 24 hex digits -- refused before anything is looked up | every project, captions and render route that takes an id |
-| `not_found` | 404 | no such project or render, or not yours: alfred does not say which | every project, captions and render route that takes an id |
+| `not_found` | 404 | no such project or render, or not yours: alfred does not say which; or no such file in the media library | every project, captions and render route that takes an id; `GET /media/{name}/audio` |
 | `too_many_captions` | 422 | more captions than the 1000 a project carries | `PUT /project/{id}/captions`, `POST /project`, `POST /render` |
 | `caption_file_unreadable` | 422 | the subtitle file cannot be read; `detail` names the line | `POST /project/{id}/captions/import` |
-| `audio_engine_missing` | 503 | no audio engine alfred can ask: none is configured, or a setting or this build cannot reach one; `detail` is the reason `GET /health` gives as `audio_engine.detail` | `POST /project/{id}/captions/transcribe` |
+| `audio_engine_missing` | 503 | no audio engine alfred can ask: none is configured, or a setting or this build cannot reach one; `detail` is the reason `GET /health` gives as `audio_engine.detail`. Asked for an analysis, also an engine whose contract offers none | `POST /project/{id}/captions/transcribe`, `GET /media/{name}/audio` |
 | `timeline_empty` | 422 | the project has no saved timeline to transcribe | `POST /project/{id}/captions/transcribe` |
 | `timeline_unplayable` | 422 | the saved timeline cannot be played; `detail` names the clip | `POST /project/{id}/captions/transcribe` |
 | `timeline_silent` | 422 | nothing in the timeline can make a sound: no video or audio clips | `POST /project/{id}/captions/transcribe` |
@@ -26,20 +26,28 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `frame_size_out_of_range` | 422 | a `width` or `height` outside 16 to 7680 pixels | `POST /render` |
 | `fps_out_of_range` | 422 | an `fps` outside 1 to 120 | `POST /render` |
 | `unknown_quality` | 422 | a `quality` that is not one of the presets | `POST /render` |
-| `edl_refused` | 422 | a clip this server will not render: media outside the library, a template it does not offer, a type it does not know; `detail` names the clip | `POST /render`, `POST /render/rerender/{id}` |
+| `edl_refused` | 422 | a clip this server will not render: media outside the library, a template it does not offer, a type it does not know; `detail` names the clip | `POST /render`, `POST /render/rerender/{id}`, `POST /preview/` |
+| `render_not_queued` | 503 | the broker would not take the render; the render is recorded `failed` with the reason, which `GET /render/{id}/status` gives as `error`, and `POST /render/rerender/{id}` queues it again | `POST /render`, `POST /render/rerender/{id}` |
 | `render_not_finished` | 409 | the render has no finished file yet | `POST /render/{id}/deliver`, `GET /render/{id}/download` |
 | `destination_unknown` | 502 | no destination has that name; `detail` lists those that do | `POST /render/{id}/deliver` |
 | `delivery_failed` | 502 | the destination would not take the render; asking again may deliver it | `POST /render/{id}/deliver` |
 | `delivered_without_link` | 502 | the render was uploaded to the bucket, and recorded so, but no link to it could be signed | `POST /render/{id}/deliver` |
 | `cloud_link_unavailable` | 502 | no link to the render's copy in the cloud bucket can be signed: always, on a server with no cloud account | `GET /render/{id}` |
+| `unknown_feature` | 422 | a `features` name that is not one of `tempo`, `beats`, `onsets`, `loudness`, `silences` and `peaks` | `GET /media/{name}/audio` |
+| `media_silent` | 422 | the file is an image, which has no sound to analyse | `GET /media/{name}/audio` |
+| `audio_engine_refused` | 422 | the audio engine would not take the file -- no sound in it, a type it does not read, too large; `detail` is the engine's reason | `GET /media/{name}/audio` |
+| `audio_engine_failed` | 502 | the audio engine could not be reached, broke, or answered something that is not an answer; asking again may work | `GET /media/{name}/audio` |
+| `previews_busy` | 503 | the server is drawing as many previews as it will (`ALFRED_PREVIEW_CONCURRENCY`), and none came free within `ALFRED_PREVIEW_WAIT` seconds; ask again after the seconds the `Retry-After` header gives | `POST /preview/`, `GET /preview/template/{name}` |
+| `mail_not_configured` | 503 | the server has no mail set up (`EMAIL_SERVER`, `EMAIL_USERNAME` and `EMAIL_SENDTO`), so nothing was made or queued | `POST /render/{id}/report`, `POST /invoice` |
+| `mail_not_queued` | 503 | the broker would not take the mail; nothing will be sent, and asking again later may queue it | `POST /render/{id}/report`, `POST /invoice` |
 
 `tests/unit/test_refusal_codes.py` holds this table to alfred's code: every code alfred has is here with its status, and each is answered, with its sentence, by a request through the API.
 
 ## What carries no code
 - **A request FastAPI refuses** before a route runs -- a body or parameter that does not fit the route's model -- answers 422 with a list of `{loc, msg, type}` as its `detail`, which already says where and what.
-- **No session**: 401, `{"detail": "Unauthorized"}`.
+- **No session**: 401, `{"detail": "Unauthorized"}`. **Not a superuser**, on a route only superusers may use, such as `POST /invoice`: 403, `{"detail": "Forbidden"}`.
 - **Signing in and accounts** (`/auth/...`, `/users/...`): fastapi-users answers its own codes as the `detail` itself, such as `LOGIN_BAD_CREDENTIALS`.
 - **A route alfred does not have**: FastAPI's 404, `{"detail": "Not Found"}`, which a client tells from `not_found` by the code it lacks.
-- **The routes not covered yet** answer `detail` alone: the media library and how a file sounds (`/media`, `/videos`), previews, demo media, templates, a signed link's refusal on the file routes, issue reports and invoices.
+- **The routes not covered yet** answer `detail` alone: the media library (`GET /media`, `/videos`), though how a file sounds is covered; a preview's own refusals -- a timeline or template it cannot draw, a template it does not offer, a frame cleaned up -- though a busy server's `previews_busy` and the timeline check's `edl_refused` are covered; demo media; and a signed link's refusal on the file routes.
 
 A client that has to work with an alfred from before codes reads `detail`, as it always could; one that finds a `code` switches on it.

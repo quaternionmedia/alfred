@@ -10,6 +10,7 @@ table covers raise no refusal without a code.
 """
 
 import ast
+import asyncio
 import re
 from pathlib import Path
 
@@ -24,8 +25,9 @@ from alfred.core.models.render import Render
 from alfred.core.routes import captions as caption_routes
 from alfred.core.routes import render as render_routes
 from alfred.core.routes.templates import TEMPLATE_NAMES
-from alfred.core.utils import audio_engine, bucket
+from alfred.core.utils import audio_engine, bucket, concurrency, support_mail
 from alfred.core.utils.captions import MAX_CAPTIONS, CaptionFormatError, parse
+from alfred.core.utils.concurrency import RETRY_AFTER
 from alfred.core.utils.encoding import QUALITIES
 from alfred.core.utils.media import RefusedEdl, check_edl
 from alfred.main import app
@@ -40,17 +42,24 @@ from tests.unit.render_harness import (
     render_request,
     use_fakes,
 )
+from tests.unit.test_preview_slots import preview_requests
 
 ROOT = Path(__file__).resolve().parents[2]
 TABLE = ROOT / 'docs' / 'api' / 'errors.md'
 
 # The modules whose every refusal carries a code: the project, captions and
-# render routes, and the id refusals they share.
+# render routes and the id refusals they share; how a library file sounds; the
+# preview slots; and mail to support, from the issue report and the invoice.
 COVERED = [
+    'alfred/core/routes/admin.py',
+    'alfred/core/routes/audio.py',
     'alfred/core/routes/captions.py',
+    'alfred/core/routes/issue.py',
     'alfred/core/routes/project.py',
     'alfred/core/routes/render.py',
     'alfred/core/utils/bucket.py',
+    'alfred/core/utils/concurrency.py',
+    'alfred/core/utils/support_mail.py',
 ]
 
 
@@ -205,6 +214,36 @@ class World:
     def uploads_accepted(self):
         self.monkeypatch.setattr(bucket, 'upload', lambda *args, **kwargs: None)
 
+    def broker_down(self):
+        """Renders and mail are sent to a broker that is not there."""
+        app.dependency_overrides[render_routes.get_render_queue] = lambda: BrokerDown()
+        app.dependency_overrides[support_mail.get_mail_queue] = lambda: BrokerDown()
+        self.overrides.append(support_mail.get_mail_queue)
+
+    def mail(self, configured=True):
+        self.monkeypatch.setattr(
+            support_mail, 'support_mail_configured', lambda: configured
+        )
+
+    def report(self):
+        """An issue reported with one of the caller's renders."""
+        render = make_render()
+        self.renders.renders[render.id] = render
+        return self.client.post(f'/render/{render.id}/report', json='It stutters.')
+
+    def sound_of(self, name, features=None):
+        query = f'?features={features}' if features else ''
+        return self.client.get(f'/media/videos/{name}/audio{query}')
+
+    def engine_says(self, failure):
+        """An engine that answers every analysis with `failure`."""
+        self.an_engine()
+
+        def analyze(*args):
+            raise failure
+
+        self.monkeypatch.setattr(audio_engine, 'analyze', analyze)
+
 
 @pytest.fixture
 def world(monkeypatch, tmp_path):
@@ -332,6 +371,15 @@ def edl_refused(world):
     return res, refused_edl(edl)
 
 
+def render_not_queued(world):
+    world.broker_down()
+    res = world.client.post('/render', json=render_request())
+    (render,) = world.renders.renders.values()
+    reason = 'ConnectionError: [Errno 111] Connection refused'
+    assert (render.status, render.error) == ('failed', f'could not be queued: {reason}')
+    return res, f'The render could not be queued: {reason}'
+
+
 def render_not_finished(world):
     render = make_render()
     world.renders.renders[render.id] = render
@@ -374,6 +422,58 @@ def cloud_link_unavailable(world):
     )
 
 
+def unknown_feature(world):
+    return world.sound_of('talk.wav', features='tempo,key'), (
+        f'key: not a feature; ask for any of {", ".join(audio_engine.FEATURES)}'
+    )
+
+
+def media_silent(world):
+    (Path(config.VIDEO_DIR) / 'still.png').write_bytes(b'not really a picture')
+    return world.sound_of('still.png'), 'videos/still.png is an image: it has no sound'
+
+
+def audio_engine_refused(world):
+    why = 'the audio engine at http://engine.test:8010: it refused this (415): no'
+    world.engine_says(audio_engine.AudioEngineRefused(why))
+    return world.sound_of('talk.wav'), why
+
+
+def audio_engine_failed(world):
+    why = 'the audio engine at http://engine.test:8010: it failed (500): broke'
+    world.engine_says(audio_engine.AudioEngineFailed(why))
+    return world.sound_of('talk.wav'), why
+
+
+def previews_busy(world):
+    """Every slot taken -- the one there is, by the test -- so the preview
+    waits its turn, which does not come, and is turned away."""
+    world.monkeypatch.setattr(config, 'PREVIEW_CONCURRENCY', 1)
+    world.monkeypatch.setattr(config, 'PREVIEW_WAIT', 0.05)
+    asyncio.run(concurrency.previews.acquire())
+    try:
+        res = preview_requests()['a template frame'](world.client)
+    finally:
+        concurrency.previews.release()
+    assert concurrency.previews.use() == concurrency.Use(0, 0, 1)
+    assert res.headers['retry-after'] == str(RETRY_AFTER)
+    return res, (
+        'The server is already drawing as many previews as it will (1 at once); '
+        f'ask again in {RETRY_AFTER} seconds.'
+    )
+
+
+def mail_not_configured(world):
+    world.mail(configured=False)
+    return world.report(), support_mail.NOT_CONFIGURED
+
+
+def mail_not_queued(world):
+    world.mail()
+    world.broker_down()
+    return world.report(), 'The mail could not be queued; try again later.'
+
+
 REQUESTS = {
     Code.INVALID_ID: invalid_id,
     Code.NOT_FOUND: not_found,
@@ -390,11 +490,19 @@ REQUESTS = {
     Code.FPS_OUT_OF_RANGE: fps_out_of_range,
     Code.UNKNOWN_QUALITY: unknown_quality,
     Code.EDL_REFUSED: edl_refused,
+    Code.RENDER_NOT_QUEUED: render_not_queued,
     Code.RENDER_NOT_FINISHED: render_not_finished,
     Code.DESTINATION_UNKNOWN: destination_unknown,
     Code.DELIVERY_FAILED: delivery_failed,
     Code.DELIVERED_WITHOUT_LINK: delivered_without_link,
     Code.CLOUD_LINK_UNAVAILABLE: cloud_link_unavailable,
+    Code.UNKNOWN_FEATURE: unknown_feature,
+    Code.MEDIA_SILENT: media_silent,
+    Code.AUDIO_ENGINE_REFUSED: audio_engine_refused,
+    Code.AUDIO_ENGINE_FAILED: audio_engine_failed,
+    Code.PREVIEWS_BUSY: previews_busy,
+    Code.MAIL_NOT_CONFIGURED: mail_not_configured,
+    Code.MAIL_NOT_QUEUED: mail_not_queued,
 }
 
 
