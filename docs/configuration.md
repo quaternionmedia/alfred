@@ -67,6 +67,7 @@ not use it.
 | `ALFRED_PREVIEW_CONCURRENCY` | `4` | How many previews -- a timeline's frame or a template's -- the api draws at once. They run in the thread pool every other route shares, AnyIO's forty threads; past this many, a preview waits its turn without holding a thread. `GET /health` reports `previews: {running, waiting, limit}`. Keep it well under forty. | api | Both. |
 | `ALFRED_PREVIEW_WAIT` | `10` | Seconds a preview waits for its turn before it is answered 503 with `Retry-After`, which the editor's viewer honours. | api | Both. |
 | `ALFRED_MEDIA_URL_TTL` | `900` | Seconds a signed media URL works. A URL is reissued with every listing and status. | api | Both. |
+| `ALFRED_SMTP_TIMEOUT` | `20` | Seconds each step of sending mail may take: connecting, and each command and reply after. Every mail alfred sends has it -- account mail from the api, and the issue reports and invoices the worker sends, which a failure that may pass is tried again for, five more times over about a quarter of an hour. | api, renderer | Both. |
 | `ALFRED_BUCKET_NAME` | `tower-renders` | The Google Cloud Storage bucket the worker uploads each finished render to, and bucket delivery and cloud links use. Needs a service account key: `./cred.json` for the worker, `./cred_api.json` for the api. Without one the worker's upload fails, is logged, and the render stands. | api, renderer | Both. |
 | `ALFRED_AUDIO_ENGINE_URL` | unset: no engine | The audio engine's base address, which captions are transcribed and media analysed with. Unset, captions are still typed and imported, and transcribing says why it cannot. See [Captions](captions.md). | api, renderer | Both. joe beside the stack: `http://host.docker.internal:8010`; see [Docker hosts and joe](#docker-hosts-and-joe). |
 | `ALFRED_AUDIO_ENGINE_TIMEOUT` | `1800` | Seconds one request to the engine may take. | api, renderer | Both. |
@@ -84,9 +85,11 @@ alfred also reads where to find its own parts, which are plumbing rather than
 settings: the compose files set `VIDEO_DIR` (`/app/videos`), `DB_URL`,
 `DB_NAME`, `CELERY_BROKER`, `CELERY_BACKEND` and
 `GOOGLE_APPLICATION_CREDENTIALS`, and `STATIC_DIR` keeps its default, `dist`,
-where the built site is mounted. The api reads `EMAIL_SERVER`, `EMAIL_PORT`,
-`EMAIL_USERNAME`, `EMAIL_PASSWORD` and `EMAIL_SENDTO` from the `.email` env
-file.
+where the built site is mounted. The api and the renderer read `EMAIL_SERVER`,
+`EMAIL_PORT`, `EMAIL_USERNAME`, `EMAIL_PASSWORD` and `EMAIL_SENDTO` from the
+`.email` env file: the api for account mail, and to check that mail is set up
+before it queues any; the renderer, because it sends the issue reports and
+invoices.
 
 ## Docker hosts and joe
 

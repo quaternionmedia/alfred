@@ -8,7 +8,9 @@
 #
 # What does not work without it: queueing a render produces a job nobody
 # collects, so it sits in the queue and never reaches RENDERED. The Deliver
-# stage will show it as queued indefinitely. That is the whole trade.
+# stage will show it as queued indefinitely. Transcribing captions, an issue
+# report and an invoice's mail are jobs for it too, and wait the same way.
+# That is the whole trade.
 #
 # Compose with the others, after them so this wins:
 #

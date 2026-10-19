@@ -46,6 +46,8 @@ x-alfred-settings: &alfred-settings
   ALFRED_PREVIEW_WAIT:
   ALFRED_MEDIA_URL_TTL:
   ALFRED_BUCKET_NAME:
+  # Seconds each step of sending mail may take, for every mail alfred sends.
+  ALFRED_SMTP_TIMEOUT:
   # The audio engine captions are transcribed with, none unless you ask for
   # one. joe on this machine, started in its own checkout with
   # `uv run uvicorn api:app --port 8010` (its CLI binds 8000, ours):
@@ -261,6 +263,11 @@ services:
       - ./cred.json:/cred.json
     depends_on:
       - 'db'
+    # The mail settings, which the api has from docker-compose.yml: the worker
+    # is what sends an issue report or an invoice (tasks.mailSupport), so it
+    # needs the server, the sender and the support addresses too.
+    env_file:
+      - .email
     # The same settings as the api, from the same list.
     environment:
       <<: [*alfred-settings, *audio-engine-contract]

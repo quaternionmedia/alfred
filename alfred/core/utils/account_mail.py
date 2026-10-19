@@ -15,7 +15,11 @@ the link is built on -- never the request's Host header; see
 **Off the request.** Mail goes out from one background thread, so asking for a
 reset answers at once whether the mail server is quick, slow or down, and
 answers alike for an address with an account and one without. A send that
-fails is logged by `sendMail`, without the message.
+fails is logged by `sendMail`, without the message or the address.
+
+Not through the worker's queue, as support mail is (`utils.support_mail`):
+asking for a reset or a confirmation has to work on a stack that runs no
+worker -- the thin stack -- and the thread already answers at once.
 """
 
 from concurrent.futures import ThreadPoolExecutor
@@ -29,11 +33,6 @@ from .email import sendMail
 
 RESET = 'reset'
 VERIFY = 'verify'
-
-# How long one attempt to reach the mail server may take, in seconds. Mail is
-# sent one message at a time, so a server that never answers would otherwise
-# hold up every message after it.
-SEND_TIMEOUT = 20
 
 
 @dataclass(frozen=True)
@@ -106,7 +105,16 @@ def deliver(purpose, address, token, lifetime_seconds) -> bool:
     if not configured():
         return False
     message = compose(purpose, token, lifetime_seconds)
+    # Each step of reaching the mail server bounded by ALFRED_SMTP_TIMEOUT, as
+    # for every mail alfred sends. Mail is sent one message at a time, so a
+    # server that never answered would hold up every message after it.
     dispatch(
-        partial(sendMail, address, message.subject, message.body, timeout=SEND_TIMEOUT)
+        partial(
+            sendMail,
+            address,
+            message.subject,
+            message.body,
+            timeout=config.SMTP_TIMEOUT,
+        )
     )
     return True

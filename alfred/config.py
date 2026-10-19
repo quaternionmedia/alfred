@@ -421,6 +421,13 @@ EMAIL_SENDTO = environ.get('EMAIL_SENDTO')
 if EMAIL_SENDTO:
     EMAIL_SENDTO = EMAIL_SENDTO.split(',')
 
+# How long one step of sending mail may take, in seconds: connecting, and each
+# command and reply after. smtplib waits for ever without one, and a mail
+# server that never answered held whatever was sending for as long as the
+# connection lasted. Account mail had twenty seconds of its own; every mail
+# alfred sends now has this.
+SMTP_TIMEOUT = resolve_seconds(environ, 'ALFRED_SMTP_TIMEOUT', 20)
+
 INVOICE_EMAIL_BODY = '''Please find attached an invoice for this week's renders. 
 
 If you have any questions, feel free to contact us.
