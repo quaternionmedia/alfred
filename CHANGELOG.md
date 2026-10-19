@@ -14,8 +14,9 @@ workspace for the editor. The fourth, on `integrate/wave-4`: the review's
 fix round -- every setting reaching the services that read it, CI installing
 what the image installs, the workspace's tab race and the suite's timing
 races, docs that describe the API as it answers, the timeline's sound written
-by otto (pinned at f3ceca3, `fix/engine-sound`), and an api whose one event
-loop no longer waits on a preview. Read **Security** and **Changed** before
+by otto (pinned at f3ceca3, `fix/engine-sound`), an api whose one event loop
+no longer waits on a preview, and a phone layout that keeps the whole picture
+on the screen. Read **Security** and **Changed** before
 deploying: several requests that used to be accepted are now refused, and a
 production stack needs its own signing key.
 
@@ -226,6 +227,13 @@ production stack needs its own signing key.
   `data` carries only otto's `TemplateData` fields. Examples name library media
   and say what a URL needs. `mkdocs build --strict` passes: the preview images
   are frames the server makes, and every relative link names its page.
+- **On a phone the whole picture is on the screen in every stage.** The
+  viewer keeps the frame's room -- a quarter of an upright screen, two-fifths
+  of one held sideways -- and the stage's panels and the timeline give way
+  instead, down to floors of their own; the stage rail is no longer squeezed,
+  and a screen too short for the floors (375x667, or a phone held sideways)
+  scrolls instead of cutting the bottom of the column off. The picture showed
+  41 of 203 pixels at 390x844 and none at 375x667.
 
 ### Added
 
@@ -337,7 +345,15 @@ skipped, 8 xfailed; `./al test` 381 passed, 1 skipped, across the `chromium`
 and `phone` projects, including the `@slow` specs that encode on otto and
 transcribe through vox and the stub engine. Live, against joe on the host:
 a synthesised spoken line was transcribed into three timed captions and
-rendered with them drawn in.
+rendered with them drawn in. Fourth round, on `integrate/wave-4`: `./al
+pytest` 1567 passed, 2 skipped, 8 xfailed from a fresh clone; `./al test` 389
+passed, 1 skipped on the final commit, and none passed only on retry in any of
+three full runs from a fresh clone; CI's
+install, emulated in a clean container, 1378 passed, 191 skipped (the
+database tier and the text-drawing tests), none failed; `mkdocs build
+--strict` without a warning. Live, against joe on the host: the 28 checks of
+the API pass, and qmcp's tools queued a render with the project's captions and
+were handed its signed download.
 
 ## 0.3.0 — breaking
 

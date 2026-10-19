@@ -105,11 +105,10 @@ and its `CYPRESS_baseUrl` (`http://api/`) disagreed with `cypress.json`'s
 
 ## Verification status
 
-`./al test` on `fix/workspace-and-test-races`: **386 passed, 1 skipped, in
-five to six minutes**, across the `chromium` (workspace) and `phone` (stage
-flow) projects, including the `@slow` specs that wait on a real encode -- two
-runs, neither with a test passed only on retry, on a machine running other
-suites. The skip is data-dependent: the project filter test needs more than
+`./al test` on `integrate/wave-4`: **389 passed, 1 skipped, in about four
+minutes**, across the `chromium` (workspace) and `phone` (stage flow)
+projects, including the `@slow` specs that wait on a real encode -- the last
+of three runs from a fresh clone, none with a test passed only on retry. The skip is data-dependent: the project filter test needs more than
 three projects.
 
 The three image breaks recorded when this suite replaced Cypress -- `FROM
