@@ -35,12 +35,26 @@ nav:
       - examples/text.md
       - examples/animation.md
       - examples/project.md
-    # - examples/advanced.md
   - API:
       - api/index.md
       - api/auth.md
       - api/otto.md
       - api/render.md
+
+# Every check mkdocs can make of the pages, as a warning: a page left out of
+# the nav, a link naming no page or file, an anchor no heading makes, and an
+# absolute link, which names the site's root and so misses the versioned
+# directory mike deploys under. These print on every build, `./al docs`
+# included. CI makes a warning fatal (`mkdocs build --strict`, in
+# .github/workflows/docs.yml) rather than this file's `strict`: `./al prod`
+# builds the docs before it starts the stack, and a broken link should not
+# keep production down.
+validation:
+  omitted_files: warn
+  not_found: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
 
 markdown_extensions:
   - pymdownx.highlight
