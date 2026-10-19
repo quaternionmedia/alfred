@@ -86,7 +86,14 @@ class TestTheResetMail:
 
     def test_does_not_wait_forever_on_the_mail_server(self, configured, outbox):
         account_mail.deliver(RESET, ALICE.email, TOKEN, 3600)
-        assert outbox[0]['timeout'] == account_mail.SEND_TIMEOUT
+        assert outbox[0]['timeout'] == config.SMTP_TIMEOUT
+
+    def test_waits_as_long_as_alfred_smtp_timeout_says(
+        self, configured, outbox, monkeypatch
+    ):
+        monkeypatch.setattr(config, 'SMTP_TIMEOUT', 7)
+        account_mail.deliver(RESET, ALICE.email, TOKEN, 3600)
+        assert outbox[0]['timeout'] == 7
 
 
 class TestTheConfirmationMail:
@@ -182,6 +189,7 @@ class TestTheMailUtility:
                 pass
 
         monkeypatch.setattr(email, 'SMTP', FakeSMTP)
+        monkeypatch.setattr(email, 'EMAIL_SERVER', 'mail.example.com')
         monkeypatch.setattr(email, 'EMAIL_USERNAME', 'alfred@example.com')
         return email, made
 
@@ -191,7 +199,8 @@ class TestTheMailUtility:
         assert made == [{'timeout': 5}]
 
     def test_leaves_smtplib_s_default_without_one(self, monkeypatch):
-        """The invoice and issue mails, unchanged."""
+        """For a caller that passes none; every mail alfred sends passes
+        ALFRED_SMTP_TIMEOUT."""
         email, made = self.smtp(monkeypatch)
         assert email.sendMail('a@example.com', 'subject', 'body')
         assert made == [{}]

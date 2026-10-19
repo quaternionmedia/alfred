@@ -374,25 +374,27 @@ class TestRunsInAThread:
         assert res.json()['captions'] == [{'start': 1.0, 'end': 2.5, 'text': 'Hello'}]
         assert seen == [False]
 
-    def test_mailing_an_issue_with_a_render(self, renders, monkeypatch):
-        from alfred.core.routes import issue
+    def test_queueing_the_mail_about_an_issue_with_a_render(self, renders, monkeypatch):
+        from alfred.core.utils import support_mail
 
         store, _ = renders
         render = make_render(username=OWNER.email)
         store.renders[render.id] = render
-        seen = []
+        queue = SendsFrom()
+        monkeypatch.setattr(support_mail, 'support_mail_configured', lambda: True)
+        app.dependency_overrides[support_mail.get_mail_queue] = lambda: queue
+        try:
+            res = TestClient(app).post(
+                f'/render/{render.id}/report', json='it went dark'
+            )
+        finally:
+            app.dependency_overrides.pop(support_mail.get_mail_queue, None)
+        assert res.status_code == 202, res.text
+        assert queue.on_the_loop == [False]
 
-        def send(**message):
-            seen.append(on_the_loop())
-            return True
-
-        monkeypatch.setattr(issue, 'sendMail', send)
-        res = TestClient(app).post(f'/render/{render.id}/report', json='it went dark')
-        assert res.status_code == 200, res.text
-        assert seen == [False]
-
-    def test_making_and_mailing_an_invoice(self, monkeypatch):
+    def test_making_an_invoice_and_queueing_its_mail(self, monkeypatch):
         from alfred.core.routes import admin
+        from alfred.core.utils import support_mail
 
         seen = []
 
@@ -400,21 +402,21 @@ class TestRunsInAThread:
             seen.append(('invoice', on_the_loop()))
             return []
 
-        def send(**message):
+        def queue(**job):
             seen.append(('mail', on_the_loop()))
-            return True
 
         monkeypatch.setattr(admin, 'generate_invoice', generate)
-        monkeypatch.setattr(admin, 'sendMail', send)
+        monkeypatch.setattr(support_mail, 'support_mail_configured', lambda: True)
+        app.dependency_overrides[support_mail.get_mail_queue] = lambda: queue
         overrides = as_user(app, ADMIN)
         try:
             res = TestClient(app).post(
                 '/invoice?client=c@example.com&startDate=2026-09-01&endDate=2026-10-01'
             )
         finally:
-            for dependency in overrides:
+            for dependency in overrides + [support_mail.get_mail_queue]:
                 app.dependency_overrides.pop(dependency, None)
-        assert res.status_code == 200, res.text
+        assert res.status_code == 202, res.text
         assert seen == [('invoice', False), ('mail', False)]
 
 

@@ -173,7 +173,7 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Timeline editor with a project open (both layouts) | `editor.spec.js` | UI |
 | The timeline tools and the media they act on, the transport, saving; the toolbar | `tools.spec.js`, `otto.spec.js` | UI |
 | Trim, cut, slip, slide and roll, by mouse and touch (both layouts) | `timeline-tools.spec.js` | UI |
-| Adding and editing template clips, fonts and placement | `templates.spec.js` | UI |
+| Adding and editing template clips, fonts and placement; the viewer waiting as long as a busy server's `Retry-After` asks | `templates.spec.js` | UI |
 | The timeline tools from the keyboard, the footer | `editor-access.spec.js` | UI |
 | Media lengths and kinds, signed media and download URLs, the `/videos` fallback | `editor-media.spec.js` | UI |
 | Unsaved timelines kept across a reload or a new login | `editor-draft.spec.js` | UI |
@@ -184,7 +184,7 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Captions: typed, imported, styled, over the viewer, carried by renders | `captions.spec.js` | UI + API |
 | Captions transcribed through the stub audio engine and the worker; library media analysed | `captions.spec.js` | UI + API, `@slow` |
 | Render list | `renders.spec.js` | API + UI |
-| `GET /healthz` with no session; `GET /health` needing one, its contract fields, the running worker answering | `health.spec.js` | API |
+| `GET /healthz` with no session; `GET /health` needing one, its contract fields (the preview slots among them), the running worker answering | `health.spec.js` | API |
 | The media library (`GET /media`), signed URLs for media, preview frames and downloads that load in a page with no session, nothing served from `/data` | `media.spec.js` | API + UI |
 | Preview contract, malformed input, partial writes | `api-contract.spec.js` | API |
 | Routing, history, menu, unique ids | `navigation.spec.js` | UI |

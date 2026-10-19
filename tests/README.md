@@ -101,6 +101,8 @@ tests/
     test_family.py       ./al family: where each repository is, each one's suite
     test_password_hashing.py alfred's off-the-loop copies of fastapi-users'
                          hashing, held to the release and the originals
+    test_preview_slots.py  so many previews at once; the rest wait, then 503
+    test_support_mail.py   support mail is queued, sent by the worker, retried
   pipeline/            needs ffmpeg, no DB, no network
     test_render_pipeline.py
   integration/         needs MongoDB at DB_URL: the app in-process, real auth

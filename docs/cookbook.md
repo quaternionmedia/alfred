@@ -985,7 +985,8 @@ Whether the stack can do its work.
 A render waits in `queued` until a worker takes it. On a stack with no
 worker -- the thin stack runs none -- it waited for ever, and nothing could
 say why. `GET /health` says how many render workers answer and how many
-jobs are waiting (contract M3); `GET /healthz` answers container health
+jobs are waiting (contract M3), and how many previews the api is drawing
+and how many wait for a turn; `GET /healthz` answers container health
 checks with no session and nothing behind it.
 
 This stack runs a worker against a database that starts empty, which is
@@ -1688,6 +1689,15 @@ is aligned in the box. Each is the template's own until chosen, and
   no field for. It is shown as set, and goes on to the render untouched
   when other settings change.
 
+### a server busy with other previews
+
+The server draws only so many previews at once
+(ALFRED_PREVIEW_CONCURRENCY). One that has waited its turn too long is
+answered 503 with a Retry-After header. The viewer says it is waiting,
+keeps quiet for as long as the header asks -- it does not ask again and
+again -- and then asks once more, and shows the frame it gets.
+
+- **the viewer waits as long as the server asks, then asks once more**
 
 ## timeline tools
 

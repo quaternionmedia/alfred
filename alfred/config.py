@@ -121,6 +121,30 @@ def resolve_seconds(env, name, default):
     return value
 
 
+def resolve_count(env, name, default):
+    """A whole, positive number from `env[name]`, else `default`.
+
+    As `resolve_seconds`, for a setting that counts something other than
+    seconds: unset or empty is the default, and so is anything that is not a
+    positive whole number, with a line on stderr saying so.
+    """
+    raw = env.get(name)
+    if not _given(raw):
+        return default
+    try:
+        value = int(str(raw).strip())
+    except ValueError:
+        value = 0
+    if value < 1:
+        print(
+            f'{name}={raw!r} is not a positive whole number; using {default}.',
+            file=sys.stderr,
+            flush=True,
+        )
+        return default
+    return value
+
+
 def resolve_allow_registration(env):
     """Whether `POST /auth/register` may create accounts.
 
@@ -268,6 +292,19 @@ PREVIEW_DIR = environ.get('ALFRED_PREVIEW_DIR') or join(gettempdir(), 'alfred-pr
 # are swept when a frame is written and when the api starts.
 FRAME_TTL = resolve_seconds(environ, 'ALFRED_FRAME_TTL', 3600)
 
+# How many previews -- a timeline's frame or a template's -- the api draws at
+# once. Previews run in the thread pool, which they share with file responses,
+# the other routes' offloaded work and `/health`'s broker ping: AnyIO's forty
+# threads, all of which a burst of previews could take. Past this many, a
+# preview waits for one to finish (`utils.concurrency`). Keep it well under
+# forty.
+PREVIEW_CONCURRENCY = resolve_count(environ, 'ALFRED_PREVIEW_CONCURRENCY', 4)
+
+# How long a preview waits for its turn, in seconds, before it is answered 503
+# with a Retry-After header rather than queueing for as long as the others
+# take.
+PREVIEW_WAIT = resolve_seconds(environ, 'ALFRED_PREVIEW_WAIT', 10)
+
 
 # Where the engine keeps media it fetched from a URL (contract M6). Inside the
 # library directory, so the api's previews and the worker's renders share one
@@ -383,6 +420,13 @@ EMAIL_PORT = environ.get('EMAIL_PORT')
 EMAIL_SENDTO = environ.get('EMAIL_SENDTO')
 if EMAIL_SENDTO:
     EMAIL_SENDTO = EMAIL_SENDTO.split(',')
+
+# How long one step of sending mail may take, in seconds: connecting, and each
+# command and reply after. smtplib waits for ever without one, and a mail
+# server that never answered held whatever was sending for as long as the
+# connection lasted. Account mail had twenty seconds of its own; every mail
+# alfred sends now has this.
+SMTP_TIMEOUT = resolve_seconds(environ, 'ALFRED_SMTP_TIMEOUT', 20)
 
 INVOICE_EMAIL_BODY = '''Please find attached an invoice for this week's renders. 
 
