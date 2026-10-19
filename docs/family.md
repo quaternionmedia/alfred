@@ -54,7 +54,7 @@ ALFRED_FAMILY_JOE=../../joe.worktrees/media ./al family up
 
 | Repository | Quick | `--full` |
 |---|---|---|
-| alfred | builds the test image, then `./al nox -r -s lint` and `./al nox -r -s coverage -- unit`, the unit tier, reusing nox's environments in `tests/.nox` | builds the test image, then `./al pytest` and `./al test` |
+| alfred | builds the test image, then `./al nox -r -s lint` and `./al nox -r -s coverage -- unit`, the unit tier, reusing nox's environments in `tests/.nox`; then takes the test project down, pass or fail | builds the test image, then `./al pytest` and `./al test` |
 | otto | its Dockerfile's `test` target, built and run | the same |
 | vox | `uv run pytest -q` | the same |
 | joe | `uv run --frozen pytest -q` (set `JOE_FFMPEG` if ffmpeg isn't on PATH) | the same |
