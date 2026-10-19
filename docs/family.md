@@ -1,24 +1,28 @@
 # The family dev loop
 
 ```text
-$ ./al family
-alfred and family, from ~\repos\qm\alfred.worktrees\show-tell
-
-alfred            docs/show-then-tell@0ad08f5  6 changed; no upstream
-  ~\repos\qm\alfred.worktrees\show-tell  (this checkout)
-otto              detached@7ddbf10  clean; no upstream
-  ~\repos\qm\alfred.worktrees\show-tell\alfred\otto  (vendored here)
-vox               main@1721e6f  clean; 0 ahead, 0 behind upstream
-  ~\repos\qm\vox  (beside this checkout)
-  ! alfred pins faa81a2; this checkout is at 1721e6f: alfred runs the pin
-  ! faa81a2 is on no origin branch this machine knows of: push it before alfred, or a clone cannot check it out
-joe               demo/voice-loop-2026-10-04@f3faa67  clean; 0 ahead, 0 behind upstream
-  ~\repos\joe  (beside this checkout)
-  ! no media API (/api/media) on this branch: captions and audio analysis need one that has it (ALFRED_FAMILY_JOE)
+$ ./al family loop
+ok alfred            240s
+ok otto              26s
+ok vox               28s
+ok joe               43s
+ok qmcp              33s
+ok codecartographer  2s
+-  org-dotgithub     skipped: no suite of its own here: its workflows run in the CI that calls them
 …
+PASS  alfred answers -- "Alfred API" at http://127.0.0.1:8000
+PASS  database and a render worker -- db ok, 1 worker(s)
+PASS  audio engine -- answers
+PASS  media library -- 5 files
+PASS  sound analysed by the audio engine -- videos/e2e-speech.wav: 4.0 s
+PASS  template preview -- 200
+PASS  timeline preview -- a signed frame, fetched
+PASS  render -- rendered in 2 s, downloaded through a signed URL
+PASS  qmcp's alfred tools reach it -- alfred_health answered
+9 pass
 ```
 
-*`./al family` on a development machine, cut after joe, with the home directory written `~`.*
+*One `./al family loop` against branches of joe, qmcp and vox: each repository's quick suite, then joe and the dev stack, checked live (abridged; about seven minutes).*
 
 alfred is the control plane, but it doesn't work alone:
 
