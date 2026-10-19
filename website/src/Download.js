@@ -55,6 +55,9 @@ export function authBlob(url, opts) {
         // read when the response type is 'blob' -- it throws -- which is how
         // the template preview lost every 422 reason it was sent.
         err.body = xhr.response
+        // When a busy server says to ask again (a 503 with Retry-After): the
+        // preview routes do, once they are drawing as many as they will.
+        err.retryAfter = xhr.getResponseHeader('Retry-After')
         throw err
       }
       return {
@@ -80,6 +83,20 @@ export function blobProblem(err) {
     },
     () => ''
   )
+}
+
+/**
+ * How long a busy server asked to be left before it is asked again, in
+ * milliseconds, from a rejected `authBlob`; null unless it answered 503 with a
+ * Retry-After header. The header is seconds or an HTTP date. Kept between one
+ * second and a minute, so a header of 0 cannot make a caller ask in a loop.
+ */
+export function retryAfterMs(err) {
+  if (!err || err.code !== 503 || !err.retryAfter) return null
+  const header = String(err.retryAfter).trim()
+  const ms = /^\d+$/.test(header) ? Number(header) * 1000 : Date.parse(header) - Date.now()
+  if (!Number.isFinite(ms)) return null
+  return Math.min(Math.max(ms, 1000), 60 * 1000)
 }
 
 /** Offer a blob to the person as a file to save. */
