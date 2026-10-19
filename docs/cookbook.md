@@ -1320,7 +1320,7 @@ timeline sits with its tools and the media bin beneath.
 
   The Captions panel reads a subtitle file and shows what it found before
   anything is kept. Use them, tick **Draw into renders** and save, and
-  the caption under the playhead is drawn over the picture as it plays.
+  the caption under the playhead is drawn over the picture.
 
 
 ## render api
