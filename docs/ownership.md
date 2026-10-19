@@ -44,8 +44,9 @@ Not done yet; this is the plan.
    Records whose address matches no account -- a deleted user, a seed owner
    that was never registered -- are listed rather than guessed at, and left
    as they are: they match no id, so they become superuser-only, exactly as an
-   ownerless record is today. Run it as a command with a dry run that prints
-   the counts (`./al owners migrate --dry-run`), then for real.
+   ownerless record is today. Give `./al` a command for it, `owners
+   migrate`, with a dry run that prints the counts; run that, then the real
+   thing.
 3. **Switch the key.** `owner_key` returns `str(user.id)`. Do it in the same
    release as the backfill, with the backfill run before the new api serves:
    a filter on ids finds nothing still keyed by email, so no fallback that
