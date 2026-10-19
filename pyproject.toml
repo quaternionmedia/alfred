@@ -7,6 +7,9 @@ dependencies = [
     "al-otto >= 0.2.2",
     "fastapi<1.0.0,>=0.92.0",
     "aiofiles<24.0.0,>=23.1.0",
+    # Before changing this, read alfred/core/utils/passwords.py. alfred carries
+    # copies of the library's password-hashing methods, checked against one
+    # release (10.4.2, the lock's), and the api refuses to start on any other.
     "fastapi-users<11.0.0,>=10.4.0",
     # Declared although nothing here imports it: it parses every form the api
     # accepts, the login form anyone can post included, so this project
