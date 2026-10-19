@@ -468,6 +468,7 @@ test.describe('a server busy with other previews', () => {
             detail:
               'The server is already drawing as many previews as it will ' +
               '(4 at once); ask again in 2 seconds.',
+            code: 'previews_busy',
           },
         })
       }

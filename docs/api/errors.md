@@ -26,7 +26,7 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `frame_size_out_of_range` | 422 | a `width` or `height` outside 16 to 7680 pixels | `POST /render` |
 | `fps_out_of_range` | 422 | an `fps` outside 1 to 120 | `POST /render` |
 | `unknown_quality` | 422 | a `quality` that is not one of the presets | `POST /render` |
-| `edl_refused` | 422 | a clip this server will not render: media outside the library, a template it does not offer, a type it does not know; `detail` names the clip | `POST /render`, `POST /render/rerender/{id}` |
+| `edl_refused` | 422 | a clip this server will not render: media outside the library, a template it does not offer, a type it does not know; `detail` names the clip | `POST /render`, `POST /render/rerender/{id}`, `POST /preview/` |
 | `render_not_queued` | 503 | the broker would not take the render; the render is recorded `failed` with the reason, which `GET /render/{id}/status` gives as `error`, and `POST /render/rerender/{id}` queues it again | `POST /render`, `POST /render/rerender/{id}` |
 | `render_not_finished` | 409 | the render has no finished file yet | `POST /render/{id}/deliver`, `GET /render/{id}/download` |
 | `destination_unknown` | 502 | no destination has that name; `detail` lists those that do | `POST /render/{id}/deliver` |
@@ -37,6 +37,7 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `media_silent` | 422 | the file is an image, which has no sound to analyse | `GET /media/{name}/audio` |
 | `audio_engine_refused` | 422 | the audio engine would not take the file -- no sound in it, a type it does not read, too large; `detail` is the engine's reason | `GET /media/{name}/audio` |
 | `audio_engine_failed` | 502 | the audio engine could not be reached, broke, or answered something that is not an answer; asking again may work | `GET /media/{name}/audio` |
+| `previews_busy` | 503 | the server is drawing as many previews as it will (`ALFRED_PREVIEW_CONCURRENCY`), and none came free within `ALFRED_PREVIEW_WAIT` seconds; ask again after the seconds the `Retry-After` header gives | `POST /preview/`, `GET /preview/template/{name}` |
 
 `tests/unit/test_refusal_codes.py` holds this table to alfred's code: every code alfred has is here with its status, and each is answered, with its sentence, by a request through the API.
 
@@ -45,6 +46,6 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 - **No session**: 401, `{"detail": "Unauthorized"}`.
 - **Signing in and accounts** (`/auth/...`, `/users/...`): fastapi-users answers its own codes as the `detail` itself, such as `LOGIN_BAD_CREDENTIALS`.
 - **A route alfred does not have**: FastAPI's 404, `{"detail": "Not Found"}`, which a client tells from `not_found` by the code it lacks.
-- **The routes not covered yet** answer `detail` alone: the media library (`/media`, `/videos`) apart from how a file sounds, previews, demo media, templates, a signed link's refusal on the file routes, issue reports and invoices.
+- **The routes not covered yet** answer `detail` alone: the media library (`GET /media`, `/videos`), though how a file sounds is covered; a preview's own refusals -- a timeline or template it cannot draw, a template it does not offer, a frame cleaned up -- though a busy server's `previews_busy` and the timeline check's `edl_refused` are covered; demo media; a signed link's refusal on the file routes; and issue reports and invoices.
 
 A client that has to work with an alfred from before codes reads `detail`, as it always could; one that finds a `code` switches on it.

@@ -63,7 +63,7 @@ again:
 HTTP/1.1 503 Service Unavailable
 Retry-After: 2
 
-{"detail": "The server is already drawing as many previews as it will (4 at once); ask again in 2 seconds."}
+{"detail": "The server is already drawing as many previews as it will (4 at once); ask again in 2 seconds.", "code": "previews_busy"}
 ```
 
 Wait that long, then ask once more; the editor's viewer does. `GET /health`

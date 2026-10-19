@@ -10,6 +10,7 @@ table covers raise no refusal without a code.
 """
 
 import ast
+import asyncio
 import re
 from pathlib import Path
 
@@ -24,8 +25,9 @@ from alfred.core.models.render import Render
 from alfred.core.routes import captions as caption_routes
 from alfred.core.routes import render as render_routes
 from alfred.core.routes.templates import TEMPLATE_NAMES
-from alfred.core.utils import audio_engine, bucket
+from alfred.core.utils import audio_engine, bucket, concurrency
 from alfred.core.utils.captions import MAX_CAPTIONS, CaptionFormatError, parse
+from alfred.core.utils.concurrency import RETRY_AFTER
 from alfred.core.utils.encoding import QUALITIES
 from alfred.core.utils.media import RefusedEdl, check_edl
 from alfred.main import app
@@ -40,18 +42,21 @@ from tests.unit.render_harness import (
     render_request,
     use_fakes,
 )
+from tests.unit.test_preview_slots import preview_requests
 
 ROOT = Path(__file__).resolve().parents[2]
 TABLE = ROOT / 'docs' / 'api' / 'errors.md'
 
 # The modules whose every refusal carries a code: the project, captions and
-# render routes and the id refusals they share, and how a library file sounds.
+# render routes and the id refusals they share; how a library file sounds; and
+# the preview slots.
 COVERED = [
     'alfred/core/routes/audio.py',
     'alfred/core/routes/captions.py',
     'alfred/core/routes/project.py',
     'alfred/core/routes/render.py',
     'alfred/core/utils/bucket.py',
+    'alfred/core/utils/concurrency.py',
 ]
 
 
@@ -424,6 +429,24 @@ def audio_engine_failed(world):
     return world.sound_of('talk.wav'), why
 
 
+def previews_busy(world):
+    """Every slot taken -- the one there is, by the test -- so the preview
+    waits its turn, which does not come, and is turned away."""
+    world.monkeypatch.setattr(config, 'PREVIEW_CONCURRENCY', 1)
+    world.monkeypatch.setattr(config, 'PREVIEW_WAIT', 0.05)
+    asyncio.run(concurrency.previews.acquire())
+    try:
+        res = preview_requests()['a template frame'](world.client)
+    finally:
+        concurrency.previews.release()
+    assert concurrency.previews.use() == concurrency.Use(0, 0, 1)
+    assert res.headers['retry-after'] == str(RETRY_AFTER)
+    return res, (
+        'The server is already drawing as many previews as it will (1 at once); '
+        f'ask again in {RETRY_AFTER} seconds.'
+    )
+
+
 REQUESTS = {
     Code.INVALID_ID: invalid_id,
     Code.NOT_FOUND: not_found,
@@ -450,6 +473,7 @@ REQUESTS = {
     Code.MEDIA_SILENT: media_silent,
     Code.AUDIO_ENGINE_REFUSED: audio_engine_refused,
     Code.AUDIO_ENGINE_FAILED: audio_engine_failed,
+    Code.PREVIEWS_BUSY: previews_busy,
 }
 
 

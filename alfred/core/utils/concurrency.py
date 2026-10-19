@@ -12,9 +12,10 @@ download or a health check waited behind somebody's frames.
 So previews take a slot first: at most ALFRED_PREVIEW_CONCURRENCY run at once.
 The rest wait their turn in the order they came, for at most
 ALFRED_PREVIEW_WAIT seconds, and are then answered 503 with a Retry-After
-header, rather than queueing for as long as the others take. They wait on the
-event loop, not in a thread: a preview waiting for a slot holds no thread, so a
-burst of them cannot take the pool the cap is there to protect.
+header and the code `previews_busy`, rather than queueing for as long as the
+others take. They wait on the event loop, not in a thread: a preview waiting
+for a slot holds no thread, so a burst of them cannot take the pool the cap is
+there to protect.
 
 `GET /health` reports the slots' use: `previews: {running, waiting, limit}`.
 """
@@ -24,10 +25,11 @@ from collections import deque
 from dataclasses import dataclass
 from functools import wraps
 
-from fastapi import HTTPException
 from starlette.concurrency import run_in_threadpool
 
 from alfred import config
+
+from ..errors import Code, Refusal
 
 # When a preview turned away is worth asking for again, in seconds: the
 # Retry-After it is answered with. Short, because a slot frees as soon as any
@@ -114,14 +116,13 @@ previews = Slots(
 )
 
 
-def busy() -> HTTPException:
-    """What a preview that found no slot in time is answered."""
-    return HTTPException(
-        status_code=503,
-        detail=(
-            f'The server is already drawing as many previews as it will '
-            f'({previews.limit()} at once); ask again in {RETRY_AFTER} seconds.'
-        ),
+def busy() -> Refusal:
+    """What a preview that found no slot in time is answered: 503,
+    `previews_busy`, and when to ask again."""
+    return Refusal(
+        Code.PREVIEWS_BUSY,
+        f'The server is already drawing as many previews as it will '
+        f'({previews.limit()} at once); ask again in {RETRY_AFTER} seconds.',
         headers={'Retry-After': str(RETRY_AFTER)},
     )
 

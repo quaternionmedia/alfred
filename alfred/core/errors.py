@@ -63,6 +63,8 @@ class Code(StrEnum):
     MEDIA_SILENT = 'media_silent'
     AUDIO_ENGINE_REFUSED = 'audio_engine_refused'
     AUDIO_ENGINE_FAILED = 'audio_engine_failed'
+    # Previews.
+    PREVIEWS_BUSY = 'previews_busy'
 
 
 class Meaning(NamedTuple):
@@ -97,6 +99,7 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.MEDIA_SILENT: Meaning(422, 'an image, which has no sound'),
     Code.AUDIO_ENGINE_REFUSED: Meaning(422, 'the audio engine would not take it'),
     Code.AUDIO_ENGINE_FAILED: Meaning(502, 'the audio engine failed'),
+    Code.PREVIEWS_BUSY: Meaning(503, 'no preview slot came free in time'),
 }
 
 

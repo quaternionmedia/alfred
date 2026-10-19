@@ -415,6 +415,7 @@ class TestThePreviewRoutes:
         assert report.json()['previews'] == {'running': 1, 'waiting': 1, 'limit': 1}
         assert res.status_code == 503, res.text
         assert res.headers['retry-after'] == str(RETRY_AFTER)
+        assert res.json()['code'] == 'previews_busy'
 
     def test_a_slot_given_back_in_time_lets_it_through(self, signed_in, cap):
         """Through to the route itself, which answers for a template it does
