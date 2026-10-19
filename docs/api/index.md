@@ -1,7 +1,7 @@
 # API
 Sometimes, it is more convenient to interact directly with the API, bypassing the browser based client entirely. The following is a guide to interacting with the video renderer directly and generating videos from a data object.
 
-This is an advanced topic, and requires some tool to make requests to the server. The following examples are provided using `curl`, but any requests library will have comparable features.
+It is an advanced topic, and needs a tool to make requests with. The examples use `curl`; any request library works.
 
 !!! note
-    For the full API reference (including interactive request generator), visit [alfred.quaternion.media/api](https://alfred.quaternion.media/api)
+    The full API reference, with an interactive request generator, is at [alfred.quaternion.media/api](https://alfred.quaternion.media/api)
