@@ -2,7 +2,7 @@
 
 ## Unreleased — review fixes
 
-Fixes from a review of alfred and otto, landed in five rounds of parallel
+Fixes from a review of alfred and otto, landed in six rounds of parallel
 branches:
 
 | Round | Integrated on | What it carried |
@@ -12,6 +12,7 @@ branches:
 | 3 | `integrate/wave-3` | captions through an audio engine (vox vendored at `alfred/vox` beside otto, driving joe), and a Golden Layout workspace for the editor |
 | 4 | `integrate/wave-4` | the review's fix round: every setting reaching the services that read it, CI installing what the image installs, the workspace's tab race and the suite's timing races, docs that describe the API as it answers, the timeline's sound written by otto (pinned at f3ceca3, `fix/engine-sound`), an api whose one event loop no longer waits on a preview, and a phone layout that keeps the whole picture on the screen |
 | 5 | `integrate/wave-5` | the decisions round 4 stopped at: password hashing off the event loop behind loud safeguards, the media work moved into otto (pinned at 7ddbf10, `feat/engine-media-ops`), a code beside every refusal of the routes qmcp calls, a cap on concurrent previews, support mail sent by the worker, the render extra and the docs build tightened, and `./al family`, which runs alfred with the repositories it works with |
+| 6 | `integrate/wave-6` | the docs: every page this effort touched said in fewer words, across the repositories, and the main pages opening with screenshots and GIFs that `./al recipes` makes from demo data (otto f106775 and vox e630cb0, for their docs) |
 
 Read **Security** and **Changed** before deploying: several requests that were
 accepted are now refused, and a production stack needs its own signing key.
