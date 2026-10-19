@@ -19,6 +19,7 @@ from ..models import UserRead
 from ..utils import account_mail
 from ..utils.db import User, get_user_db
 from ..utils.ownership import changes_owner_key
+from ..utils.passwords import HashesOffTheLoop
 
 EMAIL_IS_THE_OWNER_KEY = (
     "An account's email address cannot be changed: its projects and renders "
@@ -83,6 +84,10 @@ def announce_token(purpose, user, token, mailed=False):
 
 class UserManager(
     ObjectIDIDMixin,
+    # Before the library: its methods that hash or check a password are
+    # replaced by copies that do it in the thread pool, so a login does not
+    # hold the event loop. The overrides below reach those through `super()`.
+    HashesOffTheLoop,
     BaseUserManager[User, PydanticObjectId],
 ):
     reset_password_token_secret = SECRET_KEY
@@ -142,10 +147,11 @@ class UserManager(
         It was refused, but as a 500: fastapi-users hands the stored value to
         passlib to verify, and `!dev-no-login` is not a hash passlib can
         identify, so every attempt raised. A 400 is the answer any wrong
-        password gets. The hash runs anyway, so the refusal takes as long.
+        password gets. The hash runs anyway, so the refusal takes as long --
+        in the thread pool, as every other hash does.
         """
         if is_dev_address(credentials.username):
-            self.password_helper.hash(credentials.password)
+            await self.hash_password(credentials.password)
             return None
         return await super().authenticate(credentials)
 

@@ -49,6 +49,7 @@ from alfred.core.routes.users import (
 # from otto.main import app as ottoApi
 from alfred.core.utils import get_db
 from alfred.core.utils.db import User
+from alfred.core.utils.passwords import STARTUP_LINE as PASSWORD_HASHING
 
 app = FastAPI(
     title=docs.title,
@@ -82,6 +83,18 @@ async def warnIfAuthIsDisabled():
         )
         print('  Local development only. Never expose this process.', flush=True)
         print(line, flush=True)
+
+
+@app.on_event('startup')
+async def namePasswordHashingOverride():
+    """Say, every boot, that alfred hashes passwords with its own copies.
+
+    It replaces library code that is security code (utils/passwords.py), and
+    somebody reading the log should learn that from the log, not from a diff.
+    One line: by the time it prints, the copies have been checked against the
+    installed fastapi-users, and a mismatch would have stopped the import.
+    """
+    print(PASSWORD_HASHING, flush=True)
 
 
 @app.on_event('startup')
