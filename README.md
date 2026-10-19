@@ -68,6 +68,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al prod` | Production stack; expects a running traefik and the production `ALFRED_SECRET_KEY` exported |
 | `./al flower` | Celery monitoring on :5555; needs the dev stack for its broker |
 | `./al cookbook` | Regenerate `docs/cookbook.md` from the e2e specs |
+| `./al recipes` | Record the `@recipe` walkthroughs against a running stack, write their stubs into `docs/recipes/`, and regenerate the cookbook |
 | `./al install <pkg>` | Add a website dependency |
 
 `./al dev` publishes on 8000, 8001 and 27017, on `127.0.0.1` only. If
@@ -126,7 +127,10 @@ list what is *not* covered, deliberately.
 The end-to-end suite is also the cookbook: [docs/cookbook.md](docs/cookbook.md)
 is generated from it by `./al cookbook`, so every recipe in the documentation
 is a test that runs. Prose describing behaviour goes stale silently; a test
-describing behaviour goes red.
+describing behaviour goes red. `./al recipes` records the `@recipe`
+walkthroughs: the recordings stay on your machine, and the SVG stub written
+beside each, which the cookbook shows until a polished recording replaces it,
+is committed.
 
 ## Documentation
 

@@ -304,11 +304,19 @@ elif [ $1 = "i" -o $1 = "install" ]; then
 
 elif [ $1 = "recipes" ]; then
   shift
-  # Record the @recipe walkthroughs as video and put them where the cookbook
-  # links them. Needs a running dev stack; the recordings are what the docs
-  # show, and a recipe that fails leaves no video rather than a stale one.
-  cd website &&     npx playwright test --project=docs --reporter=json > recipe-report.json &&     node e2e/collect-recipe-videos.js &&     node e2e/cookbook.js
+  # Record the @recipe walkthroughs, then put a stub for each passing one in
+  # docs/recipes/ beside its recording (git-ignored) and regenerate the
+  # cookbook, which shows the stubs git tracks. Needs a running dev stack
+  # (E2E_BASE_URL if it is not on :8000). The collector runs after a failed
+  # recipe too, so a recipe that fails loses its stub rather than keeping a
+  # stale one; it leaves docs/recipes alone if the run reached no recipe.
+  # It exits with Playwright's status, or 1 if either script fails.
+  cd website
+  npx playwright test --project=docs --reporter=json > recipe-report.json
+  recorded=$?
+  node e2e/collect-recipe-videos.js && node e2e/cookbook.js || recorded=1
   cd ..
+  exit $recorded
 
 elif [ $1 = "cookbook" ]; then
   shift
