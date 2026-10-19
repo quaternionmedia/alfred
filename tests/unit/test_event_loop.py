@@ -144,24 +144,18 @@ def scratch(tmp_path, monkeypatch):
     return tmp_path
 
 
-class _Frame:
-    """What the engine hands back, as far as a preview uses it."""
-
-    def save_frame(self, path, t=0, withmask=False):
-        with open(path, 'wb') as handle:
-            handle.write(b'\xff\xd8 a frame')
-
-
 @pytest.fixture
 def building(monkeypatch):
-    """The engine building a clip, held until the test lets it go."""
+    """The engine drawing a frame, held until the test lets it go."""
     work = HeavyWork()
 
-    def generate(edl, moviesize=None, **kwargs):
+    def draw(edl, t, filename, moviesize=None):
         work.hold()
-        return _Frame()
+        with open(filename, 'wb') as handle:
+            handle.write(b'\xff\xd8 a frame')
+        return filename
 
-    monkeypatch.setattr(preview, 'generateEdl', generate)
+    monkeypatch.setattr(preview, 'renderFrame', draw)
     return work
 
 

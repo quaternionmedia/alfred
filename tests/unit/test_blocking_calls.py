@@ -92,6 +92,7 @@ BLOCKING = {
     'shutil.rmtree': 'removes a directory tree',
     # The engine, building or writing media.
     'otto.render.generateEdl': 'builds a timeline: opens and decodes its media',
+    'otto.render.renderFrame': 'builds a timeline, and draws and encodes a frame',
     'otto.render.renderMultitrack': 'renders a video',
     'otto.render.renderSound': "writes a timeline's sound",
 }

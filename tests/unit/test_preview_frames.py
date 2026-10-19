@@ -193,7 +193,7 @@ class TestTheTemplatePreviewKeepsNothing:
             _recording(preview.private_frame_path, written),
         )
         monkeypatch.setattr(
-            preview, 'generateEdl', _raise(RuntimeError('cannot draw this'))
+            preview, 'renderFrame', _raise(RuntimeError('cannot draw this'))
         )
         res = client.get('/preview/template/makeColor?width=64&height=48')
         assert res.status_code == 422
@@ -220,24 +220,20 @@ def _raise(exc):
     return fail
 
 
-class _FakeVideo:
-    def save_frame(self, path, t=0, withmask=False):
-        with open(path, 'wb') as handle:
-            handle.write(b'\xff\xd8not really a jpeg')
-
-
 @pytest.fixture
 def built(monkeypatch):
-    """The EDLs the template preview hands the engine."""
+    """The EDLs the template preview hands the engine to draw."""
     from alfred.core.routes import preview
 
     edls = []
 
-    def generate(edl, moviesize=None, **kwargs):
+    def draw(edl, t, filename, moviesize=None):
         edls.append(edl)
-        return _FakeVideo()
+        with open(filename, 'wb') as handle:
+            handle.write(b'\xff\xd8not really a jpeg')
+        return filename
 
-    monkeypatch.setattr(preview, 'generateEdl', generate)
+    monkeypatch.setattr(preview, 'renderFrame', draw)
     return edls
 
 
