@@ -346,6 +346,14 @@ the button waits and says it is checking; without one, it says which
 is missing.
 
 - **transcribing says why it cannot**
+- **a transcription already under way is followed, and the refusal still read**
+
+  Another tab, or an API client, started one first. The server refuses a
+  second with 409 and `code: "transcription_running"` beside its
+  sentence (docs/api/errors.md). The panel shows the sentence, and,
+  because of the code, follows the transcription under way until its
+  captions arrive -- the ones a second would have made.
+
 ### @slow transcribing through the worker
 
 # Recipe: caption a timeline from what it says
