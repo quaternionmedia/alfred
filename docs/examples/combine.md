@@ -1,10 +1,10 @@
 # Combine media
 All clips in the `clips` list will be combined to create the finished video. 
 
-The `start` property defines the desired starting time for each clip (default 0).
+`start` sets when each clip begins, in seconds (default 0).
 
 !!! abstract "Rendering order"
-    Clips are rendered in the order presented in the list. For clips that overlap in time, the last clip will be rendered above the earlier clips, including any transparencies applied.
+    Clips render in list order. Where clips overlap in time, the later one renders above the earlier, with any transparency applied.
 
 
 ``` json title="data.json" hl_lines="14"

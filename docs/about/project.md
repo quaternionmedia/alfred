@@ -15,9 +15,9 @@ A `Project` is a special type of `Edl` template, designed to add user data dynam
 ```
 
 ## Use case
-You have a commercial template which contains a spot for a feature product. This template will always include a single image, with the name of the product above it.
+A commercial has a spot for a featured product: always one image, with the product's name above it.
 
-The desired `Edl` will include the base video, with an image and text overlayed on top. 
+The `Edl` is the base video, with the image and the text over it.
 
 ``` json title="Custom Product Project" hl_lines="7-9 17-19"
 {
@@ -60,12 +60,11 @@ The desired `Edl` will include the base video, with an image and text overlayed 
 }
 ```
 
-By creating a template, we can automatically create a commercial for each product, with an automatically generated form to fill out.
+With this template, each product gets a commercial made automatically, from a generated form to fill out.
 
-
-We can also render each project to multiple formats, or use the entire project as a portion of a larger project!
+Each project can also be rendered to several formats, or used as part of a larger project.
 
 !!! abstract "`Edl` vs `Project`"
-    By definition, an `Edl` is a `Project` that has no special logic, and therefore needs no data.
+    An `Edl` is a `Project` with no special logic, so it needs no data.
 
-For a full working example, see [examples/project](../examples/project.md).
+[examples/project](../examples/project.md) is a full working example.
