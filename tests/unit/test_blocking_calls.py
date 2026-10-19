@@ -96,6 +96,7 @@ BLOCKING = {
     'otto.render.renderMultitrack': 'renders a video',
     'otto.render.renderSound': "writes a timeline's sound",
     'otto.media.probe': 'runs ffmpeg to describe a file',
+    'otto.demo.demoClip': 'runs ffmpeg to write a clip',
 }
 
 BLOCKING_METHODS = {

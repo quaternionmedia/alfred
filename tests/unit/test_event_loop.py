@@ -38,6 +38,7 @@ import pytest
 from bson import ObjectId
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+from otto.exceptions import FFmpegException
 
 from alfred import config
 from alfred.core.models.render import Render
@@ -438,23 +439,23 @@ class TestDemoMediaWhileOtherRequestsRun:
     def test_a_clip_is_written_out_of_sight_and_moved_into_place(
         self, library, monkeypatch
     ):
-        """A listing taken while ffmpeg writes must not offer a clip that is
-        half written: the library lists no hidden name."""
+        """A listing taken while the engine writes must not offer a clip that
+        is half written: the library lists no hidden name."""
         library.mkdir()
         target = library / 'demo-bars.mp4'
         seen = {}
 
-        def run(command, **kwargs):
-            written = Path(command[-1])
-            seen['written'] = written
+        def make(filename, source, duration=None):
+            written = Path(filename)
+            seen['written'], seen['source'] = written, source
             seen['in place meanwhile'] = target.exists()
             written.write_bytes(b'a whole clip')
-            return SimpleNamespace(returncode=0, stderr='')
+            return filename
 
-        monkeypatch.setattr(demo, 'subprocess', SimpleNamespace(run=run))
-        monkeypatch.setattr(demo, 'ffmpeg_binary', lambda: 'ffmpeg')
-        demo.generate_clip(str(target), 'smptebars')
+        monkeypatch.setattr(demo, 'demoClip', make)
+        demo.generate_clip(str(target), 'bars')
 
+        assert seen['source'] == 'bars'
         assert seen['in place meanwhile'] is False
         assert seen['written'].parent == library
         assert not is_library_filename(seen['written'].name)
@@ -465,14 +466,15 @@ class TestDemoMediaWhileOtherRequestsRun:
         library.mkdir()
         target = library / 'demo-bars.mp4'
 
-        def run(command, **kwargs):
-            Path(command[-1]).write_bytes(b'half a clip')
-            return SimpleNamespace(returncode=1, stderr='something went wrong')
+        def make(filename, source, duration=None):
+            Path(filename).write_bytes(b'half a clip')
+            raise FFmpegException(
+                'ffmpeg could not write a demo clip', stderr='something went wrong'
+            )
 
-        monkeypatch.setattr(demo, 'subprocess', SimpleNamespace(run=run))
-        monkeypatch.setattr(demo, 'ffmpeg_binary', lambda: 'ffmpeg')
+        monkeypatch.setattr(demo, 'demoClip', make)
         with pytest.raises(HTTPException) as refused:
-            demo.generate_clip(str(target), 'smptebars')
+            demo.generate_clip(str(target), 'bars')
 
         assert refused.value.status_code == 500
         assert refused.value.detail == (
@@ -480,11 +482,46 @@ class TestDemoMediaWhileOtherRequestsRun:
         )
         assert list(library.iterdir()) == []
 
+    def test_only_the_end_of_what_ffmpeg_said_is_shown(self, library, monkeypatch):
+        library.mkdir()
+        said = 'banner ' * 200 + 'the reason'
+
+        def make(filename, source, duration=None):
+            raise FFmpegException('ffmpeg could not write a demo clip', stderr=said)
+
+        monkeypatch.setattr(demo, 'demoClip', make)
+        with pytest.raises(HTTPException) as refused:
+            demo.generate_clip(str(library / 'demo-bars.mp4'), 'bars')
+
+        assert refused.value.detail.endswith(said[-400:])
+        assert 'banner ' * 60 not in refused.value.detail
+
+    def test_no_ffmpeg_to_start_is_a_503(self, library, monkeypatch):
+        library.mkdir()
+
+        def make(filename, source, duration=None):
+            raise FileNotFoundError(2, 'No such file or directory', '/no/ffmpeg')
+
+        monkeypatch.setattr(demo, 'demoClip', make)
+        with pytest.raises(HTTPException) as refused:
+            demo.generate_clip(str(library / 'demo-bars.mp4'), 'bars')
+
+        assert refused.value.status_code == 503
+        assert refused.value.detail.startswith(
+            'no ffmpeg available to generate demo media: '
+        )
+        assert list(library.iterdir()) == []
+
     @pytest.mark.needs_ffmpeg
-    def test_ffmpeg_writes_a_whole_clip(self, library):
+    def test_the_engine_writes_a_whole_clip(self, library):
         library.mkdir()
         target = library / 'demo-colour.mp4'
-        demo.generate_clip(str(target), 'color=c=black:size=32x32:rate=4', duration=1)
+        demo.generate_clip(str(target), 'color', duration=1)
         # An MP4 opens with its file-type box.
         assert target.read_bytes()[4:8] == b'ftyp'
         assert [p.name for p in library.iterdir()] == ['demo-colour.mp4']
+
+    def test_every_demo_clip_names_a_picture_the_engine_has(self):
+        from otto.demo import DEMO_SOURCES
+
+        assert {source for _, source in demo.DEMO_CLIPS} <= set(DEMO_SOURCES)

@@ -6,19 +6,18 @@ neither is useful: the first is a dead end, and the second sends you to a shell
 to download four files over the network before the editor will show you
 anything.
 
-Everything here is synthesised on the spot with ffmpeg's own test sources --
-`testsrc`, `smptebars`, `color`. No network, no downloads, no CDN. That matters
-beyond convenience: `./al demo` fetches from a Google Cloud Storage bucket, and
-the adoption record lists third-party fetches as an open governance gap, so a
-first-run experience that needs one is a gap anybody evaluating this project
-walks straight into.
+Everything here is synthesised on the spot by the engine, from ffmpeg's own
+test sources -- colour bars, a test card, a plain colour (`otto.demo`). No
+network, no downloads, no CDN. That matters beyond convenience: `./al demo`
+fetches from a Google Cloud Storage bucket, and the adoption record lists
+third-party fetches as an open governance gap, so a first-run experience that
+needs one is a gap anybody evaluating this project walks straight into.
 
-ffmpeg is already present -- it is how renders are encoded -- so this adds no
-dependency.
+The engine already carries ffmpeg -- it is how renders are encoded -- so this
+adds no dependency, and alfred runs no ffmpeg of its own.
 """
 
 import os
-import subprocess
 from os import makedirs
 from os.path import getsize, isfile, join
 from threading import Lock
@@ -26,6 +25,8 @@ from uuid import uuid4
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
+from otto.demo import DEMO_DURATION, demoClip
+from otto.exceptions import FFmpegException
 from pydantic import BaseModel
 from pymongo import DESCENDING, ReturnDocument
 from pymongo.errors import DuplicateKeyError, OperationFailure
@@ -82,14 +83,14 @@ async def keepOneDemoPerOwner():
 
 
 # Small, short and synthetic. The point is to have something real to edit, not
-# to be representative footage -- a 3-second 320x180 clip encodes in about a
-# second and costs a few kilobytes on disk.
+# to be representative footage -- the engine's demo clips are 3 seconds at
+# 320x180, which encode in about a second and cost a few kilobytes on disk.
+# Each file is named here, and its picture by the engine's name for it.
 DEMO_CLIPS = (
-    ('demo-bars.mp4', 'smptebars=size=320x180:rate=24'),
-    ('demo-testcard.mp4', 'testsrc=size=320x180:rate=24'),
-    ('demo-colour.mp4', 'color=c=0x101820:size=320x180:rate=24'),
+    ('demo-bars.mp4', 'bars'),
+    ('demo-testcard.mp4', 'testcard'),
+    ('demo-colour.mp4', 'color'),
 )
-DEMO_DURATION = 3
 
 DEMO_PROJECT_NAME = 'Demo'
 
@@ -97,25 +98,6 @@ DEMO_PROJECT_NAME = 'Demo'
 class GeneratedMedia(BaseModel):
     created: list[str]
     skipped: list[str]
-
-
-def ffmpeg_binary():
-    """The same ffmpeg moviepy encodes with.
-
-    Resolved through imageio_ffmpeg rather than PATH, because that is what the
-    render path uses and there is no ffmpeg on PATH in these images. Probing
-    PATH here would report ffmpeg missing on a machine that renders video
-    perfectly well.
-    """
-    try:
-        import imageio_ffmpeg
-
-        return imageio_ffmpeg.get_ffmpeg_exe()
-    except Exception as exc:  # noqa: BLE001 - any failure here means no ffmpeg
-        raise HTTPException(
-            status_code=503,
-            detail=f'no ffmpeg available to generate demo media: {exc}',
-        ) from exc
 
 
 def partial_path(path):
@@ -126,43 +108,28 @@ def partial_path(path):
 
 
 def generate_clip(path, source, duration=DEMO_DURATION):
-    """Synthesise one clip. Returns nothing; raises on failure.
+    """Have the engine synthesise one clip. Returns nothing; raises on failure.
 
-    Written under `partial_path` and moved into place once ffmpeg has
+    `source` is the engine's name for the picture (`otto.demo.DEMO_SOURCES`).
+    Written under `partial_path` and moved into place once the engine has
     finished. Other requests are answered while it runs, and a listing taken
     meanwhile must not offer a clip that is half written.
     """
     partial = partial_path(path)
     try:
-        result = subprocess.run(
-            [
-                ffmpeg_binary(),
-                '-nostdin',
-                '-y',
-                '-f',
-                'lavfi',
-                '-i',
-                f'{source}:duration={duration}',
-                # yuv420p so the result plays in a browser. ffmpeg's test
-                # sources default to a pixel format most players will not
-                # touch, which would make demo media that exists and cannot be
-                # previewed -- worse than none.
-                '-pix_fmt',
-                'yuv420p',
-                # Named, because the name it is written under says nothing
-                # about the format.
-                '-f',
-                'mp4',
-                partial,
-            ],
-            capture_output=True,
-            text=True,
-        )
-        if result.returncode != 0 or not isfile(partial):
+        try:
+            demoClip(partial, source, duration=duration)
+        except FFmpegException as exc:
             raise HTTPException(
                 status_code=500,
-                detail=f'ffmpeg could not generate {path}: {result.stderr[-400:]}',
-            )
+                detail=f'ffmpeg could not generate {path}: {exc.stderr[-400:]}',
+            ) from exc
+        except OSError as exc:
+            # The engine could not start its ffmpeg at all.
+            raise HTTPException(
+                status_code=503,
+                detail=f'no ffmpeg available to generate demo media: {exc}',
+            ) from exc
         os.replace(partial, path)
     except BaseException:
         try:
@@ -173,22 +140,22 @@ def generate_clip(path, source, duration=DEMO_DURATION):
 
 
 # One generation at a time, in this process. Two presses of the button at
-# once would each find the clips missing and both run ffmpeg into the same
+# once would each find the clips missing and both have ffmpeg write the same
 # files; held here, the second waits for the first, finds its clips, and says
 # they were skipped.
 _generating = Lock()
 
 
 # A plain function, not a coroutine: FastAPI runs it in its thread pool. Each
-# clip is an ffmpeg run of about a second, and as a coroutine every one of them
-# ran on the event loop, so the api answered nothing else -- `/healthz`
-# included -- until the last clip was written.
+# clip is an ffmpeg run of about a second, in the engine, and as a coroutine
+# every one of them ran on the event loop, so the api answered nothing else --
+# `/healthz` included -- until the last clip was written.
 @demoAPI.post('/demo/media', response_model=GeneratedMedia)
 def generateDemoMedia():
     """# Generate demo media
 
-    Synthesises a few short clips locally with ffmpeg, so an empty install has
-    something to edit without downloading anything.
+    Has the engine synthesise a few short clips locally, so an empty install
+    has something to edit without downloading anything.
 
     Existing files are left alone and reported as skipped, so pressing the
     button twice is not a way to lose work you have already put on a timeline.
