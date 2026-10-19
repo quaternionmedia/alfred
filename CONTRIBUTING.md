@@ -52,6 +52,13 @@ npx playwright install chromium
 yarn e2e
 ```
 
+A change that crosses repositories (alfred and otto, vox, joe or qmcp)
+has a loop of its own. `./al family loop` runs each repository's quick
+suite, brings the dev stack up with joe as its audio engine, checks the
+whole path live, and takes it down again. `./al family` alone says where
+each repository is, and whether alfred's pins match the checkouts beside it.
+[docs/family.md](docs/family.md) has the details.
+
 The backend suite's current tally is kept in [tests/README.md](tests/README.md)
 rather than here, where a count goes stale with the next test anyone writes;
 Playwright prints the browser suite's own at the end of every run.

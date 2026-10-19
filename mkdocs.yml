@@ -9,6 +9,7 @@ nav:
   - Cookbook: cookbook.md
   - Captions: captions.md
   - Configuration: configuration.md
+  - Family dev loop: family.md
   - Retrospective (0.3.0): retrospective-0.3.0.md
   - Retrospective (verification): retrospective-verification-discipline.md
   - Development:

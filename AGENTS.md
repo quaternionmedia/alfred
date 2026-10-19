@@ -35,6 +35,22 @@ no other briefing, read this file fully before your first commit or edit.
    "supersedes the ... (stance|finding)", "corrected". Drafts are rewritten
    in place, not narrated. The ADR lint enforces this over prose only, so
    quoting the list in a code span is fine.
+8. **Logging and secrets: print no secret, anywhere.** Not into a terminal,
+   a log, a commit, a pull request or a report. That means the values in
+   `.secret_key`, `.secret_key.local`, `.cred`, `cred.json`,
+   `cred_api.json`, `.email`, `.magick` or any env file; tokens; passwords;
+   session cookies; and the `sig` of a signed URL. The committed key files
+   are development stubs, but the habit is the guard: the same commands run
+   against a real deployment. In practice:
+   - `docker compose config --no-interpolate`, never plain `config`, which
+     writes the env files' values into its output (this is how a stub leaked
+     into a session log);
+   - list variables by name (`env | cut -d= -f1`), never with values;
+   - write `sig=…`, and name a test account rather than quoting its password.
+
+   If one slips out, say so in your report or PR, by name. `./al family` and
+   the scripts under `scripts/` redact what they print. Keep it that way in
+   anything you add.
 
 ## One-time setup on a fresh clone (Windows)
 
@@ -99,6 +115,8 @@ arguments prints the full command list.
 | `./al nox -s lint` | Ruff |
 | `./al nox -s blacken` | Black (`-S`, single quotes) |
 | `./al docs` | Serve mkdocs locally on :4000 |
+| `./al family` | Every repository alfred works with: status, the vendored pins, what's off |
+| `./al family loop` | Each one's quick suite, then joe and the dev stack together, a live check, and down ([docs/family.md](docs/family.md)) |
 | `./al prod` | Production stack (expects a running traefik and the production `ALFRED_SECRET_KEY` exported) |
 
 Tests can also run directly: `nox -f tests/noxfile.py -s coverage`.
