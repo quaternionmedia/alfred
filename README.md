@@ -69,6 +69,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al flower` | Celery monitoring on :5555; needs the dev stack for its broker |
 | `./al cookbook` | Regenerate `docs/cookbook.md` from the e2e specs |
 | `./al install <pkg>` | Add a website dependency |
+| `./al family` | alfred with otto, vox, joe, qmcp and the rest: status, quick suites, the stack wired to joe, a live check ([docs/family.md](docs/family.md)) |
 
 `./al dev` publishes on 8000, 8001 and 27017, on `127.0.0.1` only. If
 something already holds one, override it rather than fighting for it —
