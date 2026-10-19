@@ -305,7 +305,10 @@ class TestRefusalsLeaveNothingBehind:
         assert after == before
 
     def test_a_refusal_is_still_the_same_answer(self, api):
+        """Each copy says what the shared one says: its sentence and its code."""
         client, _, _ = api
-        assert client.get('/render/undefined/status').json() == {
-            'detail': 'Not a valid identifier'
-        }
+        for _ in range(2):
+            assert client.get('/render/undefined/status').json() == {
+                'detail': 'Not a valid identifier',
+                'code': 'invalid_id',
+            }

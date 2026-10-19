@@ -2,13 +2,14 @@ from typing import Optional
 
 from beanie.odm.operators.update.general import Set
 from bson import ObjectId
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 from fastapi_crudrouter import MotorCRUDRouter
 from otto.models import Edl
 from pydantic import BaseModel
 
 from alfred.config import DB_NAME, DB_URL
 
+from ..errors import Code, Refusal
 from ..models import Project, ProjectUpdate, RenderSettings
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
 from ..utils.captions import (
@@ -215,7 +216,7 @@ class ProjectAPI(MotorCRUDRouter):
                     checked_captions(model.captions) if model.captions else None
                 )
             except TooManyCaptions as exc:
-                raise HTTPException(status_code=422, detail=str(exc)) from exc
+                raise Refusal(Code.TOO_MANY_CAPTIONS, str(exc)) from exc
             if model.captions or model.caption_style is not None:
                 model.caption_style = project_style(
                     style_to_store(model.caption_style, None)

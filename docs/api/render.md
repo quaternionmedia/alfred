@@ -13,7 +13,7 @@ The `render` routes accept an `Edl` with its render settings, queue a server ren
 | `POST /render/rerender/{id}` | queue it again, with the timeline and settings it was stored with |
 | `DELETE /render/{id}` | delete it, with its video and any local delivery's copy |
 
-[examples/render](../examples/render.md) follows one render from request to download.
+[examples/render](../examples/render.md) follows one render from request to download. A refusal carries a `code` beside its `detail`, such as `render_not_finished` for the 409: [Refusals](errors.md) lists them.
 
 ## Issues
 Report an issue with one of your renders with `POST /render/{id}/report`, whose body is the report as a JSON string:

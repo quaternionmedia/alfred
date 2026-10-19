@@ -41,6 +41,7 @@ nav:
       - api/auth.md
       - api/otto.md
       - api/render.md
+      - api/errors.md
 
 # Every check mkdocs can make of the pages, as a warning: a page left out of
 # the nav, a link naming no page or file, an anchor no heading makes, and an

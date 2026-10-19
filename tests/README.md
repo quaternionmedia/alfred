@@ -103,6 +103,9 @@ tests/
                          hashing, held to the release and the originals
     test_preview_slots.py  so many previews at once; the rest wait, then 503
     test_support_mail.py   support mail is queued, sent by the worker, retried
+    test_refusal_codes.py every refusal code is in docs/api/errors.md and is
+                         answered by a request; covered routes raise none without
+                         one
   pipeline/            needs ffmpeg, no DB, no network
     test_render_pipeline.py
   integration/         needs MongoDB at DB_URL: the app in-process, real auth

@@ -1,6 +1,6 @@
 import m from 'mithril'
 import { auth } from '../Login'
-import { requestProblem } from '../Problem'
+import { refusalCode, requestProblem } from '../Problem'
 
 /**
  * A project's captions, as the editor holds them (contract K2).
@@ -281,6 +281,11 @@ export const Captions = {
       })
       .catch(err => {
         Captions.error = `Could not transcribe: ${requestProblem(err) || 'no answer'}`
+        // One already under way -- from another tab, or an API client -- makes
+        // the same captions: follow it, as if this had started it.
+        if (refusalCode(err) === 'transcription_running' && Captions.projectId === projectId) {
+          Captions.poll()
+        }
       })
       .then(() => {
         Captions.busy = null

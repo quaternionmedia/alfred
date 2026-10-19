@@ -474,6 +474,83 @@ test.describe('transcribing the timeline', () => {
       await expect(button).toBeDisabled()
     })
   })
+
+  test('a transcription already under way is followed, and the refusal still read', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * Another tab, or an API client, started one first. The server refuses a
+     * second with 409 and `code: "transcription_running"` beside its
+     * sentence (docs/api/errors.md). The panel shows the sentence, and,
+     * because of the code, follows the transcription under way until its
+     * captions arrive -- the ones a second would have made.
+     */
+    await withProject(request, token, {}, async project => {
+      const path = `/project/${project._id}/captions`
+      const style = (await captionsOf(request, token, project)).style
+      const heard = [{ start: 0.5, end: 2, text: 'Heard by the other one' }]
+      // What the server holds: nothing, until the refusal; then the other
+      // transcription, which is done the second time it is looked at.
+      let looks = 0
+      let refused = false
+      await authedPage.route('**/health', route =>
+        route.fulfill({
+          json: { ...HEALTHY, audio_engine: { configured: true, ok: true, detail: null } },
+        })
+      )
+      await authedPage.route(
+        url => url.pathname === `${path}/transcribe`,
+        route => {
+          refused = true
+          return route.fulfill({
+            status: 409,
+            json: {
+              detail: "This project's timeline is already being transcribed; wait for that to finish.",
+              code: 'transcription_running',
+            },
+          })
+        }
+      )
+      await authedPage.route(
+        url => url.pathname === path,
+        route => {
+          if (route.request().method() !== 'GET') return route.fallback()
+          if (!refused) return route.fulfill({ json: { captions: [], style, job: null } })
+          looks += 1
+          const done = looks > 1
+          return route.fulfill({
+            json: {
+              captions: done ? heard : [],
+              style,
+              job: {
+                state: done ? 'done' : 'transcribing',
+                error: null,
+                engine: 'http://engine.test',
+                segments: done ? 1 : null,
+                updated_at: new Date().toISOString(),
+              },
+            },
+          })
+        }
+      )
+
+      await openCaptions(authedPage, project)
+      await expect(authedPage.locator('#captions-transcribe')).toBeEnabled()
+      await authedPage.locator('#captions-transcribe').click()
+      // The sentence, as the server wrote it; never the code.
+      await expect(authedPage.locator('#captions-error')).toHaveText(
+        "Could not transcribe: This project's timeline is already being transcribed; wait for that to finish."
+      )
+      // Mutation: drop the switch on the code -- nothing follows, and the job
+      // line never appears.
+      const job = authedPage.locator('#captions-job')
+      await expect(job).toHaveAttribute('data-state', 'done')
+      await expect(rows(authedPage)).toHaveCount(1)
+      await expect(rows(authedPage).locator('.caption-text')).toHaveValue('Heard by the other one')
+    })
+  })
 })
 
 test.describe('@slow transcribing through the worker', () => {

@@ -44,3 +44,15 @@ export function requestProblem(err) {
   const body = err && err.response
   return describeDetail(body && typeof body === 'object' ? body.detail : '')
 }
+
+/**
+ * The `code` beside the `detail` of a refusal the server made itself, or ''.
+ *
+ * The sentence is for a person, and is what the page shows; the code is what
+ * the page may act on, since it stays the same when the sentence is reworded
+ * (docs/api/errors.md). Not `err.code`, which is the HTTP status.
+ */
+export function refusalCode(err) {
+  const body = err && err.response
+  return body && typeof body === 'object' && typeof body.code === 'string' ? body.code : ''
+}
