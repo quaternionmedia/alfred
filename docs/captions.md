@@ -21,8 +21,8 @@ is the Edit stage's panel, above the viewer and the timeline.
   buttons to play from the caption's start and to delete it. The list stays in
   start order and marks a caption that cannot be shown (no text, an end before
   its start) and why. Nothing saves while one is marked.
-- **Import…** reads a SubRip (`.srt`), WebVTT (`.vtt`) or JSON file on the
-  server, and shows what it found: how many captions, how many cues it left out
+- **Import…** has the server read a SubRip (`.srt`), WebVTT (`.vtt`) or JSON
+  file, and shows what it found: how many captions, how many cues were left out
   for having no text or no length, and the first few. Use them, add them to the
   captions there, or cancel. Accepting saves.
 - **Transcribe timeline** has the server's audio engine hear the project's
@@ -39,12 +39,10 @@ is the Edit stage's panel, above the viewer and the timeline.
 - **Save** keeps the captions and the style on the project.
 
 The caption under the playhead shows over the viewer in its style, faint while
-the style does not draw into renders. The page draws a likeness; the server
-draws the render.
-
-Once **Draw into renders** is ticked, every render of the timeline carries the
-captions and their style exactly as they stand in the editor, saved or not, as
-it carries the timeline.
+the style does not draw into renders: a likeness the page draws, where the
+server draws the render. Once **Draw into renders** is ticked, every render of
+the timeline carries the captions and their style exactly as they stand in the
+editor, saved or not, as it carries the timeline.
 
 ## Through the API
 
