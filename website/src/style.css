@@ -32,7 +32,8 @@ recessed: #101010
    mode, where a percentage height with no sized parent falls through to the
    viewport; with a doctype it is a percentage of `html`, so `html` has to be
    sized too, or the body grows with its content and, with `overflow: hidden`,
-   everything below the window is unreachable. */
+   everything below the window is unreachable. The phone flow lets the window
+   scroll once its regions are as small as they go (layout/flow.scss). */
 html {
   height: 100%;
 }
