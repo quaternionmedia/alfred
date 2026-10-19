@@ -122,7 +122,9 @@ class TestEachSuite:
             ['compose', '-f', 'pytest.yml', 'build', 'pytest'],
             ['al', 'nox', '-r', '-s', 'lint'],
             ['al', 'nox', '-r', '-s', 'coverage', '--', 'unit'],
+            ['compose', '-p', 'alfred-pytest', '-f', 'pytest.yml', 'down', '-v'],
         ]
+        assert steps[-1].always and not any(step.always for step in steps[:-1])
 
     def test_alfreds_full_suite_is_both_suites(self, tree):
         steps, _ = self.plan('alfred', tree.root, full=True, which=which_all)
@@ -176,6 +178,28 @@ class TestEachSuite:
             path, _ = family.locate(family.BY_NAME[name], {}, tree.root)
             steps, reason = self.plan(name, path, which=which_none)
             assert steps == [] and tool_needed.split()[0] in reason, (name, reason)
+
+    def test_a_tidying_step_runs_after_a_failure(self, tmp_path):
+        """`./al nox` leaves the test database running; the step that takes it
+        down runs whatever the suite said."""
+        steps = [
+            family.Step(
+                'suite', [sys.executable, '-c', 'raise SystemExit(1)'], tmp_path
+            ),
+            family.Step('next', [sys.executable, '-c', 'print("skipped")'], tmp_path),
+            family.Step(
+                'tidy', [sys.executable, '-c', 'print("tidied")'], tmp_path, always=True
+            ),
+        ]
+        ok, _, failed = family.run_steps('demo', steps, log_dir=tmp_path / 'logs')
+        log = (tmp_path / 'logs' / 'demo.log').read_text(encoding='utf-8')
+        assert not ok and failed.label == 'suite'
+        assert 'tidied' in log and 'skipped' not in log
+
+    def test_the_project_is_the_one_al_uses(self, tmp_path):
+        assert family.compose_project(tmp_path / 'My Alfred', {}) == 'myalfred'
+        env = {'COMPOSE_PROJECT_NAME': 'lane-z1'}
+        assert family.compose_project(tmp_path, env) == 'lane-z1'
 
     def test_steps_stop_at_the_first_failure_and_keep_a_log(self, tmp_path):
         steps = [

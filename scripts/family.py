@@ -250,10 +250,24 @@ def status(args):
 
 
 class Step:
-    def __init__(self, label, argv, cwd):
+    """One command of a suite. `always` runs it even after an earlier step
+    failed: the tidying a suite owes whatever happened."""
+
+    def __init__(self, label, argv, cwd, always=False):
         self.label = label
         self.argv = argv
         self.cwd = cwd
+        self.always = always
+
+
+def compose_project(root=ROOT, env=None):
+    """The compose project ./al runs this checkout's stacks as (its
+    `projectName`): COMPOSE_PROJECT_NAME, or the directory's name made one."""
+    env = os.environ if env is None else env
+    given = env.get('COMPOSE_PROJECT_NAME')
+    if given:
+        return given
+    return re.sub(r'[^a-z0-9_-]', '', root.name.lower())
 
 
 def tool(name):
@@ -289,6 +303,24 @@ def plan(repo, path, full=False, which=tool):
         # a reused one only checks what the lockfiles ask for instead of
         # installing all of it again -- minutes saved on every run after the
         # first. --full starts from fresh environments.
+        # `./al nox` runs the test container with --rm, which leaves the
+        # database it started beside it running: take the project down after,
+        # whatever the suite said.
+        tidy = Step(
+            'tidy',
+            [
+                docker,
+                'compose',
+                '-p',
+                f'{compose_project(path)}-pytest',
+                '-f',
+                'pytest.yml',
+                'down',
+                '-v',
+            ],
+            path,
+            always=True,
+        )
         return [
             image,
             Step('lint', [sh, 'al', 'nox', '-r', '-s', 'lint'], path),
@@ -297,6 +329,7 @@ def plan(repo, path, full=False, which=tool):
                 [sh, 'al', 'nox', '-r', '-s', 'coverage', '--', 'unit'],
                 path,
             ),
+            tidy,
         ], None
     if name == 'otto':
         docker = which('docker')
@@ -347,13 +380,17 @@ def plan(repo, path, full=False, which=tool):
 
 
 def run_steps(name, steps, log_dir=LOGS):
-    """Run `steps` one after another into `<log_dir>/<name>.log`, stopping at
-    the first that fails. Returns (ok, seconds, failed step or None)."""
+    """Run `steps` one after another into `<log_dir>/<name>.log`. After the
+    first that fails, only the `always` steps run. Returns (ok, seconds,
+    the first failed step or None)."""
     log_dir.mkdir(parents=True, exist_ok=True)
     log = log_dir / f'{name}.log'
     started = time.monotonic()
+    failed = None
     with log.open('w', encoding='utf-8') as out:
         for step in steps:
+            if failed and not step.always:
+                continue
             shown = [Path(step.argv[0]).name, *step.argv[1:]]
             out.write(f'$ {" ".join(shown)}\n')
             out.flush()
@@ -364,9 +401,9 @@ def run_steps(name, steps, log_dir=LOGS):
                 stderr=subprocess.STDOUT,
                 stdin=subprocess.DEVNULL,
             )
-            if result.returncode != 0:
-                return False, time.monotonic() - started, step
-    return True, time.monotonic() - started, None
+            if result.returncode != 0 and failed is None:
+                failed = step
+    return failed is None, time.monotonic() - started, failed
 
 
 def test(args):
