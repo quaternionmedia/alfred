@@ -33,7 +33,7 @@ def titles_in(path):
     source = path.read_text(encoding='utf-8')
     pattern = (
         r"""(?:test\.describe|test)\s*(?:\.\w+)?\s*"""
-        r"""\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*?)\1"""
+        r"""\(\s*(['"`])((?:\\.|(?!\1)[^\\])*?)\1"""
     )
     return [m.group(2) for m in re.finditer(pattern, source)]
 
@@ -167,7 +167,9 @@ class TestTheRecipesMediaStaysOutOfGit:
     on every refresh."""
 
     def test_the_cookbook_links_no_recipe_media(self):
-        linked = re.findall(r'\]\((recipes/[^)\s]+)\)', COOKBOOK.read_text(encoding='utf-8'))
+        linked = re.findall(
+            r'\]\((recipes/[^)\s]+)\)', COOKBOOK.read_text(encoding='utf-8')
+        )
         assert not linked, (
             f'docs/cookbook.md links {linked}, which a clean checkout lacks. '
             'Regenerate with `node website/e2e/cookbook.js`.'
