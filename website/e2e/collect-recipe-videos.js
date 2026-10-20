@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
- * Gather the passing recipes' recordings in docs/recipes, ready to become the
- * GIFs the cookbook shows.
+ * Gather the passing recipes' recordings in docs/recipes, ready to become
+ * GIFs.
  *
  * `./al recipes` records the @recipe walkthroughs as video. Each passing
  * recipe's recording is copied here as `docs/recipes/<recipe>.webm`, which
  * git ignores, and listed in `website/recipe-videos.json` with the second its
  * recipe starts at: the recording opens on the login in front of it, which
  * the recipe notes (recipes.spec.js). `scripts/recipe_gifs.py` then turns
- * each into `docs/recipes/<recipe>.gif`, the file that is committed and that
- * the cookbook links.
+ * each into `docs/recipes/<recipe>.gif`. git ignores both: they are
+ * published beside the docs, not committed.
  *
  * Only recipes that passed are listed, and every GIF and recording is cleared
  * first: a recipe that breaks leaves no artefact claiming it works.
@@ -145,7 +145,7 @@ function main() {
   }
   console.log(
     `docs/recipes: ${collected.length} recordings, which git ignores; ` +
-      'scripts/recipe_gifs.py makes the GIFs to commit'
+      'scripts/recipe_gifs.py makes the GIFs'
   )
 }
 

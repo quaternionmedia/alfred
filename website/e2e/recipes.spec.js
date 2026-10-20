@@ -178,6 +178,9 @@ const test = base.extend({
     await openRecipe(page, made, opened)
     await use(page)
     await everyRowIsItsOwn(page, made)
+    // The Deliver panel polls the renders, so a list can still be in flight
+    // as the page closes; its answer has nowhere to go and is not a failure.
+    await page.unrouteAll({ behavior: 'ignoreErrors' })
   },
 })
 
