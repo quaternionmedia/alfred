@@ -1282,41 +1282,28 @@ you work: the **viewer** with the output settings beside it, the
 timeline sits with its tools and the media bin beneath.
 
 - **recipe: open the editor and look around**
-
-  ![open the editor and look around](recipes/open-the-editor-and-look-around.gif)
-
 - **recipe: generate a demo from an empty install**
-
-  ![generate a demo from an empty install](recipes/generate-a-demo-from-an-empty-install.gif)
 
   A first run needs no downloads. The Source stage offers to generate both
   a project and its media, synthesised locally with ffmpeg's test sources.
 
 - **recipe: choose a project and edit its timeline**
 
-  ![choose a project and edit its timeline](recipes/choose-a-project-and-edit-its-timeline.gif)
-
   Choosing a project on the Source stage loads its timeline. The clips are
   laid out left to right, and each one is as wide as it is long.
 
 - **recipe: pick a tool and move the playhead**
-
-  ![pick a tool and move the playhead](recipes/pick-a-tool-and-move-the-playhead.gif)
 
   The tools that change clips sit beside the timeline; the ones that move
   the playhead sit above it, in the transport.
 
 - **recipe: render the timeline and deliver the result**
 
-  ![render the timeline and deliver the result](recipes/render-the-timeline-and-deliver-the-result.gif)
-
   The Render stage turns the timeline into a video; the Deliver stage
   sends it somewhere. Delivery is local by default, so this works on a
   machine with no cloud account.
 
 - **recipe: import captions and show them over the picture**
-
-  ![import captions and show them over the picture](recipes/import-captions-and-show-them-over-the-picture.gif)
 
   The Captions panel reads a subtitle file and shows what it found before
   anything is kept. Use them, tick **Draw into renders** and save, and

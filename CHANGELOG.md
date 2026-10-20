@@ -12,7 +12,7 @@ branches:
 | 3 | `integrate/wave-3` | captions through an audio engine (vox vendored at `alfred/vox` beside otto, driving joe), and a Golden Layout workspace for the editor |
 | 4 | `integrate/wave-4` | the review's fix round: every setting reaching the services that read it, CI installing what the image installs, the workspace's tab race and the suite's timing races, docs that describe the API as it answers, the timeline's sound written by otto (pinned at f3ceca3, `fix/engine-sound`), an api whose one event loop no longer waits on a preview, and a phone layout that keeps the whole picture on the screen |
 | 5 | `integrate/wave-5` | the decisions round 4 stopped at: password hashing off the event loop behind loud safeguards, the media work moved into otto (pinned at 7ddbf10, `feat/engine-media-ops`), a code beside every refusal of the routes qmcp calls, a cap on concurrent previews, support mail sent by the worker, the render extra and the docs build tightened, and `./al family`, which runs alfred with the repositories it works with |
-| 6 | `integrate/wave-6` | the docs: every page this effort touched said in fewer words, across the repositories, and the main pages opening with screenshots and GIFs that `./al recipes` makes from demo data (otto f106775 and vox e630cb0, for their docs) |
+| 6 | `integrate/wave-6` | the docs: every page this effort touched said in fewer words, across the repositories, and the main pages opening with screenshots that `./al recipes` takes from demo data, its GIFs kept out of git (otto f106775 and vox e630cb0, for their docs) |
 
 Read **Security** and **Changed** before deploying: several requests that were
 accepted are now refused, and a production stack needs its own signing key.
@@ -172,8 +172,7 @@ accepted are now refused, and a production stack needs its own signing key.
   and preview frames on a volume, not in the working tree, so it neither takes
   over a running dev stack nor leaves anonymous volumes behind.
 - **The docs site loads nothing from another host** (system fonts, no emoji
-  extension), and **the cookbook links only what git tracks**, so each recipe
-  shows its committed GIF.
+  extension), and **the cookbook links only what git tracks**.
 
 ### Fixed
 
@@ -352,10 +351,11 @@ accepted are now refused, and a production stack needs its own signing key.
   Linux Docker host needs to reach joe; `test_docs_accounted.py` fails when it
   misses a setting alfred reads, docs/family.md one `./al family` reads, or a
   document gives an `./al` command that does not exist.
-- **Docs that show first.** `./al recipes` records each recipe as a GIF in
-  `docs/recipes/` and takes the screenshots in `docs/assets/screens/`, from
-  demo data it builds; the README and the main docs pages open with them, and
-  `test_docs_images.py` holds every image to a page that uses it.
+- **Docs that show first.** `./al recipes` takes the screenshots in
+  `docs/assets/screens/` from demo data it builds; the README and the main
+  docs pages open with them, and `test_docs_images.py` holds each to a page
+  that shows it. It records each recipe as a GIF in `docs/recipes/` too, which
+  git ignores: the GIFs are published beside the docs, not committed.
 
 ### CI and release
 

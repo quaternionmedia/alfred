@@ -1,11 +1,11 @@
 """Every picture the docs show is there, and every one there is shown.
 
-`./al recipes` makes the docs' pictures from the running app: the screenshots
-in `docs/assets/screens/` (website/e2e/screens.spec.js) and a GIF per recipe
-in `docs/recipes/` (the recipes' recordings). They are committed, so these
-hold the pages and the files to each other: a page showing a picture that is
-not there, a picture nothing shows, a screenshot the spec no longer takes,
-and a page that no longer opens with what it shows.
+`./al recipes` makes the docs' screenshots from the running app, into
+`docs/assets/screens/` (website/e2e/screens.spec.js). They are committed, so
+these hold the pages and the files to each other: a page showing a picture
+that is not there, a picture nothing shows, a screenshot the spec no longer
+takes, and a page that no longer opens with what it shows. The recipes' GIFs
+are not committed (test_cookbook.py), so no page here shows one.
 
 mkdocs checks the links of the pages it builds, and not the README, which
 GitHub shows; nor does it notice a file nothing links. Hence these.
@@ -19,7 +19,6 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 DOCS = REPO / 'docs'
 SCREENS = DOCS / 'assets' / 'screens'
-RECIPES = DOCS / 'recipes'
 SCREENS_SPEC = REPO / 'website' / 'e2e' / 'screens.spec.js'
 
 # The pages a person reads first, and what each opens with under its title.
@@ -58,7 +57,7 @@ def images_on(page):
 
 def made_by_recipes():
     """The pictures `./al recipes` makes, as they are on disk."""
-    return sorted(SCREENS.glob('*.png')) + sorted(RECIPES.glob('*.gif'))
+    return sorted(SCREENS.glob('*.png'))
 
 
 def png_size(path):
@@ -87,11 +86,8 @@ class TestEveryPictureIsThere:
 
 
 class TestEveryPictureIsShown:
-    def test_every_screen_and_gif_is_shown_by_a_page(self):
-        """A screenshot or GIF nothing shows is weight in the repository.
-
-        The cookbook counts: it is where the recipes' GIFs are shown.
-        """
+    def test_every_screen_is_shown_by_a_page(self):
+        """A screenshot nothing shows is weight in the repository."""
         shown = {resolved for page in pages() for _, resolved in images_on(page)}
         unshown = [
             str(path.relative_to(REPO))

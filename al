@@ -326,7 +326,8 @@ elif [ $1 = "recipes" ]; then
   #   2. copy each passing recipe's recording into docs/recipes/ (git-ignored);
   #   3. turn each into docs/recipes/<recipe>.gif, with ffmpeg in the dev
   #      stack's api container (scripts/recipe_gifs.py);
-  #   4. regenerate the cookbook, which shows the GIFs git tracks.
+  #   4. regenerate the cookbook.
+  # docs/recipes/ is git-ignored: the GIFs are published, not committed.
   # Needs the dev stack up: E2E_BASE_URL if it is not on :8000, and
   # COMPOSE_PROJECT_NAME if it runs under another name. Every step runs, so a
   # recipe that fails loses its GIF rather than keeping a stale one; the

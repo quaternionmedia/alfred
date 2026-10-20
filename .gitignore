@@ -105,11 +105,11 @@ data/
 website/recipe-report.json
 website/recipe-videos.json
 
-# Recipe recordings. `./al recipes` copies each passing recipe's recording
-# here and turns it into a GIF beside it. The recordings are not committed:
-# the GIFs are, at a fraction of the size, and the cookbook links only what
-# git tracks, so it never names a file that exists on one machine.
-docs/recipes/*.webm
+# Recipe recordings and GIFs. `./al recipes` writes both here, for watching
+# and for publishing beside the docs; neither is committed, because a GIF does
+# not compress against its last version and every refresh would add megabytes
+# to history. The cookbook links none of them.
+docs/recipes/
 
 # The docs' screenshots, which `./al recipes` takes (screens.spec.js), are
 # committed despite *.png above.

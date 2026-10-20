@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn the recipes' recordings into the GIFs the cookbook shows.
+"""Turn the recipes' recordings into GIFs, beside them and out of git.
 
 `./al recipes` runs this in the dev stack's api container, which has ffmpeg
 (through imageio-ffmpeg) and the checkout at /app:

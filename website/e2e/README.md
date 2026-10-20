@@ -32,8 +32,9 @@ yarn e2e:report      # last HTML report
 ```
 
 The `@recipe` walkthroughs and the `@screens` screenshots run in the `docs`
-project, one worker. `./al recipes` runs it, makes the GIFs and screenshots
-the docs open with, and regenerates the cookbook;
+project, one worker. `./al recipes` runs it, takes the screenshots the docs
+open with, makes the recipes' GIFs (not committed), and regenerates the
+cookbook;
 [CONTRIBUTING.md](../../CONTRIBUTING.md#the-docs-are-generated-from-the-tests)
 says what it keeps and what it commits.
 
@@ -176,7 +177,7 @@ in and logout; `views.spec.js`, that a reload keeps the session.
 | Views render, no uncaught page errors, reload | `views.spec.js` | UI |
 | Layout at every width | `appearance.spec.js` | UI |
 | Icons drawn by a self-hosted font; nothing loaded from a CDN | `assets.spec.js` | UI |
-| Recipe walkthroughs (the cookbook's GIFs) | `recipes.spec.js` | UI, `@recipe` |
+| Recipe walkthroughs (GIFs, kept out of git) | `recipes.spec.js` | UI, `@recipe` |
 | The docs' screenshots | `screens.spec.js` | UI, `@screens` |
 | Page-load budget | `performance.spec.js` | UI, `@perf` |
 

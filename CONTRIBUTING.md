@@ -79,21 +79,24 @@ Before you change a test:
 
 ## The docs are generated from the tests
 
-The docs' prose, GIFs and screenshots all come from the end-to-end suite:
+The docs' prose and screenshots come from the end-to-end suite, and so do
+the recipes' GIFs:
 
 ```sh
 ./al cookbook      # regenerate docs/cookbook.md from the specs
-./al recipes       # record the @recipe GIFs and the @screens screenshots, then regenerate
+./al recipes       # take the @screens screenshots, record the @recipe GIFs, then regenerate
 ```
 
 `./al recipes` runs against a dev stack you already have up (`E2E_BASE_URL` if
-it is not on :8000). It writes each passing recipe as `docs/recipes/<recipe>.gif`
-and each screen as `docs/assets/screens/<name>.png`, converting with the
+it is not on :8000). It writes each screen as `docs/assets/screens/<name>.png`
+and each passing recipe as `docs/recipes/<recipe>.gif`, converting with the
 ffmpeg in the api container, and exits non-zero if any step fails. Both build
 their own demo data and show nothing else, so recording on your own stack
-publishes none of your projects. Commit what it writes; the cookbook links only
-what git tracks, and `tests/unit/test_docs_images.py` holds every image to a
-page that uses it.
+publishes none of your projects. Commit the screenshots;
+`tests/unit/test_docs_images.py` holds each to a page that shows it. The GIFs
+stay out of git -- one does not compress against its last version, so every
+refresh would add megabytes to history -- and are published beside the docs
+instead; `tests/unit/test_cookbook.py` fails if one is tracked or linked.
 
 So **do not edit `docs/cookbook.md` by hand**: change the tests and
 regenerate. `tests/unit/test_cookbook.py` fails if the committed file drifts
