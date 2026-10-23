@@ -10,7 +10,8 @@ Two engines cooperate under alfred's control plane, side by side: **otto**
 renders the picture (vendored at `alfred/otto`), and **vox** carries the sound
 (vendored at `alfred/vox`), driving an audio engine -- joe, by default -- over
 HTTP. alfred owns the captions, the jobs and the routes; it does no audio or
-video work itself.
+video work itself. The timeline's sound below is mixed and written by otto,
+as its renders, preview frames, library probes and demo clips are.
 
 ## In the editor
 
@@ -59,13 +60,14 @@ not -- as the timeline itself is sent.
 | `GET /project/{id}/captions` | `{captions, style, job}` |
 | `PUT /project/{id}/captions` | `{captions, style?}`: stores those and nothing else; answers as `GET` does |
 | `POST /project/{id}/captions/import` | `{format: "srt"\|"vtt"\|"json", text}` → `{captions, skipped}`; stores nothing |
-| `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine; `409` while one runs; `422` when the saved timeline has nothing to hear |
+| `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine (`audio_engine_missing`) or the job could not be queued (`transcription_not_queued`); `409` while one runs; `422` when the saved timeline has nothing to hear |
 | `GET /media/{name}/audio` | the engine's analysis of a library file |
 | `GET /health` | gains `audio_engine: {configured, ok, detail}` |
 
 Each project route is scoped to the caller as every project route is: a
 project that is not yours answers 404. `GET /project/{id}` carries `captions`
-and `caption_style` too.
+and `caption_style` too. A refusal carries a `code` beside its `detail`, to
+switch on rather than the wording: [Refusals](api/errors.md) lists them.
 
 A caption is `{start, end, text}`: `start` at or after 0, `end` after it, text
 that says something and at most 500 characters of it. A project carries at
@@ -215,9 +217,11 @@ analysis: `duration`, `tempo` (beats a minute), `beats` and `onsets` (seconds),
 `loudness` (`rms_db`, `peak_db`, `lufs`), `silences` (`[{start, end}]`) and
 `peaks` (`{rate, values}`, 0 to 1). `features` asks for some of `tempo`,
 `beats`, `onsets`, `loudness`, `silences` and `peaks`; all by default. The
-answer is kept until the file changes. 404 for what the library does not hold,
-422 for an image or a file the engine will not read, 502 when the engine
-fails, 503 when there is none.
+answer is kept until the file changes. 404 for what the library does not hold
+(`not_found`), 422 for an image (`media_silent`), a file the engine will not
+read (`audio_engine_refused`) or a feature it is not asked for
+(`unknown_feature`), 502 when the engine fails (`audio_engine_failed`), 503
+when there is none (`audio_engine_missing`): [Refusals](api/errors.md).
 
 ## Testing
 

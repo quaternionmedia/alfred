@@ -31,3 +31,35 @@ asks for a reset controls. Without all of them nothing is mailed:
 
 The development login (`ALFRED_DEV_USER_EMAIL`) is never sent a reset token,
 and cannot be given a password; see [Skipping login in development](../dev-auth.md).
+
+## Password hashing
+
+Passwords are hashed with bcrypt, which is slow on purpose: about 0.3 s a hash
+or a check. fastapi-users 10.4 does that work inside its coroutines, on the
+api's one event loop, so while a login was checked nothing else was answered
+-- not a preview, not `/healthz`. alfred carries its own copies of the
+library's five methods that hash or check a password (`authenticate`,
+`create`, `forgot_password`, `reset_password` and `_update`), identical but
+for doing the hashing in the thread pool. They live in
+`alfred/core/utils/passwords.py`.
+
+Copied security code is guarded, so it cannot drift from the original
+quietly:
+
+- **It refuses to run against any other release.** The copies name the
+  fastapi-users release they were checked against, 10.4.2, and a fingerprint
+  of each original's source. On import, a different release or a changed
+  method stops the api from starting, with a message saying which method
+  changed and what to re-check.
+- **Tests hold each copy to its original**
+  (`tests/unit/test_password_hashing.py`): the same lookups, writes, hashes,
+  checks and answers, case by case. That includes the hash run for an unknown
+  address, which keeps its refusal as slow as a wrong password, and the
+  upgrade of an outdated hash at login. Other tests show `/healthz`
+  answering while a login is checked, and `tests/unit/test_blocking_calls.py`
+  fails if a coroutine hashes directly.
+- **The api says so as it starts**, in one line beginning `Password hashing:`.
+
+Upgrading fastapi-users therefore starts with that module: read each replaced
+method in the new release, carry over what changed, and update the release
+and the fingerprints it records.

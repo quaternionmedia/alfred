@@ -103,11 +103,12 @@ data/
 # Playwright JSON report, an intermediate for the recipe video collector.
 website/recipe-report.json
 
-# Recipe recordings. `./al recipes` produces these locally for watching and
-# for cutting a polished version from; they are not committed, so generated
-# multi-megabyte binaries do not accumulate in history. The collector also
-# writes an SVG stub per passing recipe beside them, meant to be committed in
-# their place; none is yet.
+# Recipe recordings. `./al recipes` copies each passing recipe's recording
+# here for watching and for cutting a polished version from; they are not
+# committed, so generated multi-megabyte binaries do not accumulate in
+# history. The SVG stub written beside each one is committed in its place, and
+# the cookbook links only what git tracks, so it never names a recording that
+# exists on one machine.
 docs/recipes/*.webm
 
 # Test-render output moved aside during review prep; regenerable, never shipped.
@@ -115,3 +116,6 @@ videos-test-output/
 
 # This checkout's own development signing key, created by ./al (see dev.yml).
 .secret_key.local
+
+# `./al family`'s logs and the record of the joe it started (scripts/family.py).
+.family/

@@ -481,8 +481,10 @@ $rule: 1px solid #2e2e2e;
 }
 
 // A template that cannot render says so where the frame would be. It read as
-// an empty viewer, which is what a still-loading frame looks like too.
+// an empty viewer, which is what a still-loading frame looks like too. So
+// does a frame the server was too busy to draw yet, until it is asked again.
 .preview.unrenderable,
+.preview.busy,
 .preview.empty {
   display: flex;
   flex-direction: column;
@@ -497,7 +499,8 @@ $rule: 1px solid #2e2e2e;
   color: #9a9a9a;
 }
 
-.preview.unrenderable i {
+.preview.unrenderable i,
+.preview.busy i {
   font-size: 1.6rem;
   color: #d2a24c;
 }

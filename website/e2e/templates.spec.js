@@ -442,3 +442,51 @@ test.describe("a template's type and placement", () => {
     expect(sent[0].edl.clips[0].data).toEqual({ text: 'Still placed', position: ['center', 0.8] })
   })
 })
+
+test.describe('a server busy with other previews', () => {
+  test('the viewer waits as long as the server asks, then asks once more', async ({
+    authedPage,
+  }) => {
+    /**
+     * The server draws only so many previews at once
+     * (ALFRED_PREVIEW_CONCURRENCY). One that has waited its turn too long is
+     * answered 503 with a Retry-After header. The viewer says it is waiting,
+     * keeps quiet for as long as the header asks -- it does not ask again and
+     * again -- and then asks once more, and shows the frame it gets.
+     */
+    const errors = watchErrors(authedPage)
+    const asked = []
+    await authedPage.route(
+      url => url.pathname.startsWith('/preview/template/'),
+      route => {
+        asked.push(Date.now())
+        if (asked.length > 1) return route.continue()
+        return route.fulfill({
+          status: 503,
+          headers: { 'Retry-After': '2' },
+          json: {
+            detail:
+              'The server is already drawing as many previews as it will ' +
+              '(4 at once); ask again in 2 seconds.',
+            code: 'previews_busy',
+          },
+        })
+      }
+    )
+    await authedPage.goto('/#!/?stage=edit')
+    await binEntry(authedPage, 'makeColor').locator('.binadd').click()
+
+    const viewer = authedPage.locator('.bkg')
+    await expect(viewer.locator('.preview.busy')).toBeVisible()
+    await expect(viewer.locator('img.preview')).toBeVisible({ timeout: 15_000 })
+    await expect(viewer.locator('.preview.busy')).toHaveCount(0)
+
+    // Nothing was asked while the server said to wait; then once.
+    expect(asked.length).toBeGreaterThanOrEqual(2)
+    expect(asked[1] - asked[0]).toBeGreaterThanOrEqual(1900)
+    // A busy server is not a template that cannot render: nothing is said
+    // against the settings.
+    await expect(authedPage.locator('#template-params .paramproblem')).toHaveCount(0)
+    expect(errors).toEqual([])
+  })
+})

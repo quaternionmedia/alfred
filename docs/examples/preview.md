@@ -49,3 +49,22 @@ curl -o frame.jpg "https://alfred.quaternion.media$URL"
 The frame is a JPEG, over black where nothing is drawn:
 
 ![The title template at t=1](../assets/preview-title.jpg){ loading = lazy }
+
+## When the server is busy
+
+The server draws a few previews at once -- `ALFRED_PREVIEW_CONCURRENCY`, four
+by default -- for everyone together, `POST /preview/` and `GET
+/preview/template/{name}` alike. Past that, a preview waits its turn, for up to
+`ALFRED_PREVIEW_WAIT` seconds (ten by default), and is then answered `503`
+with a `Retry-After` header saying how many seconds to wait before asking
+again:
+
+```
+HTTP/1.1 503 Service Unavailable
+Retry-After: 2
+
+{"detail": "The server is already drawing as many previews as it will (4 at once); ask again in 2 seconds.", "code": "previews_busy"}
+```
+
+Wait that long, then ask once more; the editor's viewer does. `GET /health`
+says how the turns are going: `previews: {running, waiting, limit}`.

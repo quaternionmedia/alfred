@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 from otto.exceptions import EdlException
 from otto.models import Clip, Edl, TemplateData
-from otto.render import generateEdl
+from otto.render import renderFrame
 from starlette.background import BackgroundTask
 from starlette.concurrency import run_in_threadpool
 
@@ -19,6 +19,7 @@ from alfred import config
 
 from ..models.render import Render
 from ..utils import storage
+from ..utils.concurrency import preview_slot
 from ..utils.media import RefusedEdl, resolve_edl
 from ..utils.signing import media_url
 from .media import MediaAccess, media_access
@@ -69,8 +70,14 @@ async def sweep_frames_at_startup():
         print(f'removed {removed} expired preview frames', flush=True)
 
 
-# Mounted behind the session.
-previewAPI = APIRouter()
+# Mounted behind the session. Each preview takes one of a few slots first
+# (`preview_slot`, ALFRED_PREVIEW_CONCURRENCY), and is turned away when none
+# comes free in time.
+previewAPI = APIRouter(
+    responses={
+        503: {'description': 'too many previews at once; ask again after Retry-After'}
+    }
+)
 
 # The frames `POST /preview/` makes, on a router of their own: the form flow
 # shows one in a bare `<img>`, which carries no session, so it is fetched with
@@ -125,13 +132,15 @@ def remove_quietly(path):
 _FRAME_PARAMS = frozenset({'width', 'height', 't', 'fadeIn', 'fadeOut', 'length'})
 
 
-# A plain function, not a coroutine, like the template preview below: FastAPI
-# runs it in its thread pool. Making a frame opens and decodes the timeline's
-# media, fetches any that is remote, composites the frame and encodes it, and
-# as a coroutine it did all of that on the event loop. The api is one process
+# A plain function, not a coroutine, like the template preview below: it runs
+# in the thread pool, once `preview_slot` has a slot for it. Making a frame
+# opens and decodes the timeline's media, fetches any that is remote,
+# composites the frame and encodes it, and as a coroutine it did all of that
+# on the event loop. The api is one process
 # with one loop, so every other request -- `/healthz` among them -- waited
 # for each preview, and the editor asks for one on every playhead move.
 @previewAPI.post('/')
+@preview_slot
 def previewFrame(t: float, render: Render):
     """# Preview frame
     Generates a frame of a given `edl` at time `t`, with `width` and `height`.
@@ -153,16 +162,18 @@ def previewFrame(t: float, render: Render):
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     # TODO: reduce clips to active clips
     # active = [c for c in render.edl.clips if t >= (c.start or 0) + (c.offset or 0)]
+    frame_name = frame_path()
+    print(f'saving frame {t} as: {frame_name}')
     try:
-        video = generateEdl(timeline, moviesize=(render.width, render.height))
+        # The engine draws the frame and writes it: one call, which builds the
+        # whole timeline and refuses a clip it cannot build before writing
+        # anything.
+        renderFrame(timeline, t, frame_name, moviesize=(render.width, render.height))
     except EdlException as exc:
         # The engine's own refusal of a clip it cannot build (contract C8) is
         # the request's fault, and names the clip: a 422 with that message,
         # not a 500.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
-    frame_name = frame_path()
-    print(f'saving frame {t} as: {frame_name}', video)
-    video.save_frame(frame_name, t=t, withmask=False)
     sweep_frames()
     # A preview is where the api fetches remote media, so it is where the
     # api keeps that cache within its TTL.
@@ -201,6 +212,7 @@ async def previewFrameFile(name: str, access: MediaAccess = Depends(media_access
 # is ImageMagick or gizeh, then an encoder, and the editor asks again on every
 # playhead move and every keystroke in the template's text.
 @previewAPI.get('/template/{name}')
+@preview_slot
 def previewTemplate(
     name: str,
     request: Request,
@@ -274,8 +286,7 @@ def previewTemplate(
     # for good: every frame anyone previewed stayed public.
     frame_name = private_frame_path()
     try:
-        video = generateEdl(Edl(clips=[clip]), moviesize=(width, height))
-        video.save_frame(frame_name, t=t, withmask=False)
+        renderFrame(Edl(clips=[clip]), t, frame_name, moviesize=(width, height))
     except Exception as exc:
         remove_quietly(frame_name)
         raise HTTPException(

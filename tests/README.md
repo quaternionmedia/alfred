@@ -6,8 +6,8 @@ Scope: the backend and the render engine. Browser coverage lives in
 ## Status
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
-stack's own configuration: **1577 tests -- 1567 passed, 2 skipped, 8
-xfailed** in the `./al pytest` container, measured on integrate/wave-4 from a
+stack's own configuration: **1820 tests -- 1810 passed, 2 skipped, 8
+xfailed** in the `./al pytest` container, measured on integrate/wave-5 from a
 fresh clone with its `db` service up, so the database tier ran too. The two skips need a
 Docker CLI, which that container does not have; where ImageMagick cannot draw
 text, six more skip (`needs_imagemagick`). The database tier runs against the
@@ -98,6 +98,19 @@ tests/
     test_stack_settings.py every setting reaches the services that read it
     test_event_loop.py   the api answers while slow work is being done
     test_blocking_calls.py no coroutine in the api calls something that blocks
+    test_family.py       ./al family: where each repository is, each one's suite
+    test_cookbook.py     docs/cookbook.md is what the specs generate, linking
+                         only what git tracks
+    test_docs_site.py    the docs build's strict checks and what it loads
+    test_docs_accounted.py the docs name every setting, and give no `./al`
+                         command that does not exist
+    test_password_hashing.py alfred's off-the-loop copies of fastapi-users'
+                         hashing, held to the release and the originals
+    test_preview_slots.py  so many previews at once; the rest wait, then 503
+    test_support_mail.py   support mail is queued, sent by the worker, retried
+    test_refusal_codes.py every refusal code is in docs/api/errors.md and is
+                         answered by a request; covered routes raise none without
+                         one
   pipeline/            needs ffmpeg, no DB, no network
     test_render_pipeline.py
   integration/         needs MongoDB at DB_URL: the app in-process, real auth

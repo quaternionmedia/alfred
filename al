@@ -36,6 +36,7 @@ t | test | e2e          the browser suite, in Docker (test_e2e.yml)
 pt | pytest | py        the API suite, in Docker (pytest.yml)
 n | nox                 a nox session in the test container: ./al nox -s lint
 cookbook                regenerate docs/cookbook.md from the browser specs
+family                  alfred with otto, vox, joe, qmcp and the rest: status, test, up, smoke, down, loop
 recipes                 record the recipe walkthroughs (needs a dev stack)
 docs | doc              serve the docs on http://localhost:4000
 flower                  Celery monitoring on http://localhost:5555
@@ -116,6 +117,21 @@ projectName() {
   else
     basename "$(cd "$(dirname "$0")" && pwd)" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-'
   fi
+}
+
+# A Python 3.8 or newer on this machine, for the scripts that run on the host
+# and need nothing but its standard library. Each name is asked to run rather
+# than merely found: on Windows `python3` can be the Store's stand-in, which
+# is on PATH and runs nothing.
+hostPython() {
+  for candidate in python3 python; do
+    if "$candidate" -c 'import sys; sys.exit(sys.version_info < (3, 8))' >/dev/null 2>&1; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  echo "./al: no Python 3.8 or newer on PATH (python3 or python)" >&2
+  return 1
 }
 
 # Connect to a port on this machine; the exit status says what is there.
@@ -304,11 +320,19 @@ elif [ $1 = "i" -o $1 = "install" ]; then
 
 elif [ $1 = "recipes" ]; then
   shift
-  # Record the @recipe walkthroughs as video and put them where the cookbook
-  # links them. Needs a running dev stack; the recordings are what the docs
-  # show, and a recipe that fails leaves no video rather than a stale one.
-  cd website &&     npx playwright test --project=docs --reporter=json > recipe-report.json &&     node e2e/collect-recipe-videos.js &&     node e2e/cookbook.js
+  # Record the @recipe walkthroughs, then put a stub for each passing one in
+  # docs/recipes/ beside its recording (git-ignored) and regenerate the
+  # cookbook, which shows the stubs git tracks. Needs a running dev stack
+  # (E2E_BASE_URL if it is not on :8000). The collector runs after a failed
+  # recipe too, so a recipe that fails loses its stub rather than keeping a
+  # stale one; it leaves docs/recipes alone if the run reached no recipe.
+  # It exits with Playwright's status, or 1 if either script fails.
+  cd website
+  npx playwright test --project=docs --reporter=json > recipe-report.json
+  recorded=$?
+  node e2e/collect-recipe-videos.js && node e2e/cookbook.js || recorded=1
   cd ..
+  exit $recorded
 
 elif [ $1 = "cookbook" ]; then
   shift
@@ -316,6 +340,19 @@ elif [ $1 = "cookbook" ]; then
   # source; the prose is a build artefact. tests/unit/test_cookbook.py fails if
   # the committed file drifts from them.
   node website/e2e/cookbook.js "$@"
+
+elif [ $1 = "family" ]; then
+  shift
+  # alfred and the repositories it works with, on this machine
+  # (scripts/family.py, docs/family.md):
+  #   ./al family                status of each, and the vendored pins
+  #   ./al family test [NAME]    each one's quick suite (--full: the whole)
+  #   ./al family up [--build]   joe, then the dev stack pointed at it
+  #   ./al family smoke          a live check of the running stack
+  #   ./al family down           the dev stack, and the joe `up` started
+  #   ./al family loop           test, up, smoke, down (--keep: stay up)
+  py=$(hostPython) || exit 1
+  "$py" "$(dirname "$0")/scripts/family.py" "$@"
 
 elif [ $1 = "flower" ]; then
   shift
@@ -491,7 +528,11 @@ elif [ $1 = "t" -o $1 = "test" -o $1 = "e2e" ]; then
 
 elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   shift
-  docker compose -f pytest.yml up --exit-code-from pytest "$@"
+  # A compose project of its own, as `./al test` has. pytest.yml's throwaway
+  # database is a service named `db`, as the dev stack's is, so under the
+  # checkout's own project a run recreated a running dev stack's database
+  # container with the test's -- and the api went on talking to it.
+  docker compose -p "$(projectName)-pytest" -f pytest.yml up --exit-code-from pytest "$@"
 
 elif [ $1 = "n" -o $1 = "nox" ]; then
   shift
@@ -500,7 +541,7 @@ elif [ $1 = "n" -o $1 = "nox" ]; then
   # `./al init` -- so `./al nox -s lint`, which AGENTS.md and CONTRIBUTING.md
   # both name as the pre-pull-request gate, failed with `nox: command not
   # found` for anyone who followed the instructions.
-  docker compose -f pytest.yml run --rm pytest -f tests/noxfile.py "$@"
+  docker compose -p "$(projectName)-pytest" -f pytest.yml run --rm pytest -f tests/noxfile.py "$@"
 
 else
   echo "Unknown command: $1"

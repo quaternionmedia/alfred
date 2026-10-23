@@ -34,6 +34,10 @@ class DeliveryError(Exception):
     """
 
 
+class UnknownDestination(DeliveryError):
+    """No destination has that name: asking again will not deliver it."""
+
+
 @dataclass(frozen=True)
 class Delivery:
     """What a caller gets back, whatever the destination was.
@@ -171,7 +175,7 @@ def get_destination(name=None) -> Destination:
     """
     chosen = name or DEFAULT_DESTINATION
     if chosen not in DESTINATIONS:
-        raise DeliveryError(
+        raise UnknownDestination(
             f'unknown destination {chosen!r}; known: {sorted(DESTINATIONS)}'
         )
     return DESTINATIONS[chosen]()

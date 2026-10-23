@@ -2,7 +2,7 @@ from typing import Optional
 
 from beanie import PydanticObjectId
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi_crudrouter import MotorCRUDRouter
 from pydantic import BaseModel
@@ -10,6 +10,7 @@ from starlette.concurrency import run_in_threadpool
 
 from alfred.config import DB_NAME, DB_URL
 
+from ..errors import Code, Refusal
 from ..models import UserRead as User
 from ..models.render import (
     Render,
@@ -40,9 +41,11 @@ from ..utils.destinations import (
     Delivery,
     DeliveryError,
     LocalDestination,
+    UnknownDestination,
     get_destination,
 )
 from ..utils.encoding import QUALITIES, UnknownQuality, preset_for
+from ..utils.logger import failure_reason
 from ..utils.media import RefusedEdl, check_edl, output_path
 from ..utils.ownership import may_access, owner_filter, owner_key
 from ..utils.signing import media_url
@@ -165,7 +168,7 @@ def refuse_bad_captions(render: Render) -> None:
     try:
         render.captions = checked_captions(render.captions) if render.captions else None
     except TooManyCaptions as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise Refusal(Code.TOO_MANY_CAPTIONS, str(exc)) from exc
 
 
 # Fields the server writes. Whatever a client sends for them on POST /render
@@ -203,35 +206,33 @@ def refuse_bad_request(render: Render) -> str:
     """
     supplied = [name for name in ('ffmpeg_params', 'bitrate') if getattr(render, name)]
     if supplied:
-        raise HTTPException(
-            status_code=422,
-            detail=(
-                f'{" and ".join(supplied)} cannot be set by a client; '
-                f'choose a quality instead: {", ".join(QUALITIES)}'
-            ),
+        raise Refusal(
+            Code.ENCODER_OPTIONS_REFUSED,
+            f'{" and ".join(supplied)} cannot be set by a client; '
+            f'choose a quality instead: {", ".join(QUALITIES)}',
         )
     for name, default in (('width', 1920), ('height', 1080)):
         value = getattr(render, name)
         if value is None:
             setattr(render, name, default)
         elif not 16 <= value <= MAX_DIMENSION:
-            raise HTTPException(
-                status_code=422,
-                detail=f'{name} must be between 16 and {MAX_DIMENSION} pixels',
+            raise Refusal(
+                Code.FRAME_SIZE_OUT_OF_RANGE,
+                f'{name} must be between 16 and {MAX_DIMENSION} pixels',
             )
     # Null is the default rate (`task_payload`); anything else must be one.
     if render.fps is not None and not 1 <= render.fps <= MAX_FPS:
-        raise HTTPException(
-            status_code=422,
-            detail=f'fps must be between 1 and {MAX_FPS} frames per second',
+        raise Refusal(
+            Code.FPS_OUT_OF_RANGE,
+            f'fps must be between 1 and {MAX_FPS} frames per second',
         )
     try:
         return preset_for(render.quality).name
     except UnknownQuality as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise Refusal(Code.UNKNOWN_QUALITY, str(exc)) from exc
 
 
-NO_OUTPUT = HTTPException(status_code=409, detail='That render has no output file yet')
+NO_OUTPUT = Refusal(Code.RENDER_NOT_FINISHED, 'That render has no output file yet')
 
 
 def finished_output(render: Render) -> str:
@@ -338,7 +339,33 @@ def refuse_unrenderable(edl):
     try:
         check_edl(edl, TEMPLATE_NAMES)
     except RefusedEdl as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise Refusal(Code.EDL_REFUSED, str(exc)) from exc
+
+
+async def send_to_worker(queue, store: RenderStore, render: Render) -> None:
+    """Hand a stored render to the worker; 503 if the broker would not take it.
+
+    Off the event loop: sending is a round trip to the broker, and MongoDB's
+    client waits thirty seconds for one that does not answer before the send
+    fails. Inline, the api answered nothing else meanwhile.
+
+    A render the broker would not take was a plain-text 500, and its document
+    stayed `queued` for good, so anything following it waited for a render
+    that would never start. It is recorded `failed` now, with the reason, and
+    the caller is answered 503 with `render_not_queued`: as a transcription
+    that could not be queued is (`routes.captions`).
+    """
+    payload = task_payload(render)
+    try:
+        await run_in_threadpool(queue, **payload)
+    except Exception as exc:  # noqa: BLE001 - the broker is down, or worse
+        reason = failure_reason(exc)
+        await store.update(
+            render.id, {'status': 'failed', 'error': f'could not be queued: {reason}'}
+        )
+        raise Refusal(
+            Code.RENDER_NOT_QUEUED, f'The render could not be queued: {reason}'
+        ) from exc
 
 
 class RenderLabels(BaseModel):
@@ -439,11 +466,7 @@ class RenderAPI(MotorCRUDRouter):
             render.filename = output_filename(render.id)
             render.display_name = display_name_for(render)
             await store.insert(render)
-            # Off the event loop: sending is a round trip to the broker, and
-            # MongoDB's client waits thirty seconds for one that does not
-            # answer before the send fails. Inline, the api answered nothing
-            # else meanwhile.
-            await run_in_threadpool(queue, **task_payload(render))
+            await send_to_worker(queue, store, render)
             return str(render.id)
 
         @self.post('/rerender/{id}', *args, **kwargs)
@@ -480,8 +503,7 @@ class RenderAPI(MotorCRUDRouter):
             await store.update(render.id, changes)
             for name, value in changes.items():
                 setattr(render, name, value)
-            # Off the event loop, as a first render is queued.
-            await run_in_threadpool(queue, **task_payload(render))
+            await send_to_worker(queue, store, render)
             return str(render.id)
 
         @self.get('/{item_id}/status', response_model=RenderStatus)
@@ -538,8 +560,11 @@ class RenderAPI(MotorCRUDRouter):
             except DeliveryError as exc:
                 # 502, not 500: the render is fine and the request was valid.
                 # Something downstream would not take it, and that is worth
-                # retrying, which a 500 does not suggest.
-                raise HTTPException(status_code=502, detail=str(exc)) from exc
+                # retrying, which a 500 does not suggest -- unless it was a
+                # name no destination has, which its code says.
+                unknown = isinstance(exc, UnknownDestination)
+                code = Code.DESTINATION_UNKNOWN if unknown else Code.DELIVERY_FAILED
+                raise Refusal(code, str(exc)) from exc
 
             # A local delivery's location is a path on the server, which is
             # of no use to the caller -- and the copy used to sit under the
@@ -565,9 +590,9 @@ class RenderAPI(MotorCRUDRouter):
                 await run_in_threadpool(bucket_link, reference) if reference else None
             )
             if link is None:
-                raise HTTPException(
-                    status_code=502,
-                    detail='The render was uploaded, but no link to it could be signed',
+                raise Refusal(
+                    Code.DELIVERED_WITHOUT_LINK,
+                    'The render was uploaded, but no link to it could be signed',
                 )
             return Delivery(destination=delivery.destination, location=link)
 
@@ -595,9 +620,9 @@ class RenderAPI(MotorCRUDRouter):
             # to the network for credentials.
             link = await run_in_threadpool(bucket_link, reference)
             if link is None:
-                raise HTTPException(
-                    status_code=502,
-                    detail='No cloud link is available for this render',
+                raise Refusal(
+                    Code.CLOUD_LINK_UNAVAILABLE,
+                    'No cloud link is available for this render',
                 )
             return link
 

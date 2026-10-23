@@ -18,6 +18,7 @@ import json
 import pytest
 from bson import ObjectId
 from fastapi.testclient import TestClient
+from otto.render import PRESETS as ENGINE_PRESETS
 from otto.render import renderMultitrack
 
 from alfred.core.models.render import (
@@ -121,22 +122,21 @@ class TestQualityPresets:
     def test_the_presets_are_the_contract(self):
         assert QUALITIES == ('draft', 'standard', 'high')
 
+    def test_every_quality_is_one_of_the_engine_s_presets(self):
+        """They share their names, so a quality passes through as it is."""
+        assert set(QUALITIES) <= set(ENGINE_PRESETS)
+        for quality, preset in PRESETS.items():
+            assert preset.encoder_args() == {'preset': quality}
+
     def test_presets_map_onto_the_engine_s_own_parameters(self):
-        """Nothing new is asked of otto (contract C8)."""
         accepted = set(inspect.signature(renderMultitrack).parameters)
         for preset in PRESETS.values():
             assert set(preset.encoder_args()) <= accepted
 
-    def test_a_preset_s_bitrate_is_one_string_or_none(self):
-        """`Render.bitrate` was a list, which is not what ffmpeg takes."""
-        for preset in PRESETS.values():
-            assert preset.bitrate is None or isinstance(preset.bitrate, str)
-
     def test_better_quality_asks_for_a_lower_rate_factor(self):
-        crf = {
-            name: int(p.ffmpeg_params[p.ffmpeg_params.index('-crf') + 1])
-            for name, p in PRESETS.items()
-        }
+        """What the encoder does with each quality is otto's; that a better
+        one asks for more is the contract's."""
+        crf = {name: ENGINE_PRESETS[name].crf for name in QUALITIES}
         assert crf['draft'] > crf['standard'] > crf['high']
 
     def test_unknown_quality_raises_when_strict(self):
@@ -190,8 +190,11 @@ class TestTheWorkerEncodesFromThePreset:
         self, monkeypatch, recorded_encode, quality
     ):
         call = self.run(monkeypatch, recorded_encode, quality=quality)
-        assert call['ffmpeg_params'] == list(PRESETS[quality].ffmpeg_params)
-        assert call['audio_bitrate'] == PRESETS[quality].audio_bitrate
+        engine = ENGINE_PRESETS[quality]
+        assert call['preset'] == engine.x264_preset
+        assert call['ffmpeg_params'] == ['-crf', str(engine.crf)]
+        assert call['audio_bitrate'] == engine.audio_bitrate
+        assert call['bitrate'] is None
 
     def test_encoder_options_from_an_old_job_are_ignored(
         self, monkeypatch, recorded_encode
@@ -324,3 +327,57 @@ class TestRequeueingAnOldRender:
         assert payload['quality'] == DEFAULT_QUALITY
         assert store.renders[old.id].filename == f'{old.id}.mp4'
         assert json.loads(json.dumps(payload)) == payload
+
+
+def queue_it(client, store):
+    res = client.post('/render', json=render_request())
+    (render,) = store.renders.values()
+    return res, render
+
+
+def queue_it_again(client, store):
+    render = make_render(status='RENDERED', progress=100)
+    store.renders[render.id] = render
+    return client.post(f'/render/rerender/{render.id}'), render
+
+
+class TestABrokerThatWillNotTakeIt:
+    """A render the broker would not take was a plain-text 500, and its
+    document stayed `queued` for good. It is recorded failed now, with the
+    reason, and the caller is answered 503 with `render_not_queued`
+    (docs/api/errors.md), as a transcription that could not be queued is."""
+
+    REASON = 'ConnectionError: [Errno 111] Connection refused'
+
+    @pytest.fixture
+    def refused(self, api):
+        from alfred.core.routes.render import get_render_queue
+
+        def broker_down(**job):
+            raise ConnectionError('[Errno 111] Connection refused')
+
+        # The api fixture takes the override away again.
+        app.dependency_overrides[get_render_queue] = lambda: broker_down
+        client, store, _ = api
+        return client, store
+
+    @pytest.mark.parametrize('send', [queue_it, queue_it_again], ids=['new', 'again'])
+    def test_it_is_a_503_that_says_why(self, refused, send):
+        """Mutation: queue as before, with no try -- the 500 is back; leave
+        the render as it was -- red."""
+        res, _ = send(*refused)
+        assert res.status_code == 503, res.text
+        assert res.json() == {
+            'detail': f'The render could not be queued: {self.REASON}',
+            'code': 'render_not_queued',
+        }
+
+    @pytest.mark.parametrize('send', [queue_it, queue_it_again], ids=['new', 'again'])
+    def test_the_render_is_failed_with_the_reason(self, refused, send):
+        client, _ = refused
+        _, render = send(*refused)
+        status = client.get(f'/render/{render.id}/status').json()
+        assert (status['state'], status['error']) == (
+            'failed',
+            f'could not be queued: {self.REASON}',
+        )

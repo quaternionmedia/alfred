@@ -30,6 +30,12 @@ yarn e2e:ui          # interactive runner
 yarn e2e:report      # last HTML report
 ```
 
+The `@recipe` walkthroughs run in the `docs` project, one worker, recording
+video. `./al recipes` runs it, copies each passing recipe's recording to
+`docs/recipes/<recipe>.webm` (git-ignored), writes the SVG stub beside it that
+is committed in its place, and regenerates the cookbook, which links only the
+files git tracks -- the stubs.
+
 ## Two layouts, two projects
 
 The editor is one set of panels laid out two ways (`src/layout/`): a Golden
@@ -105,10 +111,10 @@ and its `CYPRESS_baseUrl` (`http://api/`) disagreed with `cypress.json`'s
 
 ## Verification status
 
-`./al test` on `integrate/wave-4`: **389 passed, 1 skipped, in about four
+`./al test` on `integrate/wave-5`: **391 passed, 1 skipped, in about four
 minutes**, across the `chromium` (workspace) and `phone` (stage flow)
-projects, including the `@slow` specs that wait on a real encode -- the last
-of three runs from a fresh clone, none with a test passed only on retry. The skip is data-dependent: the project filter test needs more than
+projects, including the `@slow` specs that wait on a real encode -- from a
+fresh clone, with no test passed only on retry. The skip is data-dependent: the project filter test needs more than
 three projects.
 
 The three image breaks recorded when this suite replaced Cypress -- `FROM
@@ -167,7 +173,7 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Timeline editor with a project open (both layouts) | `editor.spec.js` | UI |
 | The timeline tools and the media they act on, the transport, saving; the toolbar | `tools.spec.js`, `otto.spec.js` | UI |
 | Trim, cut, slip, slide and roll, by mouse and touch (both layouts) | `timeline-tools.spec.js` | UI |
-| Adding and editing template clips, fonts and placement | `templates.spec.js` | UI |
+| Adding and editing template clips, fonts and placement; the viewer waiting as long as a busy server's `Retry-After` asks | `templates.spec.js` | UI |
 | The timeline tools from the keyboard, the footer | `editor-access.spec.js` | UI |
 | Media lengths and kinds, signed media and download URLs, the `/videos` fallback | `editor-media.spec.js` | UI |
 | Unsaved timelines kept across a reload or a new login | `editor-draft.spec.js` | UI |
@@ -178,7 +184,7 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Captions: typed, imported, styled, over the viewer, carried by renders | `captions.spec.js` | UI + API |
 | Captions transcribed through the stub audio engine and the worker; library media analysed | `captions.spec.js` | UI + API, `@slow` |
 | Render list | `renders.spec.js` | API + UI |
-| `GET /healthz` with no session; `GET /health` needing one, its contract fields, the running worker answering | `health.spec.js` | API |
+| `GET /healthz` with no session; `GET /health` needing one, its contract fields (the preview slots among them), the running worker answering | `health.spec.js` | API |
 | The media library (`GET /media`), signed URLs for media, preview frames and downloads that load in a page with no session, nothing served from `/data` | `media.spec.js` | API + UI |
 | Preview contract, malformed input, partial writes | `api-contract.spec.js` | API |
 | Routing, history, menu, unique ids | `navigation.spec.js` | UI |

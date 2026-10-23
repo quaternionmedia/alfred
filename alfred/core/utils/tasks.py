@@ -1,3 +1,4 @@
+from base64 import b64decode
 from datetime import datetime, timezone
 from os import makedirs
 from os.path import join
@@ -16,6 +17,7 @@ from . import audio_engine
 from .bucket import upload
 from .captions import TooManyCaptions, style_to_store
 from .db import get_sync_db
+from .email import mail_failure, send_mail, transient
 from .encoding import preset_for
 from .logger import DbLogger, failure_reason, mark_failed
 from .media import MediaNameError, RefusedEdl, check_media_name, resolve_edl
@@ -120,9 +122,9 @@ def renderRemote(
 
     Arguments arrive as JSON (contract C7): the EDL as a dict, which is parsed
     back into an `Edl` here, the render id as a string, the size as a list.
-    Encoding comes from the named `quality` preset (C5). Any `bitrate` or
-    `ffmpeg_params` in `kwargs` -- from a job queued before presets -- is
-    ignored rather than handed to ffmpeg.
+    Encoding is the engine's preset that `quality` names (C5). Any `bitrate`
+    or `ffmpeg_params` in `kwargs` -- from a job queued before presets -- is
+    ignored rather than handed to the engine.
     """
     # A local, not `self.log`: the task object outlives the job.
     log = DbLogger(self, renderId)
@@ -296,3 +298,65 @@ def transcribeCaptions(self, projectId: str, **kwargs):
         captions=[caption.dict() for caption in captions],
         style=style_to_store(None, project.get('caption_style')),
     )
+
+
+# --- mail -------------------------------------------------------------------
+
+# How many times a mail that failed in a way that may pass is tried again, and
+# how long the first wait is, in seconds. Each wait doubles the one before:
+# 30 s, 1, 2, 4 and 8 minutes, so the last try is about a quarter of an hour
+# after the first.
+MAIL_RETRIES = 5
+MAIL_FIRST_WAIT = 30
+
+
+def mail_wait(tries) -> int:
+    """Seconds to wait before trying a mail again, when it has been tried
+    again `tries` times already."""
+    return MAIL_FIRST_WAIT * 2**tries
+
+
+class MailNotSent(Exception):
+    """Why a mail was not sent, said without the mail or an address."""
+
+
+@renderer.task(bind=True, max_retries=MAIL_RETRIES)
+def mailSupport(self, about, subject, message, attachments=None, **kwargs):
+    """Mail support -- EMAIL_SENDTO -- `message` under `subject`.
+
+    Queued by the issue-report and invoice routes (`utils.support_mail`), with
+    each attachment as `{filename, content}`, its bytes in base64 (contract
+    C7). Sent with ALFRED_SMTP_TIMEOUT on every step. A failure that may pass
+    -- no answer, a dropped connection, a reply in the 400s -- is tried again
+    MAIL_RETRIES times, waiting longer each time (`mail_wait`); anything else
+    fails the job at once.
+
+    The log says what happened to the mail named by `about` and why, and
+    nothing of the mail itself: no text, no subject, no address.
+    """
+    files = [(a['filename'], b64decode(a['content'])) for a in attachments or []]
+    try:
+        send_mail(
+            config.EMAIL_SENDTO,
+            subject,
+            message,
+            attachments=files,
+            timeout=config.SMTP_TIMEOUT,
+        )
+    except Exception as exc:  # noqa: BLE001 - every failure is said as one line
+        reason, again = mail_failure(exc), transient(exc)
+    else:
+        print(f'mailed {about}', flush=True)
+        return 'sent'
+    # Raised out here rather than in the `except`, so the exception smtplib
+    # raised -- which can carry addresses -- is not chained to what Celery
+    # logs.
+    tries = self.request.retries
+    if again and tries < MAIL_RETRIES:
+        wait = mail_wait(tries)
+        print(
+            f'could not mail {about} ({reason}); trying again in {wait} s', flush=True
+        )
+        raise self.retry(exc=MailNotSent(reason), countdown=wait)
+    tried = f'after {tries + 1} tries' if tries else 'and will not try again'
+    raise MailNotSent(f'could not mail {about} {tried}: {reason}')

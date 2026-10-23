@@ -7,6 +7,9 @@ dependencies = [
     "al-otto >= 0.2.2",
     "fastapi<1.0.0,>=0.92.0",
     "aiofiles<24.0.0,>=23.1.0",
+    # Before changing this, read alfred/core/utils/passwords.py. alfred carries
+    # copies of the library's password-hashing methods, checked against one
+    # release (10.4.2, the lock's), and the api refuses to start on any other.
     "fastapi-users<11.0.0,>=10.4.0",
     # Declared although nothing here imports it: it parses every form the api
     # accepts, the login form anyone can post included, so this project
@@ -92,18 +95,14 @@ test = [
     # environment installs its own copy and needs the same bound.
     "setuptools>=75.3.4,<81",
 ]
-# What the engine's own `render` extra asks for, restated so pdm can lock it.
-#
-# This was `al-otto[render]>=0.2.2`, and pdm resolves al-otto from PyPI, where
-# 0.2.2's render extra still names bezier. The engine alfred runs is the
-# submodule at alfred/otto, which dropped bezier after 0.2.2 (otto 0e30bb4),
-# so the lock carried a package nothing here imports -- and one with no wheel
-# for this Python, which fails to build without the switches otto removed.
-# The image, nox and CI install requirements-render.lock, exported from this
-# group, and tests/unit/test_stack_config.py fails if it stops matching
-# alfred/otto/pyproject.toml.
+# The engine's own `render` extra, by reference: `al[render]` asks for what
+# the engine says it draws with, so there is no second copy of that list to
+# keep in step. pdm resolves it from the submodule (the override below), so
+# the lock -- and requirements-render.lock, exported from this group, which
+# the image, nox and CI install -- describe the extra of the engine alfred
+# runs, not of the release on PyPI.
 render = [
-    "gizeh~=0.1",
+    "al-otto[render]>=0.2.2",
 ]
 
 # An override replaces every requirement on a package, its dependents'
@@ -123,6 +122,17 @@ render = [
 # cannot take yet. 0.0.31 is the first release with none open. fastapi-users
 # never imports it; FastAPI and Starlette do, and both take this release.
 python-multipart = ">=0.0.31"
+# The engine, from where every install path runs it: the submodule. Resolved
+# from PyPI instead, the lock described al-otto 0.2.2 as published, which is
+# older than alfred/otto and whose render extra still names bezier (no wheel
+# for this Python; alfred/otto dropped it). Restating the extra here kept
+# bezier out but left two lists to agree, and the core still came from PyPI.
+#
+# pip ignores tool.pdm, and a published wheel cannot name a path, so the
+# metadata keeps naming al-otto by version. Raise both floors (dependencies
+# and `render`) to otto's next release once it is published; the override
+# stays, because the image runs the submodule either way.
+al-otto = "file:///${PROJECT_ROOT}/alfred/otto"
 
 [tool.pdm]
 version = { source = "file", path = "alfred/_version.py" }

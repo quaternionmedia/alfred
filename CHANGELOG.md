@@ -16,7 +16,13 @@ what the image installs, the workspace's tab race and the suite's timing
 races, docs that describe the API as it answers, the timeline's sound written
 by otto (pinned at f3ceca3, `fix/engine-sound`), an api whose one event loop
 no longer waits on a preview, and a phone layout that keeps the whole picture
-on the screen. Read **Security** and **Changed** before
+on the screen. The fifth, on `integrate/wave-5`: the decisions the fourth
+stopped at -- password hashing off the event loop behind loud safeguards, the
+media work moved into otto (pinned at 7ddbf10, `feat/engine-media-ops`), a
+code beside every refusal of the routes qmcp calls, a cap on concurrent
+previews and support mail sent by the worker, the render extra and the docs
+build tightened -- and `./al family`, which runs alfred with the repositories
+it works with. Read **Security** and **Changed** before
 deploying: several requests that used to be accepted are now refused, and a
 production stack needs its own signing key.
 
@@ -77,6 +83,12 @@ production stack needs its own signing key.
 - **flower and `./al docs` listen on loopback** unless `ALFRED_BIND` says
   otherwise, as the dev stack does. A test holds every port every compose file
   publishes to loopback by default.
+- **Nothing alfred's tooling prints carries a secret.** AGENTS.md makes it a
+  rule (no env file, resolved compose config, token, password or signature in
+  a terminal, log, commit or report; `docker compose config --no-interpolate`),
+  a development stack no longer logs a reset or verification token it mailed,
+  support-mail failures are logged by type and SMTP code without addresses or
+  text, and `./al family` redacts what it shows.
 
 ### Changed
 
@@ -151,6 +163,41 @@ production stack needs its own signing key.
 - **The published `al[render]` extra asks for gizeh**, the vendored engine's
   own render extra, rather than `al-otto[render]` from PyPI, whose 0.2.2 still
   brought bezier.
+- **The engine is otto 7ddbf10, and it does the media work alfred still did.**
+  Preview frames (`renderFrame`), library probes (`otto.media.probe`), demo
+  clips (`otto.demo.demoClip`) and encoding (`renderMultitrack(preset=...)`,
+  with `draft`, `standard` and `high` carrying alfred's x264 and AAC settings
+  unchanged) are otto's. alfred imports no media library and runs no ffmpeg;
+  HTTP behaviour is unchanged, except that `POST /demo/media` answers its 503
+  when the engine cannot start ffmpeg, where that was an unhandled 500.
+- **vox moves to faa81a2.** Nothing alfred calls changes; its stand-in engine
+  judges media requests in joe's order, with joe's statuses and sentences.
+- **Issue reports and invoices are mailed by the worker.** `POST
+  /render/{id}/report` and `POST /invoice` answer 202 `{state, job}` once the
+  mail is queued, and 503 when mail is not set up or the queue is down. The
+  worker sends with `ALFRED_SMTP_TIMEOUT` (20 s) and retries a failure that
+  may pass, five times over about fifteen minutes; account mail stays on the
+  api's thread with the same timeout. The renderer now loads `.email`.
+- **The api refuses to start on a fastapi-users other than 10.4.2.** alfred
+  carries copies of the library's five password-hashing methods (below), and
+  each boot checks the release and a fingerprint of each original; any
+  difference stops the api with a message naming what to re-check, and every
+  boot logs one `Password hashing:` line naming the override.
+- **`al[render]` is the engine's own extra again** (`al-otto[render]`), and pdm
+  resolves al-otto from the submodule rather than PyPI, so `pdm.lock` and the
+  exports describe the engine the image runs. No locked version changed.
+- **A delivery to an unknown destination** is told apart from a failed one by
+  its code (`destination_unknown`, `delivery_failed`); both still answer 502.
+- **A render the broker will not take is a 503 that says so, and is failed.**
+  `POST /render` and `POST /render/rerender/{id}` answered a plain-text 500
+  and left the render `queued` for good; they answer 503 `render_not_queued`
+  and record the render `failed` with the reason, as transcription does.
+- **`./al pytest` and `./al nox` run as their own compose project**,
+  `<project>-pytest`: their throwaway database is a service named `db`, as the
+  dev stack's is, so a test run recreated a running dev stack's database.
+- **The docs site loads nothing from another host**: system fonts, and no
+  emoji extension. **The cookbook links only what git tracks**, so each recipe
+  shows its committed stub.
 
 ### Fixed
 
@@ -234,6 +281,15 @@ production stack needs its own signing key.
   and a screen too short for the floors (375x667, or a phone held sideways)
   scrolls instead of cutting the bottom of the column off. The picture showed
   41 of 203 pixels at 390x844 and none at 375x667.
+- **A login no longer holds the api.** fastapi-users 10.4 hashed and checked
+  passwords on the api's one event loop, about 0.3 s each, so every login,
+  registration and reset held every other request, `/healthz` included. The
+  copies in `utils/passwords.py` do it in the thread pool; with eight logins
+  at once, `/healthz` answers in under 10 ms where it took 1.1-1.6 s.
+- **The Captions panel follows a transcription already under way** when the
+  server refuses a second, by its code, still showing the server's sentence.
+- **docs/ownership.md** no longer tells the reader to run an `./al owners`
+  command that does not exist.
 
 ### Added
 
@@ -303,6 +359,32 @@ production stack needs its own signing key.
   shows `/healthz` answering while a preview and demo media are being made.
   Four browser tests no longer depend on timing, and the stub audio engine
   takes what joe takes -- its twenty content types, its limits, its refusals.
+- **`./al family`**: alfred with otto, vox, joe, qmcp, codecartographer and
+  the org's workflows, from this checkout. `status` says where each repository
+  is and whether a vendored pin differs from the checkout beside it or is on no
+  origin branch; `test` runs each one's quick suite; `up` starts joe and then
+  the dev stack pointed at it; `smoke` checks the running stack live, through
+  to a render downloaded by its signed URL and qmcp's alfred tools; `down` and
+  `loop` (docs/family.md).
+- **A code beside every refusal of the project, captions and render routes**:
+  `{"detail": "<the same sentence>", "code": "<a word>"}`. docs/api/errors.md
+  lists the codes, and `tests/unit/test_refusal_codes.py` holds the table to
+  the routes and the routes to raising nothing without one. The preview cap
+  (`previews_busy`), mail to support (`mail_not_configured`,
+  `mail_not_queued`) and `GET /media/{name}/audio` (`unknown_feature`,
+  `media_silent`, `audio_engine_refused`, `audio_engine_failed`) carry codes
+  too; the page lists what is not covered yet.
+- **A cap on concurrent previews.** At most `ALFRED_PREVIEW_CONCURRENCY` (4)
+  previews are drawn at once; the rest wait their turn without holding a
+  thread, for up to `ALFRED_PREVIEW_WAIT` (10 s), then get 503 with
+  `Retry-After`. `GET /health` reports `previews: {running, waiting, limit}`,
+  and the viewer waits as long as `Retry-After` says, then asks once.
+- **The docs are held to what the code offers**: `test_docs_accounted.py` fails
+  when docs/configuration.md misses a setting alfred reads, docs/family.md one
+  `./al family` reads, or a document gives an `./al` command that does not
+  exist.
+- **A stub per recipe in docs/recipes**, five in all; `./al recipes` keeps the
+  recordings beside them, git-ignored.
 
 ### CI and release
 
@@ -334,6 +416,9 @@ production stack needs its own signing key.
 - **The deploy workflow passes `submodules: recursive`**, the string
   `build.yml` takes, where it passed the boolean `true`; haiku.yml checks out
   with `actions/checkout@v7`.
+- **The docs workflow builds with `--strict` on pull requests and before each
+  deploy**, which now runs from pushes only; mkdocs.yml's `validation:` warns
+  on every page, link and anchor check, and MkDocs is held below 2.
 
 ### Measured
 
@@ -353,7 +438,13 @@ install, emulated in a clean container, 1378 passed, 191 skipped (the
 database tier and the text-drawing tests), none failed; `mkdocs build
 --strict` without a warning. Live, against joe on the host: the 28 checks of
 the API pass, and qmcp's tools queued a render with the project's captions and
-were handed its signed download.
+were handed its signed download. Fifth round, on `integrate/wave-5`: `./al
+pytest` 1810 passed, 2 skipped, 8 xfailed from a fresh clone; `./al test` 391
+passed, 1 skipped, none passed only on retry; CI's install, emulated, 1619
+passed, 193 skipped, none failed; `mkdocs build --strict` without a warning.
+`./al family loop` against the round's branches of joe, qmcp and vox: every
+repository's quick suite green, and the live check's nine checks passing
+against a joe with nothing but its media API turned on.
 
 ## 0.3.0 — breaking
 

@@ -435,9 +435,11 @@ test.describe('a finished render can be downloaded', () => {
   })
 
   test('a refused download says why', async ({ authedPage }) => {
+    // The server's refusal as it answers it: the sentence, and its code beside
+    // it (docs/api/errors.md). The page shows the sentence.
     await serveDownload(authedPage, [renderDoc({ status: 'RENDERED', progress: 100 })], {
       status: 409,
-      json: { detail: 'That render has no output file yet' },
+      json: { detail: 'That render has no output file yet', code: 'render_not_finished' },
     })
 
     await openFresh(authedPage, '/#!/?stage=deliver')

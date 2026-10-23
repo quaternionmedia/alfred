@@ -1,7 +1,7 @@
 import m from 'mithril'
 import { Video, Edl } from './Video'
 import { Player } from './Player'
-import { authBlob, blobProblem } from './Download'
+import { authBlob, blobProblem, retryAfterMs } from './Download'
 import { cutAtPlayhead } from './TimelineTools'
 import { Library } from './Library'
 import { isSigned } from './Signed'
@@ -59,6 +59,13 @@ export const TemplatePreview = { src: null, problem: null }
 // in whatever order the server finished them -- so an older frame could land
 // last and stay up. Now a change while a frame is in flight waits for it, and
 // then the newest URL is fetched; anything in between is skipped.
+//
+// And not again until a busy server says. The server draws only so many
+// previews at once and turns the rest away -- 503, with a Retry-After header
+// -- once they have waited their turn for a while. Asked again at once, it
+// would only be asked again and again; so the frame waits as long as the
+// header says, keeping what is on screen, and is then asked for once: the
+// newest, whatever the playhead did meanwhile.
 export function AuthedImage() {
   let objectUrl = null
   let wanted = null
@@ -66,6 +73,8 @@ export function AuthedImage() {
   let inflight = false
   let removed = false
   let problem = null
+  let busy = false
+  let retry = null
   let attrs = {}
 
   const release = () => {
@@ -79,9 +88,20 @@ export function AuthedImage() {
     if (typeof attrs.onstate === 'function') attrs.onstate(verdict)
   }
 
+  const askAgainAfter = ms => {
+    busy = true
+    retry = setTimeout(() => {
+      retry = null
+      if (removed) return
+      busy = false
+      m.redraw()
+      fetchLatest()
+    }, ms)
+  }
+
   const fetchLatest = () => {
     const url = wanted
-    if (inflight || !url || url === shown) return
+    if (inflight || retry || !url || url === shown) return
     inflight = true
     authBlob(url)
       .then(
@@ -89,6 +109,7 @@ export function AuthedImage() {
           if (removed) return
           release()
           problem = null
+          busy = false
           objectUrl = URL.createObjectURL(blob)
           shown = url
           report({ src: url, problem: null })
@@ -98,14 +119,25 @@ export function AuthedImage() {
         // worth more on screen than a stale frame -- but it never arrived:
         // reading `responseText` on a blob response throws, so the reason
         // was lost and every refusal read "could not be rendered".
-        err =>
-          blobProblem(err).then(detail => {
+        //
+        // Except when the server is only busy: nothing is wrong with the
+        // frame, so nothing is reported against it, and it is asked for again
+        // when the server says.
+        err => {
+          const wait = retryAfterMs(err)
+          if (wait !== null) {
+            if (!removed) askAgainAfter(wait)
+            return
+          }
+          return blobProblem(err).then(detail => {
             if (removed) return
             release()
             problem = detail || 'This template could not be rendered.'
+            busy = false
             shown = url
             report({ src: url, problem })
           })
+        }
       )
       .catch(e => console.error('template preview failed', e))
       .then(() => {
@@ -127,12 +159,19 @@ export function AuthedImage() {
     onupdate: want,
     onremove: () => {
       removed = true
+      if (retry) clearTimeout(retry)
+      retry = null
       release()
     },
     view: vnode =>
       objectUrl
         ? m('img.preview', { id: vnode.attrs.id, src: objectUrl })
-        : problem
+        : busy
+          ? m('.preview.busy', { id: vnode.attrs.id }, [
+              m('i.material-icons', 'hourglass_top'),
+              m('span', 'The server is busy with other previews; asking again in a moment.'),
+            ])
+          : problem
           ? m('.preview.unrenderable', { id: vnode.attrs.id }, [
               m('i.material-icons', 'report_problem'),
               m('span', problem),

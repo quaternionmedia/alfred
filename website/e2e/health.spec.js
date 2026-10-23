@@ -6,7 +6,8 @@
  * A render waits in `queued` until a worker takes it. On a stack with no
  * worker -- the thin stack runs none -- it waited for ever, and nothing could
  * say why. `GET /health` says how many render workers answer and how many
- * jobs are waiting (contract M3); `GET /healthz` answers container health
+ * jobs are waiting (contract M3), and how many previews the api is drawing
+ * and how many wait for a turn; `GET /healthz` answers container health
  * checks with no session and nothing behind it.
  *
  * This stack runs a worker against a database that starts empty, which is
@@ -34,6 +35,7 @@ test.describe('health', () => {
       'api',
       'audio_engine',
       'db',
+      'previews',
       'queue',
       'renderer',
     ])
@@ -41,6 +43,10 @@ test.describe('health', () => {
     expect(health.db).toBe('ok')
     expect(Object.keys(health.renderer).sort()).toEqual(['ok', 'workers'])
     expect(Object.keys(health.queue)).toEqual(['pending'])
+    // How many previews are being drawn, how many wait for a slot, and how
+    // many may be drawn at once (ALFRED_PREVIEW_CONCURRENCY).
+    expect(Object.keys(health.previews).sort()).toEqual(['limit', 'running', 'waiting'])
+    expect(health.previews.limit).toBeGreaterThanOrEqual(1)
     expect(Object.keys(health.audio_engine).sort()).toEqual(['configured', 'detail', 'ok'])
   })
 

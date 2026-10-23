@@ -5,9 +5,41 @@ on:
       - main
       - dev
       - docs
+  # The strict build only, so a pull request learns what its pages would do
+  # to the deploy before it is merged. Nothing is deployed from one.
+  pull_request:
 
 jobs:
+  # mkdocs.yml makes every link, anchor and page check a warning, and
+  # --strict makes a warning fatal. The deploy needs this job, so mike never
+  # publishes a build that warned: mike has no --strict of its own, and builds
+  # the same commit with the same configuration.
+  build:
+    name: 🏗️ Build (strict)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: 📰 Checkout
+        uses: actions/checkout@v7
+
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+
+      # Below MkDocs 2, which removes the plugin system and rewrites theming;
+      # Material for MkDocs does not run on it. 1.6 is the first to check
+      # anchors.
+      - name: 🚧 Install dependencies
+        run: pip install 'mkdocs>=1.6,<2' 'mkdocs-material>=9.7,<10'
+
+      - name: 🏗️ Build
+        run: mkdocs build --strict
+
   deploy:
+    needs: build
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     # mike pushes the built site to gh-pages, so this job writes to the
     # repository; nothing else here needs to.
@@ -24,8 +56,10 @@ jobs:
         with:
           python-version: '3.11'
 
+      # As the build's, plus mike. The git-revision-date plugin this also
+      # installed is not in mkdocs.yml, so nothing loaded it.
       - name: 🚧 Install dependencies
-        run: pip install mkdocs-material mkdocs-git-revision-date-localized-plugin mike
+        run: pip install 'mkdocs>=1.6,<2' 'mkdocs-material>=9.7,<10' 'mike>=2.1,<3'
 
       # Plain git config in place of oleksiyrudenko/gha-git-credentials, whose
       # v2.1 declares node12. Of what it did, only the identity mattered: the

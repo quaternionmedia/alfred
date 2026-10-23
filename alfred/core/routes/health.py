@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
 from ..utils import audio_engine, tasks
+from ..utils.concurrency import previews
 from ..utils.db import get_db
 from .users import current_active_user
 
@@ -45,6 +46,14 @@ class QueueHealth(BaseModel):
     pending: Optional[int]
 
 
+class PreviewHealth(BaseModel):
+    # Previews being drawn now, previews waiting for a slot, and how many may
+    # be drawn at once (ALFRED_PREVIEW_CONCURRENCY).
+    running: int
+    waiting: int
+    limit: int
+
+
 class AudioEngineHealth(BaseModel):
     # Whether ALFRED_AUDIO_ENGINE_URL names an engine at all.
     configured: bool
@@ -61,6 +70,7 @@ class Health(BaseModel):
     db: Literal['ok', 'down']
     renderer: RendererHealth
     queue: QueueHealth
+    previews: PreviewHealth
     audio_engine: AudioEngineHealth
 
 
@@ -233,6 +243,12 @@ async def health(
     the reason in `detail` when it is not. Transcribing captions needs both,
     and a renderer to do the mixing.
 
+    `previews` says how many previews are being drawn (`running`), how many
+    are waiting for one of those to finish (`waiting`), and how many may be
+    drawn at once (`limit`, ALFRED_PREVIEW_CONCURRENCY). A preview that waits
+    too long is answered 503 with Retry-After. Counted here, not asked of
+    anything, so it is always the current answer.
+
     The renderer and the audio engine are asked at most every few seconds;
     the answer between is the last one. A ping takes about a second, so the
     first request after that pays for it.
@@ -243,6 +259,7 @@ async def health(
         db='ok' if db_ok else 'down',
         renderer=RendererHealth(ok=state.workers > 0, workers=state.workers),
         queue=QueueHealth(pending=state.pending),
+        previews=PreviewHealth(**vars(previews.use())),
         audio_engine=AudioEngineHealth(
             configured=engine.configured, ok=engine.ok, detail=engine.detail
         ),
