@@ -2,7 +2,7 @@ from typing import Optional
 
 from beanie.odm.operators.update.general import Set
 from bson import ObjectId
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi_crudrouter import MotorCRUDRouter
 from otto.models import Edl
 from pydantic import BaseModel
@@ -11,6 +11,12 @@ from alfred.config import DB_NAME, DB_URL
 
 from ..models import Project, ProjectUpdate, RenderSettings
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
+from ..utils.captions import (
+    TooManyCaptions,
+    checked_captions,
+    project_style,
+    style_to_store,
+)
 from ..utils.db import User, get_client
 from ..utils.ownership import owner_filter, owner_key
 from .users import current_active_user
@@ -200,6 +206,20 @@ class ProjectAPI(MotorCRUDRouter):
             model.id = None
             model.owner = owner_key(user)
             model.demo = None
+            # A transcription is the server's record; captions sent with a new
+            # project are held to the rules their own route applies, and its
+            # style says whether they are drawn -- false unless it was sent.
+            model.captions_job = None
+            try:
+                model.captions = (
+                    checked_captions(model.captions) if model.captions else None
+                )
+            except TooManyCaptions as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+            if model.captions or model.caption_style is not None:
+                model.caption_style = project_style(
+                    style_to_store(model.caption_style, None)
+                )
             return await model.create()
 
         return route
@@ -219,6 +239,14 @@ class ProjectAPI(MotorCRUDRouter):
             # the real one.
             model.owner = project.owner
             model.demo = project.demo
+            # Likewise the captions: they have a route of their own, which
+            # checks them as a list, and the job is the server's record of a
+            # transcription. Written here, a body that left them out -- every
+            # client that saves a project it read before captions existed --
+            # would wipe them.
+            model.captions = project.captions
+            model.caption_style = project.caption_style
+            model.captions_job = project.captions_job
             del model.id
             await project.update(Set(model))
             return await self._as_stored(project)

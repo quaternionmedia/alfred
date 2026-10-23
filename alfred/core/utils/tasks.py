@@ -1,6 +1,8 @@
+from datetime import datetime, timezone
 from os import makedirs
 from os.path import join
 
+from bson import ObjectId
 from celery import Celery, Task
 from celery.signals import celeryd_init
 from otto.models import Edl
@@ -9,11 +11,15 @@ from otto.render import renderMultitrack
 from alfred import config
 
 from ..models.render import is_output_filename
+from . import audio_engine
 from .bucket import upload
+from .captions import TooManyCaptions, style_to_store
+from .db import get_sync_db
 from .encoding import preset_for
 from .logger import DbLogger, failure_reason, mark_failed
-from .media import MediaNameError, check_media_name, resolve_edl
+from .media import MediaNameError, RefusedEdl, check_media_name, resolve_edl
 from .storage import sweep_remote_cache_now_and_then
+from .transcription import NothingToHear, transcribe_timeline
 
 renderer = Celery(
     'renderer',
@@ -187,3 +193,101 @@ def renderRemote(
         return
 
     log.uploaded()
+
+
+# --- captions ---------------------------------------------------------------
+
+# Where projects are kept: beanie names the collection after the class.
+PROJECTS = 'Project'
+
+# Failures whose messages are already written for the person waiting, and
+# need no exception name in front of them.
+_SAID_PLAINLY = (
+    audio_engine.AudioEngineError,
+    NothingToHear,
+    RefusedEdl,
+    TooManyCaptions,
+)
+
+
+def transcription_failure(exc) -> str:
+    """Why a transcription failed, as one line its owner can read."""
+    if isinstance(exc, _SAID_PLAINLY):
+        # Shortened, and with library paths shown as clips name them, exactly
+        # as a render's reason is -- but without an exception's name in front,
+        # which `failure_reason` leaves off only the refusals it knows.
+        return failure_reason(RefusedEdl(str(exc)))
+    return failure_reason(exc)
+
+
+def captions_job(state, error=None, segments=None) -> dict:
+    """A project's `captions_job` as the worker records it (contract K2)."""
+    return {
+        'state': state,
+        'error': error,
+        'engine': audio_engine.describe(),
+        'segments': segments,
+        'updated_at': datetime.now(timezone.utc),
+    }
+
+
+def record_captions_job(project_id, job, captions=None, style=None) -> None:
+    fields = {'captions_job': job}
+    if captions is not None:
+        fields['captions'] = captions
+    if style is not None:
+        fields['caption_style'] = style
+    get_sync_db()[PROJECTS].update_one(
+        {'_id': ObjectId(str(project_id))}, {'$set': fields}
+    )
+
+
+class Transcriber(Task):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        """Anything that escaped the task: the job failed, and says why."""
+        print('failed task', task_id, exc)
+        project_id = (kwargs or {}).get('projectId')
+        if project_id is None:
+            return
+        try:
+            record_captions_job(
+                project_id, captions_job('failed', error=transcription_failure(exc))
+            )
+        except Exception as e:  # noqa: BLE001 - nothing else is left to tell
+            print('could not record the failure of a transcription', project_id, e)
+
+
+@renderer.task(bind=True, base=Transcriber)
+def transcribeCaptions(self, projectId: str, **kwargs):
+    """Caption a project's saved timeline from what it says (contract K2).
+
+    The timeline's sound is mixed by otto, heard by the audio engine and
+    turned into captions, which replace the project's own; the project's
+    `captions_job` says where that has got to and, when it fails, why. The
+    project id arrives as a string (contract C7). A project deleted while the
+    job waited is left deleted.
+    """
+    projects = get_sync_db()[PROJECTS]
+    project = projects.find_one(
+        {'_id': ObjectId(projectId)}, {'edl': 1, 'caption_style': 1}
+    )
+    if project is None:
+        return
+    record_captions_job(projectId, captions_job('transcribing'))
+    try:
+        if not (project.get('edl') or {}).get('clips'):
+            raise NothingToHear('the project has no saved timeline to transcribe')
+        captions, heard = transcribe_timeline(project['edl'])
+    except Exception as exc:  # noqa: BLE001 - every failure is the job's to report
+        reason = transcription_failure(exc)
+        print('could not transcribe project', projectId, reason, flush=True)
+        record_captions_job(projectId, captions_job('failed', error=reason))
+        return
+    # Captions a project had not had: its style now says, if it did not,
+    # that they are not drawn into renders until someone has looked at them.
+    record_captions_job(
+        projectId,
+        captions_job('done', segments=heard),
+        captions=[caption.dict() for caption in captions],
+        style=style_to_store(None, project.get('caption_style')),
+    )

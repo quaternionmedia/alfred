@@ -11,12 +11,16 @@ import './styles/menu.scss'
 export function Menu() {
   // toggles the navContainer visibility
   var open = false
-  addEventListener('resize', () => {
+  // Added on create and removed on remove. It was added when the component
+  // was made and never removed, and the header is made again whenever the
+  // editor swaps the workspace for the phone flow, so every swap left one
+  // more listener behind.
+  const onresize = () => {
     if (window.innerWidth >= 1026 && open) {
       open = false
       m.redraw()
     }
-  })
+  }
   function toggle() {
     open = !open
   }
@@ -28,6 +32,8 @@ export function Menu() {
   }
 
   return {
+    oncreate: () => window.addEventListener('resize', onresize),
+    onremove: () => window.removeEventListener('resize', onresize),
     view: vnode => {
       // One set of links, rendered once.
       //

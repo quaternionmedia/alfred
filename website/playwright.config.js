@@ -46,6 +46,8 @@ module.exports = defineConfig({
   projects: [
     {
       name: 'chromium',
+      // 1280x720: wide enough for the desktop workspace (layout/shell.js), so
+      // this project runs the whole suite against the docked panels.
       use: { ...devices['Desktop Chrome'] },
       // Two kinds of test belong in a run someone chose to start rather than
       // in the gate on every pull request: performance budgets, which are
@@ -53,6 +55,21 @@ module.exports = defineConfig({
       // steps so a person watching the recording can follow. The recipes spec
       // claimed to be excluded here before this line existed to exclude it,
       // and ran in the gate paying for its own pauses.
+      grepInvert: /@perf|@recipe/,
+      // The stacked layout's own spec is the phone project's.
+      testIgnore: /[\\/]stacked\.spec\.js$/,
+    },
+    {
+      // The phone flow (layout/flow.js), at a phone's size.
+      //
+      // The editor is one set of panels laid out two ways: docked on a wide
+      // screen, stacked one stage at a time on a narrow one. The project above
+      // runs everything against the dock; this runs the specs that walk the
+      // stages, edit a timeline and follow a render against the stack, so a
+      // panel that works in one place and not the other fails here.
+      name: 'phone',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } },
+      testMatch: /[\\/](flow|editor|timeline-tools|deliver|stacked)\.spec\.js$/,
       grepInvert: /@perf|@recipe/,
     },
     {

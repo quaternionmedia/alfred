@@ -28,6 +28,12 @@ from ..utils.bucket import (
     parse_reference,
     signed_url,
 )
+from ..utils.captions import (
+    TooManyCaptions,
+    checked_captions,
+    timeline_end,
+    with_captions,
+)
 from ..utils.db import get_client
 from ..utils.destinations import (
     BucketDestination,
@@ -128,15 +134,38 @@ def task_payload(render: Render) -> dict:
     the worker parses back into an `Edl`, and the id as a string.
 
     Encoding travels as the name of a preset (C5), never as encoder options.
+
+    The render's captions are drawn here, as textBox clips after the
+    timeline's own so they sit on top (contract K2, `utils.captions`): made
+    for this render's frame, and made again whenever it is queued, so a
+    rerender draws them as the first render did.
     """
+    moviesize = [render.width or 1920, render.height or 1080]
+    edl = render.edl.dict()
+    if render.captions:
+        edl = with_captions(
+            edl,
+            render.captions,
+            render.caption_style,
+            moviesize,
+            until=timeline_end(render.edl),
+        )
     return dict(
-        edl=render.edl.dict(),
+        edl=edl,
         renderId=str(render.id),
         filename=render.filename,
-        moviesize=[render.width or 1920, render.height or 1080],
+        moviesize=moviesize,
         fps=render.fps or 30.0,
         quality=render.quality,
     )
+
+
+def refuse_bad_captions(render: Render) -> None:
+    """422 for more captions than a render may carry; otherwise put in order."""
+    try:
+        render.captions = checked_captions(render.captions) if render.captions else None
+    except TooManyCaptions as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 # Fields the server writes. Whatever a client sends for them on POST /render
@@ -392,6 +421,7 @@ class RenderAPI(MotorCRUDRouter):
         ):
             quality = refuse_bad_request(render)
             refuse_unrenderable(render.edl)
+            refuse_bad_captions(render)
             for name in SERVER_OWNED:
                 setattr(render, name, None)
             # The id is chosen here rather than by the insert, so the filename

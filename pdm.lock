@@ -4,8 +4,8 @@
 [metadata]
 groups = ["default", "dev", "render", "test"]
 strategy = ["inherit_metadata"]
-lock_version = "4.5.0"
-content_hash = "sha256:5830a6afbde7d50b1abda8318a6277941515429c8639dcbecb0e0aa1e709b859"
+lock_version = "4.5.1"
+content_hash = "sha256:2b0c150a5c83ce3e347a383db108a0c1f630a06e4a37994655212226cd3977ed"
 
 [[metadata.targets]]
 requires_python = ">=3.11,<3.12"
@@ -735,7 +735,7 @@ name = "h11"
 version = "0.16.0"
 requires_python = ">=3.8"
 summary = "A pure-Python, bring-your-own-I/O implementation of HTTP/1.1"
-groups = ["dev", "test"]
+groups = ["default", "dev", "test"]
 files = [
     {file = "h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86"},
     {file = "h11-0.16.0.tar.gz", hash = "sha256:4e35b956cf45792e4caa5885e69fba00bdbc6ffafbfa020300e549b208ee5ff1"},
@@ -746,7 +746,7 @@ name = "httpcore"
 version = "1.0.9"
 requires_python = ">=3.8"
 summary = "A minimal low-level HTTP client."
-groups = ["test"]
+groups = ["default", "test"]
 dependencies = [
     "certifi",
     "h11>=0.16",
@@ -761,7 +761,7 @@ name = "httpx"
 version = "0.28.1"
 requires_python = ">=3.8"
 summary = "The next generation HTTP client."
-groups = ["test"]
+groups = ["default", "test"]
 dependencies = [
     "anyio",
     "certifi",

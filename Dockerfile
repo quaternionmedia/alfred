@@ -31,6 +31,11 @@ RUN pip3 install --no-cache-dir --no-deps -r requirements.lock
 # resolves; nothing the engine depends on reaches python-multipart, so it
 # cannot undo the override.
 RUN pip3 install -e alfred/otto[render]
+# The sound engine's client, vendored beside the picture engine and installed
+# the same way, editable from the submodule -- but with --no-deps: what its
+# core imports (httpx) is in the lockfile above, and the rest of its own
+# dependencies (a speech synthesizer, a CLI) serve parts alfred never loads.
+RUN pip3 install --no-deps -e alfred/vox
 RUN pip3 install --no-deps -e .
 # Not in the lockfile either -- pyproject.toml lists the server as a
 # development dependency -- so it is resolved here, and floats.

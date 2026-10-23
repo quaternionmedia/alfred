@@ -1,0 +1,345 @@
+// The desktop workspace (shell.js, workspace.js): the bar above it, the dock,
+// and Golden Layout's dark theme adjusted to alfred's palette. Loaded after
+// golden-layout.css, so these win over the theme's own rules.
+//
+// The palette is the editor's: a near-black ground, panels the grey of the
+// stage panels, hairline rules, and the one amber for what is current.
+
+$ground: #101010;
+$panel: #161616;
+$bar: #1b1b1b;
+$rule: #2e2e2e;
+$edge: #3a3a3a;
+$text: #d8d8d8;
+$muted: #9a9a9a;
+$accent: #f2aa4c;
+
+// ---- the page: header, bar, dock, footer --------------------------------
+
+// The rail and the Panels menu share one bar, so the dock keeps the height.
+.workbar {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  background: $bar;
+  border-bottom: 1px solid $rule;
+
+  .stagerail {
+    flex: 1 1 auto;
+    min-width: 0;
+    border-bottom: none;
+  }
+}
+
+// The dock takes whatever the column leaves it, and Golden Layout follows its
+// size (resizeWithContainerAutomatically), the draft notice above included.
+.workspace {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  background: $ground;
+}
+
+// Under the dock the footer is a line, not a band: the session link at the
+// size of the links beside it rather than the header's.
+.workspace ~ footer {
+  margin: 0.35rem 0.75rem;
+  font-size: 13px;
+
+  #login-link {
+    padding: 0;
+    font-size: inherit;
+  }
+}
+
+// ---- the Panels menu ------------------------------------------------------
+
+.panelsmenu {
+  position: relative;
+  flex: 0 0 auto;
+  margin: 0 0.75rem 0 0.5rem;
+}
+
+.panelsbutton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid $edge;
+  border-radius: 3px;
+  background: #222;
+  color: #e6e6e6;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  i {
+    font-size: 1.15rem;
+  }
+
+  &:hover,
+  &[aria-expanded='true'] {
+    border-color: $accent;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $accent;
+    outline-offset: 1px;
+  }
+}
+
+.panelslist {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  // Above the dock's own layers (a maximised stack is 40).
+  z-index: 100;
+  min-width: 15rem;
+  margin: 0;
+  padding: 0.3rem 0;
+  list-style: none;
+  background: $bar;
+  border: 1px solid $edge;
+  border-radius: 4px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+}
+
+.panelsitem {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.4rem 0.9rem;
+  border: none;
+  background: transparent;
+  color: $text;
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    background: #2a2a2a;
+    color: #fff;
+    outline: none;
+  }
+
+  &.closed .panelsname {
+    color: $muted;
+  }
+}
+
+.panelsstate {
+  font-size: 0.75rem;
+  color: #8f8f8f;
+}
+
+.panelsdivider {
+  height: 1px;
+  margin: 0.3rem 0;
+  background: $rule;
+}
+
+// ---- Golden Layout, in this palette --------------------------------------
+
+.workspace {
+  .lm_goldenlayout {
+    background: $ground;
+  }
+
+  .lm_content {
+    background: $panel;
+    border: none;
+  }
+
+  // Visible, but quiet, until they are reached for.
+  .lm_splitter {
+    background: $ground;
+    opacity: 1;
+
+    &:hover,
+    &.lm_dragging {
+      background: $accent;
+      opacity: 0.6;
+    }
+  }
+
+  .lm_header {
+    background: $bar;
+    border-bottom: 1px solid $rule;
+  }
+
+  .lm_header .lm_tab {
+    height: 18px;
+    margin-top: 3px;
+    margin-right: 2px;
+    padding: 3px 10px 4px;
+    padding-right: 26px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    border-radius: 3px 3px 0 0;
+    background: transparent;
+    box-shadow: none;
+    color: $muted;
+    font-family: Verdana, Geneva, sans-serif;
+    font-size: 12px;
+    line-height: 18px;
+
+    &:hover {
+      color: #e6e6e6;
+    }
+
+    // In front: the panel's own grey, joined to the panel, amber along the top.
+    &.lm_active {
+      background: $panel;
+      border-color: $rule;
+      box-shadow: inset 0 2px 0 $accent;
+      color: #ededed;
+      padding-bottom: 4px;
+    }
+
+    // Where the keyboard is, visibly: a tab is a stop now (workspace.js).
+    &:focus-visible {
+      outline: 2px solid $accent;
+      outline-offset: -2px;
+    }
+
+    .lm_close_tab {
+      top: 7px;
+      right: 8px;
+    }
+  }
+
+  // The panel last chosen reads as such, more quietly than the one in front.
+  .lm_header .lm_tab.lm_focused .lm_title {
+    color: #fff;
+  }
+
+  .lm_controls {
+    top: 5px;
+  }
+
+  .lm_controls > * {
+    opacity: 0.55;
+
+    &:hover,
+    &:focus-visible {
+      opacity: 1;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $accent;
+      outline-offset: 1px;
+    }
+  }
+
+  .lm_dropTargetIndicator {
+    outline: 1px dashed $accent;
+    box-shadow: inset 0 0 30px rgba(242, 170, 76, 0.35);
+  }
+
+  .lm_dropTargetIndicator .lm_inner {
+    background: $accent;
+    opacity: 0.12;
+  }
+}
+
+// A tab being dragged, which Golden Layout draws outside the dock.
+.lm_dragProxy .lm_content {
+  background: $panel;
+}
+
+.lm_dragProxy .lm_header .lm_tab {
+  font-family: Verdana, Geneva, sans-serif;
+  color: #ededed;
+  background: $panel;
+}
+
+// ---- a panel in the dock ---------------------------------------------------
+
+// Every panel fills its box and scrolls inside itself (contract K3): the box
+// is Golden Layout's, the scrolling is the panel's.
+.lm_content > .panelhost {
+  height: 100%;
+  overflow: hidden;
+}
+
+.lm_content > .panelhost > * {
+  height: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+}
+
+// A stage panel in the dock is the whole of its box, not a band across a page.
+.lm_content .stagepanel {
+  border-bottom: none;
+}
+
+// The viewer: the frame takes the room the output settings leave it, the
+// transport keeps its row underneath, and neither scrolls the other away.
+//
+// Both regions are rows here. Every `section` is a column (style.css), so on
+// the page the settings wrapped under the frame and the transport stood
+// three controls tall; in a panel whose height the viewer chooses, that
+// height is the frame's.
+.lm_content .viewerpanel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .viewer {
+    flex: 1 1 0;
+    flex-direction: row;
+    min-height: 0;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    padding-bottom: 0.75rem;
+  }
+
+  .viewerframe {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .viewersettings {
+    overflow-y: auto;
+  }
+
+  // Its row under the frame, at the height it needs (editor.scss lays it
+  // out).
+  .transport {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+}
+
+// The timeline's region is the panel itself.
+.lm_content section.editor {
+  align-content: start;
+}
+
+// The inspector: the clip's settings as wide as the panel they are in.
+.lm_content .templatesettings {
+  padding: 0.75rem;
+  background: $panel;
+  color: $text;
+
+  .templateparams {
+    width: 100%;
+  }
+}
+
+.panelhint {
+  margin: 0.25rem 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: #8f8f8f;
+}

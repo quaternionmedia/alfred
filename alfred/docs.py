@@ -54,6 +54,13 @@ Use these routes to generate preview frames of an `Edl` before rendering a full 
 Render an `Edl` and check status on existing renders.""",
     },
     {
+        'name': 'captions',
+        'description': """# Captions
+A project's captions -- text, and the stretch of the timeline it is shown for
+-- and how they are drawn into renders. Typed, imported from SubRip, WebVTT or
+JSON, or transcribed from the timeline's own sound by the audio engine.""",
+    },
+    {
         'name': 'video',
         'description': """# Video
 Serve videos directly from this instance.

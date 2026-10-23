@@ -22,6 +22,23 @@ yarn e2e:ui          # interactive runner
 yarn e2e:report      # last HTML report
 ```
 
+## Two layouts, two projects
+
+The editor is one set of panels laid out two ways (`src/layout/`): a Golden
+Layout workspace on a screen 1024 pixels wide or more, the stage flow --
+one stage at a time, over the viewer and the timeline -- below that. The
+gate runs both:
+
+- **`chromium`** (1280x720) runs every spec against the desktop workspace,
+  `workspace.spec.js` among them.
+- **`phone`** (390x844) runs the specs that walk the stages, edit a timeline
+  and follow a render -- `flow`, `editor`, `timeline-tools`, `deliver` --
+  and `stacked.spec.js` against the phone flow.
+
+A spec about one layout's own shape sets the viewport it means --
+`appearance.spec.js` does for the phone flow's rail and panels -- and the
+rest read the same either way.
+
 `E2E_BASE_URL` defaults to `http://localhost:8000`. Before the first test,
 `global-setup.js` fetches `/openapi.json` from it and fails the run unless the
 title is `Alfred API` -- a published port belongs to whoever bound it first,
@@ -70,8 +87,9 @@ and its `CYPRESS_baseUrl` (`http://api/`) disagreed with `cypress.json`'s
 
 ## Verification status
 
-`./al test` on `integrate/review-fixes`: **212 passed, 1 skipped, in 3.3
-minutes**, including the `@slow` specs that wait on a real encode. The skip is
+`./al test` on `integrate/wave-3`: **381 passed, 1 skipped, in about 4
+minutes**, across the `chromium` (workspace) and `phone` (stage flow)
+projects, including the `@slow` specs that wait on a real encode. The skip is
 data-dependent: the project filter test needs more than three projects.
 
 The three image breaks recorded when this suite replaced Cypress -- `FROM
@@ -123,9 +141,11 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Token renewal, staying logged in, logout | `session.spec.js` | UI |
 | Project selector and its filter | `projects.spec.js` | UI + API |
 | Demo project and media, empty states | `demo.spec.js` | UI + API |
-| The four-stage flow, delivery with real bytes | `flow.spec.js` | UI + API |
-| Timeline editor, transport, saving | `editor.spec.js`, `tools.spec.js`, `otto.spec.js` | UI |
-| Trim, cut, slip, slide and roll, by mouse and touch | `timeline-tools.spec.js` | UI |
+| The four-stage flow, delivery with real bytes (both layouts) | `flow.spec.js` | UI + API |
+| The desktop workspace: every panel under its registry id, `?stage=` bringing a panel forward, a panel dragged by its tab or resized and the arrangement kept, a broken one dropped for the default, the Panels menu reopening without doubling, Reset layout, tabs and menu from the keyboard, the viewer keeping its shape, swapping with the phone flow without losing work | `workspace.spec.js` | UI |
+| The phone flow: one stage's panels over the viewer and the timeline, a long list scrolling inside its panel | `stacked.spec.js` | UI, `phone` |
+| Timeline editor, transport, saving (both layouts) | `editor.spec.js`, `tools.spec.js`, `otto.spec.js` | UI |
+| Trim, cut, slip, slide and roll, by mouse and touch (both layouts) | `timeline-tools.spec.js` | UI |
 | Adding and editing template clips, fonts and placement | `templates.spec.js` | UI |
 | The timeline tools from the keyboard, the footer | `editor-access.spec.js` | UI |
 | Media lengths and kinds, signed media and download URLs, the `/videos` fallback | `editor-media.spec.js` | UI |
@@ -133,7 +153,9 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | The render request: clip starts, fades, toolbar, form | `editor-render.spec.js` | UI |
 | Render checks before queueing, status, another user | `render-api.spec.js` | API |
 | Render pipeline end to end, downloads, ranges | `render-pipeline.spec.js` | API, `@slow` |
-| Following a render, downloading it, no renderer running | `deliver.spec.js` | UI |
+| Following a render, downloading it, no renderer running (both layouts) | `deliver.spec.js` | UI |
+| Captions: typed, imported, styled, over the viewer, carried by renders | `captions.spec.js` | UI + API |
+| Captions transcribed through the stub audio engine and the worker; library media analysed | `captions.spec.js` | UI + API, `@slow` |
 | Render list | `renders.spec.js` | API + UI |
 | Preview contract, malformed input, partial writes | `api-contract.spec.js` | API |
 | Routing, history, menu, unique ids | `navigation.spec.js` | UI |
@@ -161,8 +183,9 @@ so no other test in this suite would notice.
    exercised only by the views rendering.
 3. **Editing gestures from the keyboard.** The timeline tools are chosen from
    the keyboard, but trim, slip, slide and roll are pointer drags.
-4. **Cross-browser and real devices.** Only chromium runs. Touch is covered
-   through pointer events, not on a phone; the config takes firefox and webkit
+4. **Cross-browser and real devices.** Only chromium runs, at a desktop size
+   and at a phone's. Touch is covered through pointer events and the
+   browser's touch input, not on a phone; the config takes firefox and webkit
    by adding projects.
 5. **Cloud delivery.** The server offers only `local`; a bucket destination is
    tested at the unit level, never against a real bucket.

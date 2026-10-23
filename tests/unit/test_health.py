@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from alfred import config
 from alfred.core.routes import health
-from alfred.core.utils import tasks
+from alfred.core.utils import audio_engine, tasks
 from alfred.main import app
 from tests.unit.render_harness import OWNER, anonymous, as_user
 
@@ -24,6 +24,14 @@ from tests.unit.render_harness import OWNER, anonymous, as_user
 class FixedRenderer:
     def __init__(self, workers=1, pending=0):
         self.state = health.RendererState(workers=workers, pending=pending)
+
+    async def get(self):
+        return self.state
+
+
+class FixedAudioEngine:
+    def __init__(self, configured=False, ok=False, detail='none configured'):
+        self.state = audio_engine.EngineStatus(configured, ok, detail)
 
     async def get(self):
         return self.state
@@ -43,15 +51,19 @@ def client():
     for dependency in overrides + [
         health.get_renderer_state,
         health.get_database_check,
+        health.get_audio_engine_state,
     ]:
         app.dependency_overrides.pop(dependency, None)
 
 
-def answer(renderer=None, db_up=True):
+def answer(renderer=None, db_up=True, engine=None):
     app.dependency_overrides[health.get_renderer_state] = lambda: (
         renderer or FixedRenderer()
     )
     app.dependency_overrides[health.get_database_check] = database(db_up)
+    app.dependency_overrides[health.get_audio_engine_state] = lambda: (
+        engine or FixedAudioEngine()
+    )
 
 
 class TestHealthz:
@@ -70,6 +82,11 @@ class TestHealth:
             'db': 'ok',
             'renderer': {'ok': True, 'workers': 2},
             'queue': {'pending': 3},
+            'audio_engine': {
+                'configured': False,
+                'ok': False,
+                'detail': 'none configured',
+            },
         }
 
     def test_no_worker_is_not_ok(self, client):
@@ -91,6 +108,74 @@ class TestHealth:
         answer()
         anonymous(app)
         assert client.get('/health').status_code == 401
+
+
+class TestTheAudioEngine:
+    """K2: whether captions can be transcribed -- an engine configured, and
+    answering -- with the reason when not."""
+
+    def test_answering(self, client):
+        answer(engine=FixedAudioEngine(configured=True, ok=True, detail=None))
+        assert client.get('/health').json()['audio_engine'] == {
+            'configured': True,
+            'ok': True,
+            'detail': None,
+        }
+
+    def test_configured_and_not_answering_says_why(self, client):
+        answer(
+            engine=FixedAudioEngine(
+                configured=True,
+                ok=False,
+                detail='the audio engine at http://e: refused',
+            )
+        )
+        body = client.get('/health').json()['audio_engine']
+        assert (body['configured'], body['ok']) == (True, False)
+        assert 'refused' in body['detail']
+
+    def test_the_check_is_the_adapter_s_status(self, monkeypatch):
+        monkeypatch.setattr(
+            audio_engine,
+            'status',
+            lambda: audio_engine.EngineStatus(configured=True, ok=True),
+        )
+        assert health.check_audio_engine() == audio_engine.EngineStatus(True, True)
+
+    def test_a_check_that_breaks_is_not_ok(self, monkeypatch):
+        def broken():
+            raise RuntimeError('vox exploded')
+
+        monkeypatch.setattr(audio_engine, 'status', broken)
+        monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test')
+        state = health.check_audio_engine()
+        assert (state.configured, state.ok) == (True, False)
+        assert 'vox exploded' in state.detail
+
+    def test_unconfigured_by_default(self, monkeypatch):
+        monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', None)
+        state = health.check_audio_engine()
+        assert (state.configured, state.ok) == (False, False)
+        assert 'ALFRED_AUDIO_ENGINE_URL' in state.detail
+
+    def test_an_engine_that_hangs_is_not_ok(self, monkeypatch):
+        monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test')
+
+        def hang():
+            import time
+
+            time.sleep(0.5)
+            return audio_engine.EngineStatus(True, True)
+
+        cached = health.CachedRenderer(
+            check=hang, ttl=60, timeout=0.05, unanswered=health.audio_engine_unanswered
+        )
+        state = asyncio.run(cached.get())
+        assert (state.configured, state.ok) == (True, False)
+        assert 'did not answer' in state.detail
+
+    def test_it_is_asked_at_most_every_few_seconds(self):
+        assert health.AUDIO_ENGINE_CACHE_SECONDS >= 5
 
 
 class TestTheRendererCheck:

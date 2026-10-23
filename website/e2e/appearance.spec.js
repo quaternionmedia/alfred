@@ -14,8 +14,12 @@
 
 const { test, expect } = require('./fixtures')
 
+// A phone's size: the editor stacks one stage at a time below 1024 pixels
+// (src/layout/shell.js), and a few of these are about that layout.
+const PHONE = { width: 390, height: 844 }
+
 const VIEWPORTS = [
-  { name: 'phone', width: 390, height: 844 },
+  { name: 'phone', ...PHONE },
   { name: 'tablet', width: 820, height: 1180 },
   { name: 'desktop', width: 1440, height: 900 },
 ]
@@ -211,12 +215,20 @@ test.describe('consistency across controls', () => {
     expect(seen.size, `headings styled ${seen.size} different ways`).toBe(1)
   })
 
+  // The two below are about the phone flow, where one stage's panels are
+  // stacked under the rail, and run at a phone's size. In the desktop
+  // workspace panels sit side by side by design, and the first `.stagepanel`
+  // is the project list's wherever the stage is -- these would pass there
+  // without measuring anything they mean.
+
   test('every panel aligns to the same left edge', async ({ authedPage }) => {
     // Panels that start at different x-positions read as separate pages
     // stitched together, which is exactly what the stage rail exists to deny.
+    await authedPage.setViewportSize(PHONE)
     const lefts = []
     for (const stage of ['source', 'render', 'deliver']) {
       await authedPage.goto(`/#!/?stage=${stage}`)
+      await expect(authedPage.locator('.stagepanel').first()).toBeVisible()
       const [box] = await boxes(authedPage.locator('.stagepanel'))
       lefts.push(box.x)
     }
@@ -224,7 +236,9 @@ test.describe('consistency across controls', () => {
   })
 
   test('the rail and the panel below it share an edge', async ({ authedPage }) => {
+    await authedPage.setViewportSize(PHONE)
     await authedPage.goto('/#!/?stage=source')
+    await expect(authedPage.locator('#panel-source')).toBeVisible()
     const [rail] = await boxes(authedPage.locator('.stagerail'))
     const [panel] = await boxes(authedPage.locator('.stagepanel'))
     expect(panel.x, 'panel does not line up with the rail').toBe(rail.x)
@@ -253,15 +267,24 @@ test.describe('consistency across controls', () => {
 })
 
 test.describe('the rail works as navigation', () => {
-  test('clicking each stage shows its panel', async ({ authedPage }) => {
+  test('clicking each stage shows its panel, and only its panel', async ({ authedPage }) => {
+    /**
+     * In the phone flow, one stage at a time: choosing one shows its panel
+     * and not the others'. Edit shows none of theirs -- it is the timeline,
+     * which is always there -- only the captions, which are edited with it.
+     * The workspace brings a stage's panel forward instead
+     * (workspace.spec.js).
+     */
+    await authedPage.setViewportSize(PHONE)
     await authedPage.goto('/')
+    const stagePanels = '#panel-source, #panel-media, #panel-render, #panel-deliver'
     for (const stage of ['source', 'render', 'deliver']) {
       await authedPage.locator(`#stage-${stage}`).click()
       await expect(authedPage.locator(`#panel-${stage}`)).toBeVisible()
+      await expect(authedPage.locator(stagePanels)).toHaveCount(stage === 'source' ? 2 : 1)
     }
     await authedPage.locator('#stage-edit').click()
-    // Edit has no panel: it is the timeline, which is always mounted.
-    await expect(authedPage.locator('.stagepanel')).toHaveCount(0)
+    await expect(authedPage.locator(stagePanels)).toHaveCount(0)
     await expect(authedPage.locator('#timeline')).toBeVisible()
   })
 

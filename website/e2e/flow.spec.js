@@ -185,6 +185,9 @@ test.describe('the four-stage flow', () => {
 
     await authedPage.goto('/#!/?stage=deliver')
     await expect(authedPage.locator('#destination')).toBeVisible()
+    // The select is drawn before the list arrives: wait for the options,
+    // rather than read them once at whatever moment the select appeared.
+    await expect(authedPage.locator('#destination option')).toHaveCount(offered.length)
     const options = await authedPage.locator('#destination option').allInnerTexts()
     expect(options.sort()).toEqual([...offered].sort())
   })

@@ -12,7 +12,7 @@
 
 services:
   e2e:
-    image: mcr.microsoft.com/playwright:v1.62.1-noble
+    image: mcr.microsoft.com/playwright:v1.64.1-noble
     depends_on:
       # Healthy, not merely started: global-setup's first request is
       # /openapi.json, and a container that has started is not yet a server
@@ -36,6 +36,8 @@ services:
     environment:
       # The api service listens on port 80 inside the compose network.
       E2E_BASE_URL: http://api
+      # The stub audio engine, for specs that check what it was sent.
+      E2E_AUDIO_ENGINE_URL: http://audio
       CI: 'true'
       # Where the runner's dependencies are installed; see the command.
       NODE_PATH: /tmp/deps/node_modules
@@ -53,10 +55,14 @@ services:
     # hosted service in the test path, holding a key in CI secrets. Reports
     # are written to website/playwright-report/ and uploaded by the workflow
     # as an artifact instead.
+    #
+    # Both layouts: `chromium` runs everything against the desktop workspace,
+    # `phone` the stage-walking specs against the stacked phone flow
+    # (website/playwright.config.js).
     command: >-
       sh -c "mkdir -p /tmp/deps && cp package.json yarn.lock /tmp/deps/ &&
       npm install --prefix /tmp/deps --no-audit --no-fund &&
-      /tmp/deps/node_modules/.bin/playwright test --project=chromium"
+      /tmp/deps/node_modules/.bin/playwright test --project=chromium --project=phone"
 
   # The SPA the api serves, built from the committed lockfile.
   #
@@ -103,6 +109,8 @@ services:
         condition: service_started
       site:
         condition: service_healthy
+      audio:
+        condition: service_healthy
     # Mount the repo root, matching docker-compose.yml. The Cypress compose
     # file this replaces mounted ./alfred/ onto /app, which shadows the
     # installed package root that `uvicorn alfred.main:app` resolves against.
@@ -127,6 +135,9 @@ services:
       # Fetched remote media, hidden in the library and served by nothing
       # (contract M6); the renderer is given the same directory.
       - OTTO_DOWNLOAD_DIR=/app/videos/.remote-cache
+      # The stub audio engine below, which the captions specs transcribe
+      # with; the renderer, which does the transcribing, is given it too.
+      - ALFRED_AUDIO_ENGINE_URL=http://audio
     healthcheck:
       test:
         [
@@ -157,6 +168,7 @@ services:
     entrypoint: celery -A alfred.core.utils.tasks:renderer -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
     depends_on:
       - db
+      - audio
     volumes:
       - ./:/app/
     environment:
@@ -166,6 +178,48 @@ services:
       - DB_NAME=alfred
       - VIDEO_DIR=/app/videos
       - OTTO_DOWNLOAD_DIR=/app/videos/.remote-cache
+      - ALFRED_AUDIO_ENGINE_URL=http://audio
+
+  # The audio engine, as a stub: joe's media API, answered from what it is
+  # sent -- a segment of "speech" wherever the sound is -- with no model and
+  # no download (tests/stubs/audio_engine.py). The api and the renderer reach
+  # it through vox exactly as they would reach joe.
+  #
+  # It also writes the one piece of media the captions specs need and nothing
+  # here can generate: videos/e2e-speech.wav, four seconds holding two bursts
+  # of tone, into the library the api and the renderer share. Demo media is
+  # silent, and a timeline with nothing to hear has nothing to transcribe.
+  audio:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: alfred_audio_stub
+    command:
+      [
+        'python',
+        'tests/stubs/audio_engine.py',
+        '--host',
+        '0.0.0.0',
+        '--port',
+        '80',
+        '--fixture-dir',
+        '/app/videos',
+      ]
+    volumes:
+      - ./:/app/
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost/api/health', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+      start_interval: 2s
 
   db:
     image: mongo:bionic

@@ -5,6 +5,8 @@ from otto.models import Edl
 from pydantic import BaseModel
 from pymongo import ASCENDING, IndexModel
 
+from .captions import Caption, CaptionsJob, CaptionStyle
+
 # At most one generated demo per account, held by MongoDB rather than by the
 # route. `POST /demo/project` is find-or-insert, and two requests for the same
 # account could both find nothing and both insert; with this index the second
@@ -100,6 +102,15 @@ class Project(Document):
     # on an update, so no request can mark a project or unmark the demo -- the
     # index above counts on it.
     demo: Optional[bool]
+    # The project's captions, in timeline seconds, and how they are drawn
+    # (contract K2; `models.captions`). Written through
+    # `PUT /project/{id}/captions`, which checks them as a list, and by a
+    # transcription; a whole-project update keeps them as stored.
+    captions: Optional[List[Caption]]
+    caption_style: Optional[CaptionStyle]
+    # The last transcription of the timeline's sound. The server's record,
+    # like `owner`: no request writes it.
+    captions_job: Optional[CaptionsJob]
 
     class Config:
         title = 'Alfred Project'
