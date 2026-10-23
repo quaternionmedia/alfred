@@ -1,3 +1,4 @@
+from time import time
 from typing import Optional
 
 from beanie import PydanticObjectId
@@ -9,10 +10,38 @@ from fastapi_users.authentication import (
     JWTStrategy,
 )
 from fastapi_users.db import BeanieUserDatabase, ObjectIDIDMixin
+from fastapi_users.jwt import generate_jwt
 
+from alfred import config
 from alfred.config import DEV_SKIP_AUTH, DEV_USER_EMAIL, SECRET_KEY
 
 from ..utils.db import User, get_user_db
+
+
+def announce_token(purpose, user, token):
+    """Note that a single-use token was issued -- and, outside production, show it.
+
+    Both of these printed the token itself, every time. A password-reset
+    token is a credential: whoever holds it can set the account's password,
+    so a production log that recorded them made reading the logs equivalent
+    to taking over any account that asked for a reset. Under
+    ALFRED_PRODUCTION the event is logged and the token is not.
+
+    In development the token stays in the log on purpose. Nothing here sends
+    email, so the log is the only way to finish a reset or a verification on
+    a development stack, and that is exactly where somebody needs to.
+
+    Read through the module at call time, so the tests can switch modes
+    without re-importing.
+    """
+    if config.PRODUCTION:
+        print(
+            f'{purpose} requested for user {user.id}. The token is not logged '
+            'in production.',
+            flush=True,
+        )
+    else:
+        print(f'{purpose} requested for user {user.id}. Token: {token}', flush=True)
 
 
 class UserManager(
@@ -28,12 +57,12 @@ class UserManager(
     async def on_after_forgot_password(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        print(f"User {user.id} has forgot their password. Reset token: {token}")
+        announce_token('Password reset', user, token)
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Optional[Request] = None
     ):
-        print(f"Verification requested for user {user.id}. Verification token: {token}")
+        announce_token('Verification', user, token)
 
 
 async def get_user_manager(user_db: BeanieUserDatabase = Depends(get_user_db)):
@@ -42,9 +71,42 @@ async def get_user_manager(user_db: BeanieUserDatabase = Depends(get_user_db)):
 
 bearer_transport = BearerTransport(tokenUrl="auth/jwt/login")
 
+# How long a token works. The SPA renews it before this runs out, for as long
+# as somebody is using the app; see website/src/User.js.
+TOKEN_LIFETIME_SECONDS = 3600
+
+
+class IssuedAtJWTStrategy(JWTStrategy):
+    """fastapi-users' JWTs, also saying when they were issued.
+
+    A token carried `exp` and nothing else about time, and `exp` is a moment
+    on the server's clock. The SPA renews a token shortly before it expires,
+    and judging "shortly before" against the browser's clock is only right
+    when the two clocks agree: a browser running ten minutes slow would ask
+    to renew a token that had already died, and the person would be sent to
+    log in mid-edit. With `iat` beside it, the lifetime is `exp - iat` --
+    both server time, so any skew cancels -- and the browser counts that down
+    on its own clock from the moment it received the token.
+
+    Validation is unchanged apart from PyJWT checking `iat` is not in the
+    future, which it cannot be when the same server issues and reads it.
+    """
+
+    async def write_token(self, user) -> str:
+        data = {
+            'sub': str(user.id),
+            'aud': self.token_audience,
+            'iat': int(time()),
+        }
+        return generate_jwt(
+            data, self.encode_key, self.lifetime_seconds, algorithm=self.algorithm
+        )
+
 
 def get_jwt_strategy() -> JWTStrategy:
-    return JWTStrategy(secret=SECRET_KEY, lifetime_seconds=3600)
+    return IssuedAtJWTStrategy(
+        secret=SECRET_KEY, lifetime_seconds=TOKEN_LIFETIME_SECONDS
+    )
 
 
 auth_backend = AuthenticationBackend(

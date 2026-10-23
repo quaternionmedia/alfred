@@ -1,84 +1,95 @@
 import m from 'mithril'
 import '../node_modules/material-design-icons-iconfont/dist/material-design-icons.css'
+import { message } from 'alertifyjs'
+import { Edl } from './Video'
+import { Player } from './Player'
 var state = require("./Globals").state
 
-export default class TimelineTools {
-  oncreate() {
+/**
+ * The tools beside the timeline.
+ *
+ * Seven were offered and three worked. Cut, slip, slide and dual roller set
+ * `state.tool()` and nothing read it: the clip handlers knew trim and time,
+ * and move was Sortable's. Choosing one highlighted it and then every press
+ * on a clip did nothing, which is the worst way for a control to fail.
+ *
+ * Cut works now. Slip, slide and dual roller are shown disabled, saying so:
+ * they are on the way, and hiding them would hide that. Nothing here is a
+ * control that silently does nothing.
+ */
 
+/** Split the clip under the playhead, or say why not. */
+export function cutAtPlayhead() {
+  const at = Edl.time
+  if (!Edl.edl.length) {
+    message('Nothing on the timeline to cut', 3)
+    return false
   }
+  const second = Edl.cut(at)
+  if (second < 0) {
+    message('Too close to the start or end of a clip to cut there', 3)
+    return false
+  }
+  // A cut changes the list under Sortable, so the timeline is redrawn from
+  // scratch rather than patched (see Edl.update).
+  Edl.update()
+  // The playhead stays at the cut, on the second half: its start exactly,
+  // not `at`, which a pixel position can leave a hair short of it -- on the
+  // end of the first half, where the settings shown would be the wrong clip's.
+  Player.seek(Edl.startOf(second))
+  return true
+}
+
+const TOOLS = [
+  { id: 'time', title: 'time selector', glyph: '|' },
+  { id: 'trim', title: 'trim', glyph: '[ ]' },
+  { id: 'move', title: 'move', icon: 'swap_horizontal' },
+  {
+    id: 'cut',
+    title: 'cut: click a clip to split it there, or press S to split at the playhead',
+    icon: 'content_cut',
+  },
+  { id: 'slip', title: 'slip (not yet available)', icon: 'swap_calls', later: true },
+  { id: 'slide', title: 'slide (not yet available)', icon: 'sync_alt', later: true },
+  {
+    id: 'dual roller',
+    title: 'dual roller (not yet available)',
+    icon: 'compare_arrows',
+    later: true,
+  },
+]
+
+export default class TimelineTools {
   view() {
-    let t = document.getElementById('timeline')
-    return m('span#TTools.tools.toolcol', {}, [
-      m('i.custom', {
-        title: 'time selector',
-          onclick: (vnode) => {
-            t.style.cursor = 'text'
-            state.tool('time')
+    return m(
+      'span#TTools.tools.toolcol',
+      {},
+      TOOLS.map(tool =>
+        m(
+          tool.icon ? 'i.material-icons' : 'i.custom',
+          {
+            title: tool.title,
+            'data-tool': tool.id,
+            // A button to assistive technology, so that pressed and disabled
+            // are announced: on a bare <i> neither attribute means anything.
+            role: 'button',
+            class: tool.later ? 'disabled' : '',
+            'aria-disabled': tool.later ? 'true' : undefined,
+            'aria-pressed': tool.later ? undefined : state.tool() === tool.id ? 'true' : 'false',
+            onclick: () => {
+              if (tool.later) {
+                message(`${tool.id[0].toUpperCase()}${tool.id.slice(1)} is not available yet`, 3)
+                return
+              }
+              state.tool(tool.id)
+            },
+            style: {
+              'background-color': state.tool() === tool.id ? '#393939' : 'transparent',
+            },
           },
-          style: {
-            'background-color': state.tool() == 'time' ? '#393939' : 'transparent'
-          }
-      }, '|'),
-      m('i.custom', {
-        title: 'trim',
-        onclick: (vnode) => {
-          t.style.cursor = 'ew-resize'
-          state.tool('trim')
-        },
-        style: {
-          'background-color': state.tool() == 'trim' ? '#393939' : 'transparent'
-        }
-      }, '[ ]'),
-      m('i.material-icons', {
-        title: 'move',
-        onclick: (vnode) => {
-          t.style.cursor = 'url(./assets/swap-horizontal.svg), -webkit-grab'
-          state.tool('move')
-        },
-        style: {
-          'background-color': state.tool() == 'move' ? '#393939' : 'transparent'
-        }
-      }, 'swap_horizontal'),
-      m('i.material-icons', {
-        title: 'cut',
-        onclick: (vnode) => {
-          t.style.cursor = 'url(./assets/content-cut.svg), auto'
-          state.tool('cut')
-        },
-        style: {
-          'background-color': state.tool() == 'cut' ? '#393939' : 'transparent'
-        }
-      }, 'content_cut'),
-      m('i.material-icons', {
-        title: 'slip',
-        onclick: (vnode) => {
-          t.style.cursor = 'ew-resize'
-          state.tool('slip')
-        },
-        style: {
-          'background-color': state.tool() == 'slip' ? '#393939' : 'transparent'
-        }
-      }, 'swap_calls'),
-      m('i.material-icons', {
-        title: 'slide',
-        onclick: (vnode) => {
-          t.style.cursor = 'ew-resize'
-          state.tool('slide')
-        },
-        style: {
-          'background-color': state.tool() == 'slide' ? '#393939' : 'transparent'
-        }
-      }, 'sync_alt'),
-      m('i.material-icons', {
-        title: 'dual roller',
-        onclick: (vnode) => {
-          t.style.cursor = 'ew-resize'
-          state.tool('dual roller')
-        },
-        style: {
-          'background-color': state.tool() == 'dual roller' ? '#393939' : 'transparent'
-        }
-      }, 'compare_arrows'),
-    ])
+          tool.icon || tool.glyph
+        )
+      )
+    )
   }
 }

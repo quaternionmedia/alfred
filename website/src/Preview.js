@@ -1,13 +1,20 @@
 import m from 'mithril'
 import { Video, Edl } from './Video'
 import { Player } from './Player'
-import { User } from './User'
+import { authBlob, blobProblem } from './Download'
+import { cutAtPlayhead } from './TimelineTools'
 var state = require("./Globals").state
 
 const urlfy = obj => Object
-    .keys(obj)
+    .keys(obj || {})
     .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]))
     .join('&');
+
+/** The frame of a template clip at the playhead, at the viewer's size. */
+export const templatePreviewUrl = clip =>
+  `preview/template/${encodeURIComponent(clip['name'])}?${urlfy(
+    clip.data
+  )}&width=${state.width()}&height=${state.height()}&t=${Video.time()}`
 
 export function ImagePreview() {
   return {
@@ -18,6 +25,13 @@ export function ImagePreview() {
     }
   }
 }
+
+/** The latest verdict on the template frame in the viewer.
+ *
+ * Read by the template settings beside it, which show the server's reason a
+ * frame will not render next to the fields that caused it.
+ */
+export const TemplatePreview = { src: null, problem: null }
 
 // An <img> whose source needs the Authorization header.
 //
@@ -30,10 +44,21 @@ export function ImagePreview() {
 // Fetching with the token and handing the <img> an object URL keeps the route
 // authenticated. The URL is revoked when it is replaced or the component is
 // removed; without that, every redraw of a moving playhead leaks a blob.
+//
+// One request at a time, always converging on the newest `src`. Every
+// playhead move and every keystroke in a template's text is a new frame URL,
+// and each was fetched at once: a request per frame while playing, answered
+// in whatever order the server finished them -- so an older frame could land
+// last and stay up. Now a change while a frame is in flight waits for it, and
+// then the newest URL is fetched; anything in between is skipped.
 export function AuthedImage() {
   let objectUrl = null
-  let lastRequested = null
+  let wanted = null
+  let shown = null
+  let inflight = false
+  let removed = false
   let problem = null
+  let attrs = {}
 
   const release = () => {
     if (objectUrl) {
@@ -42,55 +67,60 @@ export function AuthedImage() {
     }
   }
 
-  const load = url => {
-    if (url === lastRequested) return
-    lastRequested = url
-    m.request({
-      url,
-      headers: { Authorization: User.token },
-      responseType: 'blob',
-      extract: xhr => {
-        if (xhr.status >= 400) {
-          // The body is JSON even though the request asked for a blob, so it
-          // is read as text and the server's own explanation is kept.
-          const err = new Error(xhr.responseText)
-          err.status = xhr.status
-          throw err
-        }
-        return xhr.response
-      },
-    })
-      .then(blob => {
-        release()
-        problem = null
-        objectUrl = URL.createObjectURL(blob)
+  const report = verdict => {
+    if (typeof attrs.onstate === 'function') attrs.onstate(verdict)
+  }
+
+  const fetchLatest = () => {
+    const url = wanted
+    if (inflight || !url || url === shown) return
+    inflight = true
+    authBlob(url)
+      .then(
+        ({ blob }) => {
+          if (removed) return
+          release()
+          problem = null
+          objectUrl = URL.createObjectURL(blob)
+          shown = url
+          report({ src: url, problem: null })
+        },
+        // Say why, rather than leaving the last good frame up. The server
+        // answers 422 with the reason a template refused, and that reason is
+        // worth more on screen than a stale frame -- but it never arrived:
+        // reading `responseText` on a blob response throws, so the reason
+        // was lost and every refusal read "could not be rendered".
+        err =>
+          blobProblem(err).then(detail => {
+            if (removed) return
+            release()
+            problem = detail || 'This template could not be rendered.'
+            shown = url
+            report({ src: url, problem })
+          })
+      )
+      .catch(e => console.error('template preview failed', e))
+      .then(() => {
+        inflight = false
+        if (removed) return
         m.redraw()
-      })
-      .catch(e => {
-        // Say why, rather than leaving the last good frame up.
-        //
-        // This swallowed every failure on the grounds that a broken-image
-        // icon per redraw is worse than nothing -- which is true, and left a
-        // template that cannot render looking identical to one that simply
-        // had not loaded yet. The server now answers 422 with the reason a
-        // template refused, and that reason is worth more on screen than a
-        // stale frame.
-        let detail = ''
-        try {
-          detail = JSON.parse(e.message).detail || ''
-        } catch (_) {
-          detail = ''
-        }
-        problem = detail || 'This template could not be rendered.'
-        release()
-        m.redraw()
+        fetchLatest()
       })
   }
 
+  const want = vnode => {
+    attrs = vnode.attrs
+    wanted = vnode.attrs.src
+    fetchLatest()
+  }
+
   return {
-    oninit: vnode => load(vnode.attrs.src),
-    onupdate: vnode => load(vnode.attrs.src),
-    onremove: release,
+    oninit: want,
+    onupdate: want,
+    onremove: () => {
+      removed = true
+      release()
+    },
     view: vnode =>
       objectUrl
         ? m('img.preview', { id: vnode.attrs.id, src: objectUrl })
@@ -161,22 +191,26 @@ const objectUrls = new Map()
 
 export function authedSource(path) {
   if (!path) return undefined
-  if (objectUrls.has(path)) return objectUrls.get(path)
+  // A remote URL is fetched by the element itself. It is not ours to
+  // authenticate against, and the session token must never be sent to
+  // another host.
+  if (/^https?:\/\//i.test(path)) return path
+  if (objectUrls.has(path)) return objectUrls.get(path) || undefined
 
   // Mark it pending so a redraw storm does not start a fetch per frame.
-  objectUrls.set(path, undefined)
-  m.request({
-    url: path.startsWith('/') ? path : `/${path}`,
-    headers: { Authorization: User.token },
-    responseType: 'blob',
-    extract: xhr => xhr.response,
-  })
-    .then(blob => {
+  objectUrls.set(path, null)
+  authBlob(path.startsWith('/') ? path : `/${path}`)
+    .then(({ blob }) => {
       objectUrls.set(path, URL.createObjectURL(blob))
       m.redraw()
     })
-    .catch(() => {
-      objectUrls.delete(path)
+    .catch(err => {
+      console.error('could not load media for the preview', path, err)
+      // Not forgotten at once. Deleting the entry straight away let the next
+      // redraw ask again, and every answer redraws: a missing file was
+      // requested in a loop. Asking again after a pause still recovers from
+      // a failure that passes.
+      setTimeout(() => objectUrls.delete(path), 10000)
     })
   return undefined
 }
@@ -221,6 +255,12 @@ export var Preview = () => {
             e.preventDefault()
             Player.seek(Edl.duration())
             break
+          // Split at the playhead, whichever tool is chosen.
+          case 'KeyS':
+            if (e.ctrlKey || e.metaKey || e.altKey) break
+            e.preventDefault()
+            cutAtPlayhead()
+            break
         }
       }
       document.addEventListener('keydown', onkeydown)
@@ -244,9 +284,8 @@ export var Preview = () => {
         return m('.bkg#preview', {}, [
           m(AuthedImage, {
             id: 'preview',
-            src: `preview/template/${encodeURIComponent(clip['name'])}?${urlfy(
-              clip.data
-            )}&width=${state.width()}&height=${state.height()}&t=${Video.time()}`,
+            src: templatePreviewUrl(clip),
+            onstate: verdict => Object.assign(TemplatePreview, verdict),
           }),
         ])
       }

@@ -331,36 +331,63 @@ test.describe('the project actions', () => {
     const project = await created.json()
     const before = 0
 
-    await authedPage.goto(`/#!/?stage=source&project=${project._id}`)
-    await expect(authedPage.locator('#timeline .clip')).toHaveCount(before)
-
-    await authedPage.locator('.mediachoice').first().click()
-    await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
-
-    await authedPage.locator('#save-timeline').click()
-
-    await expect
-      .poll(async () => {
-        const saved = await (
-          await request.get(`/project/${project._id}`, {
-            headers: { Authorization: token },
-          })
-        ).json()
-        return ((saved.edl || {}).clips || []).length
-      })
-      .toBe(before + 1)
-
-    const saved = await (
-      await request.get(`/project/${project._id}`, {
-        headers: { Authorization: token },
-      })
-    ).json()
-    expect(saved.name, 'saving the timeline overwrote the project name').toBe(
-      project.name
+    // The order that used to lose the clip, every time rather than some of
+    // the time. Opening the project fetches its clips, and when that answer
+    // landed after a clip was added it replaced the timeline: the clip
+    // vanished, Save found nothing to save, and no request was made. That
+    // was this test failing on most runs -- and on every run where the first
+    // library clip was short enough to win the race. The project's answer is
+    // held here until the clip is on the timeline.
+    let release
+    const held = new Promise(resolve => (release = resolve))
+    const own = url => url.pathname === `/project/${project._id}`
+    await authedPage.route(own, async route => {
+      if (route.request().method() === 'GET') await held
+      await route.fallback()
+    })
+    const loaded = authedPage.waitForResponse(
+      res => own(new URL(res.url())) && res.request().method() === 'GET'
     )
 
-    await authedPage.reload()
-    await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
+    try {
+      await authedPage.goto(`/#!/?stage=source&project=${project._id}`)
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(before)
+
+      await authedPage.locator('.mediachoice').first().click()
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
+
+      release()
+      await loaded
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
+
+      await authedPage.locator('#save-timeline').click()
+
+      await expect
+        .poll(async () => {
+          const saved = await (
+            await request.get(`/project/${project._id}`, {
+              headers: { Authorization: token },
+            })
+          ).json()
+          return ((saved.edl || {}).clips || []).length
+        })
+        .toBe(before + 1)
+
+      const saved = await (
+        await request.get(`/project/${project._id}`, {
+          headers: { Authorization: token },
+        })
+      ).json()
+      expect(saved.name, 'saving the timeline overwrote the project name').toBe(
+        project.name
+      )
+
+      await authedPage.reload()
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
+    } finally {
+      // Its own project, so it goes too: every run used to leave one behind.
+      await request.delete(`/project/${project._id}`, { headers: { Authorization: token } })
+    }
   })
 
   test('the actions say why they are unavailable', async ({ authedPage }) => {

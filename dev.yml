@@ -2,7 +2,8 @@ services:
   # TODO Development Reloader description
   website:
     ports:
-      - ${ALFRED_HMR_PORT:-8001}:8001
+      # Loopback unless asked otherwise; see the api's ports below.
+      - ${ALFRED_BIND:-127.0.0.1}:${ALFRED_HMR_PORT:-8001}:8001
     # `yarn run dev` polls rather than watching; see website/dev-watch.js.
     #
     # @parcel/watcher subscribes to inotify, and inotify events do not cross a
@@ -34,7 +35,14 @@ services:
       # taken through that port untrustworthy.
       #
       #   ALFRED_PORT=8100 ./al dev
-      - ${ALFRED_PORT:-8000}:80
+      #
+      # And on loopback unless asked otherwise. Published on every interface,
+      # the dev stack answered anything on the network -- and with
+      # ALFRED_DEV_SKIP_AUTH=1 it answers every request as a superuser. To try
+      # the app from a phone on the same network, opt in for that run:
+      #
+      #   ALFRED_BIND=0.0.0.0 ./al dev
+      - ${ALFRED_BIND:-127.0.0.1}:${ALFRED_PORT:-8000}:80
     volumes:
       - ./alfred/otto:/otto/
       # Mounted into a subdirectory, not over the system font directory.
@@ -64,13 +72,23 @@ services:
       # file the worker actually produced rather than guessing from its own
       # working directory.
       - VIDEO_DIR=/app/videos
+      # Same passthrough as the renderer's: hosts a clip may name remote media
+      # on, empty unless you ask for it.
+      - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
 
   renderer:
     build:
       context: .
       dockerfile: ./Dockerfile
     image: alfred_worker
-    entrypoint: celery -A alfred.core.utils.tasks:renderer --workdir /app/alfred -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
+    # No `--workdir`: the image's own WORKDIR, /app, is the right one. The
+    # worker was started in /app/alfred only so that a stale `core.utils.tasks`
+    # entry in the Celery app's `include` would import -- and from there every
+    # library clip (`videos/x.mp4`) resolved to /app/alfred/videos, which does
+    # not exist, so no render with a media clip could succeed. The include is
+    # fixed and the worker resolves media against VIDEO_DIR itself now, so the
+    # working directory no longer decides what a clip name means.
+    entrypoint: celery -A alfred.core.utils.tasks:renderer -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
     networks:
       - alfred_isolated
     volumes:
@@ -107,12 +125,17 @@ services:
       - DB_NAME=alfred
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
       # Absolute, because a relative path here depends on a working directory
-      # nobody sets deliberately. Celery is started with `--workdir
+      # nobody sets deliberately. Celery was started with `--workdir
       # /app/alfred`, so a bare `videos/` resolved to /app/alfred/videos --
       # which does not exist -- while the mount is at /app/videos. Every render
       # died on "Error opening output videos/....mp4: No such file or
       # directory", recorded as a failed render and nowhere else.
       - VIDEO_DIR=/app/videos
+      # Hosts a clip may name remote media on; empty unless you ask for it:
+      #   ALFRED_REMOTE_MEDIA_HOSTS=storage.googleapis.com ./al dev
+      # The worker refuses any other URL rather than downloading it. The api
+      # reads the same setting and refuses first.
+      - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
 
   db:
     ports:
@@ -120,5 +143,9 @@ services:
       # any other project's database takes it, and the failure names the port
       # without naming the culprit. Nothing in the app needs it published --
       # it is here for attaching a GUI.
-      - ${ALFRED_DB_PORT:-27017}:27017
+      #
+      # Loopback, and not through ALFRED_BIND: that is for reaching the app
+      # from a phone, which never needs an unauthenticated database on the
+      # network as well. ALFRED_DB_BIND moves it, for someone who means to.
+      - ${ALFRED_DB_BIND:-127.0.0.1}:${ALFRED_DB_PORT:-27017}:27017
     user: '${UID}:${GID}'

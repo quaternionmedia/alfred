@@ -16,6 +16,7 @@ import { Timecode } from './Timecode'
 import TimelineTools from './TimelineTools'
 import { Scale } from './Scale'
 import { StageRail, StagePanel, Flow } from './Stages'
+import { TemplateParams } from './TemplateParams'
 
 export var Otto = {
   // Re-checked on every mount, not only at boot.
@@ -55,6 +56,9 @@ export var Otto = {
         m('.viewersettings', [
           m(Aspect, ['16:9', '4:3', '4:5', '1:1', '5:4', '3:4', '9:16']),
           m(Resolution, ['1080p', '720p', '480p', '240p']),
+          // The selected template clip's settings, beside the frame they
+          // change. Nothing shows for a media clip.
+          m(TemplateParams),
         ]),
       ]),
 

@@ -53,12 +53,13 @@ what was actually verified.
 
 ## What Alfred is
 
-A video editor that runs without a server dependency, built as a **small
-control plane** (`alfred/`) orchestrating a **render engine** (`otto`, a
-separate public QM package consumed as `al-otto` and vendored at
-`alfred/otto`). The seam owns auth, project and render lifecycle state,
-and orchestration; it does not own video handling. Keep it that way — see
-the control-plane record in `governance/qm/adr/`.
+A browser video editor whose previews and renders are all made server-side,
+by a self-hosted stack built as a **small control plane** (`alfred/`)
+orchestrating a **render engine** (`otto`, a separate public QM package
+consumed as `al-otto` and vendored at `alfred/otto`). The seam owns auth,
+project and render lifecycle state, and orchestration; it does not own video
+handling. Keep it that way — see the control-plane record in
+`governance/qm/adr/`.
 
 - `alfred/core/routes/` — API surface (FastAPI routers)
 - `alfred/core/models/` — Beanie/Pydantic documents
@@ -69,7 +70,7 @@ the control-plane record in `governance/qm/adr/`.
 ## Clone and setup
 
 ```sh
-git clone --recurse-submodules git@github.com:quaternionmedia/alfred.git
+git clone --recurse-submodules https://github.com/quaternionmedia/alfred.git
 git submodule update --init --recursive   # if cloned without --recurse-submodules
 ./al init                                 # install website dependencies
 ```
@@ -89,7 +90,7 @@ arguments prints the full command list.
 | `./al nox -s lint` | Ruff |
 | `./al nox -s blacken` | Black (`-S`, single quotes) |
 | `./al docs` | Serve mkdocs locally on :4000 |
-| `./al prod` | Production stack (expects a running traefik) |
+| `./al prod` | Production stack (expects a running traefik and the production `ALFRED_SECRET_KEY` exported) |
 
 Tests can also run directly: `nox -f tests/noxfile.py -s coverage`.
 
@@ -115,13 +116,23 @@ These bite on a first run, none obvious from the error:
   as good as your knowledge of what served it.** Before trusting a number,
   confirm the identity of the server — `curl localhost:$PORT/openapi.json`
   names it. See [docs/retrospective-verification-discipline.md](docs/retrospective-verification-discipline.md).
-- **Port 27017.** `dev.yml` publishes MongoDB on the host. If anything else is
-  already bound there — a standalone `mongod`, another project's container —
-  the stack fails with `Bind for 0.0.0.0:27017 failed: port is already
-  allocated`, and the message names the port but not the culprit. Find it with
-  `docker ps`, or run with an override that remaps or drops the publish.
+- **Port 27017.** `dev.yml` publishes MongoDB on the host's loopback. If
+  anything else is already bound there — a standalone `mongod`, another
+  project's container — the stack fails with `Bind for 127.0.0.1:27017
+  failed: port is already allocated`, and the message names the port but not
+  the culprit. Find it with `docker ps`, or move it with `ALFRED_DB_PORT`.
   Nothing in the app needs 27017 exposed on the host; it is published for
-  attaching a GUI, and not publishing it is the better default.
+  attaching a GUI.
+- **Loopback only, unless you ask.** `dev.yml` publishes the api, the HMR port
+  and the database on `127.0.0.1`, so the dev stack is reachable from this
+  machine and nowhere else. That matters more than it looks: with
+  `ALFRED_DEV_SKIP_AUTH=1`, every request the stack answers is served as a
+  superuser, and on every interface that meant anyone on the network. To try
+  the app from a phone on the same network, opt in for that run:
+  `ALFRED_BIND=0.0.0.0 ./al dev`, then browse to this machine's LAN address.
+  Do it with the auth bypass off, or on a network you trust — `./al dev`
+  warns when both are set. The database ignores `ALFRED_BIND` and stays on
+  loopback; `ALFRED_DB_BIND` moves it, for someone who means to.
 - **`UID`/`GID`.** `dev.yml` sets the db container's user from `${UID}:${GID}`.
   Neither is exported by default in most shells, and `UID` is read-only in
   bash, so compose warns and substitutes blanks. Harmless on Docker Desktop;

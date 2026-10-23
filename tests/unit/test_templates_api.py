@@ -42,8 +42,12 @@ def unadvertised_callables():
 
 
 class TestTheAllowlistMatchesTheEngine:
-    def test_every_advertised_template_exists(self):
+    def test_every_advertised_template_is_in_the_engine_s_registry(self):
         """The endpoint skips missing names; this is what makes that safe.
+
+        The registry, `otto.templates.TEMPLATES`, because it is what
+        `generateEdl` looks a template clip's name up in: a name outside it is
+        refused at render time, whatever else the module holds.
 
         `available_templates` drops a name the installed engine does not
         provide, so one template disappearing degrades the bin rather than
@@ -51,7 +55,7 @@ class TestTheAllowlistMatchesTheEngine:
         wrong thing to be quiet about, since the symptom -- a template simply
         not offered -- looks like a product decision.
         """
-        missing = [n for n in TEMPLATE_NAMES if not hasattr(otto_templates, n)]
+        missing = [n for n in TEMPLATE_NAMES if n not in otto_templates.TEMPLATES]
         assert not missing, (
             f'advertised templates absent from the installed otto: {missing}. '
             'Either the engine dropped them or the allowlist has a typo; the '
@@ -60,22 +64,41 @@ class TestTheAllowlistMatchesTheEngine:
 
     def test_every_advertised_template_is_callable(self):
         not_callable = [
-            n for n in TEMPLATE_NAMES if not callable(getattr(otto_templates, n, None))
+            n for n in TEMPLATE_NAMES if not callable(otto_templates.TEMPLATES.get(n))
         ]
         assert not not_callable, f'advertised but not callable: {not_callable}'
+
+    def test_every_template_the_engine_has_is_offered_or_left_out_on_purpose(self):
+        """A template new to otto's registry should arrive here as a decision.
+
+        Otherwise it would be one the bin silently never offers. Excluded
+        names must be real templates too, or the exclusion is stale.
+        """
+        registry = set(otto_templates.TEMPLATES)
+        undecided = registry - set(TEMPLATE_NAMES) - set(UNDRIVABLE_TEMPLATES)
+        assert not undecided, (
+            f'otto renders {sorted(undecided)}, which is neither offered '
+            '(TEMPLATE_NAMES) nor deliberately left out (UNDRIVABLE_TEMPLATES)'
+        )
+        assert set(UNDRIVABLE_TEMPLATES) <= registry, (
+            f'{sorted(set(UNDRIVABLE_TEMPLATES) - registry)} left out, '
+            'but the engine has no such template any more'
+        )
 
     def test_the_allowlist_has_no_duplicates(self):
         assert len(TEMPLATE_NAMES) == len(set(TEMPLATE_NAMES))
 
 
 class TestTheAllowlistIsNarrowerThanTheNamespace:
-    """This is the point of the file.
+    """The module holds far more callables than templates.
 
-    `generateEdl` resolves a template with `getattr(templates, clip.name)`,
-    where `clip.name` arrives from the client. The module namespace carries
-    fourteen callables and only six are templates -- the rest are imports it
-    happens to hold. Publishing or validating against the namespace would
-    treat `ColorClip` and `concatenate_videoclips` as templates.
+    `otto.templates` imports what its templates are built from -- `ColorClip`,
+    `concatenate_videoclips`, `rgbToDec` and more -- so most of the callables
+    in its namespace are not templates. `generateEdl` used to resolve a
+    clip's name against that namespace, which made every one of them
+    reachable from an EDL; it looks names up in otto's registry now. The
+    allowlist is what this API publishes, and these keep anything that is
+    merely importable off it.
     """
 
     def test_the_namespace_holds_more_callables_than_are_advertised(self):

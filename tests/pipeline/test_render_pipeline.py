@@ -8,11 +8,14 @@ The mocked group runs in the default tier. The real encode is marked
 stays a second or two rather than a minute.
 """
 
+import wave
+
+import numpy as np
 import pytest
 from moviepy.video.VideoClip import VideoClip
 from otto.exceptions import EmptyClipsException
 from otto.models import Clip, Edl, TemplateData
-from otto.render import generateEdl, renderMultitrack
+from otto.render import AUDIO_FPS, generateEdl, renderMultitrack
 
 SIZE = (64, 48)
 
@@ -72,6 +75,26 @@ def test_start_sets_the_layer_start():
     assert video.clips[0].start == 3.0
 
 
+def test_clips_are_layered_by_their_own_start_never_sequenced():
+    """Contract C1: each clip is placed at its `start`, and none means 0.
+
+    The editor sends every clip's start, so the engine must neither sequence
+    clips itself nor treat `start: 0` differently from an absent start.
+    """
+    edl = Edl(
+        clips=[
+            color_clip(duration=2.0),
+            color_clip(duration=2.0, start=0.0),
+            color_clip(duration=1.0, start=2.0),
+        ]
+    )
+
+    video = generateEdl(edl, moviesize=SIZE)
+
+    assert [c.start for c in video.clips] == [0, 0, 2.0]
+    assert video.duration == 3.0, 'the output ends with its last clip'
+
+
 def test_positive_offset_also_sets_the_layer_start():
     """`offset` is documented as deprecated in favour of `start`."""
     video = generateEdl(Edl(clips=[color_clip(offset=2.0)]), moviesize=SIZE)
@@ -88,23 +111,14 @@ def test_edl_duration_sets_the_composite_duration():
     assert generateEdl(edl, moviesize=SIZE).duration == 7.0
 
 
-def test_outpoint_is_ignored():
-    """`outpoint` is accepted by the model and never applied.
+def test_outpoint_trims_the_clip():
+    """A clip plays its source from `inpoint` to `outpoint`.
 
-    The line that would trim to it is commented out in `otto/render.py`, so a
-    clip trimmed in the editor renders at its full `duration`. The editor
-    maintains `inpoint`/`outpoint` as the user drags, which makes this a
-    silent disagreement between what the timeline shows and what is rendered.
+    The line applying `outpoint` was commented out in the engine, so a clip
+    trimmed in the editor rendered at its full `duration` -- a silent
+    disagreement between the timeline and the video. With an outpoint,
+    `duration` is not consulted; the editor keeps the two equal anyway.
     """
-    edl = Edl(clips=[color_clip(duration=2.0, inpoint=1.0, outpoint=1.5)])
-
-    video = generateEdl(edl, moviesize=SIZE)
-
-    assert video.clips[0].duration == 2.0
-
-
-@pytest.mark.xfail(reason='outpoint should trim the clip')
-def test_outpoint_should_trim_the_clip():
     edl = Edl(clips=[color_clip(duration=2.0, inpoint=1.0, outpoint=1.5)])
     assert generateEdl(edl, moviesize=SIZE).clips[0].duration == 0.5
 
@@ -128,89 +142,64 @@ def recorded_fades(monkeypatch):
     return calls
 
 
-# The `makeColor` template hardcodes `.crossfadein(1).crossfadeout(1)` on
-# every clip it builds, before `generateEdl` looks at the clip's own fadeIn
-# and fadeOut. So the recorded calls are the template's pair plus, when the
-# clip asks for fades, the engine's pair on top.
-TEMPLATE_FADES = [('crossfadein', 1), ('crossfadeout', 1)]
+# A clip's `fadeIn` and `fadeOut` are its only fades. Templates used to end in
+# a one-second crossfade of their own, applied before the engine looked at the
+# clip's fades -- so `fadeIn: 0` could not switch a template's fade off, and a
+# requested fade stacked on top of the template's.
 
 
-def test_the_engine_applies_the_requested_fade_durations(recorded_fades):
+def test_a_requested_fade_is_the_only_fade(recorded_fades):
     generateEdl(Edl(clips=[color_clip(fadeIn=2.0, fadeOut=3.0)]), moviesize=SIZE)
 
-    assert ('crossfadein', 2.0) in recorded_fades
-    assert ('crossfadeout', 3.0) in recorded_fades
+    assert recorded_fades == [('crossfadein', 2.0), ('crossfadeout', 3.0)]
 
 
-def test_zero_skips_the_engine_fade(recorded_fades):
-    """The guard is truthiness, so 0 skips rather than fading for 0 seconds."""
-    generateEdl(Edl(clips=[color_clip(fadeIn=0, fadeOut=0)]), moviesize=SIZE)
+@pytest.mark.parametrize('off', [0, None])
+def test_disabling_fades_leaves_a_template_clip_unfaded(recorded_fades, off):
+    """0 or null is no fade at all, not a fade lasting no time."""
+    generateEdl(Edl(clips=[color_clip(fadeIn=off, fadeOut=off)]), moviesize=SIZE)
 
-    assert not [d for _, d in recorded_fades if d == 0]
-
-
-def test_a_template_clip_is_faded_even_when_fades_are_disabled(
-    recorded_fades,
-):
-    """`fadeIn=0` does not produce an unfaded template clip.
-
-    The template applied its own one-second crossfade before the engine ever
-    consulted the clip's fade settings, so the only thing switching fades off
-    achieves is removing the *second* fade.
-    """
-    generateEdl(Edl(clips=[color_clip(fadeIn=0, fadeOut=0)]), moviesize=SIZE)
-
-    assert recorded_fades == TEMPLATE_FADES
-
-
-@pytest.mark.xfail(reason='fadeIn=0 should render a template clip unfaded')
-def test_disabling_fades_should_leave_a_template_clip_unfaded(recorded_fades):
-    generateEdl(Edl(clips=[color_clip(fadeIn=0, fadeOut=0)]), moviesize=SIZE)
     assert recorded_fades == []
-
-
-def test_a_template_clip_asking_for_fades_gets_two(recorded_fades):
-    """Requesting a fade stacks the engine's on top of the template's.
-
-    A caller asking for a two-second fade in gets the template's one-second
-    crossfade *and* a two-second one, which is not what either the model or
-    the editor implies.
-    """
-    generateEdl(Edl(clips=[color_clip(fadeIn=2.0, fadeOut=3.0)]), moviesize=SIZE)
-
-    assert len([c for c in recorded_fades if c[0] == 'crossfadein']) == 2
-    assert len([c for c in recorded_fades if c[0] == 'crossfadeout']) == 2
-
-
-@pytest.mark.xfail(reason='a requested fade should replace the template fade')
-def test_a_requested_fade_should_not_stack_on_the_template_fade(
-    recorded_fades,
-):
-    generateEdl(Edl(clips=[color_clip(fadeIn=2.0)]), moviesize=SIZE)
-    assert len([c for c in recorded_fades if c[0] == 'crossfadein']) == 1
 
 
 # --- audio ----------------------------------------------------------------
 
 
-def test_an_audio_clip_is_also_appended_as_a_video_layer():
-    """Pinned as suspect rather than asserted as correct.
+def write_tone(path, seconds, frequency=440):
+    """A mono sine as a WAV file, written without an encoder."""
+    t = np.arange(int(seconds * AUDIO_FPS)) / AUDIO_FPS
+    samples = (0.25 * np.sin(2 * np.pi * frequency * t) * 32767).astype('<i2')
+    with wave.open(str(path), 'wb') as out:
+        out.setnchannels(1)
+        out.setsampwidth(2)
+        out.setframerate(AUDIO_FPS)
+        out.writeframes(samples.tobytes())
+    return path
 
-    The `audio` branch sets the composite's audio track *and* falls through to
-    `clips.append(c)`, so an audio clip becomes a layer in the video composite
-    as well. Flagged for review; not changed here.
+
+def loudness(track, start, end):
+    """The peak amplitude of `track` between `start` and `end` seconds."""
+    return float(np.abs(track.get_frame(np.arange(start, end, 1 / AUDIO_FPS))).max())
+
+
+@pytest.mark.needs_ffmpeg
+def test_an_audio_clip_is_mixed_into_the_sound_not_drawn(tmp_path):
+    """An audio clip is heard from its `start`, and is never a picture layer.
+
+    The engine built one and then fell through to the code for pictures, so a
+    render with an audio clip crashed -- and alfred accepts them, named like
+    any other media.
     """
-    import inspect
+    tone = write_tone(tmp_path / 'tone.wav', seconds=1.0)
+    sound = Clip(
+        type='audio', name=str(tone), duration=1.0, start=0.5, fadeIn=0, fadeOut=0
+    )
 
-    from otto import render
+    video = generateEdl(Edl(clips=[color_clip(duration=2.0), sound]), moviesize=SIZE)
 
-    source = inspect.getsource(render.generateEdl)
-    audio_branch = source.split("elif clip.type == 'audio':")[1]
-    before_next_branch = audio_branch.split('elif')[0]
-
-    assert (
-        'clips.append' not in before_next_branch
-    ), 'if the audio branch gains its own append/continue, revisit this test'
+    assert len(video.clips) == 1, 'the audio clip became a picture layer'
+    assert loudness(video.audio, 0.0, 0.45) < 0.01, 'heard before its start'
+    assert loudness(video.audio, 0.6, 1.4) > 0.05, 'not heard at all'
 
 
 # --- the real thing -------------------------------------------------------

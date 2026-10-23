@@ -26,10 +26,29 @@ all-or-nothing: the dev account is a verified superuser, so the admin routes
 open too. Anything finer grained is auth work, which is the next phase.
 
 The account is a **real, persisted user**, not a stand-in object. Routes do
-more than gate on the dependency -- `render.py` attributes records to
-`user.id` -- so a fake would make those paths behave differently under the
-bypass than under real auth, which would defeat the purpose of developing
-against it.
+more than gate on the dependency -- renders and projects are attributed to the
+caller's email (`render.username`, `project.owner`) and filtered by it -- so a
+fake would make those paths behave differently under the bypass than under
+real auth, which would defeat the purpose of developing against it.
+
+## What the dev account sees
+
+Records belong to the account that created them, and other accounts get a 404
+for them. Being a superuser, the dev account sees **every** project and render,
+not only its own -- remember that when something looks shared in development
+that would not be for a normal account. It also owns what development creates
+for it:
+
+- **Seed projects** are written as the dev user's at startup, and by `./al seed`
+  and `./al reseed`. `ALFRED_SEED_OWNER` names a different owner; under
+  `ALFRED_PRODUCTION` seeds have no owner unless it is set, which makes them
+  visible to superusers only.
+- **Demo projects** from `POST /demo/project` are one per account, so the dev
+  user gets its own.
+
+Registration is open in development and closed under `ALFRED_PRODUCTION`;
+`ALFRED_ALLOW_REGISTRATION` overrides either default. To see the app as a
+normal account would, turn the bypass off and register one.
 
 `/users/me` is shadowed by a dev-only route registered ahead of the
 fastapi-users one. Swapping the dependency is not enough to cover it:
@@ -51,7 +70,11 @@ would come back while every other endpoint stayed open.
 3. **No production passthrough.** The variable is wired only in `dev.yml`.
    `production.yml` does not mention it, so a production stack has no
    environment variable to read even if one were set on the host.
-4. **The dev account cannot be logged into.** It stores `!dev-no-login` where
+4. **Loopback by default.** `dev.yml` publishes the api on 127.0.0.1, so with
+   the bypass on, the superuser is reachable from this machine only.
+   `ALFRED_BIND=0.0.0.0` opens it to the network (to try the editor on a phone,
+   say), and `./al dev` warns when that is combined with the bypass.
+5. **The dev account cannot be logged into.** It stores `!dev-no-login` where
    a password hash belongs. fastapi-users verifies a candidate against that
    hash, and no input hashes to it, so the account is unusable as a way in
    once the flag is off again -- which matters, because it is a superuser and
@@ -68,10 +91,9 @@ The e2e suite runs against a normal stack. `test_e2e.yml` has no passthrough
 for the variable, and several specs assert that an anonymous caller is refused
 -- they would fail with the bypass on, correctly.
 
-## Known defect in this area
+## A defect found here, since fixed
 
-`/users/me` does not return a usable `id`, with or without the bypass. Under
-real authentication it serialises as `{}`; under the bypass, as `null`. The
-underlying user has a real ObjectId in both cases, so this is a `UserRead`
-serialisation problem rather than an auth one. It predates the bypass and is
-recorded here because this is where it was found.
+`/users/me` used not to return a usable `id`: `{}` under real authentication
+and `null` under the bypass, a `UserRead` serialisation problem that predated
+the bypass. It returns the id as a string in both cases now;
+`tests/unit/test_user_serialisation.py` pins it.

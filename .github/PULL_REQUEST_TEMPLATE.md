@@ -32,7 +32,7 @@ absent one -- it reads as an answer.
 
 - [ ] Formatting and lint clean (`./al nox -s blacken`, `./al nox -s lint`)
 - [ ] Backend suite run, with its numbers in the section above
-- [ ] Browser suite run if the frontend changed (`npm run e2e`, needs `./al dev`)
+- [ ] Browser suite run if the frontend changed (`./al test`, which builds its own stack)
 - [ ] `docs/cookbook.md` regenerated if any e2e spec changed (`./al cookbook`)
 - [ ] No co-author trailer naming an unmonitored address; tool involvement
       disclosed as a `Tools:` note instead

@@ -48,9 +48,10 @@ def coverage(session):
     # With `[render]`, because the engine's optional dependencies are not
     # optional to the templates that use them. Installed bare, `gizeh` was
     # missing and every text template raised ImportError -- which the templates
-    # catch and turn into a `None` clip, so the suite reported "title renders
-    # to nothing" rather than "a dependency is absent". The API image has these,
-    # so the tests were failing on a gap that existed only in the tests.
+    # then caught and turned into a `None` clip, so the suite reported "title
+    # renders to nothing" rather than "a dependency is absent". The API image
+    # has these, so the tests were failing on a gap that existed only in the
+    # tests.
     session.install('-e', '../alfred/otto[render]')
     session.run('mkdir', '-p', 'dist')
     session.run('mkdir', '-p', 'site')

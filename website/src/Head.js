@@ -1,24 +1,30 @@
 import m from 'mithril'
 var state = require("./Globals").state
 
-export function Head() {
+/**
+ * The viewer's frame: the output's aspect ratio, sized to the window.
+ *
+ * In pixels. These were bare numbers -- `width: 640` -- which only quirks mode
+ * reads as a length; the page had no doctype, so it was in quirks mode, and
+ * giving it one (so that phones lay it out to standard) would otherwise have
+ * left the frame without a width at all.
+ */
+const frame = () => {
+  const landscape = window.innerWidth > window.innerHeight
+  const share = landscape ? 0.4 : 0.24
   return {
-    oncreate: vnode => {
-      window.onresize = e => {
-        let h = state.width()/state.height()*window.innerHeight
-        // console.log('updating head', h, e)
-        vnode.dom.style.width = window.innerWidth > window.innerHeight ? `${h*.4}` : `${h*.24}`
-        vnode.dom.style.height = window.innerWidth > window.innerHeight ? '40vh' : '24vh'
-      }
-    },
-    view: vnode => {
-      return m('#head.head', {
-        style: {
-          width: window.innerWidth > window.innerHeight ? `${state.width()/state.height()*window.innerHeight*.4}` : `${state.width()/state.height()*window.innerHeight*.24}`,
-          height: window.innerWidth > window.innerHeight ? '40vh' : '24vh'
-        },
-        ...vnode.attrs
-      }, vnode.children)
-    }
+    width: `${(state.width() / state.height()) * window.innerHeight * share}px`,
+    height: landscape ? '40vh' : '24vh',
+  }
+}
+
+export function Head() {
+  // A listener, not `window.onresize = ...`, which replaced whatever else had
+  // claimed the window's resize -- and was never released.
+  const resize = () => m.redraw()
+  return {
+    oncreate: () => window.addEventListener('resize', resize),
+    onremove: () => window.removeEventListener('resize', resize),
+    view: vnode => m('#head.head', { style: frame(), ...vnode.attrs }, vnode.children),
   }
 }

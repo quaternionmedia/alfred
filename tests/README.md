@@ -6,8 +6,13 @@ Scope: the backend and the render engine. Browser coverage lives in
 ## Status
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
-stack's own configuration: **117 passed, 19 xfailed, in about 6 seconds.**
-IS-5 (render queueing, needs a database) is not started.
+stack's own configuration: **709 tests -- 699 passed, 2 skipped, 8 xfailed**
+in the `./al pytest` container, measured on integrate/review-fixes (f0e8cb3)
+with its `db` service up, so the database tier ran too. The two skips need a
+Docker CLI, which that container does not have; where ImageMagick cannot draw
+text, six more skip. The database tier IS-5 needs
+exists (`integration/`, marked `needs_db`, against the `db` service
+`pytest.yml` provides); its render-queueing tests are not written yet.
 
 ```sh
 pdm run pytest                                       # everything
@@ -86,9 +91,16 @@ tests/
     test_stack_config.py compose files and Dockerfiles
   pipeline/            needs ffmpeg, no DB, no network
     test_render_pipeline.py
+  integration/         needs MongoDB at DB_URL: the app in-process, real auth
+    conftest.py          the app, a per-worker database, account factories
 ```
 
-`integration/` (IS-5, needs a running MongoDB) is planned, not written.
+`integration/` runs wherever DB_URL is set -- `./al pytest` provides a
+MongoDB in `pytest.yml` -- and skips where it is not. A DB_URL that is set but
+does not answer fails the run instead of skipping it: the database was
+promised, so its absence is a fault, not a missing tool. Each xdist worker
+gets its own database (named in `conftest.py`, before the app is imported),
+dropped before and after the session.
 
 Markers, registered in `pyproject.toml` under `[tool.pytest.ini_options]`:
 `needs_ffmpeg`, `needs_db`, `needs_docker`. `conftest.py` skips a marked test
@@ -330,3 +342,17 @@ layer is not the same object as its predecessor, because the effects chain
 rebinds `c` at each step. It is a re-processed derivative carrying the
 previous clip's pixels — verified identical frame data — with the bad clip's
 duration. The corruption is the same; the mechanism is not object identity.
+
+## Fixed in the engine
+
+Defects 1–4 and 12–14 are fixed in otto, which this repository pins at
+`a387666`. Their pairs -- a test pinning the defect and a strict xfail for the
+fix -- became single tests of the fixed behaviour when the pin moved: an
+unknown or missing clip type, a refused download and a template name outside
+otto's registry (`otto.templates.TEMPLATES`) each raise `EdlException`
+naming the clip; `fps` reaches the encoder; `outpoint` trims; a clip's own
+`fadeIn` and `fadeOut` are its only fades. The audio clip IS-4 pinned as
+suspect is mixed into the sound and never drawn. Defect 6 stands -- the models
+still accept those configs -- but the engine now refuses each of them at
+render time with an `EdlException` naming the clip and the field, as it
+already refused defect 7's empty EDL, rather than rendering nonsense.

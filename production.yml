@@ -1,7 +1,14 @@
+# The production stack, composed over docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f production.yml up --build -d
+#
+# (`./al prod` runs that, after building the docs.) traefik terminates TLS on
+# the external `web` network and is expected to be running already.
+
 networks:
   web:
-    external:
-      name: web
+    name: web
+    external: true
 
 services:
   api:
@@ -14,8 +21,71 @@ services:
       - traefik.http.routers.alfred.tls.certresolver=le
       - traefik.http.routers.alfred.entrypoints=websecure
       - traefik.docker.network=web
+    # Without --reload. The image's default command reloads on file changes,
+    # and docker-compose.yml bind-mounts the repository over /app, so in
+    # production any write under the checkout -- a `git pull`, a stray editor
+    # save -- restarted the server mid-request and ran code nobody had
+    # deployed on purpose. Deploying is now a restart, which is a decision.
+    command:
+      ['uvicorn', 'alfred.main:app', '--host', '0.0.0.0', '--port', '80']
+    volumes:
+      # The same font mount the renderer has, so a template previewed here and
+      # rendered there draws with the same fonts. Additive; see dev.yml.
+      - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
     environment:
       - ALFRED_PRODUCTION=true
-  db:
-    ports:
-      - 192.168.192.52:27017:27017
+      # The key that signs every session token, from the deploying shell and
+      # nowhere else. docker-compose.yml loads ALFRED_SECRET_KEY from
+      # .secret_key, a development stub committed to this public repository,
+      # and production inherited it -- so unless the server's copy had been
+      # replaced, anyone could read the key and mint a token for any user.
+      # This entry overrides that file, and compose refuses to start the
+      # stack without it.
+      - ALFRED_SECRET_KEY=${ALFRED_SECRET_KEY:?production signs tokens with its own key; export ALFRED_SECRET_KEY before ./al prod}
+      # The directory the renderer writes to, named the same way on both, so
+      # delivery reads the file the worker produced.
+      - VIDEO_DIR=/app/videos
+      # Hosts a clip may name remote media on, passed through from the
+      # deploying shell; empty unless set. The renderer reads the same value.
+      - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
+
+  # No ports for the database. It was published on 192.168.192.52:27017,
+  # which put an unauthenticated MongoDB on the LAN; nothing outside this
+  # stack needs it, and the api and renderer reach it as `db` on
+  # alfred_isolated. Attach a GUI through `docker compose exec db mongo`, or a
+  # tunnel, when one is needed.
+
+  # The Celery worker that turns a queued render into a video. production.yml
+  # had none, so on this stack a render was accepted, queued and never
+  # collected -- unless a worker ran somewhere else, which nothing in the
+  # repository says. This is dev.yml's renderer with ALFRED_PRODUCTION set,
+  # and like it runs from the image's WORKDIR: library clips resolve against
+  # VIDEO_DIR, not the working directory.
+  renderer:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: alfred_worker
+    entrypoint: celery -A alfred.core.utils.tasks:renderer -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
+    networks:
+      - alfred_isolated
+    volumes:
+      - ./alfred/:/app/alfred/
+      # Where finished renders are written, and the same host directory the
+      # api serves and delivers from.
+      - ./videos/:/app/videos/
+      - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
+      - ./cred.json:/cred.json
+    depends_on:
+      - db
+    environment:
+      - ALFRED_PRODUCTION=true
+      - CELERY_BROKER=mongodb://db:27017/celery
+      - CELERY_BACKEND=mongodb://db:27017/celery
+      - DB_URL=mongodb://db:27017
+      - DB_NAME=alfred
+      - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+      # Absolute, matching the mount above; see dev.yml for what a relative
+      # path did here.
+      - VIDEO_DIR=/app/videos
+      - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}

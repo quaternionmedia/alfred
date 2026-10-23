@@ -21,10 +21,13 @@ import subprocess
 from os import makedirs
 from os.path import getsize, isfile, join
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from alfred.config import VIDEO_DIR
+
+from ..utils.db import User
+from .users import current_active_user
 
 demoAPI = APIRouter()
 
@@ -127,7 +130,7 @@ class DemoProject(BaseModel):
 
 
 @demoAPI.post('/demo/project', response_model=DemoProject)
-async def generateDemoProject():
+async def generateDemoProject(user: User = Depends(current_active_user)):
     """# Generate a demo project
 
     Creates a project with a timeline already on it, so the editor opens onto
@@ -139,8 +142,11 @@ async def generateDemoProject():
     disk -- so this works on an install that has never generated media and
     never will.
 
-    Idempotent by name: asking twice returns the project that already exists
-    rather than accumulating one per click.
+    The project belongs to whoever asked, and is idempotent per account:
+    asking twice returns the one you already have rather than accumulating one
+    per click. It was idempotent by name across the whole server, which under
+    ownership would have handed the second person to ask somebody else's demo
+    -- or, filtered properly, a demo they could not open.
     """
     from ..models import Project
 
@@ -150,17 +156,18 @@ async def generateDemoProject():
     # e2e suite raced it immediately and ended up with two projects called
     # Demo. An upsert with $setOnInsert leaves the decision to MongoDB.
     collection = Project.get_motor_collection()
+    mine = {'name': DEMO_PROJECT_NAME, 'owner': user.email}
     # The document *before* the update, so None means this call is the one that
     # created it. Asking for the document after would return one either way and
     # make `created` permanently false.
     previous = await collection.find_one_and_update(
-        {'name': DEMO_PROJECT_NAME},
-        {'$setOnInsert': _demo_project_document()},
+        mine,
+        {'$setOnInsert': _demo_project_document(owner=user.email)},
         upsert=True,
         return_document=False,
     )
 
-    stored = await Project.find_one(Project.name == DEMO_PROJECT_NAME)
+    stored = await Project.find_one(mine)
     clips = len(stored.edl.clips) if stored and stored.edl else 0
     return DemoProject(
         id=str(stored.id),
@@ -170,9 +177,13 @@ async def generateDemoProject():
     )
 
 
-def _demo_project_document():
+def _demo_project_document(owner):
+    # The text is drawn straight onto the frame, which is black: in the
+    # editor's amber it shows. It was the editor's near-black, #101820, which
+    # on black is all but invisible.
     return dict(
         name=DEMO_PROJECT_NAME,
+        owner=owner,
         logic={},
         fields=[],
         edl={
@@ -182,7 +193,7 @@ def _demo_project_document():
                     'name': 'title',
                     'duration': 3.0,
                     'start': 0.0,
-                    'data': {'text': 'Alfred', 'color': '#101820'},
+                    'data': {'text': 'Alfred', 'color': '#f2aa4c'},
                 },
                 {
                     'type': 'template',
@@ -191,7 +202,7 @@ def _demo_project_document():
                     'start': 3.0,
                     'data': {
                         'text': 'Drama is life with the dull bits cut out.',
-                        'color': '#101820',
+                        'color': '#f2aa4c',
                     },
                 },
                 {

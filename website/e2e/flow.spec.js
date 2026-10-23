@@ -161,9 +161,9 @@ test.describe('the four-stage flow', () => {
      * Built from `GET /destinations`, not hardcoded in the editor.
      *
      * Cloud delivery is the next phase, so the server currently offers only
-     * `local` -- the one that needs no account, which is what makes "works
-     * even without a server" true of getting your video back as well as making
-     * it. Asserting against the endpoint rather than a literal means enabling
+     * `local` -- the one that needs no account, which is what makes "cloud
+     * storage optional" true of getting your video back as well as making it.
+     * Asserting against the endpoint rather than a literal means enabling
      * a destination is a server change, and this test follows it.
      */
     const offered = await (

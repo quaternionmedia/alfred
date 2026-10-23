@@ -4,32 +4,37 @@ on:
   workflow_call:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   e2e:
     name: 🎭 Playwright
-    timeout-minutes: 20
+    # Three images built cold and the Playwright image pulled, then about two
+    # minutes of tests. Twenty minutes was set before the stack carried a
+    # site build and a render worker.
+    timeout-minutes: 30
     runs-on: ubuntu-latest
 
     steps:
       - name: 📰 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
+          # The api and renderer images install the vendored engine from
+          # alfred/otto.
           submodules: recursive
 
-      - name: 🚧 Init project
-        run: ./al init
-
-      - name: 🏗️ Build site
-        run: >-
-          docker compose -f docker-compose.yml run website
-          yarn parcel build /app/src/index.html /app/src/*.svg /app/src/*.png
-
+      # The whole stack comes from test_e2e.yml: it builds the site, starts
+      # the api, a render worker and the database, and runs the suite. The
+      # same command as `./al test`, so a failure here reproduces locally with
+      # that command and nothing else -- no `./al init`, no separate site
+      # build, no secrets.
       - name: 🧪 Run E2E suite
-        run: docker compose -f test_e2e.yml up --exit-code-from e2e
+        run: docker compose -f test_e2e.yml up --build --exit-code-from e2e
 
       - name: 📊 Upload report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: website/playwright-report/
@@ -37,7 +42,7 @@ jobs:
 
       - name: 🔍 Upload traces and screenshots
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-artifacts
           path: website/test-results/

@@ -2,13 +2,13 @@
  * The whole loop, with a video at the end of it.
  *
  * Queue a render from the browser, wait for the Celery worker to encode it with
- * ffmpeg, then deliver the result and check the bytes arrived. Nothing here is
- * stubbed: a real worker, a real encode, a real file.
+ * ffmpeg, then download and deliver the result and check the bytes arrived.
+ * Nothing here is stubbed: a real worker, a real encode, a real file.
  *
- * This is the only test in the suite that waits on an encode, so it is tagged
+ * This is the only spec in the suite that waits on an encode, so it is tagged
  * @slow and given its own timeout. Everything is deliberately small -- 320x180,
- * one second, a solid colour -- because the point is that the pipeline runs end
- * to end, not that it can handle a long edit.
+ * one second -- because the point is that the pipeline runs end to end, not
+ * that it can handle a long edit.
  *
  * It also needs a worker. Where none is running the render never leaves
  * `queued`, so the wait below reports that plainly rather than timing out on an
@@ -28,6 +28,7 @@ const TINY_RENDER = {
         type: 'template',
         name: 'makeColor',
         duration: 1.0,
+        start: 0.0,
         data: { color: '#f2aa4c' },
       },
     ],
@@ -39,26 +40,47 @@ const TINY_RENDER = {
   height: 180,
   fps: 24.0,
   duration: 1.0,
+  quality: 'draft',
 }
 
-/** Poll the render until the worker finishes with it. */
+/**
+ * Poll the render's own status until the worker finishes with it.
+ *
+ * `GET /render/{id}/status` rather than the whole list: the list is only the
+ * caller's renders now, and the status route says `rendered` or `failed`
+ * itself, with the reason when it failed.
+ */
 async function waitForRender(request, token, id, timeout = RENDER_TIMEOUT) {
   const deadline = Date.now() + timeout
   let last = null
   while (Date.now() < deadline) {
-    const res = await request.get('/render', { headers: { Authorization: token } })
-    const render = (await res.json()).find(r => r._id === id)
-    last = render
-    if (render && ['RENDERED', 'UPLOADED', 'failed'].includes(render.status)) {
-      return render
-    }
-    await new Promise(r => setTimeout(r, 2000))
+    const res = await request.get(`/render/${id}/status`, {
+      headers: { Authorization: token },
+    })
+    expect(res.status(), `status of render ${id}`).toBe(200)
+    last = await res.json()
+    if (['rendered', 'failed'].includes(last.state)) return last
+    await new Promise(r => setTimeout(r, 1000))
   }
   throw new Error(
     `render ${id} did not finish within ${timeout}ms. ` +
-      `Last seen: status=${last && last.status} progress=${last && last.progress}. ` +
-      'If status never changed, no Celery worker is consuming the queue.'
+      `Last seen: state=${last && last.state} progress=${last && last.progress}. ` +
+      'If it never left queued, no Celery worker is consuming the queue.'
   )
+}
+
+async function queue(request, token, body) {
+  const created = await request.post('/render', {
+    headers: { Authorization: token },
+    data: body,
+  })
+  expect(created.status(), await created.text()).toBe(200)
+  return (await created.json()).replace(/"/g, '')
+}
+
+/** An MP4 file starts with an `ftyp` box: four bytes of size, then the tag. */
+function looksLikeMp4(bytes) {
+  return bytes.length > 8 && bytes.subarray(4, 8).toString('latin1') === 'ftyp'
 }
 
 test.describe('@slow render pipeline, end to end', () => {
@@ -68,68 +90,142 @@ test.describe('@slow render pipeline, end to end', () => {
     request,
     token,
   }) => {
-    const created = await request.post('/render', {
-      headers: { Authorization: token },
-      data: TINY_RENDER,
-    })
-    expect(created.status()).toBe(200)
-    const id = (await created.json()).replace(/"/g, '')
+    const id = await queue(request, token, TINY_RENDER)
 
     const render = await waitForRender(request, token, id)
 
     expect(
-      render.status,
-      `render finished as ${render.status}. A 'failed' here is the encode ` +
+      render.state,
+      `the render failed: ${render.error}. A failure here is the encode ` +
         'itself, not this test -- check the renderer container logs.'
-    ).not.toBe('failed')
+    ).toBe('rendered')
     expect(render.progress).toBe(100)
-    expect(render.filename).toMatch(/\.mp4$/)
+    // Named by the render's id alone: nothing from the request reaches the
+    // filesystem path.
+    expect(render.filename).toBe(`${id}.mp4`)
   })
 
-  test('the finished render can be delivered, and the bytes arrive', async ({
+  test('a clip from the media library renders', async ({ request, token }) => {
+    /**
+     * The defect this guards: a clip dragged from the media bin is named
+     * `videos/<file>`, and the worker opened that against its own working
+     * directory, where there is no `videos/`. Every render with a media clip
+     * failed, and the only render test used a template, which needs no file.
+     */
+    const headers = { Authorization: token }
+    const videos = await (await request.get('/videos', { headers })).json()
+    const clip = videos.find(v => v.includes('demo-bars'))
+    expect(clip, 'global setup generates demo media').toBeTruthy()
+
+    const id = await queue(request, token, {
+      ...TINY_RENDER,
+      name: 'e2e library clip',
+      edl: {
+        clips: [
+          {
+            type: 'video',
+            name: clip,
+            duration: 1.0,
+            start: 0.0,
+            inpoint: 0.0,
+            outpoint: 1.0,
+            fadeIn: 0,
+            fadeOut: 0,
+          },
+        ],
+        duration: 1.0,
+      },
+    })
+
+    const render = await waitForRender(request, token, id)
+    expect(render.state, `the render failed: ${render.error}`).toBe('rendered')
+
+    const download = await request.get(`/render/${id}/download`, { headers })
+    expect(download.status()).toBe(200)
+    expect(looksLikeMp4(await download.body())).toBe(true)
+  })
+
+  test('a finished render downloads, whole or in ranges', async ({
     request,
     token,
   }) => {
-    const created = await request.post('/render', {
-      headers: { Authorization: token },
-      data: { ...TINY_RENDER, name: 'e2e delivery pipeline' },
+    const headers = { Authorization: token }
+    const id = await queue(request, token, {
+      ...TINY_RENDER,
+      name: 'e2e download',
+      project: 'e2e download',
     })
-    const id = (await created.json()).replace(/"/g, '')
     const render = await waitForRender(request, token, id)
-    test.skip(render.status === 'failed', 'the encode failed; see renderer logs')
+    test.skip(render.state === 'failed', `the encode failed: ${render.error}`)
 
-    const delivered = await request.post(`/render/${id}/deliver`, {
-      headers: { Authorization: token },
+    const whole = await request.get(`/render/${id}/download`, { headers })
+    expect(whole.status()).toBe(200)
+    expect(whole.headers()['content-type']).toBe('video/mp4')
+    // Saved under a readable name, not the id.
+    expect(whole.headers()['content-disposition']).toBe(
+      'attachment; filename="e2e-download-320x180.mp4"'
+    )
+    const bytes = await whole.body()
+    expect(looksLikeMp4(bytes)).toBe(true)
+    expect(Number(whole.headers()['content-length'])).toBe(bytes.length)
+
+    const part = await request.get(`/render/${id}/download`, {
+      headers: { ...headers, Range: 'bytes=0-99' },
     })
+    expect(part.status()).toBe(206)
+    expect(part.headers()['content-range']).toBe(`bytes 0-99/${bytes.length}`)
+    expect((await part.body()).equals(bytes.subarray(0, 100))).toBe(true)
+  })
+
+  test('the finished render can be delivered, and the link works', async ({
+    request,
+    token,
+  }) => {
+    const headers = { Authorization: token }
+    const id = await queue(request, token, { ...TINY_RENDER, name: 'e2e delivery' })
+    const render = await waitForRender(request, token, id)
+    test.skip(render.state === 'failed', `the encode failed: ${render.error}`)
+
+    const delivered = await request.post(`/render/${id}/deliver`, { headers })
     expect(delivered.status()).toBe(200)
 
+    // A local delivery hands back the download route, not a path on the
+    // server: the copy used to land under the public /data mount, and its
+    // path was the link.
     const receipt = await delivered.json()
-    expect(receipt.destination).toBe('local')
-    // The location names the file that was rendered, so a delivery cannot
-    // quietly succeed against the wrong one.
-    expect(receipt.location).toContain(render.filename)
+    expect(receipt).toEqual({
+      destination: 'local',
+      location: `/render/${id}/download`,
+    })
+
+    const followed = await request.get(receipt.location, { headers })
+    expect(followed.status()).toBe(200)
+    expect(looksLikeMp4(await followed.body())).toBe(true)
   })
 
   test('delivery is recorded on the render, so it is not repeated blindly', async ({
     request,
     token,
   }) => {
-    const created = await request.post('/render', {
-      headers: { Authorization: token },
-      data: { ...TINY_RENDER, name: 'e2e delivery record' },
+    const headers = { Authorization: token }
+    const id = await queue(request, token, {
+      ...TINY_RENDER,
+      name: 'e2e delivery record',
     })
-    const id = (await created.json()).replace(/"/g, '')
     const render = await waitForRender(request, token, id)
-    test.skip(render.status === 'failed', 'the encode failed; see renderer logs')
+    test.skip(render.state === 'failed', `the encode failed: ${render.error}`)
 
-    await request.post(`/render/${id}/deliver`, {
-      headers: { Authorization: token },
-    })
+    await request.post(`/render/${id}/deliver`, { headers })
 
-    const after = await request.get('/render', { headers: { Authorization: token } })
-    const updated = (await after.json()).find(r => r._id === id)
-    expect(updated.destination).toBe('local')
-    expect(updated.link).toContain(render.filename)
+    const status = await (
+      await request.get(`/render/${id}/status`, { headers })
+    ).json()
+    expect(status.destination).toBe('local')
+
+    const listed = (await (await request.get('/render', { headers })).json()).find(
+      r => r._id === id
+    )
+    expect(listed.link).toBe(`/render/${id}/download`)
   })
 
   test('the browser can drive a render and see it appear', async ({
@@ -195,10 +291,9 @@ test.describe('@slow render pipeline, end to end', () => {
 
     const render = await waitForRender(request, token, queuedId)
     expect(
-      render.status,
-      'the browser queued a render and the worker could not encode it; ' +
-        'check the renderer container logs'
-    ).not.toBe('failed')
-    expect(render.filename).toMatch(/\.mp4$/)
+      render.state,
+      `the browser queued a render and the worker could not encode it: ${render.error}`
+    ).toBe('rendered')
+    expect(render.filename).toBe(`${queuedId}.mp4`)
   })
 })

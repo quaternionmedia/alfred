@@ -90,14 +90,47 @@ class TestLocalDelivery:
         assert delivery.destination == 'local'
 
 
+class TestWhereLocalDeliveriesGo:
+    """Not under DATA_DIR, which the unauthenticated /data mount serves."""
+
+    def test_the_default_is_the_delivery_directory(self, monkeypatch, tmp_path):
+        from pathlib import Path
+
+        from alfred import config
+
+        monkeypatch.setattr(config, 'DELIVERY_DIR', str(tmp_path / 'deliveries'))
+        assert LocalDestination().root == Path(tmp_path / 'deliveries')
+
+    def test_the_default_delivery_directory_is_not_public(self):
+        from pathlib import Path
+
+        from alfred import config
+
+        data = Path(config.DATA_DIR).resolve()
+        delivery = Path(config.DELIVERY_DIR).resolve()
+        assert delivery != data and data not in delivery.parents
+
+    def test_a_directory_inside_data_dir_is_refused(
+        self, a_render, tmp_path, monkeypatch
+    ):
+        """Refused rather than published: no setting should make a delivery
+        public by accident."""
+        from alfred import config
+
+        monkeypatch.setattr(config, 'DATA_DIR', str(tmp_path / 'data'))
+        destination = LocalDestination(root=tmp_path / 'data' / 'renders')
+        with pytest.raises(DeliveryError, match='DATA_DIR'):
+            destination.deliver(str(a_render))
+        assert not (tmp_path / 'data' / 'renders').exists()
+
+
 class TestTheSeam:
     def test_the_default_is_local(self):
         """A server with no cloud account still has somewhere to put a render.
 
-        The README calls this "a video editor that works even without a
-        server". Until there was a local destination, the only finished-render
-        path went to a Google bucket, so that claim did not extend to getting
-        your video back.
+        The README says cloud storage is optional. Until there was a local
+        destination, the only finished-render path went to a Google bucket, so
+        a server without one had no way to give your video back.
         """
         assert DEFAULT_DESTINATION == 'local'
         assert isinstance(get_destination(), LocalDestination)

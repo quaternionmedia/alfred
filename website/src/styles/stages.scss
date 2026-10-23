@@ -242,6 +242,31 @@
   color: #8f8f8f;
 }
 
+// Progress, as a bar and a number: the bar reads at a glance down a list of
+// rows, the number is what you quote. Indeterminate while queued.
+.renderbar {
+  width: 5rem;
+  height: 0.45rem;
+  align-self: center;
+  accent-color: #f2aa4c;
+}
+
+// The reason a render failed, on its own line under the row so a long ffmpeg
+// complaint wraps rather than pushing the actions off the edge.
+.rendererror {
+  flex-basis: 100%;
+  font-size: 0.75rem;
+  color: #d98a8a;
+  overflow-wrap: anywhere;
+}
+
+.renderactions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
 .projectchoice {
   // Deliberately taller than the single-line action buttons: it stacks a
   // project name over its clip count.
@@ -267,6 +292,7 @@
 
 .renderitem {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   padding: 0.3rem 0.6rem;
@@ -309,6 +335,13 @@
       opacity: 1;
     }
   }
+}
+
+// Still offered, and said to be on the way out, as otto's own docstrings do.
+.templatelist .deprecated {
+  margin-left: 0.3rem;
+  font-size: 0.7rem;
+  color: #8f8f8f;
 }
 
 // Confirms an addition landed. The timeline can be below the fold, so the

@@ -1,8 +1,49 @@
 from os import environ
+from os.path import join
 
 PRODUCTION = environ.get('ALFRED_PRODUCTION')
 
 SECRET_KEY = environ.get('ALFRED_SECRET_KEY')
+
+# HS256 keys are only as strong as they are long, and this one signs every
+# session, password-reset and verification token the server issues.
+MIN_SECRET_KEY_LENGTH = 32
+
+
+def secret_key_problem(env):
+    """What is wrong with ALFRED_SECRET_KEY for this process, or None.
+
+    Two different failures, checked in different places:
+
+    - **Missing**, anywhere. Nothing can be signed, so every login answers
+      500 -- PyJWT is handed None -- and nothing says why. That is not a
+      production-only problem: test_e2e.yml's api has no key, and its whole
+      suite failed at the first login.
+    - **Shorter than MIN_SECRET_KEY_LENGTH**, under ALFRED_PRODUCTION. Anyone
+      holding a single token can guess HS256 keys offline until the signature
+      matches, and a short key puts that within reach -- after which they can
+      mint a session for any account. Development keys are stubs and allowed
+      to be short.
+
+    Reported, not enforced: the process still boots. Whether production should
+    refuse to start instead is an open decision.
+    """
+    key = env.get('ALFRED_SECRET_KEY') or ''
+    if not key:
+        return (
+            'ALFRED_SECRET_KEY is not set, so no token can be signed: every '
+            'login will fail with a server error.'
+        )
+    if env.get('ALFRED_PRODUCTION') and len(key) < MIN_SECRET_KEY_LENGTH:
+        return (
+            f'ALFRED_SECRET_KEY is shorter than {MIN_SECRET_KEY_LENGTH} '
+            'characters. It signs every session, password-reset and '
+            'verification token, and anyone holding one of those tokens can '
+            'guess keys offline until the signature matches; a short key puts '
+            'that within reach, and with it a session for any account. Use a '
+            f'random string of at least {MIN_SECRET_KEY_LENGTH} characters.'
+        )
+    return None
 
 
 def _truthy(value):
@@ -14,6 +55,40 @@ def _truthy(value):
     direction of staying locked.
     """
     return str(value).strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _given(value):
+    """Whether a variable was actually set to something.
+
+    Empty counts as unset. Compose passes a host variable through as
+    `X=${X:-}`, which hands the container an empty string for a variable
+    nobody set -- and an empty string must mean "use the default", not
+    "explicitly off".
+    """
+    return value is not None and str(value).strip() != ''
+
+
+def resolve_allow_registration(env):
+    """Whether `POST /auth/register` may create accounts.
+
+    Registration was mounted unconditionally, so anyone who could reach a
+    production server could give themselves an account on it. Open by default
+    in development, where registering is how you get a user at all, and closed
+    by default under ALFRED_PRODUCTION, where accounts are handed out rather
+    than taken.
+
+    ALFRED_ALLOW_REGISTRATION overrides the default in either direction,
+    parsed exactly like ALFRED_DEV_SKIP_AUTH: `1`, `true`, `yes` or `on` opens
+    it, and any other value closes it. Unrecognised fails closed, for the same
+    reason it fails towards auth staying on.
+    """
+    explicit = env.get('ALFRED_ALLOW_REGISTRATION')
+    if _given(explicit):
+        return _truthy(explicit)
+    return not env.get('ALFRED_PRODUCTION')
+
+
+ALLOW_REGISTRATION = resolve_allow_registration(environ)
 
 
 def resolve_dev_skip_auth(env):
@@ -55,15 +130,75 @@ DEV_SKIP_AUTH = resolve_dev_skip_auth(environ)
 # the second: `.invalid` is the RFC's own "guaranteed not to resolve" TLD, but
 # pydantic's validator rejects reserved TLDs outright. RFC 2606 also reserves
 # the second-level domains example.com/net/org, which do validate.
-DEV_USER_EMAIL = environ.get('ALFRED_DEV_USER_EMAIL', 'dev@example.com')
+DEFAULT_DEV_USER_EMAIL = 'dev@example.com'
+DEV_USER_EMAIL = environ.get('ALFRED_DEV_USER_EMAIL', DEFAULT_DEV_USER_EMAIL)
+
+
+def resolve_seed_owner(env):
+    """Who owns the projects seeded into an empty database at startup.
+
+    Every project has an owner now, and the seeded ones are created by the
+    server rather than by anybody, so somebody has to be named.
+
+    ALFRED_SEED_OWNER names an account outright. Unset, development seeds
+    belong to the dev user -- the account ALFRED_DEV_SKIP_AUTH acts as -- so
+    the bypass opens onto the same projects it always did, and would keep
+    them even if that account stopped being a superuser. In production they
+    get no owner, which makes them superuser-only: a production server
+    should not hand its demo projects to an account named in a development
+    default.
+    """
+    explicit = env.get('ALFRED_SEED_OWNER')
+    if _given(explicit):
+        return explicit.strip()
+    if env.get('ALFRED_PRODUCTION'):
+        return None
+    return env.get('ALFRED_DEV_USER_EMAIL', DEFAULT_DEV_USER_EMAIL)
+
+
+SEED_OWNER = resolve_seed_owner(environ)
 
 DATA_DIR = environ.get('DATA_DIR', 'data')
-# Where finished renders are written, and therefore where anything wanting to
-# read one has to look. It was a bare 'videos' literal inside the Celery task,
-# so nothing else could agree with it without repeating the string -- and the
+# The media library: what `GET /videos` lists and clips name as
+# `videos/<file>`. It was a bare 'videos' literal inside the Celery task, so
+# nothing else could agree with it without repeating the string -- and the
 # delivery endpoint duly looked in DATA_DIR instead and found nothing.
 VIDEO_DIR = environ.get('VIDEO_DIR', 'videos')
 STATIC_DIR = environ.get('STATIC_DIR', 'dist')
+
+# Where the worker writes finished renders, and the download route reads them.
+# Inside the media library by default, so the ./videos mount the api and the
+# worker already share covers it -- but in a subdirectory, which neither
+# `GET /videos` nor `GET /videos/{file}` reaches into. Renders used to be
+# written beside the media, so every user's output was listed to everyone
+# signed in and served to anyone who asked for it by name.
+RENDER_DIR = environ.get('ALFRED_RENDER_DIR', join(VIDEO_DIR, 'renders'))
+
+# Where the `local` destination copies a delivered render. Deliberately not
+# under DATA_DIR: that directory is served by an unauthenticated static mount,
+# so a local delivery was a public link to somebody's video. A delivered
+# render's `link` is the authenticated download route instead.
+DELIVERY_DIR = environ.get('ALFRED_DELIVERY_DIR', 'deliveries')
+
+
+def parse_hosts(value):
+    """A comma-separated host list, normalised for comparison.
+
+    Lowercased and stripped, empty entries dropped. A frozenset so the
+    setting cannot be mutated by whatever imports it.
+    """
+    return frozenset(
+        host.strip().lower() for host in (value or '').split(',') if host.strip()
+    )
+
+
+# Hosts a clip may name as remote media (`https://<host>/...`). Empty unless
+# configured, so by default only the media library can be rendered.
+#
+# The engine downloads any http(s) URL a clip names, from the worker and from
+# the api when previewing, so without a list this is a request to anywhere
+# those processes can reach -- including addresses on their own network.
+REMOTE_MEDIA_HOSTS = parse_hosts(environ.get('ALFRED_REMOTE_MEDIA_HOSTS', ''))
 
 DB_URL = environ.get('DB_URL')
 DB_NAME = environ.get('DB_NAME', 'db')
@@ -94,8 +229,20 @@ alfred.quaternion.media
 
 
 class CeleryConfig:
-    task_serializer = "pickle"
-    result_serializer = "pickle"
-    event_serializer = "json"
-    accept_content = ["application/json", "application/x-python-serialize"]
-    result_accept_content = ["application/json", "application/x-python-serialize"]
+    """JSON in both directions, and nothing else accepted (contract C7).
+
+    This was pickle, and unpickling a message runs whatever code it names.
+    The broker and the result backend are MongoDB collections, so anyone able
+    to write to that database could run code in the worker, and in the api
+    through task results. Task arguments are plain data now -- the EDL as a
+    dict, ids as strings -- and the worker rebuilds its models from them.
+
+    A task queued as pickle before this change is refused by the worker
+    rather than run; re-queue it.
+    """
+
+    task_serializer = 'json'
+    result_serializer = 'json'
+    event_serializer = 'json'
+    accept_content = ['json']
+    result_accept_content = ['json']

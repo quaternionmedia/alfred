@@ -3,24 +3,37 @@ name: ⚗️ CI tests
 on: [push, pull_request]
 
 jobs:
+  # The suite as the image runs it: Python 3.11, the versions requirements.lock
+  # pins (installed first, in their own pip call, as the Dockerfile does), and
+  # the engine vendored at alfred/otto rather than the release on PyPI. The
+  # org workflow's defaults are a floating 3.x -- 3.14, where reportlab<4 has
+  # no wheel and nothing installs -- with no submodules and no lockfile.
+  # publish.yml runs the same job as its release gate; keep the two in step.
   api_tests:
     name: 🐢 API tests
     uses: quaternionmedia/.github/.github/workflows/pytest.yml@main
     secrets: inherit
+    with:
+      python_version: '3.11'
+      submodules: recursive
+      requirements: requirements.lock
+      pip_args: '-e .[test] -e alfred/otto'
 
   lint:
     name: 👖 Linter
     uses: quaternionmedia/.github/.github/workflows/lint.yml@main
+    with:
+      python_version: '3.11'
 
   format:
     name: 🖤 Black
     uses: quaternionmedia/.github/.github/workflows/black.yml@main
+    with:
+      python_version: '3.11'
 
-  # Integration tests are wired but not yet gating. They cannot pass today:
-  # the application image does not build (see the Dockerfile notes in
-  # governance/qm/adr/), so there is nothing for the suite to run against.
-  # Enable this job once the image builds; the suite itself is ready.
-  #
-  # integration_tests:
-  #   name: 🔏 Integration tests
-  #   uses: ./.github/workflows/playwright.yml
+  # The browser suite, against a stack test_e2e.yml builds from the checkout:
+  # the site, the api, a render worker and the database. Project-local rather
+  # than an org workflow because the stack it builds is this project's own.
+  integration_tests:
+    name: 🔏 Integration tests
+    uses: ./.github/workflows/playwright.yml

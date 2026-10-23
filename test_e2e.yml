@@ -1,29 +1,90 @@
+# The browser suite, self-contained: from a clean checkout (with submodules),
+#
+#   docker compose -f test_e2e.yml up --build --exit-code-from e2e
+#
+# builds the SPA, starts the api, a render worker and a database, and runs
+# Playwright against them. `./al test` and the CI job both run exactly this.
+# Nothing is assumed to exist beforehand -- no `./al init`, no dev stack, no
+# earlier build of website/dist, no secrets.
+#
+# `--exit-code-from` stops every container as soon as any one exits, which is
+# why `site` below stays up after building instead of exiting when it is done.
+
 services:
   e2e:
     image: mcr.microsoft.com/playwright:v1.62.1-noble
     depends_on:
-      - api
-      - db
+      # Healthy, not merely started: global-setup's first request is
+      # /openapi.json, and a container that has started is not yet a server
+      # that answers.
+      api:
+        condition: service_healthy
+      db:
+        condition: service_started
+      # The @slow specs queue real renders and wait for them to finish.
+      renderer:
+        condition: service_started
     volumes:
       - ./website/:/e2e/
-      # Same reason as the website service in docker-compose.yml, mirrored.
-      # Without this, the `npm install` below writes Linux binaries and POSIX
-      # .bin symlinks straight into the host's website/node_modules through
-      # the bind mount -- so running `./al test` breaks the host `npx
-      # playwright` that website/e2e/README.md tells you to set up. The report
-      # directories still land on the host, which is the point of the mount.
+      # Same reason as the website service in docker-compose.yml, mirrored:
+      # the host's website/node_modules holds the host's platform binaries,
+      # and module resolution from /e2e would find them before the
+      # container's own install. The report directories still land on the
+      # host, which is the point of the mount.
       - /e2e/node_modules
     working_dir: /e2e/
     environment:
       # The api service listens on port 80 inside the compose network.
       E2E_BASE_URL: http://api
       CI: 'true'
+      # Where the runner's dependencies are installed; see the command.
+      NODE_PATH: /tmp/deps/node_modules
+    # Dependencies are installed outside the checkout, from copies of its
+    # manifests. Installed in place, npm rewrote website/yarn.lock through the
+    # bind mount -- npm updates a yarn.lock it finds, and swapped the
+    # committed native bindings for this container's -- so every run left a
+    # modified lockfile in the developer's checkout, one `git add -A` from
+    # being committed. The suite needs only @playwright/test, which resolves
+    # from NODE_PATH, and the runner is called by path so it is the version
+    # just installed rather than whatever npx would fetch.
+    #
     # No cloud recording. The Cypress setup this replaces ran
     # `cypress run --record`, which shipped every run to Cypress Cloud -- a
     # hosted service in the test path, holding a key in CI secrets. Reports
     # are written to website/playwright-report/ and uploaded by the workflow
     # as an artifact instead.
-    command: sh -c "npm install --no-audit --no-fund && npx playwright test --project=chromium"
+    command: >-
+      sh -c "mkdir -p /tmp/deps && cp package.json yarn.lock /tmp/deps/ &&
+      npm install --prefix /tmp/deps --no-audit --no-fund &&
+      /tmp/deps/node_modules/.bin/playwright test --project=chromium"
+
+  # The SPA the api serves, built from the committed lockfile.
+  #
+  # The api serves website/dist, which a clean checkout does not have. The
+  # suite depended on a dev stack or a separate build step having left one
+  # behind, and against a stale one it tested yesterday's frontend.
+  #
+  # It stays up after building because `up --exit-code-from e2e` aborts the
+  # whole run the moment any container exits: a one-shot build that exits 0
+  # stops the suite before it starts. The healthcheck is what the api waits
+  # for, and it reads a marker inside this container rather than dist/, so a
+  # bundle left over from an earlier run cannot satisfy it early.
+  site:
+    build: ./website/
+    image: alfred_site
+    init: true
+    command: sh -c "yarn build && touch /tmp/built && exec tail -f /dev/null"
+    volumes:
+      - ./website/:/app/
+      # The container's own node_modules; see docker-compose.yml.
+      - /app/node_modules
+    healthcheck:
+      test: ['CMD', 'test', '-f', '/tmp/built']
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 600s
+      start_interval: 2s
 
   api:
     build:
@@ -38,7 +99,10 @@ services:
     command:
       ['uvicorn', 'alfred.main:app', '--host', '0.0.0.0', '--port', '80']
     depends_on:
-      - db
+      db:
+        condition: service_started
+      site:
+        condition: service_healthy
     # Mount the repo root, matching docker-compose.yml. The Cypress compose
     # file this replaces mounted ./alfred/ onto /app, which shadows the
     # installed package root that `uvicorn alfred.main:app` resolves against.
@@ -51,6 +115,53 @@ services:
       - DB_URL=mongodb://db:27017
       - DB_NAME=alfred
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+      # Signs this stack's session tokens and nothing else. docker-compose.yml
+      # reads the dev key from .secret_key; this file does not include it, so
+      # without a key here every login answered 500. A value written in the
+      # open is the honest kind for a test stack: it is not a secret, and it
+      # says so.
+      - ALFRED_SECRET_KEY=e2e-only-signing-key-not-a-secret-never-use-outside-test-e2e
+      # Shared with the renderer through the repository mount, so the file
+      # the worker writes is the file the api delivers.
+      - VIDEO_DIR=/app/videos
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'python',
+          '-c',
+          "import urllib.request; urllib.request.urlopen('http://localhost/openapi.json', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 300s
+      start_interval: 2s
+
+  # The Celery worker, so the @slow specs that wait on a real encode have
+  # something to do it. Without one a queued render never leaves `queued`,
+  # and those specs could only time out.
+  #
+  # The same image and command as dev.yml's renderer, without `--workdir`:
+  # the Celery app's `include` names `alfred.core.utils.tasks` and the worker
+  # resolves library clips against VIDEO_DIR, so the working directory decides
+  # nothing.
+  renderer:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: alfred_worker
+    entrypoint: celery -A alfred.core.utils.tasks:renderer -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
+    depends_on:
+      - db
+    volumes:
+      - ./:/app/
+    environment:
+      - CELERY_BROKER=mongodb://db:27017/celery
+      - CELERY_BACKEND=mongodb://db:27017/celery
+      - DB_URL=mongodb://db:27017
+      - DB_NAME=alfred
+      - VIDEO_DIR=/app/videos
 
   db:
     image: mongo:bionic

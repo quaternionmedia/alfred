@@ -24,6 +24,18 @@ class Project(Document):
     logic: dict
     fields: Optional[List]
     name: Optional[str]
+    # Whose project this is: the email of the account that created it, the
+    # same identity a render records in `username`.
+    #
+    # Set by the server on every path that creates a project, and never taken
+    # from a request -- a body that names an owner has it replaced on create
+    # and ignored on update. Non-superusers see and act on only their own
+    # projects; superusers see all of them.
+    #
+    # Optional because every project stored before this field existed has
+    # none. Those are readable and writable by superusers only: nobody can be
+    # shown to own them, and guessing would hand one account another's work.
+    owner: Optional[str]
     # The timeline editor has always read `project.edl` -- OttoTimeline's
     # oninit does `Edl.edl = e.edl` -- and the model has never had the field,
     # so the value was always undefined and the timeline always empty. There

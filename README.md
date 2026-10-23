@@ -4,8 +4,10 @@
 >
 > ~ Alfred Hitchcock
 
-Alfred is a video editor that works even without a server, designed for quick
-editing from anywhere, including mobile devices.
+Alfred is a video editor that runs in the browser, designed for quick editing
+from anywhere, including mobile devices. The browser edits the timeline; every
+preview and every render is made by an Alfred server, which you run yourself,
+with cloud storage optional.
 
 Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 
@@ -25,7 +27,7 @@ governance gaps.
 ## Clone
 
 ```sh
-git clone --recurse-submodules git@github.com:quaternionmedia/alfred.git
+git clone --recurse-submodules https://github.com/quaternionmedia/alfred.git
 cd alfred
 ./al init          # install website dependencies
 ```
@@ -55,18 +57,24 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al nox -s lint` | Ruff |
 | `./al nox -s blacken` | Black (`-S`) |
 | `./al docs` | Serve the docs locally on :4000 |
-| `./al prod` | Production stack; expects a running traefik |
+| `./al prod` | Production stack; expects a running traefik and the production `ALFRED_SECRET_KEY` exported |
 | `./al flower` | Celery monitoring on :5555; needs the dev stack for its broker |
 | `./al cookbook` | Regenerate `docs/cookbook.md` from the e2e specs |
 | `./al install <pkg>` | Add a website dependency |
 
-`./al dev` publishes on 8000, 8001 and 27017. If something already holds one,
-override it rather than fighting for it — `ALFRED_PORT=8100 ./al dev`, and
-`ALFRED_DB_PORT` / `ALFRED_HMR_PORT` for the others. `./al dev` refuses to
-start on an occupied port and names what has it, because the failure this
-prevents is silent: the host port answers whoever bound it first, so the stack
-comes up healthy while every request from your machine reaches somebody else's
-application. See the dev-server notes in [AGENTS.md](AGENTS.md).
+`./al dev` publishes on 8000, 8001 and 27017, on `127.0.0.1` only. If
+something already holds one, override it rather than fighting for it —
+`ALFRED_PORT=8100 ./al dev`, and `ALFRED_DB_PORT` / `ALFRED_HMR_PORT` for the
+others. `./al dev` refuses to start on an occupied port and names what has it,
+because the failure this prevents is silent: the host port answers whoever
+bound it first, so the stack comes up healthy while every request from your
+machine reaches somebody else's application.
+
+To try the app from a phone on the same network, `ALFRED_BIND=0.0.0.0 ./al
+dev` publishes it on every interface for that run. Loopback is the default
+because the dev stack trusts its callers: with `ALFRED_DEV_SKIP_AUTH=1`,
+anyone who can reach it is a superuser. The database stays on loopback either
+way. See the dev-server notes in [AGENTS.md](AGENTS.md).
 
 ## First run
 
@@ -84,14 +92,21 @@ alongside `ALFRED_PRODUCTION` and prints a banner on every boot — see
 ## Tests
 
 ```sh
-pdm install                       # Python deps
+./al pytest                       # API suite, plus black and ruff, in Docker
+./al test                         # browser suite, in Docker, on a stack it builds
+
+pdm install -G test               # or on the host: Python deps and test extras
 pdm run pytest                    # unit + pipeline suite
 pdm run pytest -m "not needs_ffmpeg and not needs_db"   # no external tools
 
-cd website && npm install
+cd website && yarn install        # yarn: website/yarn.lock is the lockfile
 npx playwright install chromium
-npm run e2e                       # end-to-end, against a running ./al dev
+yarn e2e                          # end-to-end, against a running ./al dev
 ```
+
+On the host, `pdm install` takes `al-otto` from PyPI. `pip install -e
+alfred/otto --no-deps` in that environment makes the suite test the vendored
+engine the image runs, which `tests/unit/test_stack_config.py` checks.
 
 Strategy and known gaps: [tests/README.md](tests/README.md) for the backend,
 [website/e2e/README.md](website/e2e/README.md) for the browser suite. Both

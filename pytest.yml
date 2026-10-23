@@ -6,9 +6,21 @@ services:
     command: -f tests/noxfile.py
     volumes:
       - .:/app
+    # The needs_db tier (tests/integration) runs the API against this. Order
+    # only: depends_on does not wait for MongoDB to accept connections, so the
+    # tier's own fixture waits for it, and fails rather than skips if it never
+    # answers -- the database is promised here, so its absence is a fault.
+    depends_on:
+      - db
     environment:
       - CELERY_BROKER=mongodb://db:27017/celery
       - CELERY_BACKEND=mongodb://db:27017/celery
       - DB_URL=mongodb://db:27017
       - DB_NAME=alfred
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
+
+  # Throwaway. Nothing is published on the host and nothing is mounted: each
+  # test worker drops its own database before and after the run, so there is
+  # no state worth keeping and no port for a parallel stack to collide on.
+  db:
+    image: mongo:bionic

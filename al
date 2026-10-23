@@ -1,5 +1,8 @@
 #!/bin/sh
-VERSION=v0.1.3
+# Read from alfred/_version.py, the source of truth, rather than restated
+# here: the copy that used to sit on this line said v0.1.3 two releases after
+# 0.1.3.
+VERSION=v$(sed -n "s/^__version__ = ['\"]\(.*\)['\"]$/\1/p" "$(dirname "$0")/alfred/_version.py")
 
 HELP="./al
 
@@ -46,6 +49,30 @@ downloadMedia() {
   wget -N https://storage.googleapis.com/tower-bucket/ATripToTheMoon-300k.mp4
   wget -N https://storage.googleapis.com/tower-bucket/TheGreatTrainRobbery-300k.mp4
   cd ..
+}
+
+# Say so when the dev stack is about to be reachable from other machines with
+# its authentication switched off.
+#
+# dev.yml publishes on loopback unless ALFRED_BIND says otherwise, and
+# ALFRED_BIND=0.0.0.0 is the documented way to try the app from a phone. With
+# ALFRED_DEV_SKIP_AUTH on as well, every request is served as a superuser, so
+# the combination hands the app to anyone on the network. A warning rather
+# than a refusal: on a network you trust it may be exactly what you want.
+warnIfExposed() {
+  case "${ALFRED_BIND:-127.0.0.1}" in
+    127.0.0.1 | localhost | ::1) return ;;
+  esac
+  skip=$(printf '%s' "${ALFRED_DEV_SKIP_AUTH:-}" | tr '[:upper:]' '[:lower:]' | tr -d ' ')
+  case "$skip" in
+    1 | true | yes | on)
+      echo >&2
+      echo "  ALFRED_BIND=$ALFRED_BIND publishes the dev stack beyond this machine," >&2
+      echo "  and ALFRED_DEV_SKIP_AUTH is on: anyone who can reach it is served" >&2
+      echo "  as a superuser. Use one or the other unless you trust the network." >&2
+      echo >&2
+      ;;
+  esac
 }
 
 if [ -z $1 ]; then
@@ -101,12 +128,21 @@ elif [ $1 = "d" ] || [ $1 = "dev" ]; then
     exit 1
   fi
 
+  warnIfExposed
   echo "Alfred! running dev $1  (http://localhost:$ALFRED_PORT)"
   ALFRED_PORT="$ALFRED_PORT" docker compose -f docker-compose.yml -f dev.yml up "$@"
 
 # Starts in production.
 elif [ $1 = "p" -o $1 = "production" -o $1 = "prod" ]; then
   shift
+  # Before anything stops: production.yml refuses to start without the
+  # production signing key, and this takes the running stack down first, so
+  # a missing key found at `up` would leave production down.
+  if [ -z "${ALFRED_SECRET_KEY:-}" ]; then
+    echo "ALFRED_SECRET_KEY is not set. Production signs session tokens with its" >&2
+    echo "own key; export it, then run ./al prod again. Nothing was stopped." >&2
+    exit 1
+  fi
   echo "Alfred! running production $1"
   docker compose down && \
   docker run --rm -it -v ${PWD}:/docs -v ${PWD}/alfred/site/:/site/ --user $(id -u):$(id -g) squidfunk/mkdocs-material build -d /site/ && \
@@ -164,6 +200,7 @@ elif [ $1 = "demo" -o $1 = "download" -o $1 = "samples" ]; then
 elif [ $1 = "thin" ]; then
   shift
   ALFRED_PORT="${ALFRED_PORT:-8000}"
+  warnIfExposed
   echo "Alfred! thin dev stack, no renderer  (http://localhost:$ALFRED_PORT)"
   ALFRED_PORT="$ALFRED_PORT" docker compose     -f docker-compose.yml -f dev.yml -f thin.yml up "$@"
 
@@ -178,23 +215,42 @@ elif [ $1 = "restart" -o $1 = "r" ]; then
 
 elif [ $1 = "seed" -o $1 = "db" ]; then
   shift
-  docker compose exec api python3.10 -c """
-from seed import seed
-from db import db
+  # What the api does at startup, on request: the demo projects go into an
+  # empty Project collection, and one with anything in it is left alone.
+  #
+  # Both of these called python3.10, which the image does not have, and
+  # imported `seed` and `db` as top-level modules, which they are not; seed
+  # also wrote to `projects`, a collection nothing reads. They run the api
+  # image's own interpreter against the modules the api uses.
+  # Owned the way startup seeding owns them (ALFRED_SEED_OWNER; in
+  # development, the dev user), so a seeded project is visible to the same
+  # account whichever path put it there.
+  docker compose exec api python -c '
+from alfred.config import SEED_OWNER
+from alfred.core.utils import get_sync_db
+from alfred.seed import owned_by, seed
 
-if db.projects.count_documents({}) == 0:
-  db.projects.insert_many(seed)
-"""
+db = get_sync_db()
+if db.Project.count_documents({}):
+    print("Project already holds documents; nothing seeded. ./al reseed replaces them.")
+else:
+    db.Project.insert_many(owned_by(SEED_OWNER, seed))
+    print(f"seeded {len(seed)} projects, owner: {SEED_OWNER}")
+'
 
 elif [ $1 = "reinit" -o $1 = "reseed" ]; then
   shift
-  docker compose -f docker-compose.yml -f dev.yml exec api python3.10 -c """
-from seed import seed
+  # Drops the Project collection and seeds it again -- destructive on purpose.
+  docker compose exec api python -c '
+from alfred.config import SEED_OWNER
 from alfred.core.utils import get_sync_db
+from alfred.seed import owned_by, seed
+
 db = get_sync_db()
 db.Project.drop()
-db.Project.insert_many(seed)
-"""
+db.Project.insert_many(owned_by(SEED_OWNER, seed))
+print(f"dropped Project and seeded {len(seed)} projects, owner: {SEED_OWNER}")
+'
 
 elif [ $1 = "sh" ]; then
   shift
@@ -216,13 +272,27 @@ elif [ $1 = "dump" ]; then
   shift
   DATE=`date "+%Y-%m-%d-%H%M%S"`
   FILENAME=alfred_db_$DATE.gz
-  docker compose exec db sh -c "mongodump --db alfred --gzip --archive=$FILENAME"
-  docker container cp alfred_db_1:$FILENAME $FILENAME
+  # Streamed out of the db service, rather than written inside the container
+  # and copied out by name: `alfred_db_1` is how compose v1 named it, compose
+  # v2 says `alfred-db-1`, so the copy found no container and the dump stayed
+  # inside one. -T because a TTY would mangle the archive's bytes.
+  if docker compose exec -T db mongodump --db alfred --gzip --archive > "$FILENAME"; then
+    echo "wrote $FILENAME"
+  else
+    rm -f "$FILENAME"
+    echo "dump failed; is the stack running?" >&2
+    exit 1
+  fi
 
 elif [ $1 = "restore" ]; then
   shift
-  docker container cp $1 alfred_db_1:/$1
-  docker compose exec db sh -c "mongorestore --gzip --db alfred --archive=/$1 --drop"
+  if [ ! -f "$1" ]; then
+    echo "usage: ./al restore <archive written by ./al dump>" >&2
+    exit 1
+  fi
+  # Streamed in, for the same reason dump streams out. --drop replaces each
+  # collection the archive holds with the archive's copy.
+  docker compose exec -T db mongorestore --gzip --archive --drop < "$1"
 
 elif [ $1 = "reload" ]; then
   shift
@@ -244,7 +314,9 @@ elif [ $1 = "docker" -o $1 = "dock" ]; then
 
 elif [ $1 = "t" -o $1 = "test" -o $1 = "e2e" ]; then
   shift
-  docker compose -f test_e2e.yml up --exit-code-from e2e "$@"
+  # --build, as CI runs it, so a local run tests this checkout's images rather
+  # than whichever ones an earlier run left behind.
+  docker compose -f test_e2e.yml up --build --exit-code-from e2e "$@"
 
 elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   shift
