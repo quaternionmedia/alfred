@@ -5,12 +5,12 @@ const { CREDENTIALS } = require('./credentials')
  * Log in through the UI and assert it worked.
  *
  * Playwright's usual shortcut -- log in once via the API, save `storageState`,
- * reuse it -- is not available here. The app keeps its JWT in a module-level
- * object (`User` in `src/User.js`); nothing is written to localStorage or a
- * cookie, so there is no persisted credential to seed. A reload logs the user
- * out. The Cypress suite's `auth.js` tried exactly that shortcut and is
- * commented out in its entirety, which is consistent with it never having
- * worked.
+ * reuse it -- is not available here. The app keeps its JWT in sessionStorage
+ * (`User` in `src/User.js`), which survives a reload in the same tab and ends
+ * with the tab; `storageState` carries cookies and localStorage, and neither
+ * holds a credential, so there is nothing to seed. The Cypress suite's
+ * `auth.js` tried exactly that shortcut and is commented out in its entirety,
+ * which is consistent with it never having worked.
  *
  * The success signal is the menu link's *text*, not its presence. The link is
  * rendered unconditionally and only swaps between "Login" and "Logout"
@@ -90,7 +90,43 @@ const test = base.extend({
   ],
 })
 
-module.exports = { test, expect, login, apiLogin, CREDENTIALS, SELECTORS }
+/**
+ * Hold back what the page asks to run "as soon as possible" -- `setTimeout`
+ * with no delay -- until `releaseTheRouter`.
+ *
+ * Among it is mithril's router reading the address back. `m.route.set` writes
+ * the address at once and resolves the route it describes on that later tick,
+ * and until then `m.route.param()` answers with the route from before. On a
+ * busy page a click or a redraw lands in between now and then; held, one
+ * lands there every time a test makes one.
+ */
+const holdTheRouter = page =>
+  page.evaluate(() => {
+    const later = window.setTimeout
+    const held = []
+    window.setTimeout = (run, delay, ...args) => {
+      if (delay !== undefined) return later(run, delay, ...args)
+      held.push(() => run(...args))
+      return 0
+    }
+    window.releaseTheRouter = () => {
+      window.setTimeout = later
+      for (const run of held.splice(0)) run()
+    }
+  })
+
+const releaseTheRouter = page => page.evaluate(() => window.releaseTheRouter())
+
+module.exports = {
+  test,
+  expect,
+  login,
+  apiLogin,
+  holdTheRouter,
+  releaseTheRouter,
+  CREDENTIALS,
+  SELECTORS,
+}
 
 /** The shared media fixture, created once in global-setup.js.
  *

@@ -10,7 +10,7 @@ A clip fades in and out over one second unless it says otherwise: `fadeIn` and `
     "clips": [
       {
         "type": "video",
-        "name": "https://storage.googleapis.com/tower-bucket/moon.mp4",
+        "name": "videos/moon.mp4",
         "fadeIn": 2
       }
     ]
@@ -26,7 +26,7 @@ A clip fades in and out over one second unless it says otherwise: `fadeIn` and `
     "clips": [
       {
         "type": "video",
-        "name": "https://storage.googleapis.com/tower-bucket/moon.mp4",
+        "name": "videos/moon.mp4",
         "fadeOut": 2
       }
     ]

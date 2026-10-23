@@ -13,12 +13,12 @@ The `start` property defines the desired starting time for each clip (default 0)
     "clips": [
       {
         "type": "video",
-        "name": "https://storage.googleapis.com/tower-bucket/moon.mp4",
+        "name": "videos/moon.mp4",
         "duration": 5
       },
       {
         "type": "video",
-        "name": "https://storage.googleapis.com/tower-bucket/train.mp4",
+        "name": "videos/train.mp4",
         "inpoint": 10,
         "duration": 5,
         "start": 5

@@ -52,7 +52,11 @@ test.describe('the render list', () => {
     await expect(first.locator('.renderstatus')).toBeVisible()
   })
 
-  test('an unfinished render cannot be delivered', async ({ authedPage }) => {
+  test('an unfinished render cannot be delivered', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
     /**
      * There is no file to send until the worker has finished, and a button
      * that fails is worse than one that explains itself. The row disables it
@@ -63,25 +67,55 @@ test.describe('the render list', () => {
      * the worker: other specs queue renders, so a render chosen as unfinished
      * could complete between the API read and the assertion, and the test
      * failed for having been right a moment earlier.
+     *
+     * The snapshot is taken once the list has arrived, with a render of the
+     * test's own on it -- queued, rendering or done by then; the rule holds
+     * for each. Taken at a fixed 300 ms, a list slower than that read as
+     * nothing rendered, and the test skipped itself.
      */
+    const queued = await request.post('/render', {
+      headers: { Authorization: token },
+      data: {
+        edl: {
+          clips: [
+            { type: 'template', name: 'makeColor', duration: 1.0, data: { color: '#4c7af2' } },
+          ],
+          duration: 1.0,
+        },
+        name: 'e2e unfinished',
+        project: 'e2e',
+        width: 320,
+        height: 180,
+        duration: 1.0,
+      },
+    })
+    expect(queued.status(), await queued.text()).toBe(200)
+    const id = String(await queued.json()).replace(/"/g, '')
+
     await authedPage.goto('/#!/?stage=deliver')
-    await authedPage.waitForTimeout(300)
+    // The list has come, and been drawn, once it shows the render queued above.
+    await expect(authedPage.locator(`.renderitem[data-render="${id}"]`)).toBeVisible()
 
     const rows = await authedPage.evaluate(() =>
-      [...document.querySelectorAll('.renderitem')].map(row => ({
-        status: (row.querySelector('.renderstatus') || {}).textContent || '',
-        deliverable: !(row.querySelector('button.deliver') || {}).disabled,
-        delivered: !!row.querySelector('.delivered'),
-      }))
+      [...document.querySelectorAll('.renderitem')].map(row => {
+        const deliver = row.querySelector('button.deliver')
+        return {
+          status: (row.querySelector('.renderstatus') || {}).textContent || '',
+          deliverable: !(deliver || {}).disabled,
+          why: deliver ? deliver.title : '',
+          delivered: !!row.querySelector('.delivered'),
+        }
+      })
     )
-    test.skip(rows.length === 0, 'nothing rendered in this environment')
 
     const FINISHED = /RENDERED|UPLOADED/i
-    const wrong = rows.filter(r => r.deliverable && !FINISHED.test(r.status) && !r.delivered)
+    const wrong = rows.filter(
+      r => !FINISHED.test(r.status) && !r.delivered && (r.deliverable || !/not finished/i.test(r.why))
+    )
 
     expect(
       wrong,
-      `offered delivery for renders that have not finished: ${JSON.stringify(wrong)}`
+      `renders not finished, offered for delivery or not saying why: ${JSON.stringify(wrong)}`
     ).toEqual([])
   })
 

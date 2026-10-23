@@ -59,7 +59,11 @@ orchestrating two cooperating, parallel engines: **otto** renders the picture
 (a separate public QM package consumed as `al-otto` and vendored at
 `alfred/otto`), and **vox** carries the sound (QM's audio-engine seam,
 vendored at `alfred/vox`, driving an engine such as joe over HTTP). Both are
-submodules installed editable, the same way, everywhere. The seam owns auth,
+submodules, installed editable from there the same way everywhere -- the
+image, nox and CI: `--no-deps`, with what they need coming from alfred's
+lockfiles (`requirements.lock`, and `requirements-render.lock` for otto's
+`render` extra), so nothing is resolved on the day of a build (the
+`Dockerfile` says more). The seam owns auth,
 project, render and caption lifecycle state, and orchestration; it does not
 own video or audio handling, and only `alfred/core/utils/audio_engine.py`
 knows how the audio engine is reached (docs/captions.md). Keep it that way —

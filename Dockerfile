@@ -6,7 +6,7 @@ FROM python:3.11@sha256:d0199e2a90bf7a206a485b115323a75bc946f30b463d704c5435a454
 
 WORKDIR /app
 
-COPY pyproject.toml README.md requirements.lock ./
+COPY pyproject.toml README.md requirements.lock requirements-render.lock ./
 COPY alfred alfred
 
 # Exactly the lockfile: its pins, and nothing resolved around them.
@@ -25,16 +25,21 @@ COPY alfred alfred
 # the intended one. What resolving used to catch -- a dependency added to
 # pyproject.toml and never locked, which --no-deps would leave out --
 # tests/unit/test_stack_config.py checks against requirements.lock instead.
-RUN pip3 install --no-cache-dir --no-deps -r requirements.lock
+#
+# requirements-render.lock is what the engine draws with, its `render` extra
+# (gizeh, and cairocffi under it), from the same resolution. This step used to
+# resolve `alfred/otto[render]` on the day of the build, so the image and CI
+# could disagree -- and CI did not install the extra at all.
+RUN pip3 install --no-cache-dir --no-deps -r requirements.lock -r requirements-render.lock
 
-# The engine's render extras are not in the lockfile, so this install
-# resolves; nothing the engine depends on reaches python-multipart, so it
-# cannot undo the override.
-RUN pip3 install -e alfred/otto[render]
+# The picture engine, editable from the submodule, with --no-deps like
+# everything else here: what it depends on is in the two lockfiles above, and
+# tests/unit/test_stack_config.py fails if that stops being true.
+RUN pip3 install --no-deps -e alfred/otto
 # The sound engine's client, vendored beside the picture engine and installed
-# the same way, editable from the submodule -- but with --no-deps: what its
-# core imports (httpx) is in the lockfile above, and the rest of its own
-# dependencies (a speech synthesizer, a CLI) serve parts alfred never loads.
+# the same way: what its core imports (httpx) is in the lockfile above, and
+# the rest of its own dependencies (a speech synthesizer, a CLI) serve parts
+# alfred never loads.
 RUN pip3 install --no-deps -e alfred/vox
 RUN pip3 install --no-deps -e .
 # Not in the lockfile either -- pyproject.toml lists the server as a

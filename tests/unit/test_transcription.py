@@ -8,6 +8,8 @@ and the captions it made. The engine, the mixing and the database are stood
 in for here; the pipeline tier mixes a real timeline.
 """
 
+import types
+
 import pytest
 from bson import ObjectId
 from otto.models import Edl
@@ -21,7 +23,7 @@ from alfred.core.utils.captions import (
     TooManyCaptions,
     captions_from_transcript,
 )
-from alfred.core.utils.transcription import NothingToHear, sounding_timeline
+from alfred.core.utils.transcription import NothingToHear, sounding_clips
 
 
 def spoken(start, words, step=0.4, space=True):
@@ -134,41 +136,106 @@ class TestFromATranscript:
             captions_from_transcript(many)
 
 
+TIMELINE = {
+    'clips': [
+        {'type': 'template', 'name': 'title', 'duration': 3, 'data': {'text': 'x'}},
+        {'type': 'audio', 'name': 'videos/a.wav', 'start': 1, 'duration': 2},
+        {'type': 'image', 'name': 'videos/b.png', 'start': 4, 'duration': 6},
+        {'type': 'video', 'name': 'videos/c.mp4', 'start': 2, 'duration': 1},
+    ]
+}
+
+
 class TestWhatCanBeHeard:
-    def test_only_video_and_audio_clips_as_long_as_the_timeline(self):
+    def test_only_video_and_audio_clips_can_sound(self):
+        sounding = sounding_clips(Edl.parse_obj(TIMELINE))
+        assert [(c.type, c.name) for c in sounding] == [
+            ('audio', 'videos/a.wav'),
+            ('video', 'videos/c.mp4'),
+        ]
+
+    def test_a_timeline_of_templates_and_images_has_none(self):
         edl = Edl.parse_obj(
             {
                 'clips': [
-                    {
-                        'type': 'template',
-                        'name': 'title',
-                        'duration': 3,
-                        'data': {'text': 'x'},
-                    },
-                    {
-                        'type': 'audio',
-                        'name': 'videos/a.wav',
-                        'start': 1,
-                        'duration': 2,
-                    },
-                    {
-                        'type': 'image',
-                        'name': 'videos/b.png',
-                        'start': 4,
-                        'duration': 6,
-                    },
+                    {'type': 'template', 'name': 'makeColor', 'duration': 1},
+                    {'type': 'image', 'name': 'videos/b.png', 'duration': 1},
                 ]
             }
         )
-        sounding = sounding_timeline(edl)
-        assert [c.type for c in sounding.clips] == ['audio']
-        assert sounding.duration == 10
+        assert sounding_clips(edl) == []
 
-    def test_a_silent_timeline_has_nothing(self):
+
+class TestTheMix:
+    """otto writes the WAV (`otto.render.renderSound`); alfred names the rate
+    and says what nothing to hear means. The pipeline tier mixes for real."""
+
+    @pytest.fixture
+    def otto(self, monkeypatch):
+        """What `renderSound` was asked for; set `answer` to a length to
+        return or an exception to raise."""
+        from alfred.core.utils import transcription
+
+        calls = []
+        state = {'answer': 7.0}
+
+        def renderSound(edl, filename, rate):
+            calls.append({'edl': edl, 'filename': filename, 'rate': rate})
+            if isinstance(state['answer'], Exception):
+                raise state['answer']
+            return state['answer']
+
+        monkeypatch.setattr(transcription, 'renderSound', renderSound)
+        return types.SimpleNamespace(calls=calls, state=state)
+
+    def test_otto_writes_the_whole_timeline_at_the_speech_rate(self, otto):
+        from alfred.core.utils.transcription import SPEECH_RATE, mix_timeline
+
+        edl = Edl.parse_obj(TIMELINE)
+
+        assert mix_timeline(edl, '/tmp/job/timeline.wav') == 7.0
+
+        # The whole timeline, silent clips and all: otto reads their timing
+        # for the length, so the engine's times are the timeline's.
+        assert otto.calls == [
+            {'edl': edl, 'filename': '/tmp/job/timeline.wav', 'rate': SPEECH_RATE}
+        ]
+        assert SPEECH_RATE == 16000
+
+    def test_videos_without_a_sound_track_have_nothing_to_hear(self, otto):
+        from otto.exceptions import NoSoundException
+
+        from alfred.core.utils.transcription import mix_timeline
+
+        otto.state['answer'] = NoSoundException('the Edl makes no sound: ...')
+        edl = Edl.parse_obj(
+            {'clips': [{'type': 'video', 'name': 'videos/c.mp4', 'duration': 2}]}
+        )
+
+        # The browser suite's silent-timeline spec reads these words.
+        with pytest.raises(NothingToHear, match='has a sound track'):
+            mix_timeline(edl, '/tmp/job/timeline.wav')
+
+    def test_a_timeline_nothing_in_which_can_sound_is_not_handed_to_otto(self, otto):
+        from alfred.core.utils.transcription import mix_timeline
+
         edl = Edl.parse_obj(
             {'clips': [{'type': 'template', 'name': 'makeColor', 'duration': 1}]}
         )
-        assert sounding_timeline(edl) is None
+
+        with pytest.raises(NothingToHear, match='no video or audio clips'):
+            mix_timeline(edl, '/tmp/job/timeline.wav')
+        assert otto.calls == []
+
+    def test_a_clip_otto_cannot_play_is_refused_as_otto_said(self, otto):
+        from otto.exceptions import EdlException
+
+        from alfred.core.utils.transcription import mix_timeline
+
+        otto.state['answer'] = EdlException("clip 2 ('videos/a.wav'): inpoint 9")
+
+        with pytest.raises(EdlException, match='clip 2'):
+            mix_timeline(Edl.parse_obj(TIMELINE), '/tmp/job/timeline.wav')
 
 
 class TestNothingHeard:
@@ -290,6 +357,22 @@ class TestTheTask:
         tasks.transcribeCaptions(projectId=str(project_id))
         assert collection.documents[project_id]['captions_job']['error'] == (
             'the timeline has no video or audio clips'
+        )
+
+    def test_a_clip_the_engine_cannot_play_is_recorded_plainly(
+        self, projects, monkeypatch
+    ):
+        from otto.exceptions import EdlException
+
+        project_id = ObjectId()
+        collection = projects({'_id': project_id, 'edl': EDL})
+        heard(
+            monkeypatch,
+            EdlException("clip 2 ('videos/talk.wav'): inpoint 9 is past its end"),
+        )
+        tasks.transcribeCaptions(projectId=str(project_id))
+        assert collection.documents[project_id]['captions_job']['error'] == (
+            "clip 2 ('videos/talk.wav'): inpoint 9 is past its end"
         )
 
     def test_anything_else_is_recorded_with_its_name(self, projects, monkeypatch):

@@ -68,4 +68,4 @@ We can also render each project to multiple formats, or use the entire project a
 !!! abstract "`Edl` vs `Project`"
     By definition, an `Edl` is a `Project` that has no special logic, and therefore needs no data.
 
-For a full working example, see [examples/project](../../examples/project).
+For a full working example, see [examples/project](../examples/project.md).

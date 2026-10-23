@@ -13,7 +13,7 @@
  * real 320x240 file.
  */
 
-const { test, expect } = require('./fixtures')
+const { test, expect, holdTheRouter, releaseTheRouter } = require('./fixtures')
 
 const DEMO = 'Timeline demo'
 
@@ -121,6 +121,41 @@ test.describe('the four-stage flow', () => {
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(
       demo.edl.clips.length
     )
+  })
+
+  test('a stage chosen straight after a project keeps the project', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * Choosing a stage on the rail changes the stage and keeps the rest of the
+     * address, the project chosen a moment before included. The rail built
+     * the new address from the router's route, which reads a change back a
+     * tick after it is made; a stage chosen in that tick put back the address
+     * from before the project, and the project was dropped. Here the tick is
+     * held open, so the stage is chosen inside it every time.
+     */
+    const demo = await demoProject(request, token)
+    test.skip(!demo, 'demo project not seeded')
+
+    await authedPage.goto('/#!/?stage=source')
+    const card = authedPage
+      .locator('.projectpicker')
+      .getByRole('button', { name: new RegExp(DEMO, 'i') })
+      .first()
+    await expect(card).toBeVisible()
+    await holdTheRouter(authedPage)
+    await card.click()
+    await authedPage.locator('#stage-render').click()
+    await releaseTheRouter(authedPage)
+
+    // Mutation: build the address in `Flow.go` from `m.route.param()` -- the
+    // project is dropped, and this fails.
+    await expect(authedPage).toHaveURL(new RegExp(`project=${demo._id}`))
+    await expect(authedPage).toHaveURL(/stage=render/)
+    await expect(authedPage.locator('#stage-render')).toHaveClass(/active/)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(demo.edl.clips.length)
   })
 
   test('the timeline stays mounted across every stage', async ({

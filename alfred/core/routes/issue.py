@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Body, Depends, HTTPException
+from starlette.concurrency import run_in_threadpool
 
 from alfred.config import EMAIL_SENDTO
 
@@ -28,8 +29,15 @@ async def reportIssue(
     render, or about one that did not exist.
     """
     await load_owned_render(store, item_id, user)
-    if not sendMail(
-        recepients=EMAIL_SENDTO, subject=f'issue with render: {item_id}', message=issue
-    ):
+    # Off the event loop: the mail goes out over SMTP with no timeout, so the
+    # api answered nothing else until the mail server had finished with it --
+    # or, with one that never replied, for as long as the connection held.
+    sent = await run_in_threadpool(
+        sendMail,
+        recepients=EMAIL_SENDTO,
+        subject=f'issue with render: {item_id}',
+        message=issue,
+    )
+    if not sent:
         print('error reporting issue with ', item_id, issue)
         raise HTTPException(status_code=500, detail='error sending email')

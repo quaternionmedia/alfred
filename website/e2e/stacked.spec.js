@@ -5,12 +5,96 @@
  * the stage's panels sit under it, and the viewer and the timeline are always
  * below them -- built from the same panel modules the workspace docks
  * (workspace.spec.js). Run by the `phone` project, at 390x844, with the
- * flow, editor, timeline-tools and deliver specs.
+ * flow, editor, timeline-tools and deliver specs; the picture's room is also
+ * checked on a smaller phone, and on one held sideways.
  */
 
 const { test, expect } = require('./fixtures')
 
 const top = async locator => (await locator.boundingBox()).y
+
+/** Each stage, and a panel of its own that says it is open (layout/flow.js). */
+const STAGE_PANELS = {
+  source: '#panel-source',
+  edit: '#panel-captions',
+  render: '#panel-render',
+  deliver: '#panel-deliver',
+}
+
+/**
+ * How much of the picture can be seen: the frame's height, and how many of
+ * those pixels are inside every box around it that clips -- the viewer's
+ * region, the page -- and inside the window, as the page is drawn. A box that
+ * is `display: contents` has no edges of its own and clips nothing.
+ *
+ * Asked of the picture itself, because every other check here passed while
+ * the viewer's region was squeezed to a sliver: the frame was the right size,
+ * the right shape and in the right place, and almost none of it could be seen.
+ */
+const pictureShown = page =>
+  page.evaluate(() => {
+    const frame = document.querySelector('.viewerframe')
+    const box = frame.getBoundingClientRect()
+    let top = Math.max(box.top, 0)
+    let bottom = Math.min(box.bottom, window.innerHeight)
+    for (let el = frame.parentElement; el && el !== document.documentElement; el = el.parentElement) {
+      const style = getComputedStyle(el)
+      if (style.display === 'contents' || !/auto|hidden|scroll|clip/.test(style.overflowY)) continue
+      const edges = el.getBoundingClientRect()
+      top = Math.max(top, edges.top)
+      bottom = Math.min(bottom, edges.bottom)
+    }
+    return { frame: box.height, shown: Math.max(0, bottom - top) }
+  })
+
+/** Where the footer, the last thing in the column, ends: pixels from the window's top. */
+const footerEnd = () => document.querySelector('body > footer').getBoundingClientRect().bottom
+
+/**
+ * Every stage in turn, chosen on the rail: the whole picture is on the screen
+ * as the stage opens, and the rest of the column can be reached below it --
+ * scrolled as far as a wheel over the header (which scrolls nothing of its
+ * own) takes the page, the footer is in the window. All four stages are
+ * asked, so a failure says which of them hide the picture, and by how much.
+ *
+ * `oneScreen`: and the page does not scroll at all, every region fitting the
+ * window with the stage's panels and the timeline at or above their floors.
+ */
+async function expectEveryStageToShowThePicture(page, { oneScreen = false } = {}) {
+  const height = page.viewportSize().height
+  await page.goto('/')
+  for (const [stage, panel] of Object.entries(STAGE_PANELS)) {
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.locator(`#stage-${stage}`).click()
+    await expect(page.locator(`#stage-${stage}`)).toHaveClass(/active/)
+    await expect(page.locator(panel)).toBeVisible()
+
+    const { frame, shown } = await pictureShown(page)
+    expect(frame, `${stage}: the frame has no height`).toBeGreaterThan(0)
+    expect
+      .soft(shown, `${stage}: ${Math.round(shown)} of the frame's ${Math.round(frame)} pixels can be seen`)
+      .toBeGreaterThanOrEqual(frame * 0.9)
+
+    if (oneScreen) {
+      const over = await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)
+      expect.soft(over, `${stage}: the page scrolls by ${over} pixels, not one screen`).toBeLessThanOrEqual(0)
+    }
+
+    const header = await page.locator('body > header').boundingBox()
+    await page.mouse.move(header.x + header.width / 2, header.y + header.height / 2)
+    await page.mouse.wheel(0, 5000)
+    // A wheel scrolls in its own time: wait for the footer, a little.
+    await page
+      .waitForFunction(h => document.querySelector('body > footer').getBoundingClientRect().bottom <= h + 1, height, {
+        timeout: 2000,
+      })
+      .catch(() => {})
+    const end = await page.evaluate(footerEnd)
+    expect
+      .soft(end, `${stage}: the column runs ${Math.round(end - height)} pixels past the window, out of reach`)
+      .toBeLessThanOrEqual(height + 1)
+  }
+}
 
 test.describe('the phone flow', () => {
   test('is a stack, not a dock', async ({ authedPage }) => {
@@ -121,5 +205,54 @@ test.describe('the phone flow', () => {
     await expect(params.locator('#param-text')).toHaveValue(/./)
     // Not a panel of its own here, and nothing where nothing is selected.
     await expect(authedPage.locator('#template-hint')).toHaveCount(0)
+  })
+})
+
+test.describe('the picture keeps its room', () => {
+  test("every stage shows the whole picture on one screen at a phone's size", async ({
+    authedPage,
+  }) => {
+    /**
+     * In every stage the whole picture is on the screen, and the stage's own
+     * panels and the timeline give way to it, scrolling inside themselves --
+     * at 390x844 all on one screen, the page itself not scrolling. The
+     * viewer's region was a scroller the column could squeeze like any other,
+     * and it was squeezed, under the stage's panels at their full share: to a
+     * few dozen pixels of a 203-pixel picture at 390x844, and to none of it
+     * at 375x667.
+     */
+    await expectEveryStageToShowThePicture(authedPage, { oneScreen: true })
+  })
+
+  test.describe('on a smaller phone', () => {
+    test.use({ viewport: { width: 375, height: 667 } })
+
+    test('every stage shows the whole picture, and the page scrolls to the rest', async ({
+      authedPage,
+    }) => {
+      /**
+       * At 375x667 the stage's panels and the timeline would share about 100
+       * pixels, which holds a heading of the one and a row of tools of the
+       * other. They keep a floor instead, and the page scrolls past it -- by
+       * the window, from anywhere that does not scroll itself.
+       */
+      await expectEveryStageToShowThePicture(authedPage)
+    })
+  })
+
+  test.describe('held sideways', () => {
+    test.use({ viewport: { width: 844, height: 390 } })
+
+    test('every stage shows the whole picture, and the page scrolls to the rest', async ({
+      authedPage,
+    }) => {
+      /**
+       * The frame's room is two-fifths of the screen held sideways, and the
+       * header, the rail, the room, the transport and the footer are taller
+       * than the screen on their own, so this page has to scroll. The column
+       * used to run on past the window's edge instead, out of reach.
+       */
+      await expectEveryStageToShowThePicture(authedPage)
+    })
   })
 })

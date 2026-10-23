@@ -17,9 +17,12 @@ ffmpeg is already present -- it is how renders are encoded -- so this adds no
 dependency.
 """
 
+import os
 import subprocess
 from os import makedirs
 from os.path import getsize, isfile, join
+from threading import Lock
+from uuid import uuid4
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException
@@ -115,37 +118,73 @@ def ffmpeg_binary():
         ) from exc
 
 
+def partial_path(path):
+    """Where `path` is written until it is whole: beside it, under a hidden
+    name, which the library never lists (`utils.media.is_library_filename`)."""
+    directory, name = os.path.split(path)
+    return join(directory, f'.{name}.{uuid4().hex}.part')
+
+
 def generate_clip(path, source, duration=DEMO_DURATION):
-    """Synthesise one clip. Returns nothing; raises on failure."""
-    result = subprocess.run(
-        [
-            ffmpeg_binary(),
-            '-nostdin',
-            '-y',
-            '-f',
-            'lavfi',
-            '-i',
-            f'{source}:duration={duration}',
-            # yuv420p so the result plays in a browser. ffmpeg's test sources
-            # default to a pixel format most players will not touch, which
-            # would make demo media that exists and cannot be previewed --
-            # worse than none.
-            '-pix_fmt',
-            'yuv420p',
-            path,
-        ],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0 or not isfile(path):
-        raise HTTPException(
-            status_code=500,
-            detail=f'ffmpeg could not generate {path}: {result.stderr[-400:]}',
+    """Synthesise one clip. Returns nothing; raises on failure.
+
+    Written under `partial_path` and moved into place once ffmpeg has
+    finished. Other requests are answered while it runs, and a listing taken
+    meanwhile must not offer a clip that is half written.
+    """
+    partial = partial_path(path)
+    try:
+        result = subprocess.run(
+            [
+                ffmpeg_binary(),
+                '-nostdin',
+                '-y',
+                '-f',
+                'lavfi',
+                '-i',
+                f'{source}:duration={duration}',
+                # yuv420p so the result plays in a browser. ffmpeg's test
+                # sources default to a pixel format most players will not
+                # touch, which would make demo media that exists and cannot be
+                # previewed -- worse than none.
+                '-pix_fmt',
+                'yuv420p',
+                # Named, because the name it is written under says nothing
+                # about the format.
+                '-f',
+                'mp4',
+                partial,
+            ],
+            capture_output=True,
+            text=True,
         )
+        if result.returncode != 0 or not isfile(partial):
+            raise HTTPException(
+                status_code=500,
+                detail=f'ffmpeg could not generate {path}: {result.stderr[-400:]}',
+            )
+        os.replace(partial, path)
+    except BaseException:
+        try:
+            os.remove(partial)
+        except OSError:
+            pass
+        raise
 
 
+# One generation at a time, in this process. Two presses of the button at
+# once would each find the clips missing and both run ffmpeg into the same
+# files; held here, the second waits for the first, finds its clips, and says
+# they were skipped.
+_generating = Lock()
+
+
+# A plain function, not a coroutine: FastAPI runs it in its thread pool. Each
+# clip is an ffmpeg run of about a second, and as a coroutine every one of them
+# ran on the event loop, so the api answered nothing else -- `/healthz`
+# included -- until the last clip was written.
 @demoAPI.post('/demo/media', response_model=GeneratedMedia)
-async def generateDemoMedia():
+def generateDemoMedia():
     """# Generate demo media
 
     Synthesises a few short clips locally with ffmpeg, so an empty install has
@@ -157,13 +196,14 @@ async def generateDemoMedia():
     makedirs(VIDEO_DIR, exist_ok=True)
 
     created, skipped = [], []
-    for name, source in DEMO_CLIPS:
-        path = join(VIDEO_DIR, name)
-        if isfile(path) and getsize(path) > 0:
-            skipped.append(name)
-            continue
-        generate_clip(path, source)
-        created.append(name)
+    with _generating:
+        for name, source in DEMO_CLIPS:
+            path = join(VIDEO_DIR, name)
+            if isfile(path) and getsize(path) > 0:
+                skipped.append(name)
+                continue
+            generate_clip(path, source)
+            created.append(name)
 
     return GeneratedMedia(created=created, skipped=skipped)
 

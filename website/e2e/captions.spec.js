@@ -2,7 +2,8 @@
  * Captions: typed, imported, transcribed, and drawn into renders.
  *
  * A project's captions are text and the stretch of the timeline it is shown
- * for. The Captions panel, folded under the stage rail on the Edit stage,
+ * for. The Captions panel -- on a wide screen a tab in the workspace, beside
+ * Render and Deliver; on a phone the Edit stage's panel, above the viewer --
  * edits them by hand, reads them from a SubRip, WebVTT or JSON file -- the
  * server reads it, the panel shows what it found, and saving keeps it -- or
  * has the timeline's own sound transcribed by the server's audio engine. The
@@ -279,6 +280,10 @@ test.describe('captions from a file', () => {
       await expect(review).toContainText('more.vtt: 1 caption')
       await authedPage.locator('#captions-review-append').click()
       await expect(rows(authedPage)).toHaveCount(3)
+      // Added at once, saved by a request of its own: the panel says the save
+      // has landed when its unsaved note goes. Read before then, the server
+      // still held the two from before.
+      await expect(authedPage.locator('#captions-unsaved')).toHaveCount(0)
 
       const saved = await captionsOf(request, token, project)
       expect(saved.captions.map(c => c.text)).toEqual([
@@ -352,19 +357,21 @@ test.describe('how captions are drawn', () => {
     token,
   }) => {
     /**
-     * Whether or not the panel is open, the caption under the playhead is
-     * drawn over the viewer in its style; past it, nothing is.
+     * Whether or not the Captions panel is in view, the caption under the
+     * playhead is drawn over the viewer in its style; past it, nothing is.
      */
     await withProject(request, token, {}, async project => {
       await saveCaptions(request, token, project, {
         captions: [{ start: 0, end: 2, text: 'Over the picture' }],
         style: { enabled: true },
       })
-      // The panel stays folded: the viewer shows captions regardless.
+      // The Captions tab is left behind Render, so the panel is not drawn at
+      // all: the viewer shows captions regardless.
       await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
       const overlay = authedPage.locator('#caption-overlay')
       await expect(overlay).toHaveText('Over the picture')
       await expect(overlay).toHaveAttribute('data-drawn', 'true')
+      await expect(authedPage.locator('#panel-captions')).toHaveCount(0)
 
       // Past it, nothing.
       await authedPage.keyboard.press('End')
@@ -418,24 +425,47 @@ test.describe('how captions are drawn', () => {
   })
 })
 
+// `GET /health` as the contract shapes it (alfred/core/routes/health.py), a
+// renderer running, for a spec to give its own `audio_engine`.
+const HEALTHY = { api: 'ok', db: 'ok', renderer: { ok: true, workers: 1 }, queue: { pending: 0 } }
+
 test.describe('transcribing the timeline', () => {
   test('transcribing says why it cannot', async ({ authedPage, request, token }) => {
     /**
      * Transcribing needs an audio engine that answers and a renderer to mix
-     * the timeline's sound. Without one, the button says which is missing.
+     * the timeline's sound. Until the server has said whether there is one,
+     * the button waits and says it is checking; without one, it says which
+     * is missing.
      */
     await withProject(request, token, {}, async project => {
-      // The server's answer, held to two cases it can give.
+      // The server's answer, held to two cases it can give -- and given here,
+      // when the test says, rather than fetched from the server and edited.
+      // Fetched, a busy server's answer could take longer than the test
+      // waits, while the button stood enabled: what is under test is what
+      // the panel does before an answer and with each one, not how fast the
+      // server is.
       let engine = { configured: false, ok: false, detail: 'none' }
+      let answer
+      const answered = new Promise(resolve => (answer = resolve))
       await authedPage.route('**/health', async route => {
-        const real = await (await route.fetch()).json()
-        await route.fulfill({ json: { ...real, audio_engine: engine } })
+        await answered
+        await route.fulfill({ json: { ...HEALTHY, audio_engine: engine } })
       })
-      await openCaptions(authedPage, project)
+      // From a fresh load, so the session's first check of all is this one.
+      await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
+      await authedPage.reload()
+      await showCaptions(authedPage)
+      await expect(authedPage.locator('#caption-add')).toBeEnabled()
       const button = authedPage.locator('#captions-transcribe')
       const reason = authedPage.locator('#captions-transcribe-reason')
+      // Mutation: give no reason until `/health` has come back -- the button
+      // is enabled while it waits, and this fails.
+      await expect(reason).toHaveText('Checking the audio engine…')
       await expect(button).toBeDisabled()
+
+      answer()
       await expect(reason).toContainText('No audio engine is configured')
+      await expect(button).toBeDisabled()
 
       engine = { configured: true, ok: false, detail: 'the audio engine at http://e: refused' }
       await authedPage.reload()
@@ -444,7 +474,6 @@ test.describe('transcribing the timeline', () => {
       await expect(button).toBeDisabled()
     })
   })
-
 })
 
 test.describe('@slow transcribing through the worker', () => {

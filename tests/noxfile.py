@@ -54,28 +54,30 @@ def coverage(session):
     # --no-deps because the lock carries an override pip cannot express (see
     # the Dockerfile): a resolving install refuses it. test_stack_config.py
     # holds this in place.
+    #
+    # requirements-render.lock is the engine's `render` extra: optional to pip,
+    # not to the templates that draw a box behind their text (title, bullets),
+    # which import gizeh and fail without it. It was resolved here on the day,
+    # as `alfred/otto[render]`; it is pdm's resolution now, as the image's and
+    # CI's are.
     session.install(
         '--no-deps',
         '-r',
         '../requirements.lock',
         '-r',
         '../requirements-test.lock',
+        '-r',
+        '../requirements-render.lock',
         '-e',
         '..',
     )
     # The vendored engine: the project's `al-otto`, which the --no-deps install
     # above leaves out, from the submodule rather than PyPI -- otherwise the
     # suite imports otto from site-packages and tests a different copy than
-    # the image runs, which test_stack_config.py asserts against.
-    #
-    # With `[render]`, because the engine's optional dependencies are not
-    # optional to the templates that use them. Installed bare, `gizeh` was
-    # missing and every text template raised ImportError -- which the templates
-    # then caught and turned into a `None` clip, so the suite reported "title
-    # renders to nothing" rather than "a dependency is absent". The API image
-    # has these, so the tests were failing on a gap that existed only in the
-    # tests.
-    session.install('-e', '../alfred/otto[render]')
+    # the image runs, which test_stack_config.py asserts against. With
+    # --no-deps, as the image installs it: what it depends on is in the
+    # lockfiles above.
+    session.install('--no-deps', '-e', '../alfred/otto')
     # The sound engine's client, vendored beside otto and installed the way
     # the image installs it: editable from the submodule, with --no-deps. Its
     # core needs only httpx, which the lockfiles above carry.

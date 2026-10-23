@@ -6,19 +6,25 @@ Scope: the backend and the render engine. Browser coverage lives in
 ## Status
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
-stack's own configuration: **1474 tests -- 1464 passed, 2 skipped, 8
-xfailed** in the `./al pytest` container, measured on integrate/wave-3 with
-its `db` service up, so the database tier ran too. The two skips need a
+stack's own configuration: **1577 tests -- 1567 passed, 2 skipped, 8
+xfailed** in the `./al pytest` container, measured on integrate/wave-4 from a
+fresh clone with its `db` service up, so the database tier ran too. The two skips need a
 Docker CLI, which that container does not have; where ImageMagick cannot draw
-text, six more skip. The database tier IS-5 needs
-exists (`integration/`, marked `needs_db`, against the `db` service
-`pytest.yml` provides); its render-queueing tests are not written yet.
+text, six more skip (`needs_imagemagick`). The database tier runs against the
+`db` service `pytest.yml` provides (`integration/`, marked `needs_db`).
+
+The render queueing IS-5 asks for is tested without a database:
+`unit/test_render_requests.py`, `test_render_ownership.py` and
+`test_task_payloads.py` send renders through the real routes to an in-memory
+store and a queue that records what it would send (`unit/render_harness.py`).
+`integration/test_captions_api.py` queues and re-queues one against MongoDB.
 
 ```sh
 pdm run pytest                                       # everything
 pdm run pytest -m "not needs_ffmpeg and not needs_db and not needs_docker"
 pdm run pytest -m needs_ffmpeg                       # the real encode
 pdm run pytest -m needs_docker                       # builds a container
+pdm run pytest -m needs_imagemagick                  # draws text
 ```
 
 The marked tiers skip themselves when the tool they need is absent, so the
@@ -44,8 +50,9 @@ Four areas, in the order they should be built:
 
 ## Phase 0 — the environment, which is a hard prerequisite
 
-**No Python test can run today, including the two that already exist.** One
-missing package causes four separate failures:
+Phase 0 is done; this is what it fixed. **Without it, no Python test could
+run, including the two that existed then.** One missing package caused four
+separate failures:
 
 | Break | Where | Symptom |
 |---|---|---|
@@ -54,23 +61,22 @@ missing package causes four separate failures:
 | `import otto.render` | `imageio_ffmpeg._utils` | same |
 | Existing pytest suite | collection of `tests/test_alfred.py` | same |
 
-`FROM python` resolves to Python 3.14, which no longer bundles setuptools, so
-`pkg_resources` is gone. Only `otto.models` — pure pydantic — imports cleanly.
+`FROM python` resolved to Python 3.14, which no longer bundles setuptools, so
+`pkg_resources` was gone. Only `otto.models` — pure pydantic — imported
+cleanly.
 
-This is not scope creep ahead of the test work; it is the reason there is no
-test work possible without it. Phase 0 fixes:
+It was not scope creep ahead of the test work: without it, no test work was
+possible. Its fixes, all in place:
 
-- Add `setuptools` as an explicit runtime dependency. Three separate
-  installed packages import `pkg_resources` at runtime, and none of them
-  declares it.
-- Pin the Docker base image to a digest, at a Python version the project
-  actually supports. `requires-python` says `>=3.8.1,<4.0` while CI tests
-  3.11 and the image builds 3.14; narrow it to what is tested.
-- `rm -f` the ImageMagick policy, or drop the line. The base now ships
-  ImageMagick 7 and the hardcoded version-6 path does not exist, so this
-  fails the build even once the first break is fixed.
-- Commit a frontend lockfile. `parcel` floats to 2.16.4 against a
-  `@parcel/transformer-sass` pinned at 2.8.3, and the bundle does not build.
+- `setuptools` is an explicit runtime dependency. Three separate installed
+  packages import `pkg_resources` at runtime, and none of them declares it.
+- The Docker base image is pinned to a digest, at Python 3.11, and
+  `requires-python` is narrowed to what is tested, `>=3.11,<3.12`.
+- The ImageMagick policy is removed with `rm -f`, at both its version-6 and
+  its version-7 path: the base ships ImageMagick 7, and the hardcoded
+  version-6 path failed the build.
+- The frontend has a lockfile. `parcel` floated to 2.16.4 against a
+  `@parcel/transformer-sass` pinned at 2.8.3, and the bundle did not build.
   The project uses yarn (`al init`, `website/Dockerfile`), so `yarn.lock` is
   the right file — do not introduce `package-lock.json` alongside it.
 
@@ -89,6 +95,9 @@ tests/
     test_output_selection.py
     test_db_layer.py     the DB helpers, without a database
     test_stack_config.py compose files and Dockerfiles
+    test_stack_settings.py every setting reaches the services that read it
+    test_event_loop.py   the api answers while slow work is being done
+    test_blocking_calls.py no coroutine in the api calls something that blocks
   pipeline/            needs ffmpeg, no DB, no network
     test_render_pipeline.py
   integration/         needs MongoDB at DB_URL: the app in-process, real auth
@@ -107,9 +116,10 @@ gets its own database (named in `conftest.py`, before the app is imported),
 dropped before and after the session.
 
 Markers, registered in `pyproject.toml` under `[tool.pytest.ini_options]`:
-`needs_ffmpeg`, `needs_db`, `needs_docker`. `conftest.py` skips a marked test
-when its tool is unavailable, so a bare `pdm run pytest` passes on any
-checkout.
+`needs_ffmpeg`, `needs_db`, `needs_docker`, and `needs_imagemagick`, for a
+test that draws text and so needs ImageMagick able to find a font.
+`conftest.py` skips a marked test when its tool is unavailable, so a bare
+`pdm run pytest` passes on any checkout.
 
 `needs_ffmpeg` resolves through `imageio_ffmpeg`'s bundled binary, not just
 PATH. Probing PATH alone silently skipped the real-encode test on a machine
@@ -307,6 +317,14 @@ not require a broker.
    refused. Nothing currently tests any authorization boundary.
 4. `GET /render` requires authentication.
 
+**Where it stands.** Covered without a database, as the status above says.
+Items 2 and 3 describe the API the plan was written against. The task
+carries the name of a quality preset, not `ffmpeg_params`, which a request
+may not send (`unit/test_render_requests.py`). A render's owner or a
+superuser may re-queue it, and anyone else gets a 404, which
+`unit/test_render_ownership.py` tests along with every other render route's
+boundary.
+
 ---
 
 # Known defects this plan pins
@@ -349,9 +367,9 @@ duration. The corruption is the same; the mechanism is not object identity.
 
 ## Fixed in the engine
 
-Defects 1–4 and 12–14 are fixed in otto, which this repository pins at
-`a387666`. Their pairs -- a test pinning the defect and a strict xfail for the
-fix -- became single tests of the fixed behaviour when the pin moved: an
+Defects 1–4 and 12–14 are fixed in otto, as this repository vendors it at
+`alfred/otto`. Their pairs -- a test pinning the defect and a strict xfail
+for the fix -- became single tests of the fixed behaviour when the pin moved: an
 unknown or missing clip type, a refused download and a template name outside
 otto's registry (`otto.templates.TEMPLATES`) each raise `EdlException`
 naming the clip; `fps` reaches the encoder; `outpoint` trims; a clip's own
@@ -360,3 +378,13 @@ suspect is mixed into the sound and never drawn. Defect 6 stands -- the models
 still accept those configs -- but the engine now refuses each of them at
 render time with an `EdlException` naming the clip and the field, as it
 already refused defect 7's empty EDL, rather than rendering nonsense.
+
+## Fixed in alfred
+
+Defect 5: a render's output file is named by its id alone, and the readable
+name a download is saved under is sanitised apart from it
+(`unit/test_render_requests.py`). Defect 8: a request carrying `bitrate` or
+`ffmpeg_params` is refused with a 422, and encoding comes from a quality
+preset. Defect 9: startup awaits the count, so an empty database is seeded.
+Defect 11 stands; `unit/render_harness.py` is how the render routes' tests
+construct documents without a database.

@@ -5,6 +5,7 @@ from os.path import join
 from bson import ObjectId
 from celery import Celery, Task
 from celery.signals import celeryd_init
+from otto.exceptions import EdlException
 from otto.models import Edl
 from otto.render import renderMultitrack
 
@@ -207,6 +208,10 @@ _SAID_PLAINLY = (
     NothingToHear,
     RefusedEdl,
     TooManyCaptions,
+    # otto's refusal of a clip it cannot play (contract C8) names the clip by
+    # its place in the timeline and says what is wrong with it -- written for
+    # the person reading it, like the rest of this list.
+    EdlException,
 )
 
 

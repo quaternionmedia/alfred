@@ -439,7 +439,11 @@ class RenderAPI(MotorCRUDRouter):
             render.filename = output_filename(render.id)
             render.display_name = display_name_for(render)
             await store.insert(render)
-            queue(**task_payload(render))
+            # Off the event loop: sending is a round trip to the broker, and
+            # MongoDB's client waits thirty seconds for one that does not
+            # answer before the send fails. Inline, the api answered nothing
+            # else meanwhile.
+            await run_in_threadpool(queue, **task_payload(render))
             return str(render.id)
 
         @self.post('/rerender/{id}', *args, **kwargs)
@@ -476,7 +480,8 @@ class RenderAPI(MotorCRUDRouter):
             await store.update(render.id, changes)
             for name, value in changes.items():
                 setattr(render, name, value)
-            queue(**task_payload(render))
+            # Off the event loop, as a first render is queued.
+            await run_in_threadpool(queue, **task_payload(render))
             return str(render.id)
 
         @self.get('/{item_id}/status', response_model=RenderStatus)

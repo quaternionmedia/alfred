@@ -8,6 +8,7 @@ nav:
   - Home: index.md
   - Cookbook: cookbook.md
   - Captions: captions.md
+  - Configuration: configuration.md
   - Retrospective (0.3.0): retrospective-0.3.0.md
   - Retrospective (verification): retrospective-verification-discipline.md
   - Development:

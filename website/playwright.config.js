@@ -7,7 +7,8 @@ module.exports = defineConfig({
   testDir: './e2e',
   globalSetup: require.resolve('./e2e/global-setup'),
 
-  // The app holds auth in memory rather than in a cookie or storage, so each
+  // The app keeps its session in sessionStorage -- one tab's, gone with the
+  // tab -- so every test's fresh browser context starts logged out, and each
   // test that needs a session logs in for itself. Tests must not share state.
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

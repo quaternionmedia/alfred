@@ -6,6 +6,7 @@ from beanie import init_beanie
 from fastapi import Depends, FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
+from starlette.concurrency import run_in_threadpool
 from starlette.staticfiles import StaticFiles
 
 from alfred import docs
@@ -117,15 +118,24 @@ async def seedDb():
         await db.Project.insert_many(owned_by(SEED_OWNER, seed))
 
 
-@app.on_event('startup')
-async def checkFonts():
-    db = get_db()
-    fonts = (
+def installed_fonts():
+    """fontconfig's fonts, a `family-style` line each. Starts fc-list."""
+    return (
         bash(['fc-list', '-f', '"%{family}-%{style}\n"'], capture_output=True)
         .stdout.decode()
         .replace('"', '')
         .split('\n')
     )
+
+
+@app.on_event('startup')
+async def checkFonts():
+    db = get_db()
+    # In the thread pool, as every other process the api starts is run.
+    # Nothing waits on the loop yet at startup -- uvicorn serves once it is
+    # done -- but one rule for every coroutine, with no exceptions to
+    # remember, is the rule that holds.
+    fonts = await run_in_threadpool(installed_fonts)
     for f in fonts:
         if f:
             font = f.split('-')

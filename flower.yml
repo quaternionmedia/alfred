@@ -7,5 +7,11 @@ services:
     networks:
       - alfred_isolated
     ports:
-      - 5555:5555
+      # Loopback unless asked otherwise, as dev.yml publishes the api. Flower
+      # asks for no login unless one is configured, and its API revokes tasks
+      # and shuts workers down, so published on every interface it handed the
+      # render queue to anyone on the network.
+      #   ALFRED_BIND=0.0.0.0 ./al flower
+      # opens it, for a network you trust.
+      - ${ALFRED_BIND:-127.0.0.1}:5555:5555
     command: celery --broker=mongodb://db:27017/celery flower --port=5555
