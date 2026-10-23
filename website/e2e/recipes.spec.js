@@ -135,8 +135,8 @@ test.describe('@recipe walkthroughs', () => {
     )
     await beat(authedPage)
 
-    for (const tool of ['trim', 'move', 'time selector']) {
-      await authedPage.locator(`#TTools i[title="${tool}"]`).click()
+    for (const tool of ['trim', 'move', 'time']) {
+      await authedPage.locator(`#TTools [data-tool="${tool}"]`).click()
       await beat(authedPage, 700)
     }
 

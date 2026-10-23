@@ -133,6 +133,12 @@ These bite on a first run, none obvious from the error:
   Do it with the auth bypass off, or on a network you trust — `./al dev`
   warns when both are set. The database ignores `ALFRED_BIND` and stays on
   loopback; `ALFRED_DB_BIND` moves it, for someone who means to.
+- **The signing key.** The committed `.secret_key` is a stub that leaves
+  `ALFRED_SECRET_KEY` empty, and an empty key still signs: PyJWT accepts it,
+  so anyone could mint a development session for any account. `./al init`,
+  `./al dev` and `./al thin` create `.secret_key.local` (git-ignored) with a
+  random key for this checkout, and `dev.yml` loads it over the stub. Delete
+  it to rotate. Production never reads it: `./al prod` needs the key exported.
 - **`UID`/`GID`.** `dev.yml` sets the db container's user from `${UID}:${GID}`.
   Neither is exported by default in most shells, and `UID` is read-only in
   bash, so compose warns and substitutes blanks. Harmless on Docker Desktop;

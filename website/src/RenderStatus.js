@@ -2,6 +2,7 @@ import { success, error } from 'alertifyjs'
 import { auth } from './Login'
 import { User } from './User'
 import { escapeHtml } from './Problem'
+import { Health } from './Health'
 
 /**
  * Where a render is, kept current.
@@ -47,6 +48,17 @@ const FIRST_DELAY = 1000
 const MAX_DELAY = 10000
 const GROWTH = 1.6
 
+// While the server says no renderer is running (Health.js), a queued render
+// cannot move at all: it is asked about this rarely, and at the quick pace
+// again the moment a renderer is back.
+export const OFFLINE_DELAY = 30 * 1000
+
+/** How long to wait before asking about a render again. */
+function nextDelay(watch, latest, moved) {
+  if (latest.state === 'queued' && Health.rendererDown()) return OFFLINE_DELAY
+  return moved ? FIRST_DELAY : Math.min(watch.delay * GROWTH, MAX_DELAY)
+}
+
 /** The fields the rows show, from either response shape. */
 function snapshot(r) {
   return {
@@ -56,6 +68,8 @@ function snapshot(r) {
     filename: r.filename || null,
     destination: r.destination || null,
     error: r.error || null,
+    // The signed link to the finished file (contract M1), when it is finished.
+    download_url: r.download_url || null,
   }
 }
 
@@ -116,7 +130,7 @@ function poll(id) {
       if (isSettled(latest.state)) return settle(id, watch, latest)
 
       const moved = before.state !== latest.state || before.progress !== latest.progress
-      watch.delay = moved ? FIRST_DELAY : Math.min(watch.delay * GROWTH, MAX_DELAY)
+      watch.delay = nextDelay(watch, latest, moved)
       emit('update', id, latest)
       schedule(id)
     },
@@ -183,4 +197,17 @@ export const RenderStatus = {
     clearTimeout(watch.timer)
     delete RenderStatus.watching[id]
   },
+
+  /** Ask about every watched render soon, at the quick pace again. */
+  hurry: () => {
+    for (const id of Object.keys(RenderStatus.watching)) {
+      RenderStatus.watching[id].delay = FIRST_DELAY
+      schedule(id, FIRST_DELAY / 2)
+    }
+  },
 }
+
+// A renderer has started: whatever was queued can move now.
+Health.listen(down => {
+  if (!down) RenderStatus.hurry()
+})

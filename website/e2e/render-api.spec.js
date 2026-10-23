@@ -11,8 +11,11 @@
  *   anything else is a 422 before anything is stored (contract C4).
  * - Encoding comes from a named quality preset; client ffmpeg options are a
  *   422 (C5).
- * - `GET /render/{id}/status` answers for one render (C2).
+ * - `GET /render/{id}/status` answers for one render (C2), with a signed
+ *   `download_url` once there is a file to download (M1).
  * - A render is its owner's: another user gets 404 for it everywhere (C6).
+ * - The download takes a session or a signature for exactly its own path,
+ *   and nothing else (M1).
  */
 
 const { test, expect, CREDENTIALS } = require('./fixtures')
@@ -123,11 +126,22 @@ test.describe('a render answers for itself', () => {
     expect(res.status()).toBe(200)
     const status = await res.json()
     expect(Object.keys(status).sort()).toEqual(
-      ['destination', 'error', 'filename', 'id', 'progress', 'state', 'status'].sort()
+      [
+        'destination',
+        'download_url',
+        'error',
+        'filename',
+        'id',
+        'progress',
+        'state',
+        'status',
+      ].sort()
     )
     expect(status.id).toBe(id)
     expect(status.filename).toBe(`${id}.mp4`)
     expect(['queued', 'rendering', 'rendered', 'failed']).toContain(status.state)
+    // A URL only once there is a finished file behind it.
+    if (status.state !== 'rendered') expect(status.download_url).toBeNull()
   })
 
   test('a malformed id is a 422 and a missing one a 404', async ({
@@ -148,6 +162,16 @@ test.describe('a render answers for itself', () => {
       const res = await request.get(`/render/deadbeefdeadbeefdeadbeef/${route}`)
       expect(res.status()).toBe(401)
     }
+  })
+
+  test('a made-up signature opens nothing', async ({ request }) => {
+    // The download also takes a signed URL in place of a session -- but only
+    // one the server signed, for exactly that path, and not yet expired.
+    const forged =
+      '/render/deadbeefdeadbeefdeadbeef/download?exp=9999999999&sig=' + 'A'.repeat(43)
+    const res = await request.get(forged)
+    expect(res.status()).toBe(401)
+    expect((await res.json()).detail).toBe('This media link is not valid')
   })
 })
 

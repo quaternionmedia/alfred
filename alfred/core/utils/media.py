@@ -30,6 +30,7 @@ that were stored before it existed and are re-queued later.
 """
 
 import re
+from mimetypes import guess_type
 from os import listdir
 from os.path import abspath, commonpath, isfile, join, realpath, splitext
 from typing import Iterable, Optional
@@ -50,38 +51,37 @@ MEDIA_CLIP_TYPES = frozenset({'video', 'image', 'audio'})
 # job, after the render has been stored and queued.
 CLIP_TYPES = frozenset({'template'}) | MEDIA_CLIP_TYPES
 
-# What the library offers: files a video, image or audio clip can open.
-# Anything else in the directory is not media, whoever put it there.
-MEDIA_EXTENSIONS = frozenset(
-    {
-        # video
-        '.mp4',
-        '.m4v',
-        '.mov',
-        '.webm',
-        '.mkv',
-        '.avi',
-        '.mpg',
-        '.mpeg',
-        '.ogv',
-        # image
-        '.jpg',
-        '.jpeg',
-        '.png',
-        '.gif',
-        '.webp',
-        '.bmp',
-        # audio
-        '.mp3',
-        '.wav',
-        '.m4a',
-        '.aac',
-        '.ogg',
-        '.oga',
-        '.flac',
-        '.opus',
-    }
-)
+# What the library offers: files a video, image or audio clip can open, by
+# the kind of clip that opens them. Anything else in the directory is not
+# media, whoever put it there.
+EXTENSIONS_BY_KIND = {
+    'video': frozenset(
+        {'.mp4', '.m4v', '.mov', '.webm', '.mkv', '.avi', '.mpg', '.mpeg', '.ogv'}
+    ),
+    'image': frozenset({'.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'}),
+    'audio': frozenset(
+        {'.mp3', '.wav', '.m4a', '.aac', '.ogg', '.oga', '.flac', '.opus'}
+    ),
+}
+MEDIA_EXTENSIONS = frozenset().union(*EXTENSIONS_BY_KIND.values())
+
+# What a library file is served as, where Python's own table does not know
+# the extension (or did not, in some versions). Never the `text/plain` a file
+# response falls back to for an unknown one: a browser will not play that,
+# and it would be compressed on the way out like any text.
+_MEDIA_TYPES = {
+    '.m4a': 'audio/mp4',
+    '.aac': 'audio/aac',
+    '.flac': 'audio/flac',
+    '.oga': 'audio/ogg',
+    '.ogg': 'audio/ogg',
+    '.opus': 'audio/ogg',
+    '.ogv': 'video/ogg',
+    '.webm': 'video/webm',
+    '.mkv': 'video/x-matroska',
+    '.m4v': 'video/mp4',
+    '.webp': 'image/webp',
+}
 
 # Files the engine writes beside an output while it encodes, and removes after:
 # the audio track otto muxes in (`<output>.audio.m4a`), and moviepy's own
@@ -121,6 +121,25 @@ def is_library_filename(filename) -> bool:
         and not _CONTROL.search(filename)
         and splitext(filename)[1].lower() in MEDIA_EXTENSIONS
         and not _ENCODER_TEMPORARIES.search(filename)
+    )
+
+
+def media_kind(filename) -> Optional[str]:
+    """`video`, `image` or `audio`: the kind of clip that opens `filename`."""
+    extension = splitext(str(filename))[1].lower()
+    for kind, extensions in EXTENSIONS_BY_KIND.items():
+        if extension in extensions:
+            return kind
+    return None
+
+
+def media_type(filename) -> str:
+    """The Content-Type a library file is served with."""
+    extension = splitext(str(filename))[1].lower()
+    return (
+        _MEDIA_TYPES.get(extension)
+        or guess_type(f'x{extension}')[0]
+        or 'application/octet-stream'
     )
 
 

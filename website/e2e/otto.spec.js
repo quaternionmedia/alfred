@@ -14,10 +14,8 @@ const { test, expect } = require('./fixtures')
  * dropped; they identified no nameable control.
  */
 // The timeline tools, by `data-tool` rather than by title: a tool's title is
-// its tooltip, and the tooltip is where it explains itself -- the cut tool
-// says how to use it, and the tools not built yet say that.
-const TOOLS = ['time', 'trim', 'move', 'cut']
-const NOT_YET = ['slip', 'slide', 'dual roller']
+// its tooltip, and the tooltip is where it explains how to use it.
+const TOOLS = ['time', 'trim', 'move', 'cut', 'slip', 'slide', 'dual roller']
 
 // The seek controls, by title. Play is checked separately by id: its title
 // is the action it will perform, so it reads "play" when stopped and "pause"
@@ -45,34 +43,25 @@ test.describe('otto editor', () => {
     }
   })
 
-  test('tools that are not built yet say so, and do not pretend', async ({
+  test('every tool can be chosen, and is the only one chosen', async ({
     authedPage,
   }) => {
     /**
      * Slip, slide and dual roller could be chosen -- they lit up like the
-     * others -- and then did nothing to any clip. They are visibly disabled
-     * now, with a title saying why, and choosing one says so too.
+     * others -- and then did nothing to any clip, so for a while they were
+     * shown disabled. They work now (timeline-tools.spec.js drives each), and
+     * each says in its title how it is used.
      */
     const active = () =>
       authedPage
         .locator('#TTools [aria-pressed="true"]')
         .evaluateAll(nodes => nodes.map(n => n.dataset.tool))
 
-    for (const tool of NOT_YET) {
+    for (const tool of TOOLS) {
       const control = authedPage.locator(`#TTools [data-tool="${tool}"]`)
-      await expect(control).toBeVisible()
-      await expect(control).toHaveClass(/disabled/)
-      await expect(control).toHaveAttribute('aria-disabled', 'true')
-      await expect(control).toHaveAttribute('title', /not yet/i)
-
-      // Forced: it is announced as disabled, so Playwright will not press it
-      // by default -- but a pointer still can, and should be told why
-      // nothing happened.
-      await control.click({ force: true })
-      expect(await active(), `choosing ${tool} changed the tool`).toEqual(['time'])
-      await expect(
-        authedPage.locator('.ajs-message').filter({ hasText: /not available yet/i }).first()
-      ).toBeVisible()
+      await control.click()
+      await expect.poll(active).toEqual([tool])
+      await expect(control).toHaveAttribute('title', new RegExp(`^${tool}`))
     }
   })
 

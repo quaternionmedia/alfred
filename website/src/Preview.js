@@ -3,6 +3,8 @@ import { Video, Edl } from './Video'
 import { Player } from './Player'
 import { authBlob, blobProblem } from './Download'
 import { cutAtPlayhead } from './TimelineTools'
+import { Library } from './Library'
+import { isSigned } from './Signed'
 var state = require("./Globals").state
 
 const urlfy = obj => Object
@@ -10,20 +12,26 @@ const urlfy = obj => Object
     .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]))
     .join('&');
 
-/** The frame of a template clip at the playhead, at the viewer's size. */
-export const templatePreviewUrl = clip =>
-  `preview/template/${encodeURIComponent(clip['name'])}?${urlfy(
-    clip.data
-  )}&width=${state.width()}&height=${state.height()}&t=${Video.time()}`
+/** The length a render builds a template clip to: its outpoint, else its
+ * duration. Sent with the preview so the server builds the template the same
+ * way; a template paced by its length draws a different frame at the same `t`
+ * when it is built shorter. */
+const builtLength = clip => {
+  const outpoint = Number(clip.outpoint)
+  if (outpoint > 0) return outpoint
+  const duration = Number(clip.duration)
+  return duration > 0 ? duration : null
+}
 
-export function ImagePreview() {
-  return {
-    view: (vnode) => {
-      return m('img.preview', {
-        src: vnode.attrs.src
-      })
-    }
-  }
+/** The frame of a template clip at the playhead, at the viewer's size. */
+export const templatePreviewUrl = clip => {
+  const length = builtLength(clip)
+  return (
+    `preview/template/${encodeURIComponent(clip['name'])}?${urlfy(
+      clip.data
+    )}&width=${state.width()}&height=${state.height()}&t=${Video.time()}` +
+    (length ? `&length=${length}` : '')
+  )
 }
 
 /** The latest verdict on the template frame in the viewer.
@@ -146,8 +154,8 @@ export function VideoPreview() {
     oncreate: vnode => {
       Player.attach(vnode.dom)
       vnode.dom.addEventListener('loadeddata', () => {
-        // The source arrives well after the element does -- it is fetched with
-        // the session token and handed over as an object URL -- so the
+        // The source arrives after the element does -- a signed URL once the
+        // library has answered, or a blob once the whole file has -- so the
         // playhead has usually moved on by the time there is anything to show.
         Player.syncElement(true)
         if (Player.playing) Player.resume()
@@ -157,6 +165,11 @@ export function VideoPreview() {
       vnode.dom.addEventListener('ended', () => {
         if (Player.playing) Player.pause()
       })
+      // A signed URL refused -- run out while the page sat idle, or the key
+      // changed -- is renewed rather than left as a broken frame.
+      vnode.dom.addEventListener('error', () => {
+        if (isSigned(vnode.dom.getAttribute('src'))) Library.renew()
+      })
     },
 
     onremove: vnode => Player.detach(vnode.dom),
@@ -164,8 +177,8 @@ export function VideoPreview() {
     view: vnode => {
       return m('video.preview', {
         ...vnode.attrs,
-        // `src` comes from authedSource below, never straight from the clip.
-        src: authedSource(vnode.attrs.src),
+        // `src` comes from mediaSource below, never straight from the clip.
+        src: mediaSource(vnode.attrs.src),
         style: {
           width: '100%',
           height: '100%',
@@ -176,7 +189,30 @@ export function VideoPreview() {
   }
 }
 
-// Media the browser cannot fetch on its own.
+/**
+ * Where an element should fetch the media named `name` from.
+ *
+ * A library file comes from the signed URL `GET /media` issued for it
+ * (contract M1): the element fetches that itself, with Range requests, so a
+ * video starts playing and seeking before it has downloaded -- and nothing
+ * holds the whole file in memory. Until the library has answered there is
+ * nothing to hand over; waiting for it beats starting a whole-file download
+ * a moment before a URL that streams arrives.
+ *
+ * Without one -- a server from before `/media`, or a file it did not sign --
+ * the file is fetched with the session and handed over as a blob, as it was.
+ * A remote URL is fetched by the element itself, as it always was.
+ */
+export function mediaSource(name) {
+  if (!name) return undefined
+  if (/^https?:\/\//i.test(name)) return name
+  const signed = Library.urlFor(name)
+  if (signed) return signed
+  if (Library.signs(name)) return undefined
+  return authedSource(name)
+}
+
+// Media the browser cannot fetch on its own: the fallback.
 //
 // A selected video clip rendered `<video src="videos/x.mp4">`, and /videos
 // requires a session -- so the element requested the file with no
@@ -184,9 +220,8 @@ export function VideoPreview() {
 // bin appeared to do nothing at all.
 //
 // Same fix as AuthedImage: fetch with the token and hand the element an object
-// URL. Fine for the demo clips, which are seconds long; a long edit would want
-// range requests, and this loads the whole file before playing. That is the
-// trade recorded here rather than discovered later.
+// URL. It loads the whole file before playing, which is why a signed URL is
+// preferred whenever the server issues one (mediaSource above).
 const objectUrls = new Map()
 
 export function authedSource(path) {
@@ -216,6 +251,8 @@ export function authedSource(path) {
 }
 
 
+const PRESSABLE = ['BUTTON', 'A', 'SUMMARY']
+
 export var Preview = () => {
   // One handler, removed on unmount.
   //
@@ -226,16 +263,53 @@ export var Preview = () => {
   // anything, which is the only reason the duplication never showed.
   let onkeydown = null
 
+  // How the focus arrived where it is: with a pointer press, or otherwise --
+  // the keyboard, or a script. Space presses a control the keyboard moved to,
+  // and is play and pause on one that merely kept the focus after a click.
+  //
+  // Recorded rather than read from `:focus-visible`, which looked like the
+  // same question and is not: Chrome makes the focused element focus-visible
+  // as soon as any key is pressed, so by the time this handler asks, a button
+  // that was clicked answers as though the keyboard had moved to it.
+  let pressed = null
+  let pressedAt = 0
+  let pointerFocused = null
+  const onpointerdown = e => {
+    pressed = e.target
+    pressedAt = Date.now()
+  }
+  const onfocusin = e => {
+    // A press focuses what it lands on at once; a stale one (a press on
+    // something that takes no focus, long ago) says nothing about this focus.
+    const recent = pressed && Date.now() - pressedAt < 1000
+    const byPointer =
+      recent && (e.target === pressed || (e.target.contains && e.target.contains(pressed)))
+    pointerFocused = byPointer ? e.target : null
+    pressed = null
+  }
+
   return {
     oncreate: () => {
+      document.addEventListener('pointerdown', onpointerdown, true)
+      document.addEventListener('focusin', onfocusin, true)
       onkeydown = e => {
         // Not while typing: these keys belong to the field that has focus.
-        const tag = (document.activeElement || {}).tagName
-        if (tag === 'INPUT' || tag === 'TEXTAREA') return
-        if ((document.activeElement || {}).isContentEditable) return
+        // A select is a field too -- its arrow keys change its value, and
+        // seeking instead made the aspect and resolution menus unusable
+        // from the keyboard.
+        const focused = document.activeElement || {}
+        const tag = focused.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+        if (focused.isContentEditable) return
 
         switch (e.code) {
           case 'Space':
+            // Space presses a button the keyboard has moved to -- that is how
+            // the keyboard operates the timeline tools, and taking the key for
+            // play here cancelled the press. A button that merely kept the
+            // focus after a click is not that: Space stays play and pause, as
+            // someone who just chose a tool with the mouse expects.
+            if (PRESSABLE.includes(tag) && focused !== pointerFocused) break
             e.preventDefault()
             Player.toggle()
             break
@@ -269,6 +343,8 @@ export var Preview = () => {
     onremove: () => {
       if (onkeydown) document.removeEventListener('keydown', onkeydown)
       onkeydown = null
+      document.removeEventListener('pointerdown', onpointerdown, true)
+      document.removeEventListener('focusin', onfocusin, true)
     },
 
     view: () => {
@@ -289,7 +365,14 @@ export var Preview = () => {
           }),
         ])
       }
-      // Deliberately unkeyed. This branch alternates with two unkeyed ones
+      // A still is a picture, not a video: shown as one, from the same source
+      // a video would be.
+      if (clip.type == 'image') {
+        return m('.bkg#preview', {}, [
+          m('img.preview.still', { src: mediaSource(clip.name), alt: '' }),
+        ])
+      }
+      // Deliberately unkeyed. This branch alternates with unkeyed ones
       // above, and mithril refuses a fragment whose children are only
       // partly keyed -- it throws during render and takes the whole subtree
       // with it, which is a failure this codebase has already paid for once.

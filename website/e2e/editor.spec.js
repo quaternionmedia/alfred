@@ -21,6 +21,18 @@ async function demoProject(request, token) {
   return projects.find(p => p.name === DEMO)
 }
 
+/**
+ * Routes the editor asks for that a server from before them does not have:
+ * it answers 404, and the editor carries on without them (`GET /media` falls
+ * back to `GET /videos`; no `GET /health` means nothing is said about the
+ * renderer). Read from the server's own OpenAPI document, so a 404 from a
+ * server that does have the route still fails the test.
+ */
+async function absentRoutes(request) {
+  const paths = Object.keys(((await (await request.get('/openapi.json')).json()) || {}).paths || {})
+  return ['/media', '/health'].filter(path => !paths.includes(path))
+}
+
 test.describe('timeline editor', () => {
   test('the demo project is seeded with a timeline', async ({ request, token }) => {
     /** "Timeline demo" exists and has more than one clip to edit. */
@@ -204,13 +216,16 @@ test.describe('timeline editor', () => {
      */
     const demo = await demoProject(request, token)
     test.skip(!demo, 'demo project not seeded in this environment')
+    const absent = await absentRoutes(request)
 
     const failures = []
     authedPage.on('requestfinished', async req => {
       try {
         const res = await req.response()
+        const path = new URL(req.url()).pathname
+        if (res && res.status() === 404 && absent.includes(path)) return
         if (res && res.status() >= 400) {
-          failures.push(`${res.status()} ${req.method()} ${new URL(req.url()).pathname}`)
+          failures.push(`${res.status()} ${req.method()} ${path}`)
         }
       } catch (e) {
         // request objects can go away mid-navigation; nothing to record

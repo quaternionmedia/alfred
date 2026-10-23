@@ -118,24 +118,28 @@ in and logout; `views.spec.js` that a reload keeps the session.
 
 | Area | Where | Level |
 |---|---|---|
-| Login, registration (incl. closed registration) | `login.spec.js` | UI |
+| Login, registration (incl. closed registration), password reset and confirmation pages | `login.spec.js` | UI |
 | Token issue, `/users/me`, 401s, project ownership | `auth.spec.js` | API |
 | Token renewal, staying logged in, logout | `session.spec.js` | UI |
 | Project selector and its filter | `projects.spec.js` | UI + API |
 | Demo project and media, empty states | `demo.spec.js` | UI + API |
 | The four-stage flow, delivery with real bytes | `flow.spec.js` | UI + API |
 | Timeline editor, transport, saving | `editor.spec.js`, `tools.spec.js`, `otto.spec.js` | UI |
-| Trim by mouse and touch, cut | `timeline-tools.spec.js` | UI |
-| Adding and editing template clips | `templates.spec.js` | UI |
+| Trim, cut, slip, slide and roll, by mouse and touch | `timeline-tools.spec.js` | UI |
+| Adding and editing template clips, fonts and placement | `templates.spec.js` | UI |
+| The timeline tools from the keyboard, the footer | `editor-access.spec.js` | UI |
+| Media lengths and kinds, signed media and download URLs, the `/videos` fallback | `editor-media.spec.js` | UI |
+| Unsaved timelines kept across a reload or a new login | `editor-draft.spec.js` | UI |
 | The render request: clip starts, fades, toolbar, form | `editor-render.spec.js` | UI |
 | Render checks before queueing, status, another user | `render-api.spec.js` | API |
 | Render pipeline end to end, downloads, ranges | `render-pipeline.spec.js` | API, `@slow` |
-| Following a render, downloading it | `deliver.spec.js` | UI |
+| Following a render, downloading it, no renderer running | `deliver.spec.js` | UI |
 | Render list | `renders.spec.js` | API + UI |
 | Preview contract, malformed input, partial writes | `api-contract.spec.js` | API |
 | Routing, history, menu, unique ids | `navigation.spec.js` | UI |
 | Views render, no uncaught page errors, reload | `views.spec.js` | UI |
 | Layout at every width | `appearance.spec.js` | UI |
+| Icons drawn by a self-hosted font; nothing loaded from a CDN | `assets.spec.js` | UI |
 | Recipe walkthroughs (the cookbook) | `recipes.spec.js` | UI, `@recipe` |
 | Page-load budget | `performance.spec.js` | UI, `@perf` |
 
@@ -148,11 +152,15 @@ so no other test in this suite would notice.
 
 ## What is not covered
 
-1. **Password reset and verification.** Nothing delivers the token outside
-   development, and no spec drives either flow.
-2. **Fonts and documents.** `GET /fonts` and the documents view are
+1. **Password reset and confirmation, end to end in a browser.** The token
+   only ever reaches a mailbox, so `login.spec.js` answers the account pages'
+   requests itself; the API side, from the request to logging in with the new
+   password, runs in `tests/integration/test_password_reset_api.py`.
+2. **Fonts and documents.** The template fields' font list is served by the
+   specs, not read from the fonts the server found; the documents view is
    exercised only by the views rendering.
-3. **Slip, slide and dual roller.** Not built; the specs check that they say so.
+3. **Editing gestures from the keyboard.** The timeline tools are chosen from
+   the keyboard, but trim, slip, slide and roll are pointer drags.
 4. **Cross-browser and real devices.** Only chromium runs. Touch is covered
    through pointer events, not on a phone; the config takes firefox and webkit
    by adding projects.

@@ -38,10 +38,12 @@ class DeliveryError(Exception):
 class Delivery:
     """What a caller gets back, whatever the destination was.
 
-    `location` is a URL for remote destinations and a path for local ones. It
-    is deliberately not typed as one or the other: a caller that can only
-    handle URLs would be coupled to a particular destination, which is what
-    the seam exists to avoid.
+    `location` is where the render now is, in a form that lasts: a path for
+    local deliveries, a `gs://` reference for the bucket. It is deliberately
+    not typed as one or the other: a caller that can only handle URLs would
+    be coupled to a particular destination, which is what the seam exists to
+    avoid. Turning a location into a link someone can follow -- signing it,
+    for the bucket -- happens when the link is handed out.
     """
 
     destination: str
@@ -78,9 +80,9 @@ class LocalDestination:
     finished-render path went to a Google bucket, so a server without one had
     no way to give your video back.
 
-    Not under DATA_DIR, where this used to copy to: that directory is served
-    by an unauthenticated static mount at /data, so every local delivery was
-    a public URL for somebody's video. The video comes back to its owner
+    Not anywhere the app serves statically. This used to copy into DATA_DIR,
+    which an unauthenticated mount served at /data, so every local delivery
+    was a public URL for somebody's video. The video comes back to its owner
     through the download route instead.
     """
 
@@ -93,11 +95,12 @@ class LocalDestination:
         source = Path(filename)
         if not source.is_file():
             raise DeliveryError(f'no such render: {filename}')
-        if _inside(self.root, config.DATA_DIR):
-            # Refused rather than written: a delivery there is published to
-            # anyone, which no setting should be able to do by accident.
+        if _inside(self.root, config.STATIC_DIR):
+            # Refused rather than written: the SPA's directory is served to
+            # anyone, so a delivery there would be published, which no
+            # setting should be able to do by accident.
             raise DeliveryError(
-                'the delivery directory is inside DATA_DIR, which is served '
+                'the delivery directory is inside STATIC_DIR, which is served '
                 'publicly; set ALFRED_DELIVERY_DIR somewhere else'
             )
         self.root.mkdir(parents=True, exist_ok=True)
@@ -120,23 +123,27 @@ class BucketDestination:
     name = 'bucket'
 
     def deliver(self, filename: str) -> Delivery:
-        """Upload the file as an object named for it, and sign a link to it.
+        """Upload the file as an object named for it; locate it by reference.
 
         This uploaded the object under the full server path and then asked
         `generate_signed_url` -- which takes a render *id* -- to sign that
         path, so it answered 422 "Not a valid identifier" after every
         successful upload. The object is named by the file's own name, as the
-        worker's automatic upload names it, and signed by that name.
+        worker's automatic upload names it.
+
+        The location is `gs://<bucket>/<object>`, not a signed URL: a signed
+        URL lasts fifteen minutes, and the location is what a render records,
+        so every recorded bucket link was dead a quarter of an hour after the
+        delivery. Whoever hands the link to a caller signs it then.
         """
-        from .bucket import signed_url, upload
+        from .bucket import object_reference, upload
 
         source = Path(filename)
         try:
             upload(source.name, directory=str(source.parent))
-            location = signed_url(source.name)
         except Exception as exc:  # noqa: BLE001 - vendor SDK raises broadly
             raise DeliveryError(f'upload failed: {exc}') from exc
-        return Delivery(destination=self.name, location=location)
+        return Delivery(destination=self.name, location=object_reference(source.name))
 
 
 DESTINATIONS = {

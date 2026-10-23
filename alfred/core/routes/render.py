@@ -2,7 +2,8 @@ from typing import Optional
 
 from beanie import PydanticObjectId
 from bson import ObjectId
-from fastapi import Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.encoders import jsonable_encoder
 from fastapi_crudrouter import MotorCRUDRouter
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
@@ -20,9 +21,16 @@ from ..models.render import (
     safe_name,
 )
 from ..responses import PartialFileResponse
-from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh, signed_url
+from ..utils.bucket import (
+    INVALID_ID,
+    NOT_FOUND,
+    fresh,
+    parse_reference,
+    signed_url,
+)
 from ..utils.db import get_client
 from ..utils.destinations import (
+    BucketDestination,
     Delivery,
     DeliveryError,
     LocalDestination,
@@ -30,7 +38,11 @@ from ..utils.destinations import (
 )
 from ..utils.encoding import QUALITIES, UnknownQuality, preset_for
 from ..utils.media import RefusedEdl, check_edl, output_path
+from ..utils.ownership import may_access, owner_filter, owner_key
+from ..utils.signing import media_url
+from ..utils.storage import remove_render_files
 from ..utils.tasks import renderRemote
+from .media import MediaAccess, media_access
 from .templates import TEMPLATE_NAMES
 from .users import current_active_user
 
@@ -47,9 +59,8 @@ class RenderStore:
     async def get(self, render_id) -> Optional[Render]:
         return await Render.get(PydanticObjectId(render_id))
 
-    async def list(self, owner: Optional[str], skip: int, limit: int) -> list:
-        """Newest first; only `owner`'s renders, unless `owner` is None."""
-        query = {} if owner is None else {'username': owner}
+    async def list(self, query: dict, skip: int, limit: int) -> list:
+        """Newest first; the renders matching `query`, an `owner_filter`."""
         return await Render.find(query).sort('-_id').skip(skip).to_list(limit)
 
     async def insert(self, render: Render) -> None:
@@ -89,13 +100,12 @@ async def load_render(store: RenderStore, item_id: str) -> Render:
 def can_access(render: Render, user) -> bool:
     """Whether `user` may see and act on `render` (contract C6).
 
-    Its owner -- `render.username`, the creating user's email -- or a
+    Its owner -- `render.username`, the creating user's owner key -- or a
     superuser. A render stored without an owner is a superuser's alone:
-    there is nobody else it can be attributed to.
+    there is nobody else it can be attributed to. The rule is the projects'
+    too, and lives in `utils.ownership`.
     """
-    if getattr(user, 'is_superuser', False):
-        return True
-    return render.username is not None and render.username == user.email
+    return may_access(render.username, user)
 
 
 async def load_owned_render(store: RenderStore, item_id: str, user) -> Render:
@@ -220,6 +230,69 @@ def download_name(render: Render) -> str:
     return f'{safe_name(render.display_name or display_name_for(render))}.mp4'
 
 
+def download_url(render: Render) -> Optional[str]:
+    """A signed URL for a finished render's file; None while there is none.
+
+    Contract M1. Issued only to a caller who has already passed the route's
+    ownership check, because whoever holds it can fetch the file until it
+    expires. None unless the render finished and its file is there: a URL
+    that answers 409 is no use to anyone.
+    """
+    if render_state(render.status, render.progress) != 'rendered':
+        return None
+    if output_path(render.filename) is None:
+        return None
+    return media_url(download_path(render))
+
+
+def bucket_link(reference) -> Optional[str]:
+    """A freshly signed URL for a `(bucket, object)` reference; None if none.
+
+    Blocking: the storage client may go to the network for credentials.
+    """
+    bucket, blob = reference
+    try:
+        return signed_url(blob, bucket=bucket)
+    except Exception as exc:  # noqa: BLE001 - vendor SDK raises broadly
+        print(f'could not sign a link to {blob} ({bucket or "default bucket"})', exc)
+        return None
+
+
+def public_link(render: Render) -> Optional[str]:
+    """`render.link` as a caller can follow it, made at the moment of asking.
+
+    A bucket delivery records where the object is, `gs://<bucket>/<object>`,
+    and is signed here, each time: a delivery used to record the signed URL
+    itself, which was dead fifteen minutes later. A signed URL stored that way
+    still names its object, so it is signed afresh too. A local delivery's
+    link is the download route -- also for one recorded when it was a path
+    under the /data mount, which no longer exists. Blocking, as signing is.
+    """
+    link = render.link
+    if render.destination == LocalDestination.name or (
+        isinstance(link, str) and link.lstrip('/').startswith('data/')
+    ):
+        return download_path(render)
+    reference = parse_reference(link)
+    if reference is not None:
+        return bucket_link(reference)
+    return link
+
+
+def render_view(render: Render) -> dict:
+    """A render as the API answers with it: the document, `download_url`, and
+    a `link` that can be followed now.
+
+    The document is encoded exactly as FastAPI encodes a returned document,
+    so every field a client already reads keeps its name and shape.
+    Blocking: it looks for files, and may sign a link.
+    """
+    view = jsonable_encoder(render)
+    view['download_url'] = download_url(render)
+    view['link'] = public_link(render)
+    return view
+
+
 def refuse_unrenderable(edl):
     """422 for an EDL the engine should not be handed; nothing otherwise.
 
@@ -301,9 +374,14 @@ class RenderAPI(MotorCRUDRouter):
 
             The caller's renders, newest first; every render for a superuser.
             This listed every user's renders to anyone signed in.
+
+            Each carries `download_url`: a signed URL for the finished file
+            that a browser can use directly, or null until there is one.
             """
-            owner = None if user.is_superuser else user.email
-            return await store.list(owner, skip or 0, limit or 100)
+            visible = owner_filter(user, 'username')
+            renders = await store.list(visible, skip or 0, limit or 100)
+            # Off the event loop: each finished render's file is looked for.
+            return await run_in_threadpool(lambda: [render_view(r) for r in renders])
 
         @self.post('', *args, **kwargs)
         async def queueRender(
@@ -320,7 +398,7 @@ class RenderAPI(MotorCRUDRouter):
             # that depends on it is written with the document instead of by a
             # second update a moment later.
             render.id = PydanticObjectId()
-            render.username = user.email
+            render.username = owner_key(user)
             render.quality = quality
             # The id alone names the file. It was project, description, size,
             # quality, duration and a timestamp -- every part but the id taken
@@ -382,50 +460,15 @@ class RenderAPI(MotorCRUDRouter):
             Where a render has got to: `state` is one of `queued`,
             `rendering`, `rendered` or `failed`, and `error` says why when it
             is `failed`. `status` is the raw stored value, unchanged for
-            clients that already read it.
+            clients that already read it. `download_url` is a signed URL for
+            the finished file, or null until there is one.
 
             Anything waiting on a render had to fetch every render the caller
             could see and look for its own, and could not tell why one failed.
             """
             render = await load_owned_render(store, item_id, user)
-            return RenderStatus.of(render)
-
-        @self.get(
-            '/{item_id}/download',
-            response_class=PartialFileResponse,
-            responses={
-                200: {'content': {'video/mp4': {}}, 'description': 'the video'},
-                206: {'content': {'video/mp4': {}}, 'description': 'a range of it'},
-                404: {'description': 'no such render, or not yours'},
-                409: {'description': 'not rendered yet'},
-            },
-        )
-        async def downloadRender(
-            item_id: str,
-            user: User = Depends(current_active_user),
-            store: RenderStore = Depends(get_render_store),
-        ):
-            """# Download a render
-
-            The finished video, as an attachment named for its project
-            (`Content-Disposition: attachment; filename="<name>.mp4"`), with
-            HTTP Range support so a player can seek in it. 409 until the
-            render has finished.
-
-            Authenticated like every render route, so a browser cannot follow
-            a bare link to it: fetch it with the token and hand the result to
-            an object URL.
-
-            Before this there was no way to get a render back from a server
-            without a cloud bucket: a "local" delivery copied the file
-            somewhere only the server could see, or that anyone could.
-            """
-            render = await load_owned_render(store, item_id, user)
-            return PartialFileResponse(
-                finished_output(render),
-                media_type='video/mp4',
-                filename=download_name(render),
-            )
+            url = await run_in_threadpool(download_url, render)
+            return RenderStatus.of(render, download_url=url)
 
         @self.post('/{item_id}/deliver', *args, **kwargs)
         async def deliverRender(
@@ -472,11 +515,26 @@ class RenderAPI(MotorCRUDRouter):
                 delivery = Delivery(
                     destination=delivery.destination, location=download_path(render)
                 )
+            # Recorded as delivered before the link is signed: the object is
+            # in the bucket whether or not a link can be made to it now.
             await store.update(
                 render.id,
                 {'destination': delivery.destination, 'link': delivery.location},
             )
-            return delivery
+            if delivery.destination != BucketDestination.name:
+                return delivery
+            # The bucket's location is a lasting reference; the caller gets a
+            # link signed now, and the next caller another.
+            reference = parse_reference(delivery.location)
+            link = (
+                await run_in_threadpool(bucket_link, reference) if reference else None
+            )
+            if link is None:
+                raise HTTPException(
+                    status_code=502,
+                    detail='The render was uploaded, but no link to it could be signed',
+                )
+            return Delivery(destination=delivery.destination, location=link)
 
         @self.get('/{item_id}', *args, **kwargs)
         async def getSignedRenderLink(
@@ -494,16 +552,19 @@ class RenderAPI(MotorCRUDRouter):
             get a render back there.
             """
             render = await load_owned_render(store, item_id, user)
-            try:
-                # Off the event loop: the storage client is synchronous and
-                # may go to the network for credentials.
-                return await run_in_threadpool(signed_url, render.filename)
-            except Exception as exc:  # noqa: BLE001 - vendor SDK raises broadly
-                print('could not sign a link to render', render.id, exc)
+            # The object a bucket delivery recorded, where there was one: the
+            # bucket it went to may not be today's BUCKET_NAME. Otherwise the
+            # object the worker's automatic upload names after the file.
+            reference = parse_reference(render.link) or (None, render.filename)
+            # Off the event loop: the storage client is synchronous and may go
+            # to the network for credentials.
+            link = await run_in_threadpool(bucket_link, reference)
+            if link is None:
                 raise HTTPException(
                     status_code=502,
                     detail='No cloud link is available for this render',
-                ) from exc
+                )
+            return link
 
         @self.put('/{item_id}', *args, **kwargs)
         async def relabelRender(
@@ -525,7 +586,7 @@ class RenderAPI(MotorCRUDRouter):
             changes['display_name'] = display_name_for(render)
             render.display_name = changes['display_name']
             await store.update(render.id, changes)
-            return render
+            return await run_in_threadpool(render_view, render)
 
         @self.delete('/{item_id}', *args, **kwargs)
         async def deleteRender(
@@ -537,7 +598,66 @@ class RenderAPI(MotorCRUDRouter):
 
             Its owner's, or any for a superuser. The crud router's delete
             removed any render for anyone signed in.
+
+            Its video goes with it, and any copy a local delivery made. They
+            used to stay on disk for good once the record was gone. A copy in
+            a cloud bucket is left where it is.
             """
             render = await load_owned_render(store, item_id, user)
             await store.delete(render)
+            # After the record, so a file that cannot be removed never leaves
+            # a render pointing at nothing; best effort, and reported.
+            await run_in_threadpool(remove_render_files, render.id, render.filename)
             return render
+
+
+# The render's file, on a router of its own: the one above is mounted behind
+# the session, and a browser fetching this by itself -- `<video src>`, `<a
+# download>` -- has a signed URL instead (contract M1, `media_access`).
+renderFileAPI = APIRouter()
+
+
+@renderFileAPI.get(
+    '/render/{item_id}/download',
+    response_class=PartialFileResponse,
+    responses={
+        200: {'content': {'video/mp4': {}}, 'description': 'the video'},
+        206: {'content': {'video/mp4': {}}, 'description': 'a range of it'},
+        401: {'description': 'no session, and no valid signature for this path'},
+        404: {'description': 'no such render, or not yours'},
+        409: {'description': 'not rendered yet'},
+    },
+)
+async def downloadRender(
+    item_id: str,
+    access: MediaAccess = Depends(media_access),
+    store: RenderStore = Depends(get_render_store),
+):
+    """# Download a render
+
+    The finished video, as an attachment named for its project
+    (`Content-Disposition: attachment; filename="<name>.mp4"`), with HTTP
+    Range support so a player can seek in it. 409 until the render has
+    finished.
+
+    With a session, for the render's owner or a superuser. Or with no session
+    at all, through the signed `download_url` that `GET /render/{id}/status`
+    and `GET /render` hand out -- which is what lets a browser stream it into
+    a `<video>` or save it from a link, rather than fetching the whole file
+    with the token first.
+
+    Before this there was no way to get a render back from a server without a
+    cloud bucket: a "local" delivery copied the file somewhere only the server
+    could see, or that anyone could.
+    """
+    if access.signed:
+        # The URL was issued to someone who passed the ownership check, and
+        # names this render and nothing else.
+        render = await load_render(store, item_id)
+    else:
+        render = await load_owned_render(store, item_id, access.user)
+    return PartialFileResponse(
+        finished_output(render),
+        media_type='video/mp4',
+        filename=download_name(render),
+    )

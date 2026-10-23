@@ -130,3 +130,97 @@ class TestAnExplicitSettingWins:
     def test_it_can_close_development(self, environment, register, value):
         environment({'ALFRED_ALLOW_REGISTRATION': value})
         assert register().status_code == 403
+
+
+class TestTheDevAccountsAddressIsReserved:
+    """The auth bypass acts as ALFRED_DEV_USER_EMAIL, which owns the dev seeds.
+
+    The bypass creates that account on first use, so on a stack where it had
+    never run -- registration open, bypass off -- the address was free, and
+    whoever registered it owned the seeded projects.
+    """
+
+    def test_registering_it_is_refused_with_a_reason(self, environment, register):
+        environment(DEVELOPMENT)
+
+        res = register(config.DEV_USER_EMAIL)
+
+        assert res.status_code == 400, res.text
+        assert 'development login' in res.json()['detail']
+
+    def test_in_any_case(self, environment, register):
+        environment(DEVELOPMENT)
+        assert register(config.DEV_USER_EMAIL.upper()).status_code == 400
+
+    def test_nothing_is_created(self, environment, register, users):
+        """Counted rather than looked for: a test here may have made the dev
+        account itself, as the bypass would."""
+        environment(DEVELOPMENT)
+        before = users.count_documents({'email': config.DEV_USER_EMAIL})
+        register(config.DEV_USER_EMAIL)
+        assert users.count_documents({'email': config.DEV_USER_EMAIL}) == before
+
+
+@pytest.fixture
+def dev_account(users):
+    """The account the bypass creates, as it creates it -- here without the bypass."""
+    users.update_one(
+        {'email': config.DEV_USER_EMAIL},
+        {
+            '$setOnInsert': {
+                'email': config.DEV_USER_EMAIL,
+                'first_name': 'Dev',
+                'hashed_password': '!dev-no-login',
+                'is_active': True,
+                'is_verified': True,
+                'is_superuser': True,
+            }
+        },
+        upsert=True,
+    )
+    return users.find_one({'email': config.DEV_USER_EMAIL})
+
+
+def dev_login(api, password):
+    return api.post(
+        '/auth/jwt/login',
+        data={'username': config.DEV_USER_EMAIL, 'password': password},
+    )
+
+
+class TestTheDevAccountCannotBeLoggedInto:
+    """It stores no usable password, and nothing may give it one."""
+
+    def test_a_login_is_refused_like_a_wrong_password(self, api, dev_account):
+        """It was a 500: passlib cannot identify `!dev-no-login` as a hash."""
+        res = dev_login(api, 'any password at all')
+        assert res.status_code == 400, res.text
+        assert res.json()['detail'] == 'LOGIN_BAD_CREDENTIALS'
+
+    def test_a_superuser_cannot_set_its_password(self, api, make_account, dev_account):
+        root = make_account('root', superuser=True)
+
+        res = api.patch(
+            f'/users/{dev_account["_id"]}',
+            json={'password': 'a password somebody chose'},
+            headers=root.headers,
+        )
+
+        assert res.status_code == 400, res.text
+        assert 'no password' in res.json()['detail']['reason']
+        assert dev_login(api, 'a password somebody chose').status_code == 400
+
+    def test_no_reset_token_is_issued_for_it(self, api, dev_account, monkeypatch):
+        from alfred.core.routes.users import UserManager
+
+        issued = []
+
+        async def record(self, user, token, request=None):
+            issued.append(token)
+
+        monkeypatch.setattr(UserManager, 'on_after_forgot_password', record)
+
+        res = api.post('/auth/forgot-password', json={'email': config.DEV_USER_EMAIL})
+
+        assert res.status_code == 202, 'the same answer as for any address'
+        assert issued == []

@@ -4,14 +4,12 @@ from textwrap import wrap
 
 from beanie import init_beanie
 from fastapi import Depends, FastAPI
-from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
 from starlette.staticfiles import StaticFiles
 
 from alfred import docs
 from alfred.config import (
-    DATA_DIR,
     DEV_SKIP_AUTH,
     DEV_USER_EMAIL,
     SEED_OWNER,
@@ -19,6 +17,7 @@ from alfred.config import (
     secret_key_problem,
 )
 from alfred.core.models.users import UserRead, UserUpdate
+from alfred.core.responses import MediaAwareGZipMiddleware
 from alfred.core.routes import (
     ProjectAPI,
     RenderAPI,
@@ -26,10 +25,15 @@ from alfred.core.routes import (
     authAPI,
     demoAPI,
     fontAPI,
+    healthAPI,
     issueAPI,
+    mediaAPI,
     previewAPI,
+    previewFrameAPI,
+    renderFileAPI,
     templateAPI,
     videoAPI,
+    videoFileAPI,
 )
 
 # from alfred.core.utils.db import deOid
@@ -51,7 +55,9 @@ app = FastAPI(
     openapi_tags=docs.tags_metadata,
     docs_url='/api',
 )
-app.add_middleware(GZipMiddleware)
+# GZip for JSON and the SPA's assets; media and byte ranges go out as they are
+# (see `responses/compression.py`).
+app.add_middleware(MediaAwareGZipMiddleware)
 
 
 @app.on_event('startup')
@@ -172,6 +178,10 @@ def _isIdentifierParseError(exc):
 
 app.include_router(authAPI, prefix='/auth', tags=['auth'])
 
+# `/healthz` answers without a session, for container health checks; `/health`
+# requires one, and says whether a renderer is running (contract M3).
+app.include_router(healthAPI, tags=['health'])
+
 if DEV_SKIP_AUTH:
     # Registered before the fastapi-users router so this match wins; FastAPI
     # resolves routes in registration order.
@@ -233,6 +243,9 @@ app.include_router(
     videoAPI, dependencies=[Depends(current_active_user)], tags=['video']
 )
 app.include_router(
+    mediaAPI, dependencies=[Depends(current_active_user)], tags=['media']
+)
+app.include_router(
     previewAPI,
     prefix='/preview',
     dependencies=[Depends(current_active_user)],
@@ -247,9 +260,19 @@ app.include_router(
 app.include_router(
     adminAPI, dependencies=[Depends(current_active_superuser)], tags=['admin']
 )
-#  note: we can't secure the /data route because the otto preview is rendered into the
-# <img> tag in the browser. Should find a workaround for this, but it is not critical.
-app.mount('/data', StaticFiles(directory=DATA_DIR, html=True), name='data')
+
+# Files a browser fetches by itself -- `<video src>`, `<img src>`, `<a
+# download>` -- which cannot carry the session's Authorization header. Each
+# route depends on `media_access` instead of the session alone: a session, or
+# a signed URL for exactly that path (contract M1).
+#
+# This replaces the unauthenticated /data mount, which existed because the EDL
+# preview's frame had to reach an `<img>`. Everything it served was public to
+# anyone with the name: preview frames, and in its time local deliveries and
+# the engine's downloads. Nothing reads from it any more.
+app.include_router(renderFileAPI, tags=['render'])
+app.include_router(videoFileAPI, tags=['video'])
+app.include_router(previewFrameAPI, prefix='/preview', tags=['preview'])
 
 # if request does not match the above api, try to return a StaticFiles match
 app.mount('/', StaticFiles(directory=STATIC_DIR, html=True), name='dist')

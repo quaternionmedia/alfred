@@ -124,13 +124,16 @@ services:
       # Shared with the renderer through the repository mount, so the file
       # the worker writes is the file the api delivers.
       - VIDEO_DIR=/app/videos
+      # Fetched remote media, hidden in the library and served by nothing
+      # (contract M6); the renderer is given the same directory.
+      - OTTO_DOWNLOAD_DIR=/app/videos/.remote-cache
     healthcheck:
       test:
         [
           'CMD',
           'python',
           '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost/openapi.json', timeout=3)",
+          "import urllib.request; urllib.request.urlopen('http://localhost/healthz', timeout=3)",
         ]
       interval: 5s
       timeout: 5s
@@ -162,6 +165,7 @@ services:
       - DB_URL=mongodb://db:27017
       - DB_NAME=alfred
       - VIDEO_DIR=/app/videos
+      - OTTO_DOWNLOAD_DIR=/app/videos/.remote-cache
 
   db:
     image: mongo:bionic

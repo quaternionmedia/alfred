@@ -10,10 +10,13 @@ from alfred.config import (
 )
 
 
-def sendMail(recepients, subject, message, attachments=None):
+def sendMail(recepients, subject, message, attachments=None, timeout=None):
     # `attachments=None`, not `[]`. A list literal in a signature is created
     # once at import and shared by every call that omits the argument, so
     # anything appended to it leaks into the next mail sent.
+    #
+    # `timeout` bounds each network operation, in seconds, for a caller that
+    # must not wait on a mail server indefinitely; left out, smtplib waits.
     attachments = attachments or []
     try:
         msg = EmailMessage()
@@ -34,7 +37,7 @@ def sendMail(recepients, subject, message, attachments=None):
                         f.read(), maintype=maintype, subtype=subtype, filename=path
                     )
 
-        s = SMTP(EMAIL_SERVER, EMAIL_PORT)
+        s = SMTP(EMAIL_SERVER, EMAIL_PORT, **({'timeout': timeout} if timeout else {}))
         # s.set_debuglevel(1)
         s.starttls()
         s.login(EMAIL_USERNAME, EMAIL_PASSWORD)

@@ -1,5 +1,7 @@
 from datetime import timedelta
 from os.path import join
+from typing import Optional, Tuple
+from urllib.parse import unquote, urlsplit
 
 from bson import ObjectId
 from fastapi import HTTPException
@@ -8,6 +10,10 @@ from google.cloud import storage
 from alfred.config import BUCKET_NAME, DEFAULT_CHUNK_SIZE
 
 from .db import get_sync_db
+
+# Where v4 signed URLs point. Recognised in stored links, which held a signed
+# URL until references replaced them.
+GCS_HOST = 'storage.googleapis.com'
 
 # The canonical answers, for comparing against. Raise `fresh(...)` copies of
 # them, not these instances themselves -- see `fresh`.
@@ -42,19 +48,49 @@ def upload(filename, directory=None):
     blob.upload_from_filename(join(directory, filename) if directory else filename)
 
 
-def signed_url(blob_name, minutes=15):
+def signed_url(blob_name, minutes=15, bucket=None):
     """A v4 signed URL, valid for `minutes`, to download one object.
 
     By object name -- a render's `filename`, which is what `upload` names the
-    object. Needs a service account key file.
+    object -- in `bucket`, or BUCKET_NAME. Needs a service account key file.
     """
-    blob = get_bucket().blob(blob_name)
+    blob = get_bucket(bucket or BUCKET_NAME).blob(blob_name)
     return blob.generate_signed_url(
         version="v4",
         expiration=timedelta(minutes=minutes),
         # Allow GET requests using this URL.
         method="GET",
     )
+
+
+def object_reference(blob_name, bucket=None) -> str:
+    """A lasting name for an object: `gs://<bucket>/<object>`.
+
+    What a bucket delivery records, rather than a link: a signed URL expires
+    in minutes, so storing one stored a dead link. A reference is signed when
+    somebody asks for the link (see `parse_reference`).
+    """
+    return f'gs://{bucket or BUCKET_NAME}/{blob_name}'
+
+
+def parse_reference(link) -> Optional[Tuple[str, str]]:
+    """`(bucket, object)` for a stored bucket link, or None for anything else.
+
+    A `gs://` reference; or a signed GCS URL, which is what a delivery stored
+    before references -- long expired, but it still names the object.
+    """
+    if not isinstance(link, str):
+        return None
+    if link.startswith('gs://'):
+        bucket, _, blob = link[len('gs://') :].partition('/')
+    else:
+        split = urlsplit(link)
+        # V4 signs with `X-Goog-Signature`, V2 with `Signature`.
+        signed = 'Signature=' in split.query
+        if split.scheme != 'https' or split.hostname != GCS_HOST or not signed:
+            return None
+        bucket, _, blob = unquote(split.path).lstrip('/').partition('/')
+    return (bucket, blob) if bucket and blob else None
 
 
 def generate_signed_url(renderId, minutes=15):

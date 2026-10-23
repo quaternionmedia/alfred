@@ -48,7 +48,12 @@ def test_the_state_is_derived_as_the_contract_says(status, progress, state):
 
 
 @pytest.fixture
-def api(monkeypatch):
+def api(monkeypatch, tmp_path):
+    # An empty library and output directory, so whether a render has a file to
+    # download is decided here rather than by whatever the working directory
+    # holds.
+    monkeypatch.setattr(config, 'VIDEO_DIR', str(tmp_path / 'videos'))
+    monkeypatch.setattr(config, 'RENDER_DIR', str(tmp_path / 'videos' / 'renders'))
     offline_documents(monkeypatch, Render)
     store = FakeRenderStore()
     overrides = as_user(app, OWNER) + use_fakes(app, store, FakeQueue())
@@ -78,6 +83,9 @@ class TestTheRoute:
             'filename': 'x.mp4',
             'destination': None,
             'error': None,
+            # No file in this test's output directory, so nothing to download
+            # (contract M1; test_media_access.py covers the URL itself).
+            'download_url': None,
         }
 
     def test_a_failure_carries_its_reason(self, api):

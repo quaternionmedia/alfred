@@ -7,8 +7,11 @@ dependencies = [
     "al-otto >= 0.2.2",
     "fastapi<1.0.0,>=0.92.0",
     "aiofiles<24.0.0,>=23.1.0",
-    "python-jose<4.0.0,>=3.3.0",
     "fastapi-users<11.0.0,>=10.4.0",
+    # Declared although nothing here imports it: it parses every form the api
+    # accepts, the login form anyone can post included, so this project
+    # depends on its fixes. fastapi-users pins it exactly; see the override.
+    "python-multipart>=0.0.31",
     "motor<4.0.0,>=3.1.1",
     "beanie<2.0.0,>=1.17.0",
     "passlib<2.0.0,>=1.7.4",
@@ -20,7 +23,20 @@ dependencies = [
     "fastapi-users-db-beanie<2.0.0,>=1.1.4",
     "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate",
     "ujson>=5.7.0",
-    "pillow==9.5.0",
+    # 9.5 was pinned because Pillow 10 removed Image.ANTIALIAS, which moviepy
+    # 1.0.3 resizes with -- and 9.5 has every advisory since against it,
+    # CVE-2023-4863 and CVE-2024-28219 among them. The engine now restores the
+    # name when Pillow lacks it (alfred/otto/otto/__init__.py), and
+    # tests/pipeline/test_resize.py draws and encodes through that path. 12.3
+    # has no advisory open. Below 13, two days old as this is written, until
+    # it has had the same test.
+    "pillow>=12.3,<13",
+    # A constraint more than a dependency: nothing here imports numpy, but
+    # moviepy and the engine do, and neither bounds it. The lock held 1.24, the
+    # newest numpy that still installed on Python 3.8; 1.26 is the last 1.x.
+    # Below 2, which removed APIs, until the encode path (moviepy 1.0.3) has
+    # been run on 2.x in the image.
+    "numpy>=1.26.4,<2",
     # Capped, not merely floored, and the cap is the load-bearing half.
     #
     # `passlib.pwd` imports `pkg_resources` at module scope, and setuptools
@@ -35,7 +51,12 @@ dependencies = [
     # attached, which is its own change and not this one.
     "setuptools>=75.3.4,<81",
 ]
-requires-python = ">=3.8.1,<4.0"
+# 3.11, and only 3.11: the image, CI, ruff and black all target it, and the
+# engine caps below 3.12 (alfred/otto/pyproject.toml: the newest Python every
+# pydantic 1.10 it admits supports). The floor was 3.8.1, and pdm locks for the
+# whole range, so anything that has since dropped 3.8 sat at its last release
+# that still installed there -- numpy 1.24, anyio 4.5 -- whatever Python ran.
+requires-python = ">=3.11,<3.12"
 readme = "README.md"
 license = { text = "MIT" }
 
@@ -67,6 +88,24 @@ test = [
 render = [
     "al-otto[render]>=0.2.2",
 ]
+
+# An override replaces every requirement on a package, its dependents'
+# included. pdm honours it; pip has no such thing, so the image, nox and CI
+# install the exported lockfiles with --no-deps (the Dockerfile says more).
+#
+# Relock with pdm 2.29 or later. pdm 2.22, with this override locked, fails
+# `pdm add`, `pdm update <pkg>` and `pdm lock --update-reuse` with
+# CandidateNotFound for python-multipart, and its full `pdm lock` had not
+# finished after 49 minutes; only `pdm update python-multipart` worked. 2.29
+# relocks everything in under two minutes.
+[tool.pdm.resolution.overrides]
+# fastapi-users 10.4 pins python-multipart==0.0.6, which has nine advisories
+# against it (CVE-2024-24762 and CVE-2024-53981 among them). Every
+# fastapi-users before 15.0.4 pins an exact version with some still open --
+# 14.x pins 0.0.20, with seven -- and 15 needs pydantic 2, which the engine
+# cannot take yet. 0.0.31 is the first release with none open. fastapi-users
+# never imports it; FastAPI and Starlette do, and both take this release.
+python-multipart = ">=0.0.31"
 
 [tool.pdm]
 version = { source = "file", path = "alfred/_version.py" }

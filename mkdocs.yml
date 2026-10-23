@@ -11,6 +11,7 @@ nav:
   - Retrospective (verification): retrospective-verification-discipline.md
   - Development:
       - dev-auth.md
+      - ownership.md
   - About:
       - about/index.md
       - about/concepts.md

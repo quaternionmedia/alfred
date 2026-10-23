@@ -60,6 +60,13 @@ services:
       # mount in docker-compose.yml -- a bind mount over a populated path
       # takes the host's version of it, empty or not.
       - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
+    # This checkout's own signing key, merged after docker-compose.yml's
+    # `.secret_key` stub (an empty ALFRED_SECRET_KEY) so it wins. `./al init`,
+    # `./al dev` and `./al thin` create it; without it the stack still starts,
+    # on the stub, and the api announces that its tokens can be forged.
+    env_file:
+      - path: .secret_key.local
+        required: false
     environment:
       # Passed through from the host, empty unless you ask for it:
       #   ALFRED_DEV_SKIP_AUTH=1 ./al dev
@@ -75,6 +82,12 @@ services:
       # Same passthrough as the renderer's: hosts a clip may name remote media
       # on, empty unless you ask for it.
       - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
+      # Where the engine keeps media it fetched from a URL: a hidden directory
+      # in the library mount the renderer shares, so a file previewed here is
+      # not fetched again to render, and is never listed or served (contract
+      # M6). The engine wrote downloads to `data/` under its working
+      # directory, which the api served publicly at /data. A container path.
+      - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
 
   renderer:
     build:
@@ -136,6 +149,9 @@ services:
       # The worker refuses any other URL rather than downloading it. The api
       # reads the same setting and refuses first.
       - ALFRED_REMOTE_MEDIA_HOSTS=${ALFRED_REMOTE_MEDIA_HOSTS:-}
+      # Where fetched remote media is kept; the api's, so one download serves
+      # both. See the api above.
+      - OTTO_DOWNLOAD_DIR=${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
 
   db:
     ports:

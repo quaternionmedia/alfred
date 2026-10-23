@@ -2,7 +2,7 @@ import m from 'mithril'
 import '../node_modules/alertifyjs/build/css/alertify.min.css'
 import '../node_modules/alertifyjs/build/css/themes/semantic.css'
 import { defaults } from 'alertifyjs'
-import { Login, Logout } from './Login'
+import { Account, Login, Logout } from './Login'
 import { User } from './User'
 import { Layout } from './Components'
 import { Otto } from './Otto'
@@ -123,6 +123,7 @@ m.route(document.body, '/', {
   },
   '/login': { render: () => m(Layout, m(Login)) },
   '/logout': { render: () => m(Layout, m(Logout)) },
+  '/account/:action': { render: () => m(Layout, m(Account)) },
 })
 
 // Session restore and the guard run *after* the router is mounted.
