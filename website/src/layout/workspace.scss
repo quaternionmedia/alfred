@@ -41,16 +41,10 @@ $accent: #f2aa4c;
   background: $ground;
 }
 
-// Under the dock the footer is a line, not a band: the session link at the
-// size of the links beside it rather than the header's.
+// Under the dock the footer is a line, not a band.
 .workspace ~ footer {
   margin: 0.35rem 0.75rem;
   font-size: 13px;
-
-  #login-link {
-    padding: 0;
-    font-size: inherit;
-  }
 }
 
 // ---- the Panels menu ------------------------------------------------------

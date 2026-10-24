@@ -19,4 +19,12 @@ footer {
     padding: 0 0.35em;
     color: var(--grey4);
   }
+  // The session link is a footer link like the others. It was styled as the
+  // header's link it once was -- 28 pixels, and below 1026 pixels lifted out
+  // of the footer to the page's top right corner, over the end of the logo
+  // on a phone.
+  #login-link {
+    padding: 0;
+    font-size: inherit;
+  }
 }

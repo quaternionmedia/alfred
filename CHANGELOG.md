@@ -2,7 +2,7 @@
 
 ## Unreleased — review fixes
 
-Fixes from a review of alfred and otto, landed in six rounds of parallel
+Fixes from a review of alfred and otto, landed in seven rounds of parallel
 branches:
 
 | Round | Integrated on | What it carried |
@@ -13,6 +13,7 @@ branches:
 | 4 | `integrate/wave-4` | the review's fix round: every setting reaching the services that read it, CI installing what the image installs, the workspace's tab race and the suite's timing races, docs that describe the API as it answers, the timeline's sound written by otto (pinned at f3ceca3, `fix/engine-sound`), an api whose one event loop no longer waits on a preview, and a phone layout that keeps the whole picture on the screen |
 | 5 | `integrate/wave-5` | the decisions round 4 stopped at: password hashing off the event loop behind loud safeguards, the media work moved into otto (pinned at 7ddbf10, `feat/engine-media-ops`), a code beside every refusal of the routes qmcp calls, a cap on concurrent previews, support mail sent by the worker, the render extra and the docs build tightened, and `./al family`, which runs alfred with the repositories it works with |
 | 6 | `integrate/wave-6` | the docs: every page this effort touched said in fewer words, across the repositories, and the main pages opening with screenshots that `./al recipes` takes from demo data, its GIFs kept out of git (otto f106775 and vox e630cb0, for their docs); then the docs checked against the code, the font list's parse tested, and the project filter test making the projects it filters |
+| 7 | `feat/journeys-and-onboarding` | the editor's journeys and the way in: the phone flow fitting a phone, templates named in words, the empty viewer saying where to start, and a Get started page with the docs in the order a newcomer reads them |
 
 Read **Security** and **Changed** before deploying: several requests that were
 accepted are now refused, and a production stack needs its own signing key.
@@ -176,6 +177,17 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Fixed
 
+- **The phone flow fits a phone.** All four stages sit across the rail down to
+  360 pixels, where Deliver was cut off and the rail scrolled sideways; no
+  stage scrolls sideways (the scrubber's margins and a long media name both
+  did); the transport is one row of buttons, 121 pixels tall where it was 217;
+  and on the Source stage the viewer and the timeline give way to their floors,
+  so the project list shows projects, where it showed its heading, its filter
+  and not one whole project.
+- **The header is the logo.** Its menu button opened an empty drawer once the
+  rail had taken every link, and the session link, styled as the header link
+  it once was, was lifted out of the footer over the logo on a phone. It stays
+  in the footer, at the footer's size.
 - **Library video clips render.** The worker resolved `videos/x.mp4` against
   its own working directory, which held no videos; it resolves against
   VIDEO_DIR, and the Celery task is registered once.
@@ -262,6 +274,16 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Added
 
+- **Templates are named in words.** `GET /templates` sends a `label` with each
+  (`Text box`, not `textBox`; `Colour`, not `makeColor`) and a description for
+  `makeColor`, which otto gives none; the Source stage, the bin, the clip on
+  the timeline and its settings all use it.
+- **The empty viewer says where to start**: open a project or add material on
+  the Source stage.
+- **A Get started page** (`docs/start.md`): clone, start the dev stack, and
+  make a first video from Source to Deliver. The docs home describes the editor
+  as it is, and the nav runs in the order a newcomer reads it, with the
+  retrospectives last.
 - **`GET /render/{id}/status`** (state, progress and failure reason) and
   **`GET /render/{id}/download`** (Range support, named attachment). The
   Render and Deliver stages follow a render live and offer a Download button.
@@ -400,6 +422,7 @@ accepted are now refused, and a production stack needs its own signing key.
 | 4 | `integrate/wave-4` | 1567 passed, 2 skipped, 8 xfailed, from a fresh clone | 389 passed, 1 skipped on the final commit; none passed only on retry in any of three full runs from a fresh clone | CI's install, emulated in a clean container: 1378 passed, 191 skipped (the database tier and the text-drawing tests), none failed. `mkdocs build --strict` without a warning. Live, against joe on the host: the 28 checks of the API pass, and qmcp's tools queued a render with the project's captions and were handed its signed download |
 | 5 | `integrate/wave-5` | 1810 passed, 2 skipped, 8 xfailed, from a fresh clone | 391 passed, 1 skipped; none passed only on retry | CI's install, emulated: 1619 passed, 193 skipped, none failed. `mkdocs build --strict` without a warning. `./al family loop` against the round's branches of joe, qmcp and vox: every repository's quick suite green, and the live check's nine checks passing against a joe with nothing but its media API turned on |
 | 6 | `integrate/wave-6` | 1831 passed, 2 skipped, 8 xfailed | 392 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning. `./al family loop` against joe#35's branch, with the auth bypass: every repository's quick suite green, and the live check's eight checks passing, the ninth skipped for want of a library file with sound. `./al recipes` against the same joe: all six recipes recorded, and every screenshot unchanged. Against a joe without the media API, the loop warns and captions refuse |
+| 7 | `feat/journeys-and-onboarding` | 1833 passed, 2 skipped, 8 xfailed | 399 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning. The `@screens` retaken against `./al family up` with joe#35's branch: all seven changed, for the phone's header, rail and transport and the templates' labels, the captions still shown with joe connected. The phone flow measured at 375x812 and 390x844: one screen on every stage, nothing scrolling sideways |
 
 ## 0.3.0 — breaking
 

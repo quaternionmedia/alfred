@@ -411,7 +411,7 @@ const add = (clip, label, kind) => {
 export const addMedia = name => add(mediaClip(name), basename(name), 'media')
 
 export const addTemplate = template =>
-  add(templateClip(template), `${template.name} template`, 'template')
+  add(templateClip(template), `${template.label || template.name} template`, 'template')
 
 export const Generate = (message, label, action, busyKey) =>
   m('.stageempty', [

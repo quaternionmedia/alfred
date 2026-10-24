@@ -54,13 +54,11 @@ It is the data of the final video: every step from the source material (`video`,
 A `Timeline` can show any `EDL`.
 
 ## [Project](project.md)
-A `Project` is a data format that creates templates automatically from user data.
+A `Project` is a saved piece of work: its name, its timeline as an `EDL`, its captions, and the size it last rendered at and where it was last delivered. Choosing one in the editor brings all of it back.
 
-It holds `logic` to build the end product and `fields` that describe the data it needs.
-
-The `fields` are rendered as a `Form` to enter data into. The data is applied to the `logic`, which generates the `EDL` to render into a finished video.
+A project can also be built from data: it holds `logic` to build the end product and `fields` that describe the data it needs. The `fields` are rendered as a `Form` to enter data into, on the editor's Render stage. The data is applied to the `logic`, which generates the `EDL` to render into a finished video.
 
 ## [Render](render.md)
 A `Render` finalizes a video into a single file that any capable player can play.
 
-Rendering is computationally expensive and usually needs powerful hardware. Alfred renders in the cloud, on a distributed system, so any device can edit video.
+Rendering is computationally expensive and usually needs powerful hardware. Alfred renders on the server you run, in its render worker, so any device with a browser can edit video.

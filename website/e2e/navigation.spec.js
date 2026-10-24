@@ -42,6 +42,35 @@ test.describe('navigation', () => {
     await expect(authedPage.locator('header .menuLinks a')).toHaveCount(0)
   })
 
+  test('the header holds the logo and no control that does nothing', async ({ authedPage }) => {
+    /**
+     * Below 1026 pixels the header had a menu button, which opened its links
+     * as a drawer over the editor -- and once the rail had taken every link,
+     * it opened an empty one. The only control in a phone's header did
+     * nothing.
+     */
+    await authedPage.goto('/')
+    await expect(authedPage.locator('header a, header button')).toHaveCount(1)
+    await expect(authedPage.locator('header #home-link img')).toHaveAttribute('alt', 'Alfred')
+  })
+
+  test('the session link is in the footer, at the size of the links beside it', async ({ authedPage }) => {
+    /**
+     * Styled as the header link it once was: 28 pixels, and below 1026 pixels
+     * lifted out of the footer to the page's top right corner, where on a
+     * phone it ran into the logo.
+     */
+    await authedPage.setViewportSize({ width: 390, height: 844 })
+    await authedPage.goto('/')
+    const footer = await authedPage.locator('body > footer').boundingBox()
+    const session = authedPage.locator('footer a.loginLink')
+    const box = await session.boundingBox()
+    expect(box.y).toBeGreaterThanOrEqual(footer.y - 1)
+    expect(box.y + box.height).toBeLessThanOrEqual(footer.y + footer.height + 1)
+    const size = el => parseFloat(getComputedStyle(el).fontSize)
+    expect(await session.evaluate(size)).toBe(await authedPage.locator('footer a.docLink').first().evaluate(size))
+  })
+
   test('choosing a stage changes the route', async ({ authedPage }) => {
     await authedPage.locator('.stagerail #stage-source').click()
     await expect(authedPage).toHaveURL(/stage=source/)

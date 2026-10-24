@@ -36,6 +36,24 @@ TEMPLATE_NAMES = (
     'makeColor',
 )
 
+# What the editor calls each template. The names are otto's identifiers, and
+# the editor showed them as they are -- "textBox" and "makeColor" on buttons
+# beside "demo-bars.mp4" -- which reads as a leak from the engine rather than
+# as something to choose. A name without one here is shown as it is.
+TEMPLATE_LABELS = {
+    'title': 'Title',
+    'textBox': 'Text box',
+    'bullets': 'Bullets',
+    'initial': 'Initial screen',
+    'makeColor': 'Colour',
+}
+
+# otto gives `makeColor` no docstring, so it had no description to show; one
+# written here is used wherever the engine's own is empty.
+FALLBACK_DESCRIPTIONS = {
+    'makeColor': 'Fill the frame with one colour',
+}
+
 # `final` is deliberately absent, and it is the interesting case.
 #
 # It draws a headline, an address, a website and a phone number, and
@@ -59,6 +77,8 @@ _ENGINE_SUPPLIED = frozenset({'clipsize', 'duration', 'data', 'kwargs'})
 
 class Template(BaseModel):
     name: str
+    # What the editor shows; `name` is what a clip carries and is validated.
+    label: str
     description: str
     parameters: list[str]
     deprecated: bool
@@ -82,7 +102,8 @@ def _describe(name):
         params = []
     return Template(
         name=name,
-        description=summary,
+        label=TEMPLATE_LABELS.get(name, name),
+        description=summary or FALLBACK_DESCRIPTIONS.get(name, ''),
         parameters=params,
         # otto spells it DEPRICATED. Match what is actually written rather
         # than what it should say, and accept both so a later fix upstream

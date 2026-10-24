@@ -104,6 +104,26 @@ body > .stagerail {
   min-height: 6rem;
 }
 
+// On the Source stage the choosing is the work, so the viewer and the
+// timeline give way first, down to their floors -- the frame's room, and a
+// row of tools -- and the projects and the material take what they give.
+// Shared in proportion, as on the other stages, the room a smaller header and
+// transport gave back went mostly to the timeline: 207 pixels of it at
+// 375x812, and 78 to the project list -- its heading, its filter, and not one
+// whole project.
+body:has(> .flowstage--source) {
+  .flowpanel--viewer .viewer,
+  .flowpanel--timeline .editor {
+    flex-shrink: 4;
+  }
+}
+
+// The footer is a line here, as under the workspace (workspace.scss): its
+// margins were 30 pixels of a phone's height.
+body:has(> .flowstage) > footer {
+  margin: 0.35rem 0.75rem;
+}
+
 // Past the floors the page scrolls, rather than squeezing a region to nothing
 // or running the column on past the window's edge -- which, with the page's
 // `overflow: hidden` (style.css), put the bottom of it out of reach.

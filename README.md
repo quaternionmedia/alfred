@@ -14,6 +14,9 @@ made by an Alfred server you run yourself, with cloud storage optional.
 
 Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 
+**Get started:** [docs/start.md](docs/start.md) runs it on your own machine and
+makes a first video, from Source to Deliver.
+
 ## Shape
 
 A small **control plane** (`alfred/`) orchestrates two engines side by side.

@@ -13,15 +13,23 @@ Alfred needs no video experience, but the [concepts of video editing](concepts.m
 Alfred has these components:
 
 ### website
-: The browser tools to create and edit videos:
-    
-    - a "simple" single-track video editor
-    - an "advanced" multi-track video editor
-    - template rendering forms
-    - a preview frame of the video
-    - render status and downloads
+: The editor in the browser: one page, worked in four stages.
+
+    - **Source**: the projects, and the media and templates to put on a timeline
+    - **Edit**: the timeline, a single track of clips played one after another,
+      under a viewer that shows the clip at the playhead
+    - **Render**: a render of the timeline at a chosen size, or, for a project
+      built from a form, that form
+    - **Deliver**: the renders as they progress, to download or deliver
+    - **Captions**, beside them: typed, imported from a subtitle file, or
+      transcribed, and drawn into renders
+
+    On a wide screen the stages' panels are a workspace, rearranged by dragging
+    and restored from the Panels menu; on a phone the editor shows one stage at
+    a time. [Get started](../start.md) walks through all four.
 ### [API](../api/index.md)
-: The video rendering components, as a backend service.
+: The server, as a backend service: accounts, projects, renders and captions,
+  with otto drawing every preview and render.
 
 ### Models
 The properties each model takes:
