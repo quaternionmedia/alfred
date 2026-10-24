@@ -1,7 +1,7 @@
 import os
 import re
 from os import makedirs
-from os.path import basename, isfile, join
+from os.path import abspath, basename, isfile, join, normpath
 from tempfile import mkstemp
 from time import time
 from typing import Optional
@@ -199,12 +199,16 @@ async def previewFrameFile(name: str, access: MediaAccess = Depends(media_access
     The image `POST /preview/` made, by the signed URL it answered with (or
     with a session). 404 once the frame has been cleaned up.
     """
-    path = join(config.PREVIEW_DIR, name)
-    if not FRAME_NAME.fullmatch(name) or not isfile(path):
-        raise HTTPException(
-            status_code=404,
-            detail='No such preview frame; it may have been cleaned up',
-        )
+    missing = HTTPException(
+        status_code=404,
+        detail='No such preview frame; it may have been cleaned up',
+    )
+    if not FRAME_NAME.fullmatch(name):
+        raise missing
+    root = abspath(config.PREVIEW_DIR)
+    path = normpath(join(root, name))
+    if not path.startswith(join(root, '')) or not isfile(path):
+        raise missing
     return FileResponse(path, media_type='image/jpeg')
 
 

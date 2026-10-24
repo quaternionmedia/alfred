@@ -13,7 +13,6 @@ happened to run.
 import re
 import shutil
 import subprocess
-import xml.etree.ElementTree as ElementTree
 from pathlib import Path
 
 import pytest
@@ -34,7 +33,7 @@ def titles_in(path):
     source = path.read_text(encoding='utf-8')
     pattern = (
         r"""(?:test\.describe|test)\s*(?:\.\w+)?\s*"""
-        r"""\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*?)\1"""
+        r"""\(\s*(['"`])((?:\\.|(?!\1)[^\\])*?)\1"""
     )
     return [m.group(2) for m in re.finditer(pattern, source)]
 
@@ -161,78 +160,23 @@ class TestTheDocsSiteCarriesIt:
         )
 
 
-class TestTheCookbookLinksOnlyWhatIsCommitted:
-    def test_every_recipe_file_it_links_is_tracked(self):
-        """The committed cookbook cannot name a file a clean checkout lacks.
+class TestTheRecipesMediaStaysOutOfGit:
+    """`./al recipes` writes each recipe's recording and GIF to docs/recipes,
+    for watching and for publishing; git ignores them. A GIF does not compress
+    against its last version, so committing them added megabytes to history
+    on every refresh."""
 
-        It linked `recipes/<slug>.webm` whenever a recording existed locally,
-        and recordings are git-ignored -- so a cookbook regenerated on a
-        machine that had recorded the recipes linked files nobody else had.
-        """
+    def test_the_cookbook_links_no_recipe_media(self):
         linked = re.findall(
             r'\]\((recipes/[^)\s]+)\)', COOKBOOK.read_text(encoding='utf-8')
         )
+        assert not linked, (
+            f'docs/cookbook.md links {linked}, which a clean checkout lacks. '
+            'Regenerate with `node website/e2e/cookbook.js`.'
+        )
+
+    def test_git_tracks_nothing_in_docs_recipes(self):
         tracked = tracked_recipe_files()
-        problems = []
-        for link in linked:
-            name = link.split('/', 1)[1]
-            if not (RECIPES / name).is_file():
-                problems.append(f'{link} does not exist')
-            elif tracked is not None and name not in tracked:
-                problems.append(f'{link} is not tracked by git')
-        assert not problems, (
-            f'docs/cookbook.md links {problems}. Commit the stub, or regenerate '
-            'with `node website/e2e/cookbook.js`.'
-        )
-
-
-class TestTheRecipeStubs:
-    """The stubs are committed, so they are reviewed like any other file."""
-
-    def stubs(self):
-        return sorted(RECIPES.glob('*.svg'))
-
-    def test_each_stub_is_for_a_recipe_the_suite_has(self):
-        recipes = {
-            recipe_slug(title)
-            for title in titles_in(E2E / 'recipes.spec.js')
-            if title.lower().startswith('recipe:')
-        }
-        orphans = [stub.name for stub in self.stubs() if stub.stem not in recipes]
-        assert not orphans, (
-            f'stubs for recipes recipes.spec.js no longer has: {orphans}. '
-            'Run ./al recipes, which clears them, or delete them.'
-        )
-
-    def test_each_stub_names_its_recipe_and_says_a_recording_is_pending(self):
-        titles = {
-            recipe_slug(title): re.sub(r'^recipe:\s*', '', title, flags=re.I)
-            for title in titles_in(E2E / 'recipes.spec.js')
-        }
-        problems = []
-        for stub in self.stubs():
-            svg = ElementTree.fromstring(stub.read_text(encoding='utf-8'))
-            text = ' '.join(''.join(svg.itertext()).split())
-            label = svg.get('aria-label', '')
-            if titles.get(stub.stem, '') not in text:
-                problems.append(f'{stub.name} does not name its recipe')
-            if 'polished recording is pending' not in text.lower():
-                problems.append(f'{stub.name} does not say a recording is pending')
-            if not label.startswith('Recording pending:'):
-                problems.append(f'{stub.name} has no accessible name')
-        assert not problems, problems
-
-    def test_no_stub_carries_anything_from_the_machine_that_made_it(self):
-        """Fixed text and the recipe's title, nothing else: no path or date."""
-        machine = re.compile(
-            r'(?<![A-Za-z])[A-Za-z]:[\\/]|/(home|Users|tmp|var|app)/|file:|'
-            r'test-results|'
-            r'\b\d{4}-\d{2}-\d{2}\b'
-        )
-        leaks = [
-            f'{stub.name}: {match.group(0)}'
-            for stub in self.stubs()
-            for match in [machine.search(stub.read_text(encoding='utf-8'))]
-            if match
-        ]
-        assert not leaks, f'stubs carry machine details: {leaks}'
+        if tracked is None:
+            pytest.skip('git cannot say what docs/recipes tracks here')
+        assert not tracked, f'docs/recipes tracks {sorted(tracked)}; it commits nothing'

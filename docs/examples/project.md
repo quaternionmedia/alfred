@@ -14,7 +14,7 @@ The following is a complete example of a `Project` which makes a 10 second comme
     - positioned at the bottom right corner
 
 ??? abstract "Layer order"
-    All media items are rendered from first to last, meaning the final media listed will appear above all others.
+    Clips render from first to last, so the last one listed appears above all others.
 
 The image fields are media names like any clip's: `videos/<file>` from the server's library, or a URL on a host `ALFRED_REMOTE_MEDIA_HOSTS` lists. See the [usage notes](index.md).
 
@@ -26,7 +26,7 @@ The image fields are media names like any clip's: `videos/<file>` from the serve
 ## ProjectAPI
 
 === "Create"
-    To create a new project, issue a **POST** request.
+    **POST** a new project.
     ``` bash title="Create new project"
     curl -X POST \
       -H "Authorization: Bearer $TOKEN" \
@@ -35,25 +35,25 @@ The image fields are media names like any clip's: `videos/<file>` from the serve
       https://alfred.quaternion.media/project
     ```
 
-    A successful request answers the project as stored, with the `_id` the server gave it.
+    It answers the project as stored, with the `_id` the server gave it.
 
     ``` json title="response"
     {"_id":"61db4127e2ab4bf1fd587ddc","logic":{...}...}
     ```
 === "Read All"
-    To read a list of your projects, issue a **GET** request. A superuser gets every project.
+    **GET** your projects; a superuser gets every project.
     ``` bash title="Get all projects"
     curl -H "Authorization: Bearer $TOKEN" \
       https://alfred.quaternion.media/project
     ```
 === "Read One"
-    To read a Project, issue a **GET** request with the id of the project to read.
+    **GET** one project by its id.
     ``` bash title="Get one project"
     curl -H "Authorization: Bearer $TOKEN" \
       https://alfred.quaternion.media/project/$PROJECT_ID
     ```
 === "Update"
-    To update a Project, issue a **PUT** request with the id of the project to update.
+    **PUT** a project by its id.
     ``` bash title="Update project"
     curl -X PUT \
       -H "Authorization: Bearer $TOKEN" \
@@ -61,9 +61,9 @@ The image fields are media names like any clip's: `videos/<file>` from the serve
       -d @data.json \
       https://alfred.quaternion.media/project/$PROJECT_ID
     ```
-    The body replaces the project: a field it leaves out is emptied. The project's owner and captions are kept as they are. `PUT /project/$PROJECT_ID/timeline` writes the timeline alone, and `PUT /project/$PROJECT_ID/settings` its render settings and destination alone.
+    The body replaces the project: a field it leaves out is emptied, though the owner and captions are kept. `PUT /project/$PROJECT_ID/timeline` writes the timeline alone, and `PUT /project/$PROJECT_ID/settings` the render settings and destination alone.
 === "Delete"
-    To delete a Project, issue a **DELETE** request with the id of the project to delete.
+    **DELETE** a project by its id.
     ``` bash title="Delete project"
     curl -X DELETE \
       -H "Authorization: Bearer $TOKEN" \

@@ -16,4 +16,4 @@ Selecting a portion of a video is as simple as defining an `inpoint`.
 }
 ```
 
-The above Edl will result in a 5 second long video, skipping the first 5 seconds of the input.
+This Edl makes a 5-second video that skips the input's first 5 seconds.

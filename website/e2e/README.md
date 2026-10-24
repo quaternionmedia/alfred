@@ -2,20 +2,21 @@
 
 Playwright, replacing the Cypress suite that lived in `website/cypress/`.
 
-The whole suite, on a stack built from the checkout -- the site, the api, a
-render worker for the `@slow` specs, a stub audio engine for the captions
-specs, and the database -- in Docker:
+The whole suite, in Docker, on a stack built from the checkout: the site, the
+api, a render worker for the `@slow` specs, a stub audio engine for the
+captions specs, and the database.
 
 ```sh
 ./al test
 ```
 
-The audio engine is `test_e2e.yml`'s `audio` service: `tests/stubs/audio_engine.py`,
-which speaks joe's media API with no model and no download, "hearing" a line
-of speech wherever the sound it is sent is louder than a whisper. The api and
-the worker reach it through vox, as they would reach joe. At startup it writes
-`videos/e2e-speech.wav` -- four seconds holding two bursts of tone -- into the
-library, the one piece of media with sound the captions specs need.
+The audio engine is `test_e2e.yml`'s `audio` service,
+`tests/stubs/audio_engine.py`. It speaks joe's media API with no model and no
+download, "hearing" a line of speech wherever the sound it is sent is louder
+than a whisper, and the api and the worker reach it through vox, as they would
+reach joe. At startup it writes `videos/e2e-speech.wav` into the library: four
+seconds holding two bursts of tone, the one piece of media with sound the
+captions specs need.
 
 Or from the host, against a stack you are already running:
 
@@ -24,139 +25,124 @@ cd website
 yarn install
 npx playwright install --with-deps chromium
 
-yarn e2e             # the gate: everything except @perf and @recipe
+yarn e2e             # the gate: everything except @perf, @recipe and @screens
 yarn e2e:perf        # page-load budget, on request
 yarn e2e:ui          # interactive runner
 yarn e2e:report      # last HTML report
 ```
 
-The `@recipe` walkthroughs run in the `docs` project, one worker, recording
-video. `./al recipes` runs it, copies each passing recipe's recording to
-`docs/recipes/<recipe>.webm` (git-ignored), writes the SVG stub beside it that
-is committed in its place, and regenerates the cookbook, which links only the
-files git tracks -- the stubs.
+The `@recipe` walkthroughs and the `@screens` screenshots run in the `docs`
+project, one worker. `./al recipes` runs it, takes the screenshots the docs
+open with, makes the recipes' GIFs (not committed), and regenerates the
+cookbook;
+[CONTRIBUTING.md](../../CONTRIBUTING.md#the-docs-are-generated-from-the-tests)
+says what it keeps and what it commits.
 
 ## Two layouts, two projects
 
 The editor is one set of panels laid out two ways (`src/layout/`): a Golden
-Layout workspace on a screen 1024 pixels wide or more, the stage flow --
-one stage at a time, over the viewer and the timeline -- below that. The
-gate runs both:
+Layout workspace on a screen 1024 pixels wide or more, and below that the
+stage flow, one stage at a time over the viewer and the timeline. The gate
+runs both:
 
 - **`chromium`** (1280x720) runs every spec against the desktop workspace,
-  `workspace.spec.js` among them -- all but the phone flow's own,
+  `workspace.spec.js` among them, except the phone flow's own,
   `stacked.spec.js`.
-- **`phone`** (390x844) runs only the specs that walk the stages, edit a
-  timeline and follow a render -- `flow`, `editor`, `timeline-tools`,
-  `deliver` -- and `stacked.spec.js` against the phone flow. "Both layouts"
-  below marks those four; every other spec runs in `chromium` alone.
+- **`phone`** (390x844) runs `stacked.spec.js` against the phone flow, and
+  only those specs that walk the stages, edit a timeline and follow a render:
+  `flow`, `editor`, `timeline-tools`, `deliver`. "Both layouts" below marks
+  those four; every other spec runs in `chromium` alone.
 
-A spec about one layout's own shape sets the viewport it means --
-`appearance.spec.js` does for the phone flow's rail and panels, and
-`stacked.spec.js` for the picture on a smaller phone and one held
-sideways -- and the rest read the same either way.
+A spec about one layout's own shape sets the viewport it means
+(`appearance.spec.js` for the phone flow's rail and panels, `stacked.spec.js`
+for the picture on a smaller phone and one held sideways); the rest read the
+same either way.
 
-`E2E_BASE_URL` defaults to `http://localhost:8000`. Before the first test,
-`global-setup.js` fetches `/openapi.json` from it and fails the run unless the
-title is `Alfred API` -- a published port belongs to whoever bound it first,
-and this suite has been run against a different QM service that also defaults
-to 8000, producing real measurements of the wrong program. If that guard
-fires, start Alfred elsewhere (`ALFRED_PORT=8100 ./al dev`) and point the
-suite at it. `E2E_EMAIL`,
-`E2E_PASSWORD` and `E2E_NAME` override the test account;
-`E2E_LOAD_BUDGET_MS` overrides the performance budget.
+## Settings
 
-`E2E_OTHER_EMAIL` names the second account `auth.spec.js` registers to show
-that a project is its owner's alone (`other@mail.me` by default, with the test
-account's password). `E2E_AUDIO_ENGINE_URL` is where the captions specs ask
-the stub audio engine what it was sent (`GET /stub/uploads`): `test_e2e.yml`
-points it at the `audio` service, and without it that one check is left out.
-Point it at the stub only -- joe has no `/stub/uploads`.
+| Setting | What it does |
+|---|---|
+| `E2E_BASE_URL` | The stack under test; `http://localhost:8000` by default |
+| `E2E_EMAIL`, `E2E_PASSWORD`, `E2E_NAME` | Override the test account |
+| `E2E_OTHER_EMAIL` | The second account `auth.spec.js` registers to show that a project is its owner's alone; `other@mail.me` by default, with the test account's password |
+| `E2E_LOAD_BUDGET_MS` | Overrides the performance budget |
+| `E2E_AUDIO_ENGINE_URL` | Where the captions specs ask the stub audio engine what it was sent (`GET /stub/uploads`). `test_e2e.yml` points it at the `audio` service; without it, that one check is left out. Point it at the stub only: joe has no `/stub/uploads` |
+
+Before the first test, `global-setup.js` fetches `/openapi.json` from
+`E2E_BASE_URL` and fails the run unless the title is `Alfred API`. A published
+port belongs to whoever bound it first, and this suite has produced real
+measurements of a different QM service that also defaults to 8000. If the
+guard fires, start Alfred elsewhere (`ALFRED_PORT=8100 ./al dev`) and point the
+suite at it.
 
 ## Why the conversion is not one-to-one
 
-The Cypress suite had eight spec files. Two of them — `auth.js` (74 lines)
-and `dnd.js` (150 lines) — were **entirely commented out**: zero live tests
-between them. Most of `project.js` and `render.js` was commented out too.
+The Cypress suite had eight spec files. Two, `auth.js` (74 lines) and `dnd.js`
+(150 lines), were **entirely commented out**: zero live tests between them.
+Most of `project.js` and `render.js` was commented out too. Of the roughly
+thirteen live cases left, few could fail:
 
-Of the roughly thirteen live cases that remained, few could fail:
+| Cypress | Why it could not fail | Here |
+|---|---|---|
+| `window.js` | Tested the browser, not the app: that `localStorage.setItem` followed by `getItem` returns what was set, that `document` reports a width and a height, and one case that set the page background to purple and asserted nothing. Copied from a Cypress demo repository. | Dropped |
+| Navigation | Checked `#login-link`, `#projects-link` and `#renders-link` were visible after history navigation; `src/Menu.js` renders all three unconditionally, so it held on every route and in both auth states. | Asserts the URL |
+| `cy.loginUI` | Typed credentials, submitted, then asserted the path was still `/`, equally true of a failed login. Nothing registered the test user, so against a fresh database every "logged in" test ran logged out and still passed. | `authedPage` proves the login took effect |
+| `project.js` | Its one live test, `adds new project`, only asserted `.projects` was visible. It added nothing. | — |
+| `render.js` | Its two live tests asserted nothing at all: every assertion in the file was commented out, and one did not log in first. | — |
+| `otto.js` | Three selectors matched on inline style attributes, e.g. `[style="width: auto;"] > :nth-child(1)`, which break on any CSS change and name no control. | The "reset speed" button is addressed by its `title`, like every other control |
 
-- **`window.js` tested the browser, not the app.** That `localStorage.setItem`
-  followed by `getItem` returns what was set; that `document` reports a width
-  and a height; and one case that set the page background to purple and
-  asserted nothing. Copied from a Cypress demo repository. Dropped.
-- **Its navigation assertions could not fail.** They checked `#login-link`,
-  `#projects-link` and `#renders-link` were visible after history navigation.
-  `src/Menu.js` renders all three unconditionally, so the assertions held on
-  every route and in both auth states. Repaired here to assert the URL.
-- **The login helper never checked that login worked.** `cy.loginUI` typed
-  credentials, submitted, then asserted the path was still `/` — equally true
-  of a failed login. Nothing registered the test user, so against a fresh
-  database every "logged in" test ran logged out and still passed.
-- **`project.js`'s one live test was named `adds new project`** and only
-  asserted `.projects` was visible. It added nothing.
-- **`render.js`'s two live tests asserted nothing at all**; every assertion in
-  the file was commented out. One did not log in first.
-- **Three `otto.js` selectors matched on inline style attributes**, e.g.
-  `[style="width: auto;"] > :nth-child(1)`. Those break on any CSS change and
-  name no control. One of them was the "reset speed" button, which has a
-  `title` like every other control and is addressed by it here.
-
-The suite also could not run as configured: `cypress.json`,
+The suite could not run as configured either: `cypress.json`,
 `cypress/integration/` and `cypress/plugins/` are the Cypress ≤9 layout, while
-`package.json` asked for Cypress ^10.11, which requires `cypress.config.js`
-and `e2e/`. `test_cy.yml` pinned a third version (`cypress/included:9.7.0`),
-and its `CYPRESS_baseUrl` (`http://api/`) disagreed with `cypress.json`'s
-(`http://localhost:8000/`). The CI job invoking it was commented out.
+`package.json` asked for Cypress ^10.11, which requires `cypress.config.js` and
+`e2e/`. `test_cy.yml` pinned a third version (`cypress/included:9.7.0`), its
+`CYPRESS_baseUrl` (`http://api/`) disagreed with `cypress.json`'s
+(`http://localhost:8000/`), and the CI job invoking it was commented out.
 
 ## Verification status
 
-`./al test` on `integrate/wave-5`: **391 passed, 1 skipped, in about four
-minutes**, across the `chromium` (workspace) and `phone` (stage flow)
-projects, including the `@slow` specs that wait on a real encode -- from a
-fresh clone, with no test passed only on retry. The skip is data-dependent: the project filter test needs more than
-three projects.
+`./al test` on `integrate/wave-6`: **392 passed**, across the `chromium`
+(workspace) and `phone` (stage flow) projects, including the `@slow` specs
+that wait on a real encode, with no test passed only on retry. The project
+filter test makes the projects it filters, so nothing here skips for want of
+data.
 
-The three image breaks recorded when this suite replaced Cypress -- `FROM
-python` reaching 3.14, the ImageMagick 6 policy path on an ImageMagick 7 base,
-and `parcel` drifting with no lockfile -- are fixed: the base is pinned by
-digest, the policy is edited where ImageMagick 7 keeps it, and `yarn.lock` is
-committed. The run installs its npm dependencies outside the checkout, so it
-no longer rewrites `website/yarn.lock`.
+The three image breaks found when this suite replaced Cypress (`FROM python`
+reaching 3.14, the ImageMagick 6 policy path on an ImageMagick 7 base, and
+`parcel` drifting with no lockfile) are fixed; Phase 0 in
+[tests/README.md](../../tests/README.md) says how. The run installs its npm
+dependencies outside the checkout, so it does not rewrite `website/yarn.lock`.
 
 ## Defects this conversion surfaced
 
-All four are fixed; `navigation.spec.js` now asserts there are no duplicate
-ids, and the logo, reload and mount problems are gone with their causes.
+All four are fixed.
 
-- **Duplicate element ids.** The header rendered its links twice, once as a
-  drawer and once as a bar, so each of their ids appeared twice on every
-  page -- invalid HTML, and every `#id` selector ambiguous. Playwright's
-  strict mode failed on it where Cypress had not. `navigation.spec.js`
-  carried it as a `test.fail()` until the header rendered one list, whose
-  shape CSS decides; it now asserts that every id on the page is unique.
-  `fixtures.js` still addresses the session link by class (`SELECTORS`),
-  the stable choice either way.
+- **Duplicate element ids.** The header rendered its links twice, as a drawer
+  and as a bar: invalid HTML, and every `#id` selector ambiguous. Playwright's
+  strict mode failed on it where Cypress had not. The header renders one list,
+  whose shape CSS decides, and `navigation.spec.js`, which carried the defect
+  as a `test.fail()`, asserts that every id on the page is unique. `fixtures.js`
+  still addresses the session link by class (`SELECTORS`), the stable choice
+  either way.
 - **The logo rendered `src="[object Object]"`**, a steady stream of 404s for
   `/%5Bobject%20Object%5D` in the API log. `src/Menu.js` imports it as a URL.
 - **`--reload` in a test run.** The image's default command runs uvicorn with
-  `--reload`, and the compose file mounts the repo at `/app`, so Playwright
+  `--reload` and the compose file mounts the repo at `/app`, so Playwright
   writing `playwright-report/` or `test-results/` under `website/` restarted
-  the API mid-run and dropped in-flight connections. `test_e2e.yml`
-  overrides the command to disable reload; this cost one spurious failure
-  before it was diagnosed.
-- **`test_cy.yml` mounted `./alfred/` onto `/app`**, shadowing the package
-  root that `uvicorn alfred.main:app` resolves against. `test_e2e.yml` mounts
-  the repo root, matching `docker-compose.yml`.
+  the API mid-run and dropped in-flight connections, one spurious failure
+  before it was diagnosed. `test_e2e.yml` overrides the command to disable
+  reload.
+- **`test_cy.yml` mounted `./alfred/` onto `/app`**, shadowing the package root
+  `uvicorn alfred.main:app` resolves against. `test_e2e.yml` mounts the repo
+  root, matching `docker-compose.yml`.
 
 ## Authentication
 
-There is no `storageState` shortcut here. `src/User.js` keeps the session in
+There is no `storageState` shortcut. `src/User.js` keeps the session in
 `sessionStorage`, so it survives a reload in the same tab and ends with the
 tab, and it renews the token while the editor is in use. Each test that needs
 a session logs in through the form via the `authedPage` fixture, which also
 proves the login took effect. `session.spec.js` covers renewal, staying logged
-in and logout; `views.spec.js` that a reload keeps the session.
+in and logout; `views.spec.js`, that a reload keeps the session.
 
 ## What is covered
 
@@ -191,15 +177,15 @@ in and logout; `views.spec.js` that a reload keeps the session.
 | Views render, no uncaught page errors, reload | `views.spec.js` | UI |
 | Layout at every width | `appearance.spec.js` | UI |
 | Icons drawn by a self-hosted font; nothing loaded from a CDN | `assets.spec.js` | UI |
-| Recipe walkthroughs (the cookbook) | `recipes.spec.js` | UI, `@recipe` |
+| Recipe walkthroughs (GIFs, kept out of git) | `recipes.spec.js` | UI, `@recipe` |
+| The docs' screenshots | `screens.spec.js` | UI, `@screens` |
 | Page-load budget | `performance.spec.js` | UI, `@perf` |
 
 The project assertions read the expected set from `GET /project` rather than
-hardcoding names, so they survive a different seed.
-
-The uncaught-page-error check is worth more than it looks: a mithril view that
-raises during render leaves the page half-drawn without failing any request,
-so no other test in this suite would notice.
+hardcoding names, so they survive a different seed. The uncaught-page-error
+check matters more than it looks: a mithril view that raises during render
+leaves the page half-drawn without failing any request, so no other test here
+would notice.
 
 ## What is not covered
 

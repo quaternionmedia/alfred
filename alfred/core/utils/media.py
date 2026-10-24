@@ -32,7 +32,7 @@ that were stored before it existed and are re-queued later.
 import re
 from mimetypes import guess_type
 from os import listdir
-from os.path import abspath, commonpath, isfile, join, realpath, splitext
+from os.path import abspath, commonpath, isfile, join, normpath, realpath, splitext
 from typing import Iterable, Optional
 from urllib.parse import urlsplit
 
@@ -87,7 +87,31 @@ _MEDIA_TYPES = {
 # the audio track otto muxes in (`<output>.audio.m4a`), and moviepy's own
 # temporaries. Mid-render they are half-written files with media extensions;
 # listed as media, a clip could pick one up.
-_ENCODER_TEMPORARIES = re.compile(r'(\.audio\.m4a|TEMP_MPY_\w*\.\w+)$', re.IGNORECASE)
+_TEMP_MPY = re.compile('TEMP_MPY_', re.IGNORECASE)
+_WORD = re.compile(r'\w*')
+_EXTENSION = re.compile(r'\.\w+')
+
+
+def _encoder_temporary(filename: str) -> bool:
+    """An encoder's temporary file: `<name>.audio.m4a`, or a name whose stem
+    holds `TEMP_MPY_` followed by word characters only, then one extension.
+
+    Checked from the last `TEMP_MPY_` rather than by one regular expression,
+    which backtracked quadratically on a name repeating `temp_mpy_`. A later
+    occurrence has the shorter tail, so if any occurrence qualifies the last
+    one does.
+    """
+    if filename.lower().endswith('.audio.m4a'):
+        return True
+    stem, extension = splitext(filename)
+    found = list(_TEMP_MPY.finditer(stem))
+    last = found[-1] if found else None
+    return (
+        last is not None
+        and _WORD.fullmatch(stem[last.end() :]) is not None
+        and _EXTENSION.fullmatch(extension) is not None
+    )
+
 
 _SCHEME = re.compile(r'^[A-Za-z][A-Za-z0-9+.-]*:')
 _CONTROL = re.compile(r'[\x00-\x1f\x7f]')
@@ -120,7 +144,7 @@ def is_library_filename(filename) -> bool:
         and '\\' not in filename
         and not _CONTROL.search(filename)
         and splitext(filename)[1].lower() in MEDIA_EXTENSIONS
-        and not _ENCODER_TEMPORARIES.search(filename)
+        and not _encoder_temporary(filename)
     )
 
 
@@ -152,7 +176,11 @@ def library_file(filename, video_dir=None) -> Optional[str]:
     if not is_library_filename(filename):
         return None
     root = abspath(video_dir or config.VIDEO_DIR)
-    path = join(root, filename)
+    path = normpath(join(root, filename))
+    # Inside the library as written, then as resolved: the first is the form a
+    # path check is recognised in, the second follows symlinks.
+    if not path.startswith(join(root, '')):
+        return None
     real_root = realpath(root)
     try:
         inside = commonpath([real_root, realpath(path)]) == real_root

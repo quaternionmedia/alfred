@@ -171,26 +171,48 @@ test.describe('the project selector', () => {
     /**
      * A filter rather than pagination: the list is small enough to render
      * whole, and typing a name beats scrolling for one. It appears only when
-     * there are enough projects to be worth filtering.
+     * there are enough projects to be worth filtering, so the test makes four
+     * of its own, named with a mark no other project carries.
+     *
+     * Other workers add and remove projects while this runs, so the counts
+     * asserted are of this test's own rows, never of the whole list.
      */
-    const projects = await (
-      await request.get('/project', { headers: { Authorization: token } })
-    ).json()
-    test.skip(projects.length <= 3, 'too few projects for the filter to appear')
+    const auth = { headers: { Authorization: token } }
+    const mark = `filtered-${test.info().workerIndex}-${Date.now()}`
+    const made = []
+    try {
+      for (const n of [1, 2, 3, 4]) {
+        const created = await request.post('/project', {
+          ...auth,
+          data: { name: `${mark} ${n}`, logic: {}, edl: { clips: [] } },
+        })
+        expect(created.status(), await created.text()).toBe(200)
+        made.push(await created.json())
+      }
 
-    await authedPage.goto('/#!/?stage=source')
-    const filter = authedPage.locator('#project-filter')
-    await expect(filter).toBeVisible()
+      // A reload, not just the route: the page logged in before these
+      // projects existed, and the workspace keeps its Projects panel mounted,
+      // so only a fresh load lists them.
+      await authedPage.goto('/#!/?stage=source')
+      await authedPage.reload()
+      const filter = authedPage.locator('#project-filter')
+      await expect(filter).toBeVisible()
+      const rows = authedPage.locator('.projectrow')
+      const ours = rows.filter({ hasText: mark })
 
-    const target = projects[0].name
-    await filter.fill(target)
-    await expect(authedPage.locator('.projectrow')).toHaveCount(
-      projects.filter(p => (p.name || '').toLowerCase().includes(target.toLowerCase()))
-        .length
-    )
+      await filter.fill(`${mark} 3`)
+      await expect(rows).toHaveCount(1)
+      await expect(ours).toHaveCount(1)
 
-    await filter.fill('')
-    await expect(authedPage.locator('.projectrow')).toHaveCount(projects.length)
+      await filter.fill(mark.toUpperCase())
+      await expect(rows).toHaveCount(4)
+
+      await filter.fill('')
+      await expect(ours).toHaveCount(4)
+      expect(await rows.count()).toBeGreaterThanOrEqual(4)
+    } finally {
+      for (const project of made) await request.delete(`/project/${project._id}`, auth)
+    }
   })
 
   test('choosing material puts it on the timeline', async ({

@@ -252,7 +252,7 @@ class TestDependencyPinning:
             r'^RUN\s+pip3?\s+install[^\n]*requirements\.lock', dockerfile, re.M
         )
         project = re.search(
-            r'^RUN\s+pip3?\s+install\s+(?:--?[\w-]+\s+)*-e\s+\.', dockerfile, re.M
+            r'^RUN\s+pip3?\s+install\s+(?:-{1,2}\w[\w-]*\s+)*-e\s+\.', dockerfile, re.M
         )
         assert pins and project
         assert pins.start() < project.start(), (

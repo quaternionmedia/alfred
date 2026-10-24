@@ -26,7 +26,6 @@
 
 const fs = require('fs')
 const path = require('path')
-const { execFileSync } = require('child_process')
 
 const E2E_DIR = __dirname
 const REPO = path.join(E2E_DIR, '..', '..')
@@ -115,66 +114,7 @@ function parseSpec(file) {
   }
 }
 
-const RECIPE_DIR = path.join(REPO, 'docs', 'recipes')
-
-/**
- * The files in docs/recipes that a clean checkout has.
- *
- * The cookbook is committed, so it may only link what is committed with it.
- * `./al recipes` writes a stub per passing recipe beside its recording, and
- * the recordings are ignored: asking the directory would link a recording
- * that exists on one machine, and the committed cookbook would then depend on
- * it. So git is asked what it tracks, and a file counts only while it is also
- * on disk -- a stub cleared because its recipe failed stops being linked at
- * once, rather than when the deletion is committed.
- *
- * Without git (an exported tree, say) the directory is all there is, and only
- * the stubs are taken from it: a recording is linked only once committed.
- */
-function recipeFiles() {
-  const present = fs.existsSync(RECIPE_DIR) ? fs.readdirSync(RECIPE_DIR) : []
-  let tracked
-  try {
-    tracked = execFileSync('git', ['ls-files', '-z', '--', 'docs/recipes'], {
-      cwd: REPO,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'ignore'],
-    })
-      .split('\0')
-      .filter(Boolean)
-      .map(file => path.posix.basename(file))
-  } catch {
-    tracked = present.filter(file => file.endsWith('.svg'))
-  }
-  return new Set(tracked.filter(file => present.includes(file)))
-}
-
-function slugFor(title) {
-  return title
-    .replace(/^recipe:\s*/i, '')
-    .replace(/[^a-z0-9]+/gi, '-')
-    .replace(/^-|-$/g, '')
-    .toLowerCase()
-}
-
-/**
- * What the cookbook shows under a recipe: its recording once one is
- * committed, else its stub -- a card saying a polished recording is pending
- * -- else nothing.
- */
-function artefactFor(title, files) {
-  const slug = slugFor(title)
-  if (files.has(`${slug}.webm`)) {
-    return `[▶ watch](recipes/${slug}.webm)`
-  }
-  if (files.has(`${slug}.svg`)) {
-    const name = title.replace(/^recipe:\s*/i, '').replace(/[[\]]/g, '\\$&')
-    return `![Recording pending: ${name}](recipes/${slug}.svg)`
-  }
-  return null
-}
-
-function render(specs, files) {
+function render(specs) {
   const out = []
   out.push('# Cookbook')
   out.push('')
@@ -188,6 +128,10 @@ function render(specs, files) {
     'database, a real render worker, and real files on disk. If a step here is',
     'wrong, a test is failing. That is the point -- prose describing behaviour',
     'goes stale silently, and a test describing behaviour goes red.',
+    '',
+    '`./al test` and CI run the `chromium` and `phone` projects. The',
+    'walkthroughs tagged `@recipe` run in the `docs` project, which `./al',
+    'recipes` drives against a dev stack to record them.',
     ''
   )
 
@@ -213,13 +157,6 @@ function render(specs, files) {
       }
       out.push(`- **${entry.title}**`)
       const blocks = []
-      // The stub and the recording are made by the same test, so a broken
-      // recipe has neither rather than a stale one -- which is why this
-      // checks for the file rather than assuming it.
-      const artefact = artefactFor(entry.title, files)
-      if (artefact) {
-        blocks.push(`  ${artefact}`)
-      }
       // A describe block and the test that follows it can pick up the same
       // preceding comment, which printed the paragraph twice.
       if (entry.note && entry.note !== lastGroupNote) {
@@ -255,8 +192,7 @@ function main() {
     .sort()
     .map(f => parseSpec(path.join(E2E_DIR, f)))
 
-  const files = recipeFiles()
-  const markdown = render(specs, files)
+  const markdown = render(specs)
   fs.mkdirSync(path.dirname(outfile), { recursive: true })
   fs.writeFileSync(outfile, markdown, 'utf8')
 
@@ -265,18 +201,6 @@ function main() {
     0
   )
   console.log(`${outfile}: ${specs.length} specs, ${steps} recipes`)
-
-  // A stub `./al recipes` has just written is not linked until git tracks
-  // it. Say so, rather than leave it to be noticed in review.
-  const untracked = fs.existsSync(RECIPE_DIR)
-    ? fs.readdirSync(RECIPE_DIR).filter(f => f.endsWith('.svg') && !files.has(f))
-    : []
-  if (untracked.length) {
-    console.log(
-      `not linked until tracked: ${untracked.join(', ')}\n` +
-        '  git add docs/recipes, then run this again'
-    )
-  }
 }
 
 main()

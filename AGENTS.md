@@ -69,30 +69,30 @@ what was actually verified.
 
 ## What Alfred is
 
-A browser video editor whose previews and renders are all made server-side,
-by a self-hosted stack built as a **small control plane** (`alfred/`)
-orchestrating two cooperating, parallel engines: **otto** renders the picture
-(a separate public QM package consumed as `al-otto` and vendored at
-`alfred/otto`), and **vox** carries the sound (QM's audio-engine seam,
-vendored at `alfred/vox`, driving an engine such as joe over HTTP). Both are
-submodules, installed editable from there the same way everywhere -- the
-image, nox and CI: `--no-deps`, with what they need coming from alfred's
-lockfiles (`requirements.lock`, and `requirements-render.lock` for otto's
-`render` extra), so nothing is resolved on the day of a build (the
-`Dockerfile` says more). The seam owns auth,
-project, render and caption lifecycle state, and orchestration; it does not
-own video or audio handling, and only `alfred/core/utils/audio_engine.py`
-knows how the audio engine is reached (docs/captions.md). Keep it that way —
-see the control-plane record in `governance/qm/adr/`.
+A browser video editor whose previews and renders are all made server-side, by
+a self-hosted stack built as a **small control plane** (`alfred/`)
+orchestrating two parallel engines. **otto** renders the picture: a separate
+public QM package, consumed as `al-otto` and vendored at `alfred/otto`. **vox**
+carries the sound: QM's audio-engine seam, vendored at `alfred/vox`, driving an
+engine such as joe over HTTP. Both are submodules, installed editable from
+there the same way everywhere (the image, nox and CI) with `--no-deps`; what
+they need comes from alfred's lockfiles (`requirements.lock`, and
+`requirements-render.lock` for otto's `render` extra), so nothing is resolved
+on the day of a build. The `Dockerfile` says more.
 
-Media work is otto's, through its public API: a render
-(`renderMultitrack`, by a named `preset` that a render's `quality` passes
-through to), a preview frame (`renderFrame`), a timeline's sound
-(`renderSound`), what a library file holds (`otto.media.probe`) and the demo
-clips (`otto.demo.demoClip`). `alfred/` imports no media library and runs no
-ffmpeg; what the engine needs that otto does not expose is a change to otto,
-pinned here. Each of those calls blocks, and
-`tests/unit/test_blocking_calls.py` lists it, so no coroutine calls one.
+The seam owns auth, project, render and caption lifecycle state, and
+orchestration. It does not own video or audio handling, and only
+`alfred/core/utils/audio_engine.py` knows how the audio engine is reached
+(docs/captions.md). Keep it that way; see the control-plane record in
+`governance/qm/adr/`.
+
+Media work is otto's, through its public API: a render (`renderMultitrack`, by
+a named `preset` that a render's `quality` passes through to), a preview frame
+(`renderFrame`), a timeline's sound (`renderSound`), what a library file holds
+(`otto.media.probe`) and the demo clips (`otto.demo.demoClip`). `alfred/`
+imports no media library and runs no ffmpeg; what the engine needs that otto
+does not expose is a change to otto, pinned here. Each of those calls blocks,
+and `tests/unit/test_blocking_calls.py` lists it, so no coroutine calls one.
 
 - `alfred/core/routes/` — API surface (FastAPI routers)
 - `alfred/core/models/` — Beanie/Pydantic documents
@@ -132,43 +132,38 @@ Tests can also run directly: `nox -f tests/noxfile.py -s coverage`.
 
 ### Dev server notes
 
-These bite on a first run, none obvious from the error:
+These bite on a first run, and none is obvious from the error:
 
-- **Port 8000, and this one fails silently.** 27017 below is the loud version
-  of this problem; 8000 is the quiet one, and it is worse. If something else
-  already holds 8000, Docker still starts the stack and reports it healthy —
-  but every request from your machine reaches the other application, because
-  the host port belongs to whoever bound it first. Nothing errors. It happened
-  during this project's 0.3.0 work: another QM service defaults to 8000 too,
-  and `curl localhost:8000/openapi.json` answered `Apothecary API` for a full
-  session while Alfred was up and serving correctly on its own network.
-
-  `./al dev` now refuses to start when 8000 is already answering, and names
+- **Port 8000 fails silently.** If something else already holds 8000, Docker
+  still starts the stack and reports it healthy, but every request from your
+  machine reaches the other application: the host port belongs to whoever
+  bound it first. Nothing errors; 27017 below is the loud version of the same
+  problem. `./al dev` refuses to start when 8000 already answers, and names
   the occupant from its OpenAPI title. Override rather than kill whatever has
   it: `ALFRED_PORT=8100 ./al dev`. `ALFRED_DB_PORT` and `ALFRED_HMR_PORT` do
   the same for the other two.
 
-  The general rule, worth more than the specific fix: **a test result is only
-  as good as your knowledge of what served it.** Before trusting a number,
-  confirm the identity of the server — `curl localhost:$PORT/openapi.json`
-  names it. See [docs/retrospective-verification-discipline.md](docs/retrospective-verification-discipline.md).
-- **Port 27017.** `dev.yml` publishes MongoDB on the host's loopback. If
-  anything else is already bound there — a standalone `mongod`, another
-  project's container — the stack fails with `Bind for 127.0.0.1:27017
-  failed: port is already allocated`, and the message names the port but not
-  the culprit. Find it with `docker ps`, or move it with `ALFRED_DB_PORT`.
-  Nothing in the app needs 27017 exposed on the host; it is published for
-  attaching a GUI.
+  The general rule, worth more than the fix: **a test result is only as good
+  as your knowledge of what served it.** Before trusting a number, confirm the
+  server's identity; `curl localhost:$PORT/openapi.json` names it. During
+  0.3.0 it answered `Apothecary API`, another QM service on 8000, for a whole
+  session while Alfred served correctly on its own network; see
+  [docs/retrospective-verification-discipline.md](docs/retrospective-verification-discipline.md).
+- **Port 27017.** `dev.yml` publishes MongoDB on the host's loopback, for
+  attaching a GUI; nothing in the app needs it there. If anything else holds
+  27017 (a standalone `mongod`, another project's container), the stack fails
+  with `Bind for 127.0.0.1:27017 failed: port is already allocated`, which
+  names the port but not the culprit. Find it with `docker ps`, or move it
+  with `ALFRED_DB_PORT`.
 - **Loopback only, unless you ask.** `dev.yml` publishes the api, the HMR port
   and the database on `127.0.0.1`, so the dev stack is reachable from this
-  machine and nowhere else. That matters more than it looks: with
-  `ALFRED_DEV_SKIP_AUTH=1`, every request the stack answers is served as a
-  superuser, and on every interface that meant anyone on the network. To try
-  the app from a phone on the same network, opt in for that run:
-  `ALFRED_BIND=0.0.0.0 ./al dev`, then browse to this machine's LAN address.
-  Do it with the auth bypass off, or on a network you trust — `./al dev`
-  warns when both are set. The database ignores `ALFRED_BIND` and stays on
-  loopback; `ALFRED_DB_BIND` moves it, for someone who means to.
+  machine and nowhere else. With `ALFRED_DEV_SKIP_AUTH=1` every request is
+  served as a superuser, so on every interface that would be anyone on the
+  network. To try the app from a phone on the same network, opt in for that
+  run with `ALFRED_BIND=0.0.0.0 ./al dev` and browse to this machine's LAN
+  address. Do it with the auth bypass off, or on a network you trust; `./al
+  dev` warns when both are set. The database ignores `ALFRED_BIND` and stays
+  on loopback; `ALFRED_DB_BIND` moves it, for someone who means to.
 - **The signing key.** The committed `.secret_key` is a stub that leaves
   `ALFRED_SECRET_KEY` empty, and an empty key still signs: PyJWT accepts it,
   so anyone could mint a development session for any account. `./al init`,
@@ -176,58 +171,52 @@ These bite on a first run, none obvious from the error:
   random key for this checkout, and `dev.yml` loads it over the stub. Delete
   it to rotate. Production never reads it: `./al prod` needs the key exported.
 - **`UID`/`GID`.** `dev.yml` sets the db container's user from `${UID}:${GID}`.
-  Neither is exported by default in most shells, and `UID` is read-only in
-  bash, so compose warns and substitutes blanks. Harmless on Docker Desktop;
-  export both if the db container fails to start on a Linux host.
-
+  Most shells export neither, and `UID` is read-only in bash, so compose warns
+  and substitutes blanks. Harmless on Docker Desktop; export both if the db
+  container fails to start on a Linux host.
 - **`website/node_modules` is not shared with the container.** The image
   installs its own, and an anonymous volume keeps the `./website:/app` bind
   mount from covering them. This is load-bearing on any non-Linux host: parcel
-  needs a per-platform native binding, so a host install would otherwise hand
-  an Alpine container a Windows or macOS one. Install on the host freely --
-  you need to, for Playwright. One consequence: anonymous volumes survive an
-  ordinary `up`, so after changing a dependency run `./al init` (or
-  `docker compose up --renew-anon-volumes`) or the container keeps the
-  previous install.
-
+  needs a per-platform native binding, so a host install would hand an Alpine
+  container a Windows or macOS one. Install on the host freely; Playwright
+  needs it. Anonymous volumes survive an ordinary `up`, so after changing a
+  dependency run `./al init` (or `docker compose up --renew-anon-volumes`), or
+  the container keeps the previous install.
 - **`--reload` does not see your edits on Windows or macOS.** `./al dev` runs
-  uvicorn with `--reload`, which watches with inotify — and inotify events do
-  not cross a Docker bind mount from a non-Linux host. This is the same
-  limitation that costs the frontend its HMR, but the frontend has a polling
-  watcher and the API does not, so the API silently keeps running the code it
-  loaded at startup.
-
-  The symptom is a fix that does not take effect, and the tell is a traceback
-  whose frame shows a line number with **no source line** beside it — Python
-  cannot map the frame because the file changed under the loaded module. Run
-  `docker compose -f docker-compose.yml -f dev.yml restart api` after editing
-  anything under `alfred/`.
+  uvicorn with `--reload`, which watches with inotify, and inotify events do
+  not cross a Docker bind mount from a non-Linux host. The frontend has a
+  polling watcher for this, at the cost of its HMR; the API has none, so it
+  silently keeps running the code it loaded at startup. The symptom is a fix
+  that does not take effect; the tell is a traceback frame showing a line
+  number with **no source line** beside it: Python cannot map the frame,
+  because the file changed under the loaded module. Run `docker compose -f
+  docker-compose.yml -f dev.yml restart api` after editing anything under
+  `alfred/`.
 
   A syntax error is worse: the container reports `Up` while crash-looping, and
   every request answers connection-refused rather than 500. `docker logs
   alfred-api-1` names it immediately; nothing else does.
 
-`./al dev` runs with `--reload`, so on a Linux host edits under `alfred/`
-restart the API. That also means a test run writing into the repo can restart
-the server mid-request — `test_e2e.yml` overrides the command to disable
-reload for exactly that reason.
+  On a Linux host `--reload` does restart the API on edits under `alfred/`, so
+  a test run writing into the repo can restart the server mid-request;
+  `test_e2e.yml` overrides the command to disable reload for that reason.
 
 ## Conventions
 
-- **Formatting is Black with `-S`** (single quotes preserved). CI enforces
-  it via the shared `quaternionmedia/.github` workflow; run
+- **Formatting is Black with `-S`** (single quotes preserved). CI enforces it
+  through the shared `quaternionmedia/.github` workflow; run
   `./al nox -s blacken` before pushing.
 - **Packaging is PDM**, not pip or poetry. Dependencies live in
   `pyproject.toml`; `pdm.lock` is committed.
-- **CI is centralized**: `.github/workflows/CI.yml` calls reusable
-  workflows in `quaternionmedia/.github`. Prefer extending those over
-  adding project-local workflow logic.
+- **CI is centralized**: `.github/workflows/CI.yml` calls reusable workflows in
+  `quaternionmedia/.github`. Prefer extending those over adding project-local
+  workflow logic.
 
 ## Known governance gaps
 
-This project adopted the constitution with pre-existing non-compliance
-rather than starting clean. The open items — and what compliance would
-look like for each — are enumerated in the adoption-scope record in
-`governance/qm/adr/`. Read it before adding a dependency, a datastore, or
-a third-party service, so you don't deepen a gap that is already being
-worked. Do not add new frontend assets loaded from a CDN.
+This project adopted the constitution with pre-existing non-compliance rather
+than starting clean. The adoption-scope record in `governance/qm/adr/`
+enumerates the open items and what compliance would look like for each. Read
+it before adding a dependency, a datastore or a third-party service, so you
+don't deepen a gap already being worked. Do not add new frontend assets loaded
+from a CDN.

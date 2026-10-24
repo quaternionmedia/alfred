@@ -299,7 +299,10 @@ class TestFailures:
         engine['upload'] = EngineUnavailable('connection refused')
         with pytest.raises(audio_engine.AudioEngineFailed) as raised:
             audio_engine.transcribe('/tmp/x.wav')
-        assert 'http://engine.test:8010' in str(raised.value)
+        urls = [
+            u.rstrip('.,;:)') for u in re.findall(r'https?://\S+', str(raised.value))
+        ]
+        assert urls == ['http://engine.test:8010']
         assert 'connection refused' in str(raised.value)
 
     def test_a_refusal_of_the_input_is_its_own_kind(self, engine):

@@ -1,9 +1,9 @@
 # Adjust clip
 ## Resize
-A video or image is first fitted inside the frame, keeping its proportions, and centred. Resizing scales it from there by the factor given.
+A video or image is first fitted inside the frame, keeping its proportions, and centred. `resize` scales it from there by the factor given:
 
-- Values larger than 1 will enlarge the clip
-- Values less than 1 will shrink the clip
+- above 1 enlarges the clip
+- below 1 shrinks it
 
 ``` json title="data.json"
 {
@@ -20,16 +20,16 @@ A video or image is first fitted inside the frame, keeping its proportions, and 
 ```
 
 ## Position
-Reposition the clip. A position of numbers places the clip's top left corner, from the frame's top left:
+A position of numbers places the clip's top left corner, measured from the frame's top left:
 
 - Larger `x` values move the clip **right**
 - Smaller `x` values, down to negative ones, move the clip **left**
 - Larger `y` values move the clip **down**
 - Smaller `y` values, down to negative ones, move the clip **up**
 
-Each example below shrinks the clip to half the frame first, so that where it sits shows.
+Each example below first shrinks the clip to half the frame, so where it sits shows.
 === "Absolute"
-    With `"relative": false`, move the clip by `[x, y]` pixels from the top left. This places it 100 pixels from the left and 50 from the top.
+    With `"relative": false`, `[x, y]` is pixels from the top left. This places the clip 100 pixels from the left and 50 from the top.
     ``` json title="data.json"
     {
       "edl": {
@@ -49,9 +49,9 @@ Each example below shrinks the clip to half the frame first, so that where it si
     }
     ```
 === "Relative"
-    Move the clip by `[x, y]`, where `1` represents the width or height of the frame. Positions are relative unless the clip says `"relative": false`.
+    `[x, y]` is in fractions of the frame, where `1` is its width or height. Positions are relative unless the clip says `"relative": false`.
     
-    The below example places this half-size video at the center, top of the frame: its left edge a quarter of the way across.
+    This places the half-size video at the top centre of the frame: its left edge a quarter of the way across.
     ``` json title="data.json"
     {
       "edl": {
@@ -71,14 +71,14 @@ Each example below shrinks the clip to half the frame first, so that where it si
     }
     ```
 === "Text"
-    Place the clip at `[x, y]` of one of the following coordinates:
+    Place the clip at `[x, y]` with these words:
 
     | axis | values |
     | ----- | ----- |
     | x | `left`, `center`, `right` |
     | y | `top`, `center`, `bottom` |
         
-    This places it exactly as the relative example above does.
+    This places it exactly as the relative example does.
     ``` json title="data.json"
     {
       "edl": {

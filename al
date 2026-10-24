@@ -37,7 +37,7 @@ pt | pytest | py        the API suite, in Docker (pytest.yml)
 n | nox                 a nox session in the test container: ./al nox -s lint
 cookbook                regenerate docs/cookbook.md from the browser specs
 family                  alfred with otto, vox, joe, qmcp and the rest: status, test, up, smoke, down, loop
-recipes                 record the recipe walkthroughs (needs a dev stack)
+recipes                 record the recipes as GIFs, take the docs' screenshots (needs a dev stack)
 docs | doc              serve the docs on http://localhost:4000
 flower                  Celery monitoring on http://localhost:5555
 i | install             add a frontend dependency: ./al install PACKAGE
@@ -320,19 +320,31 @@ elif [ $1 = "i" -o $1 = "install" ]; then
 
 elif [ $1 = "recipes" ]; then
   shift
-  # Record the @recipe walkthroughs, then put a stub for each passing one in
-  # docs/recipes/ beside its recording (git-ignored) and regenerate the
-  # cookbook, which shows the stubs git tracks. Needs a running dev stack
-  # (E2E_BASE_URL if it is not on :8000). The collector runs after a failed
-  # recipe too, so a recipe that fails loses its stub rather than keeping a
-  # stale one; it leaves docs/recipes alone if the run reached no recipe.
-  # It exits with Playwright's status, or 1 if either script fails.
-  cd website
-  npx playwright test --project=docs --reporter=json > recipe-report.json
-  recorded=$?
-  node e2e/collect-recipe-videos.js && node e2e/cookbook.js || recorded=1
-  cd ..
-  exit $recorded
+  # The docs' pictures, from the `docs` Playwright project:
+  #   1. record the @recipe walkthroughs, and take the @screens into
+  #      docs/assets/screens/;
+  #   2. copy each passing recipe's recording into docs/recipes/ (git-ignored);
+  #   3. turn each into docs/recipes/<recipe>.gif, with ffmpeg in the dev
+  #      stack's api container (scripts/recipe_gifs.py);
+  #   4. regenerate the cookbook.
+  # docs/recipes/ is git-ignored: the GIFs are published, not committed.
+  # Needs the dev stack up: E2E_BASE_URL if it is not on :8000, and
+  # COMPOSE_PROJECT_NAME if it runs under another name. Every step runs, so a
+  # recipe that fails loses its GIF rather than keeping a stale one; the
+  # collector leaves docs/recipes alone if the run reached no recipe. Exits 1,
+  # naming the steps that failed.
+  cd "$(dirname "$0")"
+  failed=""
+  (cd website && npx playwright test --project=docs --reporter=json > recipe-report.json) ||
+    failed="$failed record"
+  node website/e2e/collect-recipe-videos.js || failed="$failed collect"
+  docker compose -f docker-compose.yml -f dev.yml exec -T api python scripts/recipe_gifs.py ||
+    failed="$failed convert"
+  node website/e2e/cookbook.js || failed="$failed cookbook"
+  if [ -n "$failed" ]; then
+    echo "./al recipes failed:$failed" >&2
+    exit 1
+  fi
 
 elif [ $1 = "cookbook" ]; then
   shift

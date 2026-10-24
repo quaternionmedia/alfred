@@ -8,7 +8,7 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 }
 ```
 
-`detail` is a sentence for a person, and the editor shows it as it is. `code` is for a program: what the refusal means, in a word that stays the same when the sentence is reworded. Switch on `code`, never on the wording -- the two 503s a transcription can meet, for one, differ only in it. Each code has one status, so the code says everything the status does.
+`detail` is a sentence for a person; the editor shows it as it is. `code` is for a program: what the refusal means, in a word that stays the same when the sentence is reworded. Switch on `code`, never on the wording: the two 503s a transcription can meet differ only in it. Each code has one status, so the code says everything the status does.
 
 | Code | Status | Means | Answered by |
 |---|---|---|---|
@@ -41,13 +41,17 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `mail_not_configured` | 503 | the server has no mail set up (`EMAIL_SERVER`, `EMAIL_USERNAME` and `EMAIL_SENDTO`), so nothing was made or queued | `POST /render/{id}/report`, `POST /invoice` |
 | `mail_not_queued` | 503 | the broker would not take the mail; nothing will be sent, and asking again later may queue it | `POST /render/{id}/report`, `POST /invoice` |
 
-`tests/unit/test_refusal_codes.py` holds this table to alfred's code: every code alfred has is here with its status, and each is answered, with its sentence, by a request through the API.
+`tests/unit/test_refusal_codes.py` holds this table to alfred's code: every code alfred has is here with its status, and a request through the API gets each one, with its sentence.
 
 ## What carries no code
-- **A request FastAPI refuses** before a route runs -- a body or parameter that does not fit the route's model -- answers 422 with a list of `{loc, msg, type}` as its `detail`, which already says where and what.
+- **A request FastAPI refuses** before a route runs (a body or parameter that does not fit the route's model) answers 422 with a list of `{loc, msg, type}` as its `detail`, which already says where and what.
 - **No session**: 401, `{"detail": "Unauthorized"}`. **Not a superuser**, on a route only superusers may use, such as `POST /invoice`: 403, `{"detail": "Forbidden"}`.
 - **Signing in and accounts** (`/auth/...`, `/users/...`): fastapi-users answers its own codes as the `detail` itself, such as `LOGIN_BAD_CREDENTIALS`.
-- **A route alfred does not have**: FastAPI's 404, `{"detail": "Not Found"}`, which a client tells from `not_found` by the code it lacks.
-- **The routes not covered yet** answer `detail` alone: the media library (`GET /media`, `/videos`), though how a file sounds is covered; a preview's own refusals -- a timeline or template it cannot draw, a template it does not offer, a frame cleaned up -- though a busy server's `previews_busy` and the timeline check's `edl_refused` are covered; demo media; and a signed link's refusal on the file routes.
+- **A route alfred does not have**: FastAPI's 404, `{"detail": "Not Found"}`, which a client tells from `not_found` by the code it lacks. A `POST`, `PUT` or `DELETE` to such a path answers 405 instead, because the website is mounted at `/` and serves only reads.
+- **The routes not covered yet** answer `detail` alone:
+    - the media library (`GET /media`, `/videos`), though how a file sounds is covered;
+    - a preview's own refusals (a timeline or template it cannot draw, a template it does not offer, a frame cleaned up), though a busy server's `previews_busy` and the timeline check's `edl_refused` are covered;
+    - demo media;
+    - a signed link's refusal on the file routes.
 
-A client that has to work with an alfred from before codes reads `detail`, as it always could; one that finds a `code` switches on it.
+A client that must work with an alfred older than codes reads `detail`; one that finds a `code` switches on it.

@@ -55,8 +55,9 @@ module.exports = defineConfig({
       // timing-sensitive, and the recipe walkthroughs, which pause between
       // steps so a person watching the recording can follow. The recipes spec
       // claimed to be excluded here before this line existed to exclude it,
-      // and ran in the gate paying for its own pauses.
-      grepInvert: /@perf|@recipe/,
+      // and ran in the gate paying for its own pauses. The docs' screenshots
+      // (@screens) are the same kind of run.
+      grepInvert: /@perf|@recipe|@screens/,
       // The stacked layout's own spec is the phone project's.
       testIgnore: /[\\/]stacked\.spec\.js$/,
     },
@@ -79,7 +80,8 @@ module.exports = defineConfig({
       grep: /@perf/,
     },
     {
-      // Records the recipes as video, for the cookbook.
+      // Records the recipes as video, for the cookbook, and takes the
+      // screenshots the docs open with (@screens, screens.spec.js).
       //
       // The docs, the tests and the recipes are one object here: the prose in
       // docs/cookbook.md is generated from these specs, and this project makes
@@ -88,7 +90,8 @@ module.exports = defineConfig({
       // if the recipe breaks, there is no video rather than a stale one.
       //
       // Opt-in, and slower: it runs single-worker so the recording is not
-      // competing for the machine, and only over tests tagged @recipe.
+      // competing for the machine, and only over tests tagged @recipe or
+      // @screens.
       name: 'docs',
       use: {
         ...devices['Desktop Chrome'],
@@ -97,7 +100,7 @@ module.exports = defineConfig({
         // a demonstration.
         viewport: { width: 1280, height: 720 },
       },
-      grep: /@recipe/,
+      grep: /@recipe|@screens/,
       fullyParallel: false,
       workers: 1,
       retries: 0,
