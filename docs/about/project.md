@@ -62,7 +62,7 @@ The `Edl` is the base video, with the image and the text over it.
 
 With this template, each product gets a commercial made automatically, from a generated form to fill out.
 
-Each project can also be rendered to several formats, or used as part of a larger project.
+Each project can also be rendered at several sizes.
 
 !!! abstract "`Edl` vs `Project`"
     An `Edl` is a `Project` with no special logic, so it needs no data.
