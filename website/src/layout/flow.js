@@ -55,8 +55,11 @@ export const StackedFlow = {
     // An unsaved timeline kept from before a reload or a new login, offered
     // back -- under the rail, so it is seen whichever stage is open.
     m(DraftOffer),
+    // Named for its stage, so the stylesheet can say who gives way on each
+    // (flow.scss).
     m(
       '.flowstage',
+      { class: `flowstage--${Flow.stage()}` },
       (FLOW_STAGE_PANELS[Flow.stage()] || []).map(id => m(Slot, { key: id, panel: id }))
     ),
     m(Slot, {

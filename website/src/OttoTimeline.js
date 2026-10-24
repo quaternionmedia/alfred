@@ -11,6 +11,7 @@ import { auth } from './Login'
 import { cutAtPlayhead } from './TimelineTools'
 import { clipSeconds, roll, slide, slip, trim } from './Timing'
 import { Draft } from './Draft'
+import Bin from './Bin'
 
 // How far a press may wander and still count as a tap. Past this it is a drag
 // -- on a touch screen, usually the start of scrolling the timeline -- and
@@ -214,10 +215,10 @@ export function Clip() {
 }
 
 
-/** What a template clip says on the timeline: its text, else its template. */
+/** What a template clip says on the timeline: its text, else its template's label. */
 export const templateLabel = clip => {
   const text = clip && clip.data && clip.data.text
-  return text ? String(text) : (clip && clip.name) || 'template'
+  return text ? String(text) : (clip && clip.name && Bin.labelFor(clip.name)) || 'template'
 }
 
 export function Template() {

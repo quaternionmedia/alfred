@@ -18,4 +18,4 @@ curl -o title.jpg \
 A template the server does not offer is a 404; one the data given cannot draw, such as `title` without `text`, is a 422.
 
 ## `GET /templates`
-The templates the server offers, each with its `description`, the `parameters` it takes, and whether it is `deprecated`. See [about/template](../about/template.md).
+The templates the server offers, each with its `name`, a `label` for people to read, its `description`, the `parameters` it takes, and whether it is `deprecated`. See [about/template](../about/template.md).

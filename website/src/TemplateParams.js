@@ -211,9 +211,9 @@ export const TemplateParams = () => {
       // input, six-line textareas -- and nothing here is submitted anyway.
       return m(
         '.templateparams#template-params',
-        { role: 'group', 'aria-label': `Settings for the ${clip.name} clip` },
+        { role: 'group', 'aria-label': `Settings for the ${Bin.labelFor(clip.name)} clip` },
         [
-          m('h4', [clip.name, m('span.paramclip', ` · clip ${index + 1}`)]),
+          m('h4', [Bin.labelFor(clip.name), m('span.paramclip', ` · clip ${index + 1}`)]),
 
           takes.includes('text')
             ? [

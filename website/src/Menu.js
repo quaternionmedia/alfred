@@ -1,6 +1,4 @@
-import m, { render } from 'mithril'
-import { message } from 'alertifyjs'
-import { User } from './User'
+import m from 'mithril'
 // `import LOGO from './assets/alWhite.png'` yielded an object here, not a URL,
 // so the logo rendered as src="[object Object]" on every page and the browser
 // fetched /[object%20Object] -- eleven 404s per session in the API log. This is
@@ -8,62 +6,32 @@ import { User } from './User'
 const LOGO = new URL('./assets/alWhite.png', import.meta.url).href
 import './styles/menu.scss'
 
-export function Menu() {
-  // toggles the navContainer visibility
-  var open = false
-  // Added on create and removed on remove. It was added when the component
-  // was made and never removed, and the header is made again whenever the
-  // editor swaps the workspace for the phone flow, so every swap left one
-  // more listener behind.
-  const onresize = () => {
-    if (window.innerWidth >= 1026 && open) {
-      open = false
-      m.redraw()
-    }
-  }
-  function toggle() {
-    open = !open
-  }
-
-  // Closing on navigation matters on a phone: the drawer covers the editor,
-  // and leaving it open after a tap hides the thing you just navigated to.
-  function close() {
-    open = false
-  }
-
-  return {
-    oncreate: () => window.addEventListener('resize', onresize),
-    onremove: () => window.removeEventListener('resize', onresize),
-    view: vnode => {
-      // One set of links, rendered once.
-      //
-      // This rendered `navLinks` into a drawer *and* `Links` into the bar, both
-      // carrying the same destinations with the same element ids -- so every id
-      // in the header appeared twice, and `navigation.spec.js` pinned that as a
-      // known defect. Two copies also meant two things to keep in step, which
-      // they were not: the drawer carried HOME and LOGIN and the bar did not.
-      //
-      // Whether the list is a drawer or a row is now a question for CSS, which
-      // is where it belongs. The stage rail carries navigation *within* the
-      // editor, so this header only has to get you between the few views that
-      // are not the editor.
-      return m('header', { class: open ? 'open' : '' }, [
+export const Menu = {
+  view: vnode =>
+    // One set of links, rendered once.
+    //
+    // This rendered `navLinks` into a drawer *and* `Links` into the bar, both
+    // carrying the same destinations with the same element ids -- so every id
+    // in the header appeared twice, and `navigation.spec.js` pinned that as a
+    // known defect. The stage rail carries navigation within the editor, so
+    // this header only has to get you between the few views that are not the
+    // editor.
+    //
+    // No menu button. Below 1026 pixels it opened the links as a drawer over
+    // the editor, and once the links had all gone to the rail it opened an
+    // empty one: the only control in the header of a phone, and it did
+    // nothing. A link that belongs here later sits in the row.
+    m('header', [
+      m(
+        'div.logo',
         m(
-          '.navbutton',
-          m('i.material-icons', { onclick: toggle, title: 'menu' }, 'menu')
-        ),
-        m(
-          'div.logo',
-          m(
-            Link,
-            { href: '/', id: 'home-link', ...vnode.attrs },
-            m('img.logoImg', { src: LOGO })
-          )
-        ),
-        m('nav.menuLinks', m(Links, { onclick: close })),
-      ])
-    },
-  }
+          Link,
+          { href: '/', id: 'home-link', ...vnode.attrs },
+          m('img.logoImg', { src: LOGO, alt: 'Alfred' })
+        )
+      ),
+      m('nav.menuLinks', m(Links)),
+    ]),
 }
 
 //an individual link

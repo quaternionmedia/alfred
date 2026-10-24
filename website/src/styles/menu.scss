@@ -1,40 +1,48 @@
 //----------------------------  General  -----------------------------------
 header {
   display: flex;
+  align-items: center;
   width: 100%;
   background: var(--grey);
   font-weight: bold;
 }
 
 //----------------------------  Menu Bar  -----------------------------------
+// The header is the logo, which goes home, and a row for links that belong
+// to the whole app rather than to the editor -- none today (Menu.js). It had
+// a menu button as well, which below 1026 pixels opened that row as a drawer
+// over the editor: an empty one, once the rail had taken every link.
+//
+// Every length has a unit. Several had none (`padding: 9 15 15 15`,
+// `width: 180`), which a page with a doctype ignores without a word.
+
 .logo {
-  width: 180px;
-  padding: 9 15 15 15; //top, right, bottom, left
+  flex: 0 0 auto;
+  padding: 10px 15px;
 }
 
 .logoImg {
+  display: block;
+  width: 180px;
+  height: auto;
   cursor: pointer;
-  margin-top: 10px;
-  width: 180;
 }
 
 .menuLinks {
-  width: 100%;
-  text-align: center;
-  padding: 20 0 20 5; //top, right, bottom, left
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+  padding: 0 15px;
 }
 
-.menuLinks > *,
-#login-link {
+.menuLinks > * {
   cursor: pointer;
-  font-size: 28px;
   color: var(--grey5);
   text-decoration: none;
-  padding: 20 15 20 15; //top, right, bottom, left
 }
 
-.menuLinks :visited,
-#login-Link:visited {
+.menuLinks :visited {
   color: var(--grey5);
 }
 
@@ -42,82 +50,20 @@ header {
   color: var(--grey7);
 }
 
-.menuLinks :hover,
-#login-link:hover {
-  cursor: pointer;
+.menuLinks :hover {
   color: var(--grey0);
-  background-color: var(--grey6);
 }
 
-#login-link {
-  padding: 26 15 20 15; //top, right, bottom, left
-}
-
-//----------------------------  Nav Container  -----------------------------------
-// There is one list of links now, not two.
-//
-// The header used to render a drawer copy and a bar copy of the same
-// destinations, which duplicated every element id in the page. Whether the one
-// list lays out as a row or slides in as a drawer is decided here, by width,
-// rather than by rendering it twice.
-
-.navbutton {
-  cursor: pointer;
-  color: var(--grey6);
-  display: none;
-  width: 35px;
-  z-index: 11;
-  padding: 18px 15px 15px 20px; //top, right, bottom, left
-}
-
-.navbutton > i.material-icons {
-  font-size: 45px;
-}
-
-//----------------------------  Window Resize  -----------------------------------
-@media only screen and (max-width: 1026px) {
-  // Below this width the list becomes the drawer: hidden until the menu button
-  // sets `.open` on the header, then a full-height panel over the editor.
-  .menuLinks {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 0;
-    padding-top: 70px;
-    overflow-x: hidden;
-    transition: width 0.2s;
-    background-color: var(--grey4);
-    z-index: 10;
+// A phone gives the logo less height. The header stands above the rail, the
+// viewer and the timeline, and a pixel of it is one the stage's panels do
+// not get -- the project list on the Source stage was two rows tall at
+// 375x812, under a header of 78 pixels.
+@media only screen and (max-width: 600px) {
+  .logo {
+    padding: 6px 12px;
   }
 
-  header.open .menuLinks {
-    width: 250px;
-  }
-
-  header.open .menuLinks > * {
-    display: block;
-    font-size: 28px;
-    padding: 10px 15px 10px 20px;
-  }
-
-  .navbutton {
-    display: inline-flex;
-  }
-  .loginLink {
-    position: absolute;
-    right: 0;
-    top: 0;
-  }
-}
-
-@media only screen and (max-width: 321px) {
   .logoImg {
-    width: 150px;
-  }
-  .navbutton {
-    height: 30;
-    width: 30;
-    padding-right: 5;
+    width: 120px;
   }
 }

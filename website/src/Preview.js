@@ -389,7 +389,12 @@ export var Preview = () => {
     view: () => {
       const clip = Edl.edl[Edl.current]
       if (!clip) {
-        return m('.preview.empty#preview', 'Nothing on the timeline yet.')
+        // And where to start. The empty frame is the first thing a new
+        // visitor sees, on the Edit stage, and it said only what was missing.
+        return m('.preview.empty#preview', [
+          m('p', 'Nothing on the timeline yet.'),
+          m('p.emptyhint', 'Open a project or add material on the Source stage.'),
+        ])
       }
       if (clip.type == 'template') {
         // `preview/template/...`, not `otto/template/...`. The latter has

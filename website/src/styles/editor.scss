@@ -86,10 +86,13 @@ $rule: 1px solid #2e2e2e;
   // The scrubber across the whole region, the time and the buttons under it:
   // the playhead is the widest control -- it is the one being dragged -- and
   // beside the buttons it was left a few dozen pixels in a narrow panel.
+  //
+  // The whole row less its margins: `100%` and the margins beside it were
+  // wider than the region, which scrolled sideways by 32 pixels to show them.
   #slider,
   .slider {
     order: -1;
-    flex: 1 0 100%;
+    flex: 1 0 calc(100% - 2em);
     min-width: 0;
     margin: 0.9rem 1em 0.3rem;
   }
@@ -499,6 +502,15 @@ $rule: 1px solid #2e2e2e;
   color: #9a9a9a;
 }
 
+.preview.empty p {
+  margin: 0;
+}
+
+.preview.empty .emptyhint {
+  font-size: 0.8rem;
+  color: #7a7a7a;
+}
+
 .preview.unrenderable i,
 .preview.busy i {
   font-size: 1.6rem;
@@ -533,5 +545,24 @@ $rule: 1px solid #2e2e2e;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
+  }
+}
+
+// On a phone the playback and speed buttons are one row. At the toolbar's own
+// size the two groups came to 406 pixels, so a 375-pixel screen stood them in
+// two rows: with the time and the scrubber, 217 pixels of the column, more
+// than the Source stage's project list was left. A smaller box round each
+// icon, the icon itself the same size, fits them in 310.
+@media only screen and (max-width: 600px) {
+  .transport {
+    .tools i {
+      margin: 1px;
+      padding: 3px;
+      border-width: 2px;
+    }
+
+    .tools .custom {
+      padding: 5px;
+    }
   }
 }
