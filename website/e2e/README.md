@@ -100,11 +100,11 @@ The suite could not run as configured either: `cypress.json`,
 
 ## Verification status
 
-`./al test` on `integrate/wave-5`: **391 passed, 1 skipped, in about four
-minutes**, across the `chromium` (workspace) and `phone` (stage flow)
-projects, including the `@slow` specs that wait on a real encode, from a fresh
-clone, with no test passed only on retry. The skip is data-dependent: the
-project filter test needs more than three projects.
+`./al test` on `integrate/wave-6`: **392 passed**, across the `chromium`
+(workspace) and `phone` (stage flow) projects, including the `@slow` specs
+that wait on a real encode, with no test passed only on retry. The project
+filter test makes the projects it filters, so nothing here skips for want of
+data.
 
 The three image breaks found when this suite replaced Cypress (`FROM python`
 reaching 3.14, the ImageMagick 6 policy path on an ImageMagick 7 base, and

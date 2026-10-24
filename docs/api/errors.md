@@ -47,7 +47,7 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 - **A request FastAPI refuses** before a route runs (a body or parameter that does not fit the route's model) answers 422 with a list of `{loc, msg, type}` as its `detail`, which already says where and what.
 - **No session**: 401, `{"detail": "Unauthorized"}`. **Not a superuser**, on a route only superusers may use, such as `POST /invoice`: 403, `{"detail": "Forbidden"}`.
 - **Signing in and accounts** (`/auth/...`, `/users/...`): fastapi-users answers its own codes as the `detail` itself, such as `LOGIN_BAD_CREDENTIALS`.
-- **A route alfred does not have**: FastAPI's 404, `{"detail": "Not Found"}`, which a client tells from `not_found` by the code it lacks.
+- **A route alfred does not have**: FastAPI's 404, `{"detail": "Not Found"}`, which a client tells from `not_found` by the code it lacks. A `POST`, `PUT` or `DELETE` to such a path answers 405 instead, because the website is mounted at `/` and serves only reads.
 - **The routes not covered yet** answer `detail` alone:
     - the media library (`GET /media`, `/videos`), though how a file sounds is covered;
     - a preview's own refusals (a timeline or template it cannot draw, a template it does not offer, a frame cleaned up), though a busy server's `previews_busy` and the timeline check's `edl_refused` are covered;

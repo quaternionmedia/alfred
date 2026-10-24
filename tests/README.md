@@ -6,11 +6,13 @@ Scope: the backend and the render engine. Browser coverage lives in
 ## Status
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
-stack's own configuration: **1820 tests -- 1810 passed, 2 skipped, 8
-xfailed** in the `./al pytest` container, measured on integrate/wave-5 from a
-fresh clone with its `db` service up, so the database tier ran too. The two
-skips need a Docker CLI, which that container lacks; where ImageMagick cannot
-draw text, six more skip (`needs_imagemagick`).
+stack's own configuration: **1841 tests -- 1831 passed, 2 skipped, 8
+xfailed** in the `./al pytest` container, measured on integrate/wave-6 with
+its `db` service up, so the database tier ran too. One skip needs a Docker
+CLI and the other needs node, neither of which that container has; so the
+byte-for-byte cookbook check (`test_cookbook.py`) runs in CI and on a host
+with node, not in `./al pytest`. Where ImageMagick cannot draw text, six more
+skip (`needs_imagemagick`).
 
 IS-5's render queueing is tested without a database:
 `unit/test_render_requests.py`, `test_render_ownership.py` and
@@ -164,7 +166,7 @@ cleanly before Phase 0, so it gives the fastest feedback and does not depend on
 Phase 0 completing perfectly.
 
 **Background.** The editor enforces invariants in JS as the user drags
-(`website/src/Clip.js`): `outpoint > inpoint`, and `inpoint >= 0`. The pydantic
+(`website/src/Timing.js`): `outpoint > inpoint`, and `inpoint >= 0`. The pydantic
 models enforce none of them. Verified directly:
 
 ```

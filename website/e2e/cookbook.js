@@ -128,6 +128,10 @@ function render(specs) {
     'database, a real render worker, and real files on disk. If a step here is',
     'wrong, a test is failing. That is the point -- prose describing behaviour',
     'goes stale silently, and a test describing behaviour goes red.',
+    '',
+    '`./al test` and CI run the `chromium` and `phone` projects. The',
+    'walkthroughs tagged `@recipe` run in the `docs` project, which `./al',
+    'recipes` drives against a dev stack to record them.',
     ''
   )
 

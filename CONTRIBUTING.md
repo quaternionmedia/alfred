@@ -36,7 +36,7 @@ nothing to download.
 ## Running the tests
 
 ```sh
-./al pytest                       # API suite, plus black and ruff, in Docker
+./al pytest                       # API suite, plus black (formatting in place) and ruff, in Docker
 ./al test                         # browser suite, in Docker, on a stack it builds
 
 pdm install -G test               # or on the host: Python deps and test extras
@@ -95,8 +95,8 @@ their own demo data and show nothing else, so recording on your own stack
 publishes none of your projects. Commit the screenshots;
 `tests/unit/test_docs_images.py` holds each to a page that shows it. The GIFs
 stay out of git -- one does not compress against its last version, so every
-refresh would add megabytes to history -- and are published beside the docs
-instead; `tests/unit/test_cookbook.py` fails if one is tracked or linked.
+refresh would add megabytes to history -- and stay on the machine that
+recorded them; `tests/unit/test_cookbook.py` fails if one is tracked or linked.
 
 So **do not edit `docs/cookbook.md` by hand**: change the tests and
 regenerate. `tests/unit/test_cookbook.py` fails if the committed file drifts

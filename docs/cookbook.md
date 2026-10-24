@@ -8,6 +8,10 @@ database, a real render worker, and real files on disk. If a step here is
 wrong, a test is failing. That is the point -- prose describing behaviour
 goes stale silently, and a test describing behaviour goes red.
 
+`./al test` and CI run the `chromium` and `phone` projects. The
+walkthroughs tagged `@recipe` run in the `docs` project, which `./al
+recipes` drives against a dev stack to record them.
+
 ## api contract
 
 Contracts the editor depends on, asserted at the HTTP level.
@@ -1218,16 +1222,15 @@ each says in its title how it is used.
 - **the create-video action stays inside the flow**
 - **a project id naming nothing says so and offers a way out**
 - **choosing a project opens it on the timeline**
-
-  A filter rather than pagination: the list is small enough to render
-  whole, and typing a name beats scrolling for one. It appears only when
-  there are enough projects to be worth filtering.
-
 - **the filter narrows the list without losing anything**
 
   A filter rather than pagination: the list is small enough to render
   whole, and typing a name beats scrolling for one. It appears only when
-  there are enough projects to be worth filtering.
+  there are enough projects to be worth filtering, so the test makes four
+  of its own, named with a mark no other project carries.
+
+  Other workers add and remove projects while this runs, so the counts
+  asserted are of this test's own rows, never of the whole list.
 
 - **choosing material puts it on the timeline**
 

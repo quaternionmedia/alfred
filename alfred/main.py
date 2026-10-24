@@ -144,6 +144,20 @@ def installed_fonts():
     )
 
 
+def font_styles(lines):
+    """`(family, styles)` for each family each `family-style` line names, in
+    order, with spaces as hyphens. A line can name several families, comma
+    separated, and several styles the same way; a blank line names none."""
+    found = []
+    for line in lines:
+        parts = line.split('-')
+        if len(parts) < 2:
+            continue
+        styles = [i.replace(' ', '-') for i in parts[1].split(',')]
+        found += [(fam.replace(' ', '-'), styles) for fam in parts[0].split(',')]
+    return found
+
+
 @app.on_event('startup')
 async def checkFonts():
     db = get_db()
@@ -152,19 +166,12 @@ async def checkFonts():
     # done -- but one rule for every coroutine, with no exceptions to
     # remember, is the rule that holds.
     fonts = await run_in_threadpool(installed_fonts)
-    for f in fonts:
-        if f:
-            font = f.split('-')
-            for fam in font[0].split(','):
-                await db.fonts.update_one(
-                    {'family': fam.replace(' ', '-')},
-                    {
-                        '$set': {
-                            'style': [i.replace(' ', '-') for i in font[1].split(',')]
-                        }
-                    },
-                    upsert=True,
-                )
+    for family, styles in font_styles(fonts):
+        await db.fonts.update_one(
+            {'family': family},
+            {'$set': {'style': styles}},
+            upsert=True,
+        )
     # db.fonts.update_many(results, upsert=True)
 
 
