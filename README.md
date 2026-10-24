@@ -94,7 +94,7 @@ and prints a banner on every boot; see [docs/dev-auth.md](docs/dev-auth.md).
 ## Tests
 
 ```sh
-./al pytest                       # API suite, plus black and ruff, in Docker
+./al pytest                       # API suite, plus black (formatting in place) and ruff, in Docker
 ./al test                         # browser suite, in Docker, on a stack it builds
 ```
 
@@ -105,7 +105,9 @@ Both deliberately list what is *not* covered.
 
 The end-to-end suite is also the cookbook: `./al cookbook` generates
 [docs/cookbook.md](docs/cookbook.md) from it, so every recipe in the docs is a
-test that runs. The details are in
+test. `./al test` and CI run the `chromium` and `phone` projects; the
+walkthroughs tagged `@recipe` and the `@screens` run only in `./al recipes`,
+against a dev stack. The details are in
 [CONTRIBUTING.md](CONTRIBUTING.md#the-docs-are-generated-from-the-tests).
 
 ## Documentation
