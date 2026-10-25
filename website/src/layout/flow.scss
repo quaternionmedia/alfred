@@ -107,14 +107,28 @@ body > .stagerail {
 // On the Source stage the choosing is the work, so the viewer and the
 // timeline give way first, down to their floors -- the frame's room, and a
 // row of tools -- and the projects and the material take what they give.
+// On Render the form is the work: shared in proportion, it had 114 pixels
+// at 375x812, and Queue render was below them.
 // Shared in proportion, as on the other stages, the room a smaller header and
 // transport gave back went mostly to the timeline: 207 pixels of it at
 // 375x812, and 78 to the project list -- its heading, its filter, and not one
 // whole project.
-body:has(> .flowstage--source) {
+body:has(> .flowstage--source),
+body:has(> .flowstage--render) {
   .flowpanel--viewer .viewer,
   .flowpanel--timeline .editor {
     flex-shrink: 4;
+  }
+}
+
+// The Render stage's panel is a short form, all of it the point, so on a
+// phone held upright it keeps its height -- up to the stage's share of the
+// screen above -- where the Source stage's lists give way and scroll. Held
+// sideways the whole picture comes first: kept whole there, the form left
+// 99 of the frame's 156 pixels on the screen, and it scrolls instead.
+@media (orientation: portrait) {
+  body:has(> .flowstage--render) > .flowstage {
+    flex-shrink: 0;
   }
 }
 
