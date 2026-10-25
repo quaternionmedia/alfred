@@ -563,6 +563,20 @@ class TestTheLiveCheck:
         ]
         assert not shown, 'smoke printed a password, a token or a signature'
 
+    def test_a_header_is_read_whatever_the_case_of_its_name(self, stub, smoke):
+        """A header's name has no case. uvicorn sends `content-type`; a
+        server or a proxy that sends `Content-Type`, as Go's does, answered a
+        200 with an image and failed the template preview."""
+        as_alfred(stub)
+        stub.answer(
+            'GET',
+            '/preview/template/title',
+            b'\xff\xd8',
+            headers={'Content-Type': 'image/jpeg'},
+        )
+        result = smoke()
+        assert line(result, 'template preview').startswith('PASS'), result.out
+
     def test_a_render_that_fails_fails_the_check_and_is_deleted(self, stub, smoke):
         as_alfred(stub, render='failed')
         result = smoke()
