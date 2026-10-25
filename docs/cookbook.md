@@ -1973,6 +1973,18 @@ mode; and the viewport carried `maximum-scale=1`, which stops a phone
 from zooming -- the one tool someone who needs larger controls has.
 
 - **the page is laid out to standard, and can be zoomed**
+### zoom
+
+Zoom in was placed `absolute` at the right of whatever box held it: in
+the workspace's tools column it was drawn over the bar, whose end ran on
+under the bin beside the column; on a phone it sat at the far end of the
+row, away from its bar. The workspace's column has no room for a bar
+between two buttons, so there the buttons zoom alone (editor.scss).
+
+Mutation: put back `position: absolute; right: 0` on zoom in (Scale.js)
+and on a phone it leaves the bar's box, and this fails.
+
+- **its buttons and its bar sit side by side, none drawn over another**
 
 ## tools
 
