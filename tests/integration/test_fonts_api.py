@@ -23,11 +23,26 @@ pytestmark = [
 ]
 
 
+DROPPED = 'Dropped-By-A-Later-Image'
+
+
+@pytest.fixture(scope='module', autouse=True)
+def a_family_an_earlier_start_stored(db):
+    """In the database before this module's app starts, as a font an earlier
+    image had and this one does not would be: the collection outlives the
+    image."""
+    db.fonts.insert_one({'family': DROPPED, 'style': ['Regular']})
+
+
 @pytest.fixture
 def listed(api, make_account):
     res = api.get('/fonts', headers=make_account('typesetter').headers)
     assert res.status_code == 200, res.text
     return res.json()
+
+
+def test_a_family_fontconfig_no_longer_lists_is_forgotten(listed):
+    assert DROPPED not in listed, 'a font this machine does not have is offered'
 
 
 def test_every_family_fontconfig_lists_is_answered_once(listed):

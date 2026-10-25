@@ -307,11 +307,17 @@ class TestRunsInAThread:
             async def update_one(self, query, update, upsert=False):
                 written.append((query, update))
 
+            async def delete_many(self, query):
+                written.append((query,))
+
         monkeypatch.setattr(main, 'bash', fc_list)
         monkeypatch.setattr(main, 'get_db', lambda: SimpleNamespace(fonts=Fonts()))
         asyncio.run(main.checkFonts())
         assert seen == [False]
-        assert written == [({'family': 'DejaVu-Sans'}, {'$set': {'style': ['Book']}})]
+        assert written == [
+            ({'family': 'DejaVu-Sans'}, {'$set': {'style': ['Book']}}),
+            ({'family': {'$nin': ['DejaVu-Sans']}},),
+        ]
 
     def test_sending_a_render_to_the_worker(self, renders):
         _, queue = renders
