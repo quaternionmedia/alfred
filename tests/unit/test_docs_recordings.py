@@ -39,7 +39,9 @@ def test_no_recording_leaves_the_page_as_generated():
 
 
 def test_a_recording_is_played_from_its_recipe_start():
-    present = {'recipes/generate-a-demo-from-an-empty-install.webm': '../recipes/g.webm'}
+    present = {
+        'recipes/generate-a-demo-from-an-empty-install.webm': '../recipes/g.webm'
+    }
     out = recordings.with_recordings(
         PAGE, present.get, {'generate-a-demo-from-an-empty-install': 1.16}
     )
