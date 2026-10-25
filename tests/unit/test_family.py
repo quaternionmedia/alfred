@@ -16,6 +16,7 @@ recipes are.
 
 import importlib.util
 import json
+import secrets
 import socket
 import subprocess
 import sys
@@ -384,7 +385,9 @@ def free_port():
 
 
 # Made up for these tests; each is checked to be absent from what is printed.
-SIGNATURE = 'c2lnbmF0dXJlLW9mLXRoZS1zdHVi'
+# The signature is drawn when the tests run, not written here: a literal this
+# random is what a secret scanner reports, and it reported this one.
+SIGNATURE = secrets.token_hex(16)
 TOKEN = 'eyJzdHViIjoidG9rZW4ifQ.c3R1Yg'
 
 
