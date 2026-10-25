@@ -51,6 +51,14 @@ no other briefing, read this file fully before your first commit or edit.
    If one slips out, say so in your report or PR, by name. `./al family` and
    the scripts under `scripts/` redact what they print. Keep it that way in
    anything you add.
+9. **Deliver into the repository, never to a hosted page.** A report, a demo,
+   a preview or a handoff is a committed file (a docs page, a screenshot, the
+   regenerated cookbook) and reaches a reviewer as a pull request, or as the
+   dev stack and `./al docs` left running for them to look at. Publish nothing
+   to a page a chat product hosts outside the org's repositories: it is not
+   versioned with the code, cannot be reviewed as a diff, and goes stale
+   unseen. The recipes' recordings stay out of git and play only in docs
+   served locally.
 
 ## One-time setup on a fresh clone (Windows)
 
@@ -132,8 +140,11 @@ Tests can also run directly: `nox -f tests/noxfile.py -s coverage`.
 
 ### Dev server notes
 
-These bite on a first run, and none is obvious from the error:
+These bite on a first run, and none is obvious from the error. The docs site
+shows this list as its dev-server page (`docs/dev-server.md` includes it
+between the markers), so it is kept here only.
 
+<!-- --8<-- [start:dev-server-notes] -->
 - **Port 8000 fails silently.** If something else already holds 8000, Docker
   still starts the stack and reports it healthy, but every request from your
   machine reaches the other application: the host port belongs to whoever
@@ -147,8 +158,8 @@ These bite on a first run, and none is obvious from the error:
   as your knowledge of what served it.** Before trusting a number, confirm the
   server's identity; `curl localhost:$PORT/openapi.json` names it. During
   0.3.0 it answered `Apothecary API`, another QM service on 8000, for a whole
-  session while Alfred served correctly on its own network; see
-  [docs/retrospective-verification-discipline.md](docs/retrospective-verification-discipline.md).
+  session while Alfred served correctly on its own network; see [the
+  verification retrospective](https://github.com/quaternionmedia/alfred/blob/main/docs/retrospective-verification-discipline.md).
 - **Port 27017.** `dev.yml` publishes MongoDB on the host's loopback, for
   attaching a GUI; nothing in the app needs it there. If anything else holds
   27017 (a standalone `mongod`, another project's container), the stack fails
@@ -200,6 +211,7 @@ These bite on a first run, and none is obvious from the error:
   On a Linux host `--reload` does restart the API on edits under `alfred/`, so
   a test run writing into the repo can restart the server mid-request;
   `test_e2e.yml` overrides the command to disable reload for that reason.
+<!-- --8<-- [end:dev-server-notes] -->
 
 ## Conventions
 

@@ -13,6 +13,7 @@ nav:
   - Captions: captions.md
   - Configuration: configuration.md
   - Develop:
+      - dev-server.md
       - Family dev loop: family.md
       - dev-auth.md
       - ownership.md
@@ -62,13 +63,21 @@ validation:
   unrecognized_links: warn
   anchors: warn
 
+# The cookbook plays each walkthrough's recording where `./al recipes` left
+# one in docs/recipes/, which git ignores: so only docs served locally do.
+hooks:
+  - scripts/docs_recordings.py
+
 markdown_extensions:
   - pymdownx.highlight
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.inlinehilite
-  - pymdownx.snippets
+  # An include that names no file fails the build rather than vanishing:
+  # dev-server.md takes its whole list from AGENTS.md.
+  - pymdownx.snippets:
+      check_paths: true
   - def_list
   - admonition
   - pymdownx.details

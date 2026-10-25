@@ -97,6 +97,9 @@ publishes none of your projects. Commit the screenshots;
 stay out of git -- one does not compress against its last version, so every
 refresh would add megabytes to history -- and stay on the machine that
 recorded them; `tests/unit/test_cookbook.py` fails if one is tracked or linked.
+There, `./al docs` plays each recipe's whole recording under its line in the
+cookbook, from the recipe's start (`scripts/docs_recordings.py`, a mkdocs
+hook); the published docs, built without them, show the screenshots only.
 
 So **do not edit `docs/cookbook.md` by hand**: change the tests and
 regenerate. `tests/unit/test_cookbook.py` fails if the committed file drifts
