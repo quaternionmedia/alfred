@@ -209,6 +209,21 @@ class TestNodeModulesIsolation:
         """
         lockfile = REPO / 'website' / 'yarn.lock'
         assert lockfile.is_file(), 'website/yarn.lock is missing'
+        # Where git has no repository to ask, it cannot say what is tracked:
+        # `./al pytest` mounts a worktree whose git directory is outside the
+        # mount, and git answered "not a git repository", which read as an
+        # untracked lockfile. test_cookbook.py skips the same way.
+        try:
+            inside = subprocess.run(
+                ['git', 'rev-parse', '--is-inside-work-tree'],
+                cwd=REPO,
+                capture_output=True,
+                text=True,
+            ).returncode
+        except OSError:
+            inside = None
+        if inside != 0:
+            pytest.skip('git cannot say what this checkout tracks here')
         tracked = subprocess.run(
             ['git', 'ls-files', '--error-unmatch', 'website/yarn.lock'],
             cwd=REPO,
