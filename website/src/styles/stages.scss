@@ -75,6 +75,16 @@
   }
 }
 
+// At 360 pixels the stages end 3 pixels from the edge, and the rail's own
+// padding past them is still scrolled to: a scroller counts its end
+// padding, so the rail moved sideways by 5 pixels. Less of it on the
+// narrowest phones keeps the whole rail on the screen.
+@media only screen and (max-width: 380px) {
+  .stagerail {
+    padding-inline: 0.3rem;
+  }
+}
+
 .stagepanel {
   padding: 0.75rem 1rem;
   background: #161616;
@@ -95,6 +105,24 @@
     gap: 0.2rem;
     margin-right: 1rem;
     font-size: 0.85rem;
+  }
+
+  // Width and height side by side, each as wide as a size needs. At the
+  // inputs' own width they took a row each, and on a phone the Render
+  // stage's room ended at Height: Queue render was below it, out of sight.
+  .renderfields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    margin-bottom: 0.6rem;
+
+    label {
+      margin-right: 0;
+    }
+
+    input {
+      width: 6.5rem;
+    }
   }
 
   input,

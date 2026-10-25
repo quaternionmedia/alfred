@@ -69,7 +69,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al prod` | Production stack; expects a running traefik and the production `ALFRED_SECRET_KEY` exported |
 | `./al flower` | Celery monitoring on :5555; needs the dev stack for its broker |
 | `./al cookbook` | Regenerate `docs/cookbook.md` from the e2e specs |
-| `./al recipes` | Against a running stack: take the screenshots into `docs/assets/screens/`, record the recipes as GIFs into `docs/recipes/` (kept out of git), and regenerate the cookbook |
+| `./al recipes` | Against a running stack: take the screenshots into `docs/assets/screens/`, record the recipes as GIFs into `docs/recipes/` (kept out of git; `./al docs` then plays each recording in the cookbook), and regenerate the cookbook |
 | `./al install <pkg>` | Add a website dependency |
 | `./al family` | alfred with otto, vox, joe, qmcp and the rest: status, quick suites, the stack wired to joe, a live check ([docs/family.md](docs/family.md)) |
 
@@ -97,7 +97,7 @@ and prints a banner on every boot; see [docs/dev-auth.md](docs/dev-auth.md).
 ## Tests
 
 ```sh
-./al pytest                       # API suite, plus black (formatting in place) and ruff, in Docker
+./al pytest                       # API suite, plus black --check and ruff, in Docker
 ./al test                         # browser suite, in Docker, on a stack it builds
 ```
 
@@ -115,9 +115,13 @@ against a dev stack. The details are in
 
 ## Documentation
 
-Built with [mkdocs](https://www.mkdocs.org/):
+Built with [mkdocs](https://www.mkdocs.org/) and Material for MkDocs, which
+`./al docs` runs on this machine. pyproject.toml's `docs` group names both,
+in the ranges CI builds with, and pdm.lock pins them; `./al prod` builds with
+the same Material release, in its image.
 
 ```sh
+pip install 'mkdocs>=1.6,<2' 'mkdocs-material>=9.7,<10'
 ./al docs                         # serves on :4000
 ```
 

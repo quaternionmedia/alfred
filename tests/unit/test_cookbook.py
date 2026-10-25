@@ -162,7 +162,8 @@ class TestTheDocsSiteCarriesIt:
 
 class TestTheRecipesMediaStaysOutOfGit:
     """`./al recipes` writes each recipe's recording and GIF to docs/recipes,
-    for watching and for publishing; git ignores them. A GIF does not compress
+    for watching, and the docs served locally play the recordings; git ignores
+    them. A GIF does not compress
     against its last version, so committing them added megabytes to history
     on every refresh."""
 

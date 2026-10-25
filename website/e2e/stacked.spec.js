@@ -251,8 +251,13 @@ test.describe('the phone flow fits the width of the phone', () => {
     await authedPage.route(
       url => url.pathname === '/media',
       async route => {
-        const response = await route.fetch()
-        const items = await response.json()
+        // A stage chosen reloads the library, and the page can move on before
+        // an answer is read; reading it then threw "Response has been
+        // disposed" into the test, in two runs of four against a dev stack. There
+        // is nothing left to change by then, so the request goes on as sent.
+        const response = await route.fetch().catch(() => null)
+        const items = response && (await response.json().catch(() => null))
+        if (!items) return route.continue().catch(() => {})
         const long = { name: 'videos/Demo_320x180_9.0s_20260809-112440_6a786378bc3b0bdd8e881398.mp4', kind: 'video', duration: 9, size: 1 }
         await route.fulfill({ response, json: [...items, long] })
       }
@@ -318,6 +323,37 @@ test.describe('the Source stage', () => {
       panel
     )
     expect(whole, 'not one whole project can be seen').toBeGreaterThanOrEqual(2)
+  })
+})
+
+test.describe('the Render stage', () => {
+  test('shows its whole form, Queue render included', async ({ authedPage }) => {
+    /**
+     * Width and height took a row each at the inputs' own width, and shared
+     * in proportion the stage had 114 pixels at 375x812: Width, the top of
+     * Height, and Queue render below them, out of sight.
+     *
+     * Mutation: drop the Render stage's rules (flow.scss) and the form
+     * scrolls inside its panel; drop the fields' row (stages.scss) and width
+     * and height stack again. Either fails this.
+     */
+    await authedPage.goto('/#!/?stage=render')
+    const panel = authedPage.locator('#panel-render')
+    await expect(panel).toBeVisible()
+    expect(
+      await panel.evaluate(p => p.scrollHeight - p.clientHeight),
+      'the form scrolls inside its panel'
+    ).toBeLessThanOrEqual(1)
+
+    const width = await authedPage.locator('#render-width').boundingBox()
+    const height = await authedPage.locator('#render-height').boundingBox()
+    expect(Math.abs(width.y - height.y), 'width and height share a row').toBeLessThanOrEqual(1)
+
+    const button = await authedPage.locator('#queue-render').boundingBox()
+    const stage = await authedPage.locator('.flowstage').boundingBox()
+    expect(button.y + button.height, 'Queue render is below the stage').toBeLessThanOrEqual(
+      stage.y + stage.height
+    )
   })
 })
 

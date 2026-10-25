@@ -32,7 +32,7 @@ The image fields are media names like any clip's: `videos/<file>` from the serve
       -H "Authorization: Bearer $TOKEN" \
       -H "Content-Type: application/json" \
       -d @data.json \
-      https://alfred.quaternion.media/project
+      http://127.0.0.1:8000/project
     ```
 
     It answers the project as stored, with the `_id` the server gave it.
@@ -44,13 +44,13 @@ The image fields are media names like any clip's: `videos/<file>` from the serve
     **GET** your projects; a superuser gets every project.
     ``` bash title="Get all projects"
     curl -H "Authorization: Bearer $TOKEN" \
-      https://alfred.quaternion.media/project
+      http://127.0.0.1:8000/project
     ```
 === "Read One"
     **GET** one project by its id.
     ``` bash title="Get one project"
     curl -H "Authorization: Bearer $TOKEN" \
-      https://alfred.quaternion.media/project/$PROJECT_ID
+      http://127.0.0.1:8000/project/$PROJECT_ID
     ```
 === "Update"
     **PUT** a project by its id.
@@ -59,7 +59,7 @@ The image fields are media names like any clip's: `videos/<file>` from the serve
       -H "Authorization: Bearer $TOKEN" \
       -H "Content-Type: application/json" \
       -d @data.json \
-      https://alfred.quaternion.media/project/$PROJECT_ID
+      http://127.0.0.1:8000/project/$PROJECT_ID
     ```
     The body replaces the project: a field it leaves out is emptied, though the owner and captions are kept. `PUT /project/$PROJECT_ID/timeline` writes the timeline alone, and `PUT /project/$PROJECT_ID/settings` the render settings and destination alone.
 === "Delete"
@@ -67,6 +67,6 @@ The image fields are media names like any clip's: `videos/<file>` from the serve
     ``` bash title="Delete project"
     curl -X DELETE \
       -H "Authorization: Bearer $TOKEN" \
-      https://alfred.quaternion.media/project/$PROJECT_ID
+      http://127.0.0.1:8000/project/$PROJECT_ID
     ```
     This answers the project as it was.

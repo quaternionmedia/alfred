@@ -1663,6 +1663,17 @@ Mutation: drop the Source stage's `flex-shrink` (flow.scss) and the
 timeline keeps more than its floor, and this fails.
 
 - **gives its panels the room the timeline can spare**
+### the Render stage
+
+Width and height took a row each at the inputs' own width, and shared
+in proportion the stage had 114 pixels at 375x812: Width, the top of
+Height, and Queue render below them, out of sight.
+
+Mutation: drop the Render stage's rules (flow.scss) and the form
+scrolls inside its panel; drop the fields' row (stages.scss) and width
+and height stack again. Either fails this.
+
+- **shows its whole form, Queue render included**
 ### the picture keeps its room
 
 In every stage the whole picture is on the screen, and the stage's own
@@ -1962,6 +1973,18 @@ mode; and the viewport carried `maximum-scale=1`, which stops a phone
 from zooming -- the one tool someone who needs larger controls has.
 
 - **the page is laid out to standard, and can be zoomed**
+### zoom
+
+Zoom in was placed `absolute` at the right of whatever box held it: in
+the workspace's tools column it was drawn over the bar, whose end ran on
+under the bin beside the column; on a phone it sat at the far end of the
+row, away from its bar. The workspace's column has no room for a bar
+between two buttons, so there the buttons zoom alone (editor.scss).
+
+Mutation: put back `position: absolute; right: 0` on zoom in (Scale.js)
+and on a phone it leaves the bar's box, and this fails.
+
+- **its buttons and its bar sit side by side, none drawn over another**
 
 ## tools
 

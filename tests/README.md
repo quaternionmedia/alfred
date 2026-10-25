@@ -6,12 +6,13 @@ Scope: the backend and the render engine. Browser coverage lives in
 ## Status
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
-stack's own configuration: **1841 tests -- 1831 passed, 2 skipped, 8
-xfailed** in the `./al pytest` container, measured on integrate/wave-6 with
+stack's own configuration: **1908 tests -- 1892 passed, 8 skipped, 8
+xfailed** in the `./al pytest` container, measured on feat/close-gaps with
 its `db` service up, so the database tier ran too. One skip needs a Docker
-CLI and the other needs node, neither of which that container has; so the
-byte-for-byte cookbook check (`test_cookbook.py`) runs in CI and on a host
-with node, not in `./al pytest`. Where ImageMagick cannot draw text, six more
+CLI and seven need node, neither of which that container has; so the
+byte-for-byte cookbook check (`test_cookbook.py`) and the recipes'
+collector tests (`test_recipe_gifs.py`) run in CI and on a host with node,
+not in `./al pytest`. Where ImageMagick cannot draw text, six more
 skip (`needs_imagemagick`).
 
 IS-5's render queueing is tested without a database:
@@ -83,9 +84,12 @@ tests/
     test_stack_settings.py every setting reaches the services that read it
     test_event_loop.py   the api answers while slow work is being done
     test_blocking_calls.py no coroutine in the api calls something that blocks
-    test_family.py       ./al family: where each repository is, each one's suite
+    test_family.py       ./al family: where each repository is, each one's suite,
+                         and up, smoke and down against stand-ins
     test_cookbook.py     docs/cookbook.md is what the specs generate, linking
                          only what git tracks
+    test_recipe_gifs.py  ./al recipes keeps only passing recipes, and fails a
+                         GIF over its cap or an ffmpeg that fails
     test_docs_site.py    the docs build's strict checks and what it loads
     test_docs_accounted.py the docs name every setting, and give no `./al`
                          command that does not exist
