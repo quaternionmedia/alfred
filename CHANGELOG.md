@@ -371,9 +371,10 @@ accepted are now refused, and a production stack needs its own signing key.
 - **The docs are held to what the code offers.** `docs/configuration.md` gives
   every setting, its default, what reads it and how to set it, and what a
   Linux Docker host needs to reach joe; `test_docs_accounted.py` fails when it
-  misses an `ALFRED_` or `OTTO_` setting alfred reads, docs/family.md one
-  `./al family` reads, or a
-  document gives an `./al` command that does not exist.
+  misses any name alfred or otto looks up in the environment, whatever its
+  prefix, or one the compose files or `./al` read on the host, when
+  docs/family.md misses one `./al family` reads, or when a document gives an
+  `./al` command that does not exist.
 - **Docs that show first.** `./al recipes` takes the screenshots in
   `docs/assets/screens/` from demo data it builds; the README and the main
   docs pages open with them, and `test_docs_images.py` holds each to a page
