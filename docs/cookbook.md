@@ -1663,6 +1663,17 @@ Mutation: drop the Source stage's `flex-shrink` (flow.scss) and the
 timeline keeps more than its floor, and this fails.
 
 - **gives its panels the room the timeline can spare**
+### the Render stage
+
+Width and height took a row each at the inputs' own width, and shared
+in proportion the stage had 114 pixels at 375x812: Width, the top of
+Height, and Queue render below them, out of sight.
+
+Mutation: drop the Render stage's rules (flow.scss) and the form
+scrolls inside its panel; drop the fields' row (stages.scss) and width
+and height stack again. Either fails this.
+
+- **shows its whole form, Queue render included**
 ### the picture keeps its room
 
 In every stage the whole picture is on the screen, and the stage's own
