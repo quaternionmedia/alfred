@@ -1,13 +1,14 @@
 """`./al`, the task runner everything routes through.
 
-Four promises are held here. The help is the full command list -- README and
+Five promises are held here. The help is the full command list -- README and
 AGENTS.md both say `./al` with no arguments prints it -- and it was not: it
 offered `s`, which did nothing, and left out six commands that worked and
 names others answer to. `./al dev` refuses to start on a port somebody else
 holds, for each of the three ports the dev stack publishes rather than only
 the api's. The checkout's development signing key is made once, random, and
-readable by its owner alone. And `./al dev` says so when it is about to
-serve the network with its authentication switched off.
+readable by its owner alone. `./al dev` says so when it is about to
+serve the network with its authentication switched off. And `./al pytest`
+checks formatting, as CI does, rather than rewriting the files it tests.
 
 Each is run for real: `al` is copied into a scratch directory and run with
 stand-ins for `curl` and `docker` first on PATH, so a test decides what each
@@ -16,6 +17,7 @@ would have been started. Nothing here prints the key a run makes: it is
 checked for its shape and compared, and a failing check names neither value.
 """
 
+import ast
 import os
 import re
 import shutil
@@ -427,3 +429,59 @@ class TestTheApiSuite:
         assert result.returncode == 0, result.stderr
         compose = [call for call in result.calls if 'compose' in call]
         assert compose and compose[0].startswith(expected), compose
+
+
+def noxfile():
+    return ast.parse((REPO / 'tests' / 'noxfile.py').read_text(encoding='utf-8'))
+
+
+def default_sessions():
+    """`nox.options.sessions`: what nox runs when no session is named."""
+    for node in ast.walk(noxfile()):
+        if isinstance(node, ast.Assign) and any(
+            ast.unparse(target) == 'nox.options.sessions' for target in node.targets
+        ):
+            return ast.literal_eval(node.value)
+    return None
+
+
+def black_runs(session):
+    """The arguments of each `session.run('black', ...)` in a session."""
+    for node in ast.walk(noxfile()):
+        if isinstance(node, ast.FunctionDef) and node.name == session:
+            return [
+                [ast.literal_eval(arg) for arg in call.args]
+                for call in ast.walk(node)
+                if isinstance(call, ast.Call)
+                and ast.unparse(call.func) == 'session.run'
+                and call.args
+                and ast.literal_eval(call.args[0]) == 'black'
+            ]
+    return []
+
+
+class TestTheApiSuiteChecksFormatting:
+    """`./al pytest` checks formatting as CI does, and rewrites nothing.
+
+    pytest.yml names no session, so nox ran every session in the file,
+    `blacken` first: the suite formatted the checkout in place, and code CI's
+    `black --check` fails passed here. `./al nox -s blacken` formats.
+    """
+
+    def test_al_pytest_runs_the_default_sessions(self):
+        text = (REPO / 'pytest.yml').read_text(encoding='utf-8')
+        command = re.search(r'^\s+command:\s*(.+)$', text, re.MULTILINE).group(1)
+        assert command.split() == ['-f', 'tests/noxfile.py'], command
+
+    def test_the_default_sessions_check_formatting_and_run_the_suite(self):
+        sessions = default_sessions()
+        assert sessions, 'no nox.options.sessions: nox runs every session'
+        assert 'blacken' not in sessions, './al pytest would format in place'
+        assert {'lint', 'coverage'} <= set(sessions)
+        runs = [run for session in sessions for run in black_runs(session)]
+        assert runs, 'no default session runs black: formatting goes unchecked'
+        assert all('--check' in run and '-S' in run for run in runs), runs
+
+    def test_blacken_still_formats(self):
+        runs = black_runs('blacken')
+        assert runs and all('--check' not in run for run in runs), runs

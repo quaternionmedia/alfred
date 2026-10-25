@@ -97,7 +97,7 @@ and prints a banner on every boot; see [docs/dev-auth.md](docs/dev-auth.md).
 ## Tests
 
 ```sh
-./al pytest                       # API suite, plus black (formatting in place) and ruff, in Docker
+./al pytest                       # API suite, plus black --check and ruff, in Docker
 ./al test                         # browser suite, in Docker, on a stack it builds
 ```
 

@@ -36,7 +36,7 @@ nothing to download.
 ## Running the tests
 
 ```sh
-./al pytest                       # API suite, plus black (formatting in place) and ruff, in Docker
+./al pytest                       # API suite, plus black --check and ruff, in Docker
 ./al test                         # browser suite, in Docker, on a stack it builds
 
 pdm install -G test               # or on the host: Python deps and test extras
@@ -109,7 +109,7 @@ A recipe that breaks leaves no GIF rather than a misleading one.
 ```sh
 ./al nox -s blacken                  # Black, with -S
 ./al nox -s lint                     # Ruff
-./al pytest                          # all three, and the suite
+./al pytest                          # black --check, ruff, and the suite
 python governance/qm/project-seed/ci/check_pr_base.py --base main --head <your-branch>
 ```
 
