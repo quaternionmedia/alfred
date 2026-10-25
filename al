@@ -288,8 +288,11 @@ elif [ $1 = "p" -o $1 = "production" -o $1 = "prod" ]; then
     exit 1
   fi
   echo "Alfred! running production $1"
+  # The docs, with the Material release pdm.lock holds for `./al docs`
+  # (pyproject.toml's docs group). Unpinned, it built production's docs with
+  # whatever `latest` meant on the day: 9.8.0 was a day old as this was pinned.
   docker compose down && \
-  docker run --rm -it -v ${PWD}:/docs -v ${PWD}/alfred/site/:/site/ --user $(id -u):$(id -g) squidfunk/mkdocs-material build -d /site/ && \
+  docker run --rm -it -v ${PWD}:/docs -v ${PWD}/alfred/site/:/site/ --user $(id -u):$(id -g) squidfunk/mkdocs-material:9.7.7 build -d /site/ && \
   docker compose -f docker-compose.yml -f production.yml up --build -d $1
 
 # Installs website dependencies.

@@ -115,9 +115,13 @@ against a dev stack. The details are in
 
 ## Documentation
 
-Built with [mkdocs](https://www.mkdocs.org/):
+Built with [mkdocs](https://www.mkdocs.org/) and Material for MkDocs, which
+`./al docs` runs on this machine. pyproject.toml's `docs` group names both,
+in the ranges CI builds with, and pdm.lock pins them; `./al prod` builds with
+the same Material release, in its image.
 
 ```sh
+pip install 'mkdocs>=1.6,<2' 'mkdocs-material>=9.7,<10'
 ./al docs                         # serves on :4000
 ```
 
