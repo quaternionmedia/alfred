@@ -10,11 +10,21 @@ fatal before mike deploys anything.
 Separately, the site loaded Google Fonts on every page view and an emoji from
 a CDN; the open-license record asks that frontend assets come from the site's
 own origin.
+
+And the tools that build it are declared and pinned. `./al docs` runs mkdocs
+on the host, which nothing named, so a fresh clone could not know what to
+install; `./al prod` built the site with `squidfunk/mkdocs-material` at
+whatever `latest` meant that day.
 """
 
+import re
+import tomllib
 from pathlib import Path
 
 import yaml
+from packaging.requirements import Requirement
+from packaging.utils import canonicalize_name
+from packaging.version import Version
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -101,3 +111,67 @@ class TestThePagesLoadNothingFromAnotherHost:
             'pymdownx.emoji draws emoji as images from a CDN; write the '
             'character itself'
         )
+
+
+def docs_group():
+    """pyproject.toml's docs group, as {name: requirement}."""
+    groups = tomllib.loads((REPO / 'pyproject.toml').read_text(encoding='utf-8'))
+    declared = groups['tool']['pdm']['dev-dependencies'].get('docs', [])
+    return {
+        canonicalize_name(Requirement(line).name): Requirement(line)
+        for line in declared
+    }
+
+
+def locked(name):
+    lock = tomllib.loads((REPO / 'pdm.lock').read_text(encoding='utf-8'))
+    for package in lock['package']:
+        if canonicalize_name(package['name']) == name:
+            return package
+    return None
+
+
+class TestTheToolsThatBuildItAreDeclared:
+    def test_the_docs_group_names_what_ci_builds_with(self):
+        """`./al docs` runs mkdocs on the host; the group says what to install,
+        in the ranges the docs workflow installs."""
+        workflow = load('.github/workflows/docs.yml')
+        installs = [
+            step['run']
+            for step in workflow['jobs']['build']['steps']
+            if 'pip install' in step.get('run', '')
+        ]
+        assert installs, 'the docs workflow installs nothing to build with'
+        ci = {
+            canonicalize_name(Requirement(spec).name): str(Requirement(spec))
+            for spec in re.findall(r"'([^']+)'", installs[0])
+        }
+        group = {name: str(requirement) for name, requirement in docs_group().items()}
+        assert group == ci, (
+            f"pyproject.toml's docs group is {group}; the docs workflow builds "
+            f'with {ci}. Keep the two in step.'
+        )
+
+    def test_the_docs_group_is_locked(self):
+        lock = tomllib.loads((REPO / 'pdm.lock').read_text(encoding='utf-8'))
+        assert 'docs' in lock['metadata']['groups'], 'pdm.lock has no docs group'
+        for name, requirement in docs_group().items():
+            package = locked(name)
+            assert package and 'docs' in package['groups'], f'{name} is not locked'
+            assert Version(package['version']) in requirement.specifier
+
+    def test_prod_builds_the_docs_with_the_release_the_lock_holds(self):
+        """An image tag is a moving target unless it names a release."""
+        al = (REPO / 'al').read_text(encoding='utf-8')
+        images = re.findall(r'squidfunk/mkdocs-material(?::(\S+))?', al)
+        assert images, './al no longer builds the docs with the Material image'
+        material = locked('mkdocs-material')
+        for tag in images:
+            assert re.fullmatch(r'\d+\.\d+\.\d+', tag or ''), (
+                f'./al prod runs squidfunk/mkdocs-material:{tag or "latest"}; '
+                'pin it to a release'
+            )
+            assert material and tag == material['version'], (
+                f'./al prod builds with Material {tag}, and pdm.lock holds '
+                f"{material and material['version']} for ./al docs"
+            )

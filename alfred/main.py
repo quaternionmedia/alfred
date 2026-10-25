@@ -166,13 +166,17 @@ async def checkFonts():
     # done -- but one rule for every coroutine, with no exceptions to
     # remember, is the rule that holds.
     fonts = await run_in_threadpool(installed_fonts)
-    for family, styles in font_styles(fonts):
+    found = font_styles(fonts)
+    for family, styles in found:
         await db.fonts.update_one(
             {'family': family},
             {'$set': {'style': styles}},
             upsert=True,
         )
-    # db.fonts.update_many(results, upsert=True)
+    # And forget each family fontconfig no longer lists. The collection
+    # outlives the image, so a font a later image dropped stayed in GET
+    # /fonts, offered to the editor as one this server could draw in.
+    await db.fonts.delete_many({'family': {'$nin': [family for family, _ in found]}})
 
 
 @app.exception_handler(PydanticValidationError)

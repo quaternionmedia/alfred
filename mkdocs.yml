@@ -42,6 +42,7 @@ nav:
       - api/index.md
       - api/auth.md
       - api/otto.md
+      - api/fonts.md
       - api/render.md
       - api/errors.md
   - History:
