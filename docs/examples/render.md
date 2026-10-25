@@ -32,7 +32,7 @@ See [about/render](../about/render.md) for every field a render request takes, a
     curl -H "Content-Type: application/json" \
       -H "Authorization: Bearer $TOKEN" \
       -d @data.json \
-      https://alfred.quaternion.media/render
+      http://127.0.0.1:8000/render
     ```
 
 !!! note "Render settings go in the body"
@@ -49,7 +49,7 @@ A request the server will not render is answered 422 before anything is stored o
 ## Check status
 ``` bash title="Render status"
 curl -H "Authorization: Bearer $TOKEN" \
-  https://alfred.quaternion.media/render/$RENDER_ID/status
+  http://127.0.0.1:8000/render/$RENDER_ID/status
 ```
 ``` json title="Status"
 {
@@ -70,7 +70,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 ## Download
 `download_url` is a signed link to the finished video. It needs no `Authorization` header, so a browser can use it as a `<video src>` or a download link until its `exp`.
 ``` bash title="Download the render"
-curl -o render.mp4 "https://alfred.quaternion.media$DOWNLOAD_URL"
+curl -o render.mp4 "http://127.0.0.1:8000$DOWNLOAD_URL"
 ```
 
 With the token, `GET /render/$RENDER_ID/download` serves the same file. Either way, the video arrives as an attachment named for its project, description and size, and a `Range` header gets part of it, so a player can seek.
@@ -82,7 +82,7 @@ With the token, `GET /render/$RENDER_ID/download` serves the same file. Either w
 ``` bash title="Deliver the render"
 curl -X POST \
   -H "Authorization: Bearer $TOKEN" \
-  "https://alfred.quaternion.media/render/$RENDER_ID/deliver?destination=local"
+  "http://127.0.0.1:8000/render/$RENDER_ID/deliver?destination=local"
 ```
 This sends a finished render to a destination and answers where it went: `{"destination": "local", "location": "/render/61a43a5d6f511ec4ba99ac63/download"}`. `GET /destinations` lists the destinations the server offers. Without `destination`, a render goes where it was last sent, or else to `local`. It is a 409 until the render has finished.
 

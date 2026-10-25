@@ -12,7 +12,7 @@ Draws one template and answers the image itself, a JPEG: what the editor shows w
 ``` bash title="Preview the title template at t=1"
 curl -o title.jpg \
   -H "Authorization: Bearer $TOKEN" \
-  "https://alfred.quaternion.media/preview/template/title?text=asdf&t=1"
+  "http://127.0.0.1:8000/preview/template/title?text=asdf&t=1"
 ```
 
 A template the server does not offer is a 404; one the data given cannot draw, such as `title` without `text`, is a 422.
