@@ -1600,6 +1600,11 @@ Below 1024 pixels there is no dock and no Panels menu: the rail, and the
 regions under it.
 
 - **is a stack, not a dock**
+- **a notice lets a tap through to what is under it**
+
+  Choosing Source puts the project list and the library under the rail,
+  and the viewer and the timeline under them.
+
 - **a stage's panels sit between the rail and the viewer**
 
   Choosing Source puts the project list and the library under the rail,
