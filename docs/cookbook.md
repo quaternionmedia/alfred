@@ -392,6 +392,38 @@ fixture's two bursts of tone, as onsets and the silences around them.
 
 - **a library file is analysed by the engine**
 
+## cut ranges
+
+`cutRanges` (src/ClipWindow.js), the cut behind editing by text, at its edges.
+Plain arithmetic, run in Node: no browser, no server.
+
+### one cut
+
+- **a range across a clip boundary splits both clips, and what follows moves up by its length**
+- **the parts either side of a cut meet with hard edges, and keep their other fades**
+- **a template after a cut carries on its animation; a picture keeps its window**
+- **nothing it is given is changed**
+### every track
+
+- **several tracks are cut at once, audio-only clips with them**
+- **a clip wholly inside a range goes, on whichever track it is**
+### several ranges
+
+- **ranges apart and out of order are cut as one edit**
+- **ranges that overlap or meet are one range**
+### the edges of the timeline
+
+- **a range at the start takes the opening, and everything moves up**
+- **a range at the end takes the ending, and nothing moves**
+- **a range past the end cuts nothing, and one over it cuts up to the end**
+- **an empty or zero-length selection changes nothing**
+- **an empty timeline has nothing to cut**
+### the words
+
+- **the words cut go, later words shift, and one the cut only overlaps is trimmed**
+- **a word that takes no time goes when a range holds it, and moves when not**
+- **a caption being typed, its times not yet numbers, is left as it is**
+
 ## deliver
 
 Following a render from queued to delivered.

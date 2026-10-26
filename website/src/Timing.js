@@ -23,55 +23,23 @@
  */
 
 import { Library } from './Library'
+import { SHORTEST, clipSeconds, inOf, isStill, place, toMs } from './ClipWindow'
 
-// The shortest a clip may be made, in seconds. A trim, a cut or a roll that
-// would leave less leaves this much: a sliver nobody can see or select is a
-// near-empty layer for the renderer.
-export const SHORTEST = 0.1
-
-/** Seconds, to the millisecond: what is stored, so sums do not drift. */
-export const toMs = s => Math.round(s * 1000) / 1000
-
-/** Seconds a clip occupies on the timeline. One rule, shared by playback and
- * by everything sent to the server (see Video.js). */
-export const clipSeconds = c => (c ? Number(c.duration) || 0 : 0)
-
-/** Where in its source a clip starts playing, in seconds. */
-export const inOf = clip => (clip ? Number(clip.inpoint) || 0 : 0)
+// Pure window arithmetic and the text cut live in ClipWindow.js; exported here too.
+export {
+  SHORTEST,
+  clipSeconds,
+  cutRanges,
+  cutSpans,
+  inOf,
+  isStill,
+  place,
+  timelineEnd,
+  toMs,
+  windowed,
+} from './ClipWindow'
 
 const MEDIA = new Set(['video', 'audio'])
-
-/** A still picture: a length, but no position in a source to move. */
-export const isStill = clip => Boolean(clip) && clip.type === 'image'
-
-/** Whether a clip carries a window that its length has to be kept in step with. */
-export function windowed(clip) {
-  if (!clip) return false
-  return MEDIA.has(clip.type) || clip.inpoint != null || clip.outpoint != null
-}
-
-/**
- * Give a clip its window: start `inpoint` seconds into its source, and play
- * for `length` seconds.
- *
- * Writes `duration`, and -- for a clip that has a window, or is given one by
- * starting past 0 -- `inpoint` and `outpoint` with them, so the three always
- * agree. A template starting at 0 with no window keeps none: it is the same
- * clip either way, and an unchanged clip should not change shape.
- */
-export function place(clip, inpoint, length) {
-  const seconds = toMs(Math.max(0, length))
-  clip.duration = seconds
-  const still = isStill(clip)
-  const from = toMs(Math.max(0, inpoint))
-  if (!windowed(clip) && (still || from === 0)) return clip
-  // A picture's in-point means nothing; one it already carries is kept as it
-  // is, and only the out-point follows the length.
-  const start = still ? inOf(clip) : from
-  clip.inpoint = start
-  clip.outpoint = toMs(start + seconds)
-  return clip
-}
 
 /** Make a clip `seconds` long, keeping where it starts in its source. */
 export const setLength = (clip, seconds) => place(clip, inOf(clip), Math.max(SHORTEST, seconds))
