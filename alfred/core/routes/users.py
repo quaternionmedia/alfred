@@ -183,7 +183,7 @@ class UserManager(
         confirmation that succeeded answered 500, after confirming. Nothing
         called it until the confirmation link was mailed.
         """
-        return UserRead.from_orm(await super().verify(token, request))
+        return UserRead.model_validate(await super().verify(token, request))
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         print(f"User {user.id} has registered.")

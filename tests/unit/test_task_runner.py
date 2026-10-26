@@ -280,8 +280,8 @@ class TestTheDevKey:
     """`./al init`, `dev` and `thin` give the checkout a key of its own.
 
     docker-compose.yml loads `.secret_key`, a committed stub that leaves
-    ALFRED_SECRET_KEY empty, and PyJWT signs with an empty key: anyone could
-    mint a development session for any account. dev.yml loads
+    ALFRED_SECRET_KEY empty, and PyJWT refuses an empty key: no login would
+    work. dev.yml loads
     `.secret_key.local` over it, and `ensureDevKey` makes that file.
 
     The key is compared and its shape matched, never shown: every assertion

@@ -28,7 +28,7 @@ class MailQueued(BaseModel):
     state: Literal['queued']
     # The worker's id for the job, which its log names; null if the queue
     # gave none.
-    job: Optional[str]
+    job: Optional[str] = None
 
 
 def get_mail_queue():

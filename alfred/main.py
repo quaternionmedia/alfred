@@ -209,8 +209,11 @@ async def malformedIdentifier(request, exc):
 
 
 def _isIdentifierParseError(exc):
-    model = getattr(exc, 'model', None)
-    return 'PydanticObjectId' in str(getattr(model, '__name__', model))
+    # A bare id parsed alone (no field in its loc), refused by PydanticObjectId.
+    errors = exc.errors(include_url=False)
+    return bool(errors) and all(
+        not error['loc'] and 'PydanticObjectId' in error['msg'] for error in errors
+    )
 
 
 app.include_router(authAPI, prefix='/auth', tags=['auth'])

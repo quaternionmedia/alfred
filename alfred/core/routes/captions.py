@@ -15,7 +15,7 @@ from typing import List, Literal, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends
 from otto.models import Edl
-from pydantic import BaseModel, ValidationError, conlist, constr
+from pydantic import BaseModel, ConfigDict, ValidationError, conlist, constr
 from starlette.concurrency import run_in_threadpool
 
 from alfred import config
@@ -71,7 +71,7 @@ class CaptionsView(BaseModel):
 
     captions: List[Caption]
     style: CaptionStyle
-    job: Optional[CaptionsJob]
+    job: Optional[CaptionsJob] = None
 
 
 class CaptionsUpdate(BaseModel):
@@ -79,11 +79,10 @@ class CaptionsUpdate(BaseModel):
     and the words."""
 
     captions: List[Caption]
-    style: Optional[CaptionStyle]
-    words: Optional[conlist(Word, max_items=MAX_WORDS)]
+    style: Optional[CaptionStyle] = None
+    words: Optional[conlist(Word, max_length=MAX_WORDS)] = None
 
-    class Config:
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
 
 class CaptionsImport(BaseModel):
@@ -174,7 +173,7 @@ def view_of(project: dict) -> CaptionsView:
     captions = []
     for stored in project.get('captions') or []:
         try:
-            captions.append(Caption.parse_obj(stored))
+            captions.append(Caption.model_validate(stored))
         except ValidationError as exc:
             # Stored by something that skipped the checks; shown without it
             # rather than failing the whole read.
@@ -182,7 +181,7 @@ def view_of(project: dict) -> CaptionsView:
     style = project_style(project.get('caption_style'))
     job = project.get('captions_job')
     if job:
-        job = CaptionsJob.parse_obj(
+        job = CaptionsJob.model_validate(
             {**job, 'updated_at': _as_utc(job.get('updated_at'))}
         )
     return CaptionsView(captions=captions, style=style, job=job or None)
@@ -193,7 +192,7 @@ def words_of(project: dict) -> WordsView:
     words = []
     for stored in project.get('words') or []:
         try:
-            words.append(Word.parse_obj(stored))
+            words.append(Word.model_validate(stored))
         except ValidationError as exc:
             print('skipping a stored word that does not validate:', exc)
     return WordsView(words=words)
@@ -245,12 +244,12 @@ async def saveProjectCaptions(
         captions = checked_captions(update.captions)
     except TooManyCaptions as exc:
         raise Refusal(Code.TOO_MANY_CAPTIONS, str(exc)) from exc
-    fields = {'captions': [caption.dict() for caption in captions]}
+    fields = {'captions': [caption.model_dump() for caption in captions]}
     style = style_to_store(update.style, project.get('caption_style'))
     if style is not None:
         fields['caption_style'] = style
     if update.words is not None:
-        fields['words'] = [word.dict() for word in update.words]
+        fields['words'] = [word.model_dump() for word in update.words]
     await store.set(project['_id'], fields)
     return view_of({**project, **fields})
 
@@ -307,7 +306,7 @@ def timeline_to_transcribe(project: dict) -> Edl:
             'The project has no saved timeline to transcribe; save one first.',
         )
     try:
-        edl = Edl.parse_obj(stored)
+        edl = Edl.model_validate(stored)
         check_edl(edl, TEMPLATE_NAMES)
     except (ValidationError, RefusedEdl) as exc:
         raise Refusal(
@@ -389,4 +388,4 @@ async def transcribeProjectCaptions(
             Code.TRANSCRIPTION_NOT_QUEUED,
             f'The transcription could not be queued: {exc}',
         ) from exc
-    return Transcribing(job=CaptionsJob.parse_obj(job))
+    return Transcribing(job=CaptionsJob.model_validate(job))

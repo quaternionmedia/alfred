@@ -2,7 +2,7 @@ from typing import List, Optional
 
 from beanie import Document
 from otto.models import Edl
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, field_serializer
 from pymongo import ASCENDING, IndexModel
 
 from .captions import Caption, CaptionsJob, CaptionStyle
@@ -39,7 +39,7 @@ def as_sent(edl: Edl) -> dict:
     Anything a model does not declare -- the editor's view index `i` on each
     clip -- is gone either way: validation drops it.
     """
-    return edl.dict(exclude_unset=True)
+    return edl.model_dump(exclude_unset=True)
 
 
 class RenderSettings(BaseModel):
@@ -54,13 +54,13 @@ class RenderSettings(BaseModel):
     width: Optional[int] = 1920
     height: Optional[int] = 1080
     fps: Optional[float] = 30.0
-    quality: Optional[str]
+    quality: Optional[str] = None
 
 
 class Project(Document):
     logic: dict
-    fields: Optional[List]
-    name: Optional[str]
+    fields: Optional[List] = None
+    name: Optional[str] = None
     # Whose project this is: the owner key of the account that created it --
     # its email, today -- the same identity a render records in `username`.
     # `utils.ownership` decides both, and docs/ownership.md is why the email
@@ -74,7 +74,7 @@ class Project(Document):
     # Optional because every project stored before this field existed has
     # none. Those are readable and writable by superusers only: nobody can be
     # shown to own them, and guessing would hand one account another's work.
-    owner: Optional[str]
+    owner: Optional[str] = None
     # The timeline editor has always read `project.edl` -- OttoTimeline's
     # oninit does `Edl.edl = e.edl` -- and the model has never had the field,
     # so the value was always undefined and the timeline always empty. There
@@ -86,7 +86,7 @@ class Project(Document):
     # legitimate project. `Render` already models its edl with otto's type, so
     # this follows what the render side established rather than inventing a
     # second shape for the same document.
-    edl: Optional[Edl]
+    edl: Optional[Edl] = None
     # What the render and deliver stages should default to for this project.
     #
     # This is what makes the flow reusable rather than a wizard re-run from
@@ -95,54 +95,46 @@ class Project(Document):
     # fields you retype. Both optional -- a project that has never been
     # rendered has no opinion yet, and the stages fall back to their own
     # defaults.
-    render_settings: Optional[RenderSettings]
-    destination: Optional[str]
+    render_settings: Optional[RenderSettings] = None
+    destination: Optional[str] = None
     # True on the project `POST /demo/project` generated for its owner, and on
     # no other. Server-owned like `owner`: dropped from a create, kept as stored
     # on an update, so no request can mark a project or unmark the demo -- the
     # index above counts on it.
-    demo: Optional[bool]
+    demo: Optional[bool] = None
     # The project's captions, in timeline seconds, and how they are drawn
     # (contract K2; `models.captions`). Written through
     # `PUT /project/{id}/captions`, which checks them as a list, and by a
     # transcription; a whole-project update keeps them as stored.
-    captions: Optional[List[Caption]]
-    caption_style: Optional[CaptionStyle]
+    captions: Optional[List[Caption]] = None
+    caption_style: Optional[CaptionStyle] = None
     # The last transcription of the timeline's sound. The server's record,
     # like `owner`: no request writes it.
-    captions_job: Optional[CaptionsJob]
+    captions_job: Optional[CaptionsJob] = None
 
-    class Config:
-        title = 'Alfred Project'
+    model_config = ConfigDict(title='Alfred Project')
 
     class Settings:
         # Every write of a project -- create, update, save, set -- stores its
         # EDL as sent: beanie encodes a document's fields through these.
         bson_encoders = {Edl: as_sent}
 
-    def dict(self, **kwargs):
-        """The project, its EDL as stored rather than as otto would fill it in.
-
-        Storing what was sent is half of it. Read back, the stored clips are
-        validated into otto's models again, which fill the defaults straight
-        back in -- so `GET /project/{id}` would still answer `fadeIn: 1` for a
-        clip saved without one, and a client rendering what it read would get
-        the fade nobody chose. FastAPI serialises a response model through
-        this method, so every project route answers with the EDL as stored.
-        """
-        data = super().dict(**kwargs)
-        if self.edl is not None and isinstance(data.get('edl'), dict):
-            data['edl'] = self.edl.dict(
-                exclude_unset=True,
-                by_alias=kwargs.get('by_alias', False),
-                exclude_none=kwargs.get('exclude_none', False),
-            )
-        return data
+    @field_serializer('edl')
+    def _edl_as_stored(self, edl, info):
+        """The EDL as stored, not as otto fills it in: every dump and answer (M4)."""
+        if edl is None:
+            return None
+        return edl.model_dump(
+            mode=info.mode,
+            exclude_unset=True,
+            by_alias=bool(info.by_alias),
+            exclude_none=info.exclude_none,
+        )
 
 
 class ProjectUpdate(Project):
-    logic: Optional[dict]
-    fields: Optional[List]
-    edl: Optional[Edl]
-    render_settings: Optional[RenderSettings]
-    destination: Optional[str]
+    logic: Optional[dict] = None
+    fields: Optional[List] = None
+    edl: Optional[Edl] = None
+    render_settings: Optional[RenderSettings] = None
+    destination: Optional[str] = None

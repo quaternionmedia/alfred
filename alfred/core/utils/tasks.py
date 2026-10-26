@@ -141,7 +141,7 @@ def renderRemote(
         # until this change -- and an absolute one wherever it points. The api
         # has already refused anything outside the library; checking again
         # here covers EDLs stored before that check existed and re-queued now.
-        timeline = resolve_edl(Edl.parse_obj(edl))
+        timeline = resolve_edl(Edl.model_validate(edl))
         # A soundtrack is media too, held to the same rule. The engine used to
         # drop this argument; it honours it now, opening a path or fetching a
         # URL exactly as it would a clip's name. Nothing the api queues sets
@@ -299,9 +299,9 @@ def transcribeCaptions(self, projectId: str, **kwargs):
     record_captions_job(
         projectId,
         captions_job('done', segments=heard),
-        captions=[caption.dict() for caption in captions],
+        captions=[caption.model_dump() for caption in captions],
         style=style_to_store(None, project.get('caption_style')),
-        words=[word.dict() for word in words],
+        words=[word.model_dump() for word in words],
     )
 
 

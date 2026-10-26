@@ -91,8 +91,25 @@ class TestTheOwnerField:
         Required, every one of them would fail validation on read -- for
         superusers too, who are the only ones meant to see them.
         """
-        assert 'owner' in Project.__fields__
-        assert not Project.__fields__['owner'].required
+        assert 'owner' in Project.model_fields
+        assert not Project.model_fields['owner'].is_required()
+
+
+class TestTheCrudRouter:
+    """The fork runs unchanged on pydantic 2 (docs/dependencies.md)."""
+
+    def test_neither_router_reaches_its_pydantic_1_schema_factory(self, monkeypatch):
+        from fastapi_crudrouter.core import _base
+
+        from alfred.core.routes.project import ProjectAPI
+        from alfred.core.routes.render import RenderAPI
+
+        def refused(*args, **kwargs):
+            raise AssertionError('schema_factory reads pydantic 1 fields')
+
+        monkeypatch.setattr(_base, 'schema_factory', refused)
+        ProjectAPI()
+        RenderAPI()
 
 
 class TestTheSeedOwner:

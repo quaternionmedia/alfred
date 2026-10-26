@@ -2,7 +2,7 @@
 
 ALFRED_SECRET_KEY signs every session, password-reset and verification token.
 Missing, nothing can be signed and every login answers 500 without saying why.
-Empty, everything is signed with a key anyone can reproduce.
+Empty, PyJWT refuses it, and every login answers 500 as well.
 Short, under ALFRED_PRODUCTION, it can be recovered from any one token, and
 then anyone can mint a session for any account.
 
@@ -33,24 +33,19 @@ class TestTheCheck:
         assert 'not set' in secret_key_problem(dict(env))
 
     @pytest.mark.parametrize('env', [{}, PRODUCTION], ids=['development', 'production'])
-    def test_an_empty_key_is_announced_as_forgeable_everywhere(self, env):
-        """An empty key is not a missing one: it signs, and anyone can sign.
-
-        This said "not set ... every login will fail" for both, which was
-        wrong twice for the empty case -- logins worked, on a key anyone
-        could reproduce. The committed `.secret_key` stub sets exactly this.
-        """
+    def test_an_empty_key_is_announced_as_unusable_everywhere(self, env):
+        """The committed `.secret_key` stub sets exactly this."""
         problem = secret_key_problem({**env, 'ALFRED_SECRET_KEY': ''})
         assert 'empty' in problem
-        assert 'forged' in problem
+        assert 'every login will fail' in problem
         assert 'not set' not in problem
 
-    def test_an_empty_key_really_signs_and_verifies(self):
-        """Pins the reason the empty key is a forgery risk, not a failure."""
+    def test_pyjwt_refuses_an_empty_key(self):
+        """Pins why the empty key is a failure, not a forgery risk."""
         import jwt
 
-        token = jwt.encode({'sub': 'anyone'}, '', algorithm='HS256')
-        assert jwt.decode(token, '', algorithms=['HS256']) == {'sub': 'anyone'}
+        with pytest.raises(jwt.InvalidKeyError):
+            jwt.encode({'sub': 'anyone'}, '', algorithm='HS256')
 
     def test_a_short_key_is_a_problem_in_production(self):
         problem = secret_key_problem({**PRODUCTION, 'ALFRED_SECRET_KEY': SHORT})
@@ -95,7 +90,7 @@ class TestTheStartupBanner:
         monkeypatch.delenv('ALFRED_PRODUCTION', raising=False)
         monkeypatch.setenv('ALFRED_SECRET_KEY', '')
         self.run_hook()
-        assert 'forged' in capsys.readouterr().out
+        assert 'is empty' in capsys.readouterr().out
 
     def test_a_good_key_says_nothing(self, monkeypatch, capsys):
         monkeypatch.setenv('ALFRED_PRODUCTION', 'true')

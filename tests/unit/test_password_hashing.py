@@ -1,25 +1,14 @@
 """Passwords are hashed and checked off the event loop, by copies held to the library.
 
-alfred/core/utils/passwords.py replaces fastapi-users' methods that hash or
-check a password with copies that do it in the thread pool. A copy of security
-code is safe only while it matches its original, so this file holds it there.
-
-- `TestTheGuard`: the installed library is the release the copies were checked
-  against, method by method, and anything else is refused, at import as well
-  as here. Every library method that touches the password helper is replaced,
-  or named as unreachable.
-- `TestTheSameAsTheLibrary`: each copy and its original are driven through
-  the same cases with the same stand-ins, and must do the same things in the
-  same order: the same lookups, writes, hashes, checks and hooks, and the same
-  answer or refusal. Only where the hashing runs may differ, and that is
-  checked too.
+- `TestTheGuard`: the release and each original are the ones the copies were
+  checked against; every method that touches the helper is accounted for.
+- `TestTheSameAsTheLibrary`: copy and original do the same things, in order;
+  only where the hashing runs differs.
 - `TestAlfredsOwnRules`: the dev login's refusal hashes off the loop too.
-- `TestWithRealBcrypt`: a hash made by either is accepted by the other, and
-  an outdated hash is upgraded at login.
-- `TestTheApiAnswersWhile`: `/healthz` answers while a login, a registration
-  or a reset is held in its hash or check, as in test_event_loop.py.
-- `TestTheBlockingCallsScan`: test_blocking_calls.py catches a coroutine that
-  hashes on the loop, so a regression fails there as well.
+- `TestWithRealHashes`: Argon2 and bcrypt, as fastapi-users 15 hashes them;
+  a 10.4 bcrypt hash logs in and becomes Argon2.
+- `TestTheApiAnswersWhile`: `/healthz` answers while a request hashes.
+- `TestTheBlockingCallsScan`: test_blocking_calls.py catches a hash on the loop.
 """
 
 import ast
@@ -38,8 +27,6 @@ from fastapi_users.db import ObjectIDIDMixin
 from fastapi_users.jwt import decode_jwt, generate_jwt
 from fastapi_users.manager import RESET_PASSWORD_TOKEN_AUDIENCE
 from fastapi_users.password import PasswordHelper
-from passlib.context import CryptContext
-from passlib.hash import md5_crypt
 
 from alfred import config
 from alfred.core.models import UserCreate, UserUpdate
@@ -99,7 +86,7 @@ class Helper:
 
     Deterministic, so a copy and its original can be compared call for call.
     A password hashes to `hashed(<password>)`. A stored `old(<password>)`
-    checks, but asks to be replaced, as passlib does with a deprecated scheme.
+    checks, but asks to be replaced, as pwdlib does a bcrypt hash.
     `work`, when given, holds each call until the test lets it go.
     """
 
@@ -300,6 +287,7 @@ CASES = {
     'a reset to a password refused': reset(reset_token(), password='short'),
     # _update, through update
     'a new password': change(ALICE_ID, password='a new password'),
+    'a null password, not hashed': change(ALICE_ID, password=None),
     'a new password refused': change(ALICE_ID, password='short'),
     'a free address': change(ALICE_ID, email='alice@elsewhere.example'),
     'an address taken': change(ALICE_ID, email='carol@example.com'),
@@ -314,8 +302,8 @@ class TestTheGuard:
         )
 
     def test_another_release_is_refused(self):
-        assert passwords.library_changes(version='10.4.3') == [
-            f'fastapi-users is 10.4.3, not {passwords.CHECKED_AGAINST}.'
+        assert passwords.library_changes(version='15.0.6') == [
+            f'fastapi-users is 15.0.6, not {passwords.CHECKED_AGAINST}.'
         ]
 
     def test_a_changed_method_is_refused_by_name(self):
@@ -325,7 +313,7 @@ class TestTheGuard:
 
         [changed] = passwords.library_changes(library=Changed)
         assert changed.startswith(
-            'BaseUserManager.authenticate (manager.py:630 at 10.4.2) has changed;'
+            'BaseUserManager.authenticate (manager.py:636 at 15.0.5) has changed;'
         )
 
     def test_a_method_gone_is_refused(self):
@@ -334,9 +322,9 @@ class TestTheGuard:
         assert all('could not be read' in change for change in changes)
 
     def test_the_refusal_says_what_to_check_and_where(self):
-        message = passwords.refusal(['fastapi-users is 11.0.0, not 10.4.2.'])
+        message = passwords.refusal(['fastapi-users is 16.0.0, not 15.0.5.'])
         assert 'FASTAPI-USERS IS NOT THE RELEASE CHECKED' in message
-        assert '- fastapi-users is 11.0.0, not 10.4.2.' in message
+        assert '- fastapi-users is 16.0.0, not 15.0.5.' in message
         flat = ' '.join(message.split())
         assert 'alfred/core/utils/passwords.py' in flat
         assert 'update CHECKED_AGAINST and REPLACED' in flat
@@ -344,12 +332,12 @@ class TestTheGuard:
     def test_the_api_does_not_start_against_another_release(self, monkeypatch):
         """The module refuses at import, so nothing that imports it -- the
         api -- gets as far as serving."""
-        monkeypatch.setattr(fastapi_users, '__version__', '10.4.3')
+        monkeypatch.setattr(fastapi_users, '__version__', '15.0.6')
         spec = importlib.util.spec_from_file_location(
             'passwords_against_another_release', passwords.__file__
         )
         module = importlib.util.module_from_spec(spec)
-        with pytest.raises(RuntimeError, match='fastapi-users is 10.4.3') as refused:
+        with pytest.raises(RuntimeError, match='fastapi-users is 15.0.6') as refused:
             spec.loader.exec_module(module)
         assert type(refused.value).__name__ == 'LibraryChanged'
 
@@ -467,7 +455,41 @@ class TestAlfredsOwnRules:
         assert helper.on_the_loop == [False]
 
 
-class TestWithRealBcrypt:
+# 'erin password', hashed by fastapi-users 10.4.2's PasswordHelper (passlib
+# 1.7.4, bcrypt 4.3.0): what every account made before 15 holds.
+ERIN_10_4_HASH = '$2b$12$kH1nazcj07SnJ.8LeeO5j.Bl27xffWGiED5HFfClhm7F9kKRrmvt6'
+
+
+class RealHelper(PasswordHelper):
+    """fastapi-users 15's helper, recording each call and where it ran."""
+
+    def __init__(self):
+        super().__init__()
+        self.calls = []
+        self.on_the_loop = []
+
+    def hash(self, password):
+        self.calls.append('hash')
+        self.on_the_loop.append(on_the_loop())
+        return super().hash(password)
+
+    def verify_and_update(self, plain_password, hashed_password):
+        self.calls.append('verify_and_update')
+        self.on_the_loop.append(on_the_loop())
+        return super().verify_and_update(plain_password, hashed_password)
+
+
+def erin():
+    return SimpleNamespace(
+        id=ALICE_ID,
+        email='erin@example.com',
+        hashed_password=ERIN_10_4_HASH,
+        first_name='Erin',
+        is_active=True,
+    )
+
+
+class TestWithRealHashes:
     """The stand-in helper above proves the order of things; these prove the
     real hashes agree."""
 
@@ -485,7 +507,7 @@ class TestWithRealBcrypt:
             email='dora@example.com', password='dora password', first_name='Dora'
         )
         dora = asyncio.run(self.manager(hashed_by, [], helper).create(form, safe=True))
-        assert dora.hashed_password.startswith('$2b$')
+        assert dora.hashed_password.startswith('$argon2id$')
 
         checker = self.manager(checked_by, [dora], helper)
         right = SimpleNamespace(username=dora.email, password='dora password')
@@ -493,21 +515,43 @@ class TestWithRealBcrypt:
         assert asyncio.run(checker.authenticate(right)) is dora
         assert asyncio.run(checker.authenticate(wrong)) is None
 
-    def test_an_outdated_hash_is_upgraded_to_bcrypt(self):
-        context = CryptContext(schemes=['bcrypt', 'md5_crypt'], deprecated='auto')
-        helper = PasswordHelper(context)
-        erin = SimpleNamespace(
-            id=ALICE_ID,
-            email='erin@example.com',
-            hashed_password=md5_crypt.hash('erin password'),
-            is_active=True,
-        )
-        manager = self.manager(Copy, [erin], helper)
-        credentials = SimpleNamespace(username=erin.email, password='erin password')
+    @pytest.mark.parametrize('manager_class', [Copy, UserManager])
+    def test_a_10_4_bcrypt_hash_logs_in_and_becomes_argon2(self, manager_class):
+        account, helper = erin(), RealHelper()
+        manager = self.manager(manager_class, [account], helper)
+        credentials = SimpleNamespace(username=account.email, password='erin password')
 
-        assert asyncio.run(manager.authenticate(credentials)) is erin
-        assert erin.hashed_password.startswith('$2b$')
-        assert asyncio.run(manager.authenticate(credentials)) is erin
+        assert asyncio.run(manager.authenticate(credentials)) is account
+        assert account.hashed_password.startswith('$argon2id$')
+        assert manager.user_db.log[-1] == (
+            'update',
+            account.email,
+            {'hashed_password': account.hashed_password},
+        )
+        upgraded = account.hashed_password
+        assert asyncio.run(manager.authenticate(credentials)) is account
+        assert account.hashed_password == upgraded
+        assert helper.calls == ['verify_and_update', 'verify_and_update']
+        assert helper.on_the_loop == [False, False]
+
+    def test_a_wrong_password_against_a_10_4_hash_is_refused(self):
+        account, helper = erin(), RealHelper()
+        manager = self.manager(UserManager, [account], helper)
+        wrong = SimpleNamespace(username=account.email, password='not erin')
+
+        assert asyncio.run(manager.authenticate(wrong)) is None
+        assert account.hashed_password == ERIN_10_4_HASH
+        assert helper.on_the_loop == [False]
+
+    def test_an_unknown_address_costs_an_argon2_hash(self):
+        """As long as a check would have taken, so the time says nothing."""
+        helper = RealHelper()
+        manager = self.manager(UserManager, accounts(), helper)
+        guess = SimpleNamespace(username='nobody@example.com', password='a guess')
+
+        assert asyncio.run(manager.authenticate(guess)) is None
+        assert helper.calls == ['hash']
+        assert helper.on_the_loop == [False]
 
 
 @pytest.fixture
@@ -603,6 +647,21 @@ class TestTheApiAnswersWhile:
         )
         assert res.status_code == 200, res.text
         assert [call[0] for call in held.helper.calls] == ['verify_and_update', 'hash']
+        assert held.db.held[ALICE_ID].hashed_password == 'hashed(a new password)'
+
+    def test_a_password_is_changed(self, held):
+        alice = SimpleNamespace(id=ALICE_ID)
+        token = asyncio.run(users.get_jwt_strategy().write_token(alice))
+        res = answers_meanwhile(
+            held,
+            lambda api: api.patch(
+                '/users/me',
+                json={'password': 'a new password'},
+                headers={'Authorization': f'Bearer {token}'},
+            ),
+        )
+        assert res.status_code == 200, res.text
+        assert held.helper.calls == [('hash', 'a new password')]
         assert held.db.held[ALICE_ID].hashed_password == 'hashed(a new password)'
 
     def test_an_inactive_account_is_refused_like_a_wrong_password(self, held):

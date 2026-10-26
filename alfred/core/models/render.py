@@ -11,50 +11,50 @@ from .captions import Caption, CaptionStyle
 
 class Render(Document):
     edl: Edl
-    name: Optional[str]
-    project: Optional[str]
-    project_id: Optional[PydanticObjectId]
-    description: Optional[str]
-    duration: Optional[float]
+    name: Optional[str] = None
+    project: Optional[str] = None
+    project_id: Optional[PydanticObjectId] = None
+    description: Optional[str] = None
+    duration: Optional[float] = None
     width: Optional[int] = 1920
     height: Optional[int] = 1080
     fps: Optional[float] = 30.0
     # One of the encoding presets in `utils.encoding`: draft, standard, high.
-    quality: Optional[str]
+    quality: Optional[str] = None
     # Never accepted from a client and never used to encode (contract C5):
     # POST /render answers 422 if either is set, and the encoder settings come
     # from `quality`. Kept, with their old types, so that renders stored when
     # clients did send them still load.
-    bitrate: Optional[List]
-    ffmpeg_params: Optional[List[str]]
-    progress: Optional[float]
+    bitrate: Optional[List] = None
+    ffmpeg_params: Optional[List[str]] = None
+    progress: Optional[float] = None
     # Written by DbLogger throughout the encode and never modelled here, so the
     # API dropped it on the way out: a caller could see progress reach 100 and
     # still have no way to tell a finished render from a failed one. That is
     # the field anything waiting on a render needs.
-    status: Optional[str]
+    status: Optional[str] = None
     # Why a failed render failed, in a line, for whoever is waiting on it.
     # Before this the reason went to the worker's log and nowhere else, so a
     # failed render said only that it had failed.
-    error: Optional[str]
-    link: Optional[str]
-    username: Optional[str]
+    error: Optional[str] = None
+    link: Optional[str] = None
+    username: Optional[str] = None
     # The output file's name, `<id>.mp4` -- derived from the id alone, so
     # nothing a client sends can reach the filesystem path.
-    filename: Optional[str]
+    filename: Optional[str] = None
     # What a download is called: readable, and sanitised to a safe file name.
-    display_name: Optional[str]
+    display_name: Optional[str] = None
     # Where this render was sent, once it has been. `link` records the
     # resulting URL or path; this records which transport produced it, so a
     # link can be interpreted without guessing from its shape.
-    destination: Optional[str]
+    destination: Optional[str] = None
     # Captions to draw over the timeline, in its seconds, and how (contract
     # K2). Kept beside `edl` rather than written into it: the timeline stays
     # what was sent, and the caption clips are made each time the render is
     # queued -- so a rerender draws them too, at the render's own size. None,
     # or a style with `enabled: false`, draws none.
-    captions: Optional[List[Caption]]
-    caption_style: Optional[CaptionStyle]
+    captions: Optional[List[Caption]] = None
+    caption_style: Optional[CaptionStyle] = None
 
     # class Config:
     #     title = 'Alfred Render'
@@ -62,18 +62,18 @@ class Render(Document):
 
 
 class RenderUpdate(Render):
-    edl: Optional[Edl]
-    name: Optional[str]
-    project: Optional[str]
-    project_id: Optional[PydanticObjectId]
-    description: Optional[str]
-    duration: Optional[float]
-    resolution: Optional[str]
-    progress: Optional[float]
-    status: Optional[str]
-    link: Optional[str]
-    filename: Optional[str]
-    destination: Optional[str]
+    edl: Optional[Edl] = None
+    name: Optional[str] = None
+    project: Optional[str] = None
+    project_id: Optional[PydanticObjectId] = None
+    description: Optional[str] = None
+    duration: Optional[float] = None
+    resolution: Optional[str] = None
+    progress: Optional[float] = None
+    status: Optional[str] = None
+    link: Optional[str] = None
+    filename: Optional[str] = None
+    destination: Optional[str] = None
 
 
 RenderState = Literal['queued', 'rendering', 'rendered', 'failed']
@@ -104,16 +104,16 @@ class RenderStatus(BaseModel):
 
     id: str
     state: RenderState
-    status: Optional[str]
-    progress: Optional[float]
-    filename: Optional[str]
-    destination: Optional[str]
-    error: Optional[str]
+    status: Optional[str] = None
+    progress: Optional[float] = None
+    filename: Optional[str] = None
+    destination: Optional[str] = None
+    error: Optional[str] = None
     # A signed URL for the finished file, which a browser or any HTTP client
     # can fetch without a session until it expires; null until the render has
     # finished and its file is there. Decided by the route, which knows where
     # files are and holds the signing key.
-    download_url: Optional[str]
+    download_url: Optional[str] = None
 
     @classmethod
     def of(cls, render, download_url=None) -> 'RenderStatus':

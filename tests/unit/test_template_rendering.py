@@ -67,7 +67,7 @@ class TestTheContractWithoutRendering:
 
         carried = TemplateData(
             text='x', address='1 Main', website='a.test', phone='555'
-        ).dict(exclude_none=True)
+        ).model_dump(exclude_none=True)
         for parameter in ('address', 'website', 'phone'):
             assert parameter not in carried, (
                 f'TemplateData now carries {parameter}, so `final` may be '

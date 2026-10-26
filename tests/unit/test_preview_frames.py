@@ -285,7 +285,7 @@ class TestTheTemplatePreviewShowsTheTemplateMidClip:
         client.get('/preview/template/makeColor?color=%23f2aa4c&fadeIn=0.5')
         (clip,) = built[0].clips
         assert clip.data.color == '#f2aa4c'
-        assert 'fadeIn' not in clip.data.dict(exclude_none=True)
+        assert 'fadeIn' not in clip.data.model_dump(exclude_none=True)
 
 
 class TestTheTemplatePreviewIsBuiltAtTheClipsLength:
@@ -312,7 +312,7 @@ class TestTheTemplatePreviewIsBuiltAtTheClipsLength:
     def test_the_length_is_not_passed_to_the_template_as_data(self, client, built):
         client.get('/preview/template/makeColor?color=%23f2aa4c&length=6')
         (clip,) = built[0].clips
-        assert 'length' not in clip.data.dict(exclude_none=True)
+        assert 'length' not in clip.data.model_dump(exclude_none=True)
 
 
 class TestFramesExpire:

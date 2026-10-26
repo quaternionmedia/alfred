@@ -9,8 +9,7 @@ jobs:
   # resolution, and the two engines vendored at alfred/otto (the picture) and
   # alfred/vox (the sound) rather than releases from an index. All with
   # --no-deps, as the Dockerfile and tests/noxfile.py install them: the lock
-  # overrides a pin of fastapi-users' that pip cannot, so a resolving install
-  # refuses it (the Dockerfile says more). The org workflow's defaults are a
+  # carries overrides pip does not read (the Dockerfile says more). The org workflow's defaults are a
   # floating 3.x -- 3.14, where reportlab<4 has no wheel and nothing installs
   # -- with no submodules and no lockfile.
   #
