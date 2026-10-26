@@ -129,6 +129,7 @@ arguments prints the full command list.
 | `./al stop` | Stop the dev stack |
 | `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
 | `./al pytest` | Run the API test suite in Docker |
+| `./al loop` | The suites side by side as one named run; several runs at once ([docs/loop.md](docs/loop.md)) |
 | `./al nox -s lint` | Ruff |
 | `./al nox -s blacken` | Black (`-S`, single quotes) |
 | `./al docs` | Serve mkdocs locally on :4000 |

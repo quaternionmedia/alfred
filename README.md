@@ -63,6 +63,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
 | `./al pytest` | API test suite, in Docker |
 | `./al test` | End-to-end suite (Playwright), in Docker |
+| `./al loop` | Every suite at once, as one named run; `--stack --keep` leaves the app up to try ([docs/loop.md](docs/loop.md)) |
 | `./al nox -s lint` | Ruff |
 | `./al nox -s blacken` | Black (`-S`) |
 | `./al docs` | Serve the docs locally on :4000 |

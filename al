@@ -34,6 +34,7 @@ restore                 load an archive written by dump: ./al restore FILE
 demo | download | samples  download demo media into videos/ (needs the network)
 t | test | e2e          the browser suite, in Docker (test_e2e.yml)
 pt | pytest | py        the API suite, in Docker (pytest.yml)
+loop                    suites side by side, one named run of several: ./al loop NAME --stack --keep
 n | nox                 a nox session in the test container: ./al nox -s lint
 cookbook                regenerate docs/cookbook.md from the browser specs
 family                  alfred with otto, vox, joe, qmcp and the rest: status, test, up, smoke, down, loop
@@ -118,6 +119,20 @@ projectName() {
     basename "$(cd "$(dirname "$0")" && pwd)" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-'
   fi
 }
+
+# What this checkout's images are called: <checkout>_api, _site, _worker,
+# _test. Every checkout once built the same alfred_* tags, so two worktrees
+# testing at once could each run the other's dependencies under their own
+# code. The compose files read it, and default to alfred_ without it.
+imagePrefix() {
+  if [ -n "${ALFRED_IMAGES:-}" ]; then
+    printf '%s\n' "$ALFRED_IMAGES"
+  else
+    basename "$(cd "$(dirname "$0")" && pwd)" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-'
+  fi
+}
+ALFRED_IMAGES=$(imagePrefix)
+export ALFRED_IMAGES
 
 # A Python 3.8 or newer on this machine, for the scripts that run on the host
 # and need nothing but its standard library. Each name is asked to run rather
@@ -548,7 +563,21 @@ elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   # database is a service named `db`, as the dev stack's is, so under the
   # checkout's own project a run recreated a running dev stack's database
   # container with the test's -- and the api went on talking to it.
-  docker compose -p "$(projectName)-pytest" -f pytest.yml up --exit-code-from pytest "$@"
+  # --build, as `./al test` does: the image holds the dependencies, so a run
+  # tests this checkout's lockfiles rather than whatever image is there.
+  docker compose -p "$(projectName)-pytest" -f pytest.yml up --build --exit-code-from pytest "$@"
+
+elif [ $1 = "loop" ]; then
+  shift
+  # One run of whichever suites its flags name, side by side, under a name of
+  # its own; several can run at once (scripts/loop.py, docs/loop.md):
+  #   ./al loop                        quick, pytest, e2e and docs at once
+  #   ./al loop --stack --keep         ... and joe with the dev stack, left up
+  #   ./al loop slow --only e2e --grep @slow
+  #   ./al loop b --stack --port 8100  a second stack beside the first
+  #   ./al loop NAME --down            take a run's stack down
+  py=$(hostPython) || exit 1
+  "$py" "$(dirname "$0")/scripts/loop.py" "$@"
 
 elif [ $1 = "n" -o $1 = "nox" ]; then
   shift

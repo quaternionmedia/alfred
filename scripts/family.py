@@ -43,9 +43,21 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-STATE = ROOT / '.family'
+# Where `up` records the joe it started, and the logs. ALFRED_FAMILY_STATE
+# gives a run of `./al loop` its own, so taking one stack down never stops the
+# joe another started.
+STATE = Path(os.environ.get('ALFRED_FAMILY_STATE') or ROOT / '.family')
 LOGS = STATE / 'logs'
 JOE_PID = STATE / 'joe.json'
+
+
+def shown(path):
+    """`path` as a message names it: from the checkout, when it is inside."""
+    try:
+        return Path(path).resolve().relative_to(ROOT).as_posix()
+    except ValueError:
+        return str(path)
+
 
 # 127.0.0.1, not localhost: the stacks publish on IPv4 loopback, and on Windows
 # a client that tries ::1 first waits about two seconds for each refusal.
@@ -429,7 +441,7 @@ def test(args):
             results.append((name, 'ok'))
         else:
             say(
-                f'XX {name:<17} {failed.label} failed after {seconds:.0f}s; .family/logs/{name}.log ends:'
+                f'XX {name:<17} {failed.label} failed after {seconds:.0f}s; {shown(LOGS / f"{name}.log")} ends:'
             )
             for line in tail(LOGS / f'{name}.log'):
                 say(f'     {line}')
@@ -579,11 +591,13 @@ def up(args):
             say(
                 f'! joe at {joe} has no media API: captions and audio analysis will refuse'
             )
-        say(f'joe: starting from {joe} on {host}:{port} (log: .family/logs/joe.log)')
+        say(
+            f'joe: starting from {joe} on {host}:{port} (log: {shown(LOGS / "joe.log")})'
+        )
         process = start_joe(joe, host, port)
         answered = wait_for(lambda: process.poll() is not None or title_at(probe), 120)
         if process.poll() is not None or not answered:
-            say('./al family up: joe did not come up; .family/logs/joe.log ends:')
+            say(f'./al family up: joe did not come up; {shown(LOGS / "joe.log")} ends:')
             for line in tail(LOGS / 'joe.log'):
                 say(f'     {line}')
             return 1

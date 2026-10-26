@@ -55,6 +55,11 @@ test the vendored engines the image runs, which
 `tests/unit/test_stack_config.py` checks. `pdm install -G render` adds the
 engine's render extra (gizeh), which its text templates draw with.
 
+Before a pull request, `./al loop` runs the host's quick tests, the API suite,
+the browser suite and the strict docs build at the same time, each under the
+run's own name, so a second run (`./al loop slow --only e2e --grep @slow`) can
+go beside it ([docs/loop.md](docs/loop.md)).
+
 A change that crosses repositories (alfred and otto, vox, joe or qmcp) has a
 loop of its own: `./al family loop` runs each repository's quick suite, brings
 the dev stack up with joe as its audio engine, checks the whole path live, and

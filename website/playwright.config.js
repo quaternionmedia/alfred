@@ -3,6 +3,12 @@ const { defineConfig, devices } = require('@playwright/test')
 
 const baseURL = process.env.E2E_BASE_URL || 'http://localhost:8000'
 
+// A directory of this run's own for its results and report, when several run
+// at once from one checkout (./al loop sets it). Relative to website/.
+const output = process.env.E2E_OUTPUT
+const outputDir = output ? `${output}/test-results` : 'test-results'
+const html = ['html', { open: 'never', outputFolder: output ? `${output}/playwright-report` : 'playwright-report' }]
+
 module.exports = defineConfig({
   testDir: './e2e',
   globalSetup: require.resolve('./e2e/global-setup'),
@@ -28,9 +34,8 @@ module.exports = defineConfig({
   // have this problem; the cap costs it little.
   workers: process.env.CI ? 2 : 4,
 
-  reporter: process.env.CI
-    ? [['list'], ['html', { open: 'never' }], ['github']]
-    : [['list'], ['html', { open: 'never' }]],
+  outputDir,
+  reporter: process.env.CI ? [['list'], html, ['github']] : [['list'], html],
 
   timeout: 30_000,
   expect: { timeout: 10_000 },

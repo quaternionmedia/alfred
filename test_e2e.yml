@@ -72,6 +72,13 @@ services:
       E2E_BASE_URL: http://api
       # The stub audio engine, for specs that check what it was sent.
       E2E_AUDIO_ENGINE_URL: http://audio
+      # What one run of several asks for (./al loop): which projects, more
+      # Playwright arguments (--grep and the like), and a directory under
+      # website/ for its report and results, so runs side by side from one
+      # checkout keep their own.
+      E2E_PROJECTS: ${E2E_PROJECTS:---project=chromium --project=phone}
+      E2E_ARGS: ${E2E_ARGS:-}
+      E2E_OUTPUT: ${E2E_OUTPUT:-}
       CI: 'true'
       # Where the runner's dependencies are installed; see the command.
       NODE_PATH: /tmp/deps/node_modules
@@ -96,7 +103,7 @@ services:
     command: >-
       sh -c "mkdir -p /tmp/deps && cp package.json yarn.lock /tmp/deps/ &&
       npm install --prefix /tmp/deps --no-audit --no-fund &&
-      /tmp/deps/node_modules/.bin/playwright test --project=chromium --project=phone"
+      /tmp/deps/node_modules/.bin/playwright test $$E2E_PROJECTS $$E2E_ARGS"
 
   # The SPA the api serves, built from the committed lockfile.
   #
@@ -111,7 +118,7 @@ services:
   # bundle left over from an earlier run cannot satisfy it early.
   site:
     build: ./website/
-    image: alfred_site
+    image: ${ALFRED_IMAGES:-alfred}_site
     init: true
     command: sh -c "yarn build && touch /tmp/built && exec tail -f /dev/null"
     volumes:
@@ -130,7 +137,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    image: alfred_api
+    image: ${ALFRED_IMAGES:-alfred}_api
     # The image's default command runs uvicorn with --reload. Combined with
     # mounting the repo at /app, the reloader restarts the server whenever the
     # test run writes playwright-report/ or test-results/ under website/,
@@ -189,7 +196,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    image: alfred_worker
+    image: ${ALFRED_IMAGES:-alfred}_worker
     entrypoint: celery -A alfred.core.utils.tasks:renderer -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
     depends_on:
       - db
@@ -213,7 +220,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    image: alfred_audio_stub
+    image: ${ALFRED_IMAGES:-alfred}_audio_stub
     command:
       [
         'python',

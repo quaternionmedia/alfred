@@ -6,7 +6,7 @@ services:
     build:
       context: .
       target: test
-    image: alfred_test
+    image: ${ALFRED_IMAGES:-alfred}_test
     command: -f tests/noxfile.py
     volumes:
       - .:/app

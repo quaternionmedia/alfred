@@ -17,6 +17,9 @@ media/
 /website/test-results/
 /website/blob-report/
 /website/.playwright/
+# ./al loop: each run's logs and docs build, and its browser results
+/.loop/
+/website/.loop/
 /website/.parcel-cache
 __*__
 /videos

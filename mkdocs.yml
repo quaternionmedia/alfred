@@ -14,6 +14,7 @@ nav:
   - Configuration: configuration.md
   - Develop:
       - dev-server.md
+      - Test loop: loop.md
       - Family dev loop: family.md
       - dev-auth.md
       - ownership.md

@@ -2,11 +2,16 @@ networks:
   alfred_isolated:
   alfred_outgoing:
     driver: bridge
+# Images are named after the checkout that builds them (ALFRED_IMAGES, which
+# ./al sets from the checkout's directory; alfred_ when nothing sets it). Every
+# checkout once built the same alfred_api, alfred_site, alfred_worker and
+# alfred_test, so two worktrees testing at once could each run the other's
+# dependencies under their own code, which the stacks bind-mount.
 services:
   # TODO Development Reloader description
   website:
     build: ./website/
-    image: alfred_site
+    image: ${ALFRED_IMAGES:-alfred}_site
     volumes:
       - ./website/:/app/
       # Keep the container's node_modules its own. The line above mounts the
@@ -25,7 +30,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    image: alfred_api
+    image: ${ALFRED_IMAGES:-alfred}_api
     depends_on:
       - website
       - db
@@ -50,6 +55,8 @@ services:
   db:
     image: mongo:bionic
     volumes:
-      - ./database:/data/db
+      # ALFRED_DB_DIR gives a second stack from this checkout a database of
+      # its own (./al loop NAME --stack): two mongods on one directory refuse.
+      - ${ALFRED_DB_DIR:-./database}:/data/db
     networks:
       - alfred_isolated
