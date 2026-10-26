@@ -11,7 +11,7 @@
  * send while it moves, so on a phone trimming did nothing at all.
  */
 
-const { test, expect, MEDIA_PROJECT } = require('./fixtures')
+const { test, expect, MEDIA_PROJECT, templateQuery } = require('./fixtures')
 
 async function mediaProject(request, token) {
   const projects = await (
@@ -312,7 +312,7 @@ test.describe('cut', () => {
     const frames = []
     authedPage.on('request', req => {
       const url = new URL(req.url())
-      if (url.pathname === '/preview/template/title') frames.push(url.searchParams)
+      if (url.pathname === '/preview/template/title') frames.push(templateQuery(url))
     })
     await authedPage.goto('/#!/?stage=edit')
     await authedPage.locator('#bin .binclip[data-bin-name="title"] .binadd').click()
@@ -833,8 +833,7 @@ test.describe('zoom', () => {
      * and on a phone it leaves the bar's box, and this fails.
      */
     await authedPage.goto('/')
-    // Each icon is its name in words until the icon font arrives -- `zoom_out`,
-    // wide enough to wrap the row -- so the boxes are read after it.
+    // Icons are words until the font loads; measure after.
     await authedPage.evaluate(() => document.fonts.ready)
     const bar = authedPage.locator('.zoombar')
     const box = await bar.boundingBox()
@@ -846,7 +845,8 @@ test.describe('zoom', () => {
         box.x + box.width + 1
       )
     }
-    expect(Math.abs(out.y - into.y), 'the buttons share a row').toBeLessThanOrEqual(1)
+    // A wrapped row sits a button lower; settling layout moves a pixel or two.
+    expect(Math.abs(out.y - into.y), 'the buttons share a row').toBeLessThan(out.height / 2)
 
     const scale = authedPage.locator('#scale')
     if (await scale.isVisible()) {

@@ -100,9 +100,10 @@ The suite could not run as configured either: `cypress.json`,
 
 ## Verification status
 
-`./al test` on `feat/close-gaps`: **402 passed**, across the `chromium`
-(workspace) and `phone` (stage flow) projects, including the `@slow` specs
-that wait on a real encode, with no test passed only on retry. The project
+`./al test` on `feat/edit-by-text-and-loop`: **443 tests, 442 passed and 1 passed only on
+retry** (the zoom row's measure, since loosened to a wrap's size), across the
+`chromium` (workspace) and `phone` (stage flow) projects, including the
+`@slow` specs that wait on a real encode. The project
 filter test makes the projects it filters, so nothing here skips for want of
 data.
 
@@ -179,6 +180,8 @@ in and logout; `views.spec.js`, that a reload keeps the session.
 | Icons drawn by a self-hosted font; nothing loaded from a CDN | `assets.spec.js` | UI |
 | Recipe walkthroughs (GIFs, kept out of git) | `recipes.spec.js` | UI, `@recipe` |
 | The docs' screenshots | `screens.spec.js` | UI, `@screens` |
+| Every docs example (`docs/examples/edl/`) previewed on the demo media, its frame fetched by its signed URL | `examples.spec.js` | API |
+| Each docs example in the editor, and each timeline tool used, as the docs' pictures | `screens-examples.spec.js`, `screens-tools.spec.js` | UI, `@screens` |
 | Page-load budget | `performance.spec.js` | UI, `@perf` |
 
 The project assertions read the expected set from `GET /project` rather than

@@ -110,6 +110,18 @@ test.describe('the phone flow', () => {
     await expect(authedPage.locator('#panels-button')).toHaveCount(0)
   })
 
+  test('a notice lets a tap through to what is under it', async ({ authedPage }) => {
+    // Notices cover the timeline for ten seconds; taps must reach it.
+    const notice = authedPage.locator('.alertify-notifier .ajs-message.ajs-visible').first()
+    await expect(notice, "the login's own notice is up").toBeVisible()
+    const box = await notice.boundingBox()
+    const stopped = await authedPage.evaluate(
+      ([x, y]) => Boolean(document.elementFromPoint(x, y)?.closest('.ajs-message')),
+      [box.x + box.width / 2, box.y + box.height / 2]
+    )
+    expect(stopped, 'a press on a notice stops at the notice').toBe(false)
+  })
+
   test("a stage's panels sit between the rail and the viewer", async ({ authedPage }) => {
     /**
      * Choosing Source puts the project list and the library under the rail,

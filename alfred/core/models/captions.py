@@ -6,7 +6,8 @@ render's output runs in. `CaptionStyle` is how every caption of a project is
 drawn: the fields are the textBox template's own (`utils.captions` maps a
 caption onto one), each optional, with `enabled` to keep the captions without
 burning them in. `CaptionsJob` is the server's record of the last time the
-timeline's sound was sent to the audio engine to be transcribed.
+timeline's sound was sent to the audio engine to be transcribed; `Word` is one
+word it heard, kept for editing by text.
 
 What holds for one caption is checked here, wherever a caption arrives: a
 start at or after zero, an end after it, and text that says something and
@@ -20,7 +21,7 @@ import re
 from datetime import datetime
 from typing import Literal, Optional, Tuple, Union
 
-from pydantic import BaseModel, root_validator, validator
+from pydantic import BaseModel, conint, root_validator, validator
 
 # The longest a caption's text may be. Two full subtitle lines are under a
 # hundred characters; this is generous, and still bounds what a render has to
@@ -47,6 +48,20 @@ def clean_caption_text(text) -> str:
     return '\n'.join(line for line in lines if line)
 
 
+def timeline_seconds(value, field):
+    """`value` as a time on a timeline: finite, not negative, not past
+    MAX_CAPTION_SECONDS, and to the millisecond."""
+    if not math.isfinite(value):
+        raise ValueError(f'{field.name} must be a number of seconds')
+    if value < 0:
+        raise ValueError(f'{field.name} must not be negative')
+    if value > MAX_CAPTION_SECONDS:
+        raise ValueError(f'{field.name} must be at most {MAX_CAPTION_SECONDS} seconds')
+    # Milliseconds are what any subtitle format can say, and what the
+    # editor shows; a float's last digits are noise.
+    return round(value, 3)
+
+
 class Caption(BaseModel):
     """One caption: `text`, shown from `start` until `end`, in timeline seconds."""
 
@@ -56,17 +71,7 @@ class Caption(BaseModel):
 
     @validator('start', 'end')
     def a_time_on_a_timeline(cls, value, field):
-        if not math.isfinite(value):
-            raise ValueError(f'{field.name} must be a number of seconds')
-        if value < 0:
-            raise ValueError(f'{field.name} must not be negative')
-        if value > MAX_CAPTION_SECONDS:
-            raise ValueError(
-                f'{field.name} must be at most {MAX_CAPTION_SECONDS} seconds'
-            )
-        # Milliseconds are what any subtitle format can say, and what the
-        # editor shows; a float's last digits are noise.
-        return round(value, 3)
+        return timeline_seconds(value, field)
 
     @validator('text')
     def something_to_read(cls, value):
@@ -85,6 +90,45 @@ class Caption(BaseModel):
         if values['end'] <= values['start']:
             raise ValueError(
                 f'a caption must end after it starts '
+                f'(start {values["start"]}, end {values["end"]})'
+            )
+        return values
+
+
+# Longest word text kept; punctuation is attached to words.
+MAX_WORD_CHARS = 100
+
+
+class Word(BaseModel):
+    """One transcript word, in timeline seconds; `end` may equal `start`.
+    `segment` numbers its stretch of speech from 0 (a paragraph in the editor)."""
+
+    start: float
+    end: float
+    text: str
+    segment: Optional[conint(ge=0)]
+
+    @validator('start', 'end')
+    def a_time_on_a_timeline(cls, value, field):
+        return timeline_seconds(value, field)
+
+    @validator('text')
+    def one_word(cls, value):
+        # One line; drops whisper's leading space.
+        text = ' '.join(clean_caption_text(value).split())
+        if not text:
+            raise ValueError('a word needs some text')
+        if len(text) > MAX_WORD_CHARS:
+            raise ValueError(
+                f'a word is at most {MAX_WORD_CHARS} characters, not {len(text)}'
+            )
+        return text
+
+    @root_validator(skip_on_failure=True)
+    def does_not_end_before_it_starts(cls, values):
+        if values['end'] < values['start']:
+            raise ValueError(
+                f'a word must not end before it starts '
                 f'(start {values["start"]}, end {values["end"]})'
             )
         return values

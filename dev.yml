@@ -225,7 +225,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    image: alfred_worker
+    image: ${ALFRED_IMAGES:-alfred}_worker
     # No `--workdir`: the image's own WORKDIR, /app, is the right one. The
     # worker was started in /app/alfred only so that a stale `core.utils.tasks`
     # entry in the Celery app's `include` would import -- and from there every

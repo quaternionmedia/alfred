@@ -74,9 +74,12 @@ it.
 | `ALFRED_BIND` | `127.0.0.1` | The address the dev stack's api and site, `./al flower` and `./al docs` listen on. `0.0.0.0` opens them to the network, to try the app from a phone. | `dev.yml`, `flower.yml`, `./al` | Development. Production publishes nothing; traefik serves it. |
 | `ALFRED_DB_BIND` | `127.0.0.1` | The address the dev database listens on. `ALFRED_BIND` does not move it. | `dev.yml` | Development. |
 | `COMPOSE_PROJECT_NAME` | the checkout's directory name, in lower case | The compose project this checkout's stacks run as. `./al test`, `./al pytest` and `./al nox` run theirs beside it, as `<project>-e2e` and `<project>-pytest`; the port guard tells that project's own containers from anyone else's; and `./al recipes` reaches the dev stack's api through it. | compose, `./al`, `./al family` | Development. Two checkouts in directories of the same name need it to keep their stacks apart. |
+| `ALFRED_IMAGES` | the checkout's directory name, in lower case | What this checkout's images are called: `<prefix>_api`, `_site`, `_worker`, `_test` and `_audio_stub`. Two worktrees building at once never swap each other's dependencies under their code. | compose, `./al` | Development. `./al` sets it; compose run by hand without it builds `alfred_*`. |
+| `ALFRED_DB_DIR` | `./database` | The directory the stack's database keeps its files in. | `docker-compose.yml` | Development: [`./al loop`](loop.md) gives each named run's stack one under `.loop/<name>/`, since two databases on one directory refuse to start. |
+| `E2E_PROJECTS`, `E2E_ARGS`, `E2E_OUTPUT` | `--project=chromium --project=phone`; none; `website/` | The browser suite's projects, more Playwright arguments (`--grep @slow`), and a directory under `website/` for its results and report. | `test_e2e.yml`, `website/playwright.config.js` | Development and CI. `./al loop` sets them per run, so runs side by side from one checkout keep their own reports. |
 | `UID`, `GID` | unset: compose warns and substitutes blanks | The user and group the dev database runs as, from `dev.yml`'s `user:`. Most shells export neither; bash sets `UID` without exporting it. | `dev.yml` | Development. Harmless unset on Docker Desktop; export both if the database fails to start on a Linux host. |
 
-The last seven are read on the host, by compose and `./al`, not by alfred.
+The last ten are read on the host, by compose and `./al`, not by alfred.
 
 alfred also reads plumbing, which is not settings:
 

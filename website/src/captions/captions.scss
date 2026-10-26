@@ -226,3 +226,57 @@ $problem: #e57373;
     gap: 0.4rem;
   }
 }
+
+// Transcript panel (panels/Transcript.js), on the captions panel's styles.
+.transcriptpanel {
+  .captionsactions button i {
+    font-size: 1rem;
+    vertical-align: -0.15em;
+  }
+
+  .transcriptempty {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .transcripttext {
+    flex: 1 1 auto;
+    min-height: 3rem;
+    padding: 0.2rem 0.1rem;
+    line-height: 1.7;
+    font-size: 0.95rem;
+    color: $text;
+    // Selectable even where the page is not.
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
+
+    &:focus-visible {
+      outline: 1px solid $accent;
+      outline-offset: 2px;
+    }
+  }
+
+  .transcriptpara {
+    margin: 0 0 0.6rem;
+  }
+
+  .word {
+    border-radius: 2px;
+
+    // The word under the playhead.
+    &.current {
+      box-shadow: inset 0 -2px 0 $accent;
+    }
+
+    // What a cut would take.
+    &.going {
+      color: $problem;
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+      background: rgba(229, 115, 115, 0.14);
+    }
+  }
+}

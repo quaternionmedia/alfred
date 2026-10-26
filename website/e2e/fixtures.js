@@ -136,6 +136,17 @@ module.exports = {
  */
 module.exports.MEDIA_PROJECT = 'Tool test'
 
+/** A template preview's query, with its `data` JSON unpacked into parameters. */
+module.exports.templateQuery = url => {
+  const query = new URLSearchParams(url.searchParams)
+  const data = query.get('data')
+  query.delete('data')
+  for (const [key, value] of Object.entries(data ? JSON.parse(data) : {})) {
+    if (value != null) query.set(key, typeof value === 'object' ? JSON.stringify(value) : String(value))
+  }
+  return query
+}
+
 /** The panels the workspace has, by registry id (src/layout/registry.js). */
 module.exports.PANEL_IDS = [
   'projects',
@@ -146,6 +157,7 @@ module.exports.PANEL_IDS = [
   'render',
   'deliver',
   'captions',
+  'transcript',
 ]
 
 /** Where a viewer's arrangement of the workspace is kept (src/layout/saved_layout.js). */

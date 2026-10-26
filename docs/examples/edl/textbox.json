@@ -1,0 +1,15 @@
+{
+  "edl": {
+    "clips": [
+      {
+        "type": "template",
+        "name": "textBox",
+        "data": {
+          "text": "asdf",
+          "font": "DejaVu-Sans",
+          "color": "#FF00FF"
+        }
+      }
+    ]
+  }
+}

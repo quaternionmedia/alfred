@@ -57,12 +57,13 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | Command | What it does |
 |---|---|
 | `./al init` | Install website dependencies |
-| `./al dev` | Run the dev stack; app on http://localhost:8000 (`ALFRED_PORT` to move it) |
+| `./al dev` | Run the dev stack; app on http://127.0.0.1:8000 (`ALFRED_PORT` to move it) |
 | `./al dev --build` | Rebuild images first |
 | `./al stop` | Stop the dev stack |
 | `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
 | `./al pytest` | API test suite, in Docker |
 | `./al test` | End-to-end suite (Playwright), in Docker |
+| `./al loop` | Every suite at once, as one named run; `--stack --keep` leaves the app up to try ([docs/loop.md](docs/loop.md)) |
 | `./al nox -s lint` | Ruff |
 | `./al nox -s blacken` | Black (`-S`) |
 | `./al docs` | Serve the docs locally on :4000 |
@@ -117,8 +118,9 @@ against a dev stack. The details are in
 
 Built with [mkdocs](https://www.mkdocs.org/) and Material for MkDocs, which
 `./al docs` runs on this machine. pyproject.toml's `docs` group names both,
-in the ranges CI builds with, and pdm.lock pins them; `./al prod` builds with
-the same Material release, in its image.
+in the ranges CI builds with, and pdm.docs.lock pins them, apart from the
+application's pdm.lock ([docs/dependencies.md](docs/dependencies.md) says why);
+`./al prod` builds with the same Material release, in its image.
 
 ```sh
 pip install 'mkdocs>=1.6,<2' 'mkdocs-material>=9.7,<10'

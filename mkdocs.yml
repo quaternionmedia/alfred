@@ -9,14 +9,18 @@ edit_uri: ''
 nav:
   - Home: index.md
   - Get started: start.md
+  - Commands: commands.md
   - Cookbook: cookbook.md
   - Captions: captions.md
+  - Editing tools: tools.md
   - Configuration: configuration.md
   - Develop:
       - dev-server.md
+      - Test loop: loop.md
       - Family dev loop: family.md
       - dev-auth.md
       - ownership.md
+      - dependencies.md
   - Concepts:
       - about/index.md
       - about/concepts.md

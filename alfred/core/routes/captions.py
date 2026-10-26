@@ -1,5 +1,6 @@
 """Captions on a project (contract K2): read them, write them, import them
-from a subtitle file, and have the timeline's sound transcribed into them.
+from a subtitle file, and have the timeline's sound transcribed into them;
+and the words a transcription heard, which the editor cuts the timeline by.
 
 Every route is scoped to the caller the way every project route is
 (`utils.ownership`): a project that is not yours answers 404, exactly as one
@@ -14,17 +15,18 @@ from typing import List, Literal, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends
 from otto.models import Edl
-from pydantic import BaseModel, ValidationError, constr
+from pydantic import BaseModel, ValidationError, conlist, constr
 from starlette.concurrency import run_in_threadpool
 
 from alfred import config
 
 from ..errors import Code, Refusal
-from ..models.captions import RUNNING, Caption, CaptionsJob, CaptionStyle
+from ..models.captions import RUNNING, Caption, CaptionsJob, CaptionStyle, Word
 from ..models.project import Project
 from ..utils import audio_engine
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
 from ..utils.captions import (
+    MAX_WORDS,
     CaptionFormatError,
     TooManyCaptions,
     checked_captions,
@@ -49,6 +51,9 @@ MAX_IMPORT_CHARS = 2_000_000
 
 # The fields these routes read.
 PROJECTION = {'edl': 1, 'captions': 1, 'caption_style': 1, 'captions_job': 1}
+# Words are read only by their own route: they are long, and the captions
+# route is polled during a transcription.
+WORDS = {'words': 1}
 
 
 def stale_after() -> timedelta:
@@ -70,10 +75,12 @@ class CaptionsView(BaseModel):
 
 
 class CaptionsUpdate(BaseModel):
-    """`PUT /project/{id}/captions`: the captions, and -- if sent -- the style."""
+    """`PUT /project/{id}/captions`: the captions, and -- if sent -- the style
+    and the words."""
 
     captions: List[Caption]
     style: Optional[CaptionStyle]
+    words: Optional[conlist(Word, max_items=MAX_WORDS)]
 
     class Config:
         extra = 'forbid'
@@ -96,6 +103,12 @@ class Transcribing(BaseModel):
     job: CaptionsJob
 
 
+class WordsView(BaseModel):
+    """`GET /project/{id}/captions/words`."""
+
+    words: List[Word]
+
+
 class CaptionsStore:
     """The project collection, as these routes use it."""
 
@@ -104,6 +117,10 @@ class CaptionsStore:
 
     async def find(self, query: dict) -> Optional[dict]:
         return await self._projects().find_one(query, PROJECTION)
+
+    async def find_words(self, query: dict) -> Optional[dict]:
+        """The project's words only."""
+        return await self._projects().find_one(query, WORDS)
 
     async def set(self, project_id, fields: dict) -> None:
         await self._projects().update_one({'_id': project_id}, {'$set': fields})
@@ -134,12 +151,13 @@ def get_captions_queue():
     return transcribeCaptions.delay
 
 
-async def owned(store: CaptionsStore, item_id: str, user) -> dict:
-    """The project `item_id` if `user` may reach it: 422 for a malformed id,
-    404 for one that is not theirs or not there."""
+async def owned(store: CaptionsStore, item_id: str, user, words=False) -> dict:
+    """The project `item_id` if `user` may reach it (its words only, if
+    `words`): 422 for a malformed id, 404 for one not theirs or not there."""
     if not ObjectId.is_valid(item_id):
         raise fresh(INVALID_ID)
-    project = await store.find({'_id': ObjectId(item_id), **owner_filter(user, OWNER)})
+    query = {'_id': ObjectId(item_id), **owner_filter(user, OWNER)}
+    project = await (store.find_words(query) if words else store.find(query))
     if project is None:
         raise fresh(NOT_FOUND)
     return project
@@ -168,6 +186,17 @@ def view_of(project: dict) -> CaptionsView:
             {**job, 'updated_at': _as_utc(job.get('updated_at'))}
         )
     return CaptionsView(captions=captions, style=style, job=job or None)
+
+
+def words_of(project: dict) -> WordsView:
+    """A stored project's words, as `GET /project/{id}/captions/words` answers."""
+    words = []
+    for stored in project.get('words') or []:
+        try:
+            words.append(Word.parse_obj(stored))
+        except ValidationError as exc:
+            print('skipping a stored word that does not validate:', exc)
+    return WordsView(words=words)
 
 
 captionsAPI = APIRouter()
@@ -199,10 +228,13 @@ async def saveProjectCaptions(
 ):
     """# Save a project's captions
 
-    Replaces the captions with `captions`, and the style with `style` when
-    one is sent; nothing else on the project is written. Each caption starts
-    at or after 0, ends after it starts and has text, at most 500 characters
-    of it; they are stored in order of when they start, at most 1000.
+    Replaces the captions with `captions`, the style with `style` when one
+    is sent, and the words with `words` when they are sent; nothing else on
+    the project is written. Each caption starts at or after 0, ends after it
+    starts and has text, at most 500 characters of it; they are stored in
+    order of when they start, at most 1000. Each word is `{start, end, text,
+    segment}`, ending no earlier than it starts, its text one word of at most
+    100 characters; they are stored in the order sent, at most 50,000.
 
     The style's `enabled` is always stored: as sent, else as it was, else
     false -- a project's captions are not drawn into its renders until
@@ -217,8 +249,25 @@ async def saveProjectCaptions(
     style = style_to_store(update.style, project.get('caption_style'))
     if style is not None:
         fields['caption_style'] = style
+    if update.words is not None:
+        fields['words'] = [word.dict() for word in update.words]
     await store.set(project['_id'], fields)
     return view_of({**project, **fields})
+
+
+@captionsAPI.get('/project/{item_id}/captions/words', response_model=WordsView)
+async def getProjectWords(
+    item_id: str,
+    user: User = Depends(current_active_user),
+    store: CaptionsStore = Depends(get_captions_store),
+):
+    """# The words of a project's transcript
+
+    `words`, each `{start, end, text, segment}` in timeline seconds: from the
+    last transcription, or as last saved with `PUT /project/{id}/captions`.
+    `segment` numbers stretches of speech from 0. Empty until a transcription.
+    """
+    return words_of(await owned(store, item_id, user, words=True))
 
 
 @captionsAPI.post('/project/{item_id}/captions/import', response_model=ImportedCaptions)

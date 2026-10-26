@@ -34,12 +34,13 @@ restore                 load an archive written by dump: ./al restore FILE
 demo | download | samples  download demo media into videos/ (needs the network)
 t | test | e2e          the browser suite, in Docker (test_e2e.yml)
 pt | pytest | py        the API suite, in Docker (pytest.yml)
+loop                    suites side by side, one named run of several: ./al loop NAME --stack --keep
 n | nox                 a nox session in the test container: ./al nox -s lint
 cookbook                regenerate docs/cookbook.md from the browser specs
 family                  alfred with otto, vox, joe, qmcp and the rest: status, test, up, smoke, down, loop
 recipes                 record the recipes as GIFs, take the docs' screenshots (needs a dev stack)
-docs | doc              serve the docs on http://localhost:4000
-flower                  Celery monitoring on http://localhost:5555
+docs | doc              serve the docs on http://127.0.0.1:4000
+flower                  Celery monitoring on http://127.0.0.1:5555
 i | install             add a frontend dependency: ./al install PACKAGE
 w | worker              a render worker on this machine: ./al worker DB_HOST
 p | prod | production   the production stack (export ALFRED_SECRET_KEY first)
@@ -118,6 +119,17 @@ projectName() {
     basename "$(cd "$(dirname "$0")" && pwd)" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-'
   fi
 }
+
+# Image prefix, per checkout, so worktrees never share images.
+imagePrefix() {
+  if [ -n "${ALFRED_IMAGES:-}" ]; then
+    printf '%s\n' "$ALFRED_IMAGES"
+  else
+    basename "$(cd "$(dirname "$0")" && pwd)" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9_-'
+  fi
+}
+ALFRED_IMAGES=$(imagePrefix)
+export ALFRED_IMAGES
 
 # A Python 3.8 or newer on this machine, for the scripts that run on the host
 # and need nothing but its standard library. Each name is asked to run rather
@@ -273,7 +285,7 @@ elif [ $1 = "d" ] || [ $1 = "dev" ]; then
   ensureDevKey
   refuseTakenPorts dev
   warnIfExposed
-  echo "Alfred! running dev $1  (http://localhost:$ALFRED_PORT)"
+  echo "Alfred! running dev $1  (http://127.0.0.1:$ALFRED_PORT)"
   ALFRED_PORT="$ALFRED_PORT" docker compose -f docker-compose.yml -f dev.yml up "$@"
 
 # Starts in production.
@@ -288,7 +300,7 @@ elif [ $1 = "p" -o $1 = "production" -o $1 = "prod" ]; then
     exit 1
   fi
   echo "Alfred! running production $1"
-  # The docs, with the Material release pdm.lock holds for `./al docs`
+  # The docs, with the Material release pdm.docs.lock holds for `./al docs`
   # (pyproject.toml's docs group). Unpinned, it built production's docs with
   # whatever `latest` meant on the day: 9.8.0 was a day old as this was pinned.
   docker compose down && \
@@ -388,7 +400,7 @@ elif [ $1 = "thin" ]; then
   # The same three ports as `./al dev`, so the same guard.
   refuseTakenPorts thin
   warnIfExposed
-  echo "Alfred! thin dev stack, no renderer  (http://localhost:$ALFRED_PORT)"
+  echo "Alfred! thin dev stack, no renderer  (http://127.0.0.1:$ALFRED_PORT)"
   ALFRED_PORT="$ALFRED_PORT" docker compose     -f docker-compose.yml -f dev.yml -f thin.yml up "$@"
 
 # Stops the dev stack
@@ -548,7 +560,14 @@ elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   # database is a service named `db`, as the dev stack's is, so under the
   # checkout's own project a run recreated a running dev stack's database
   # container with the test's -- and the api went on talking to it.
-  docker compose -p "$(projectName)-pytest" -f pytest.yml up --exit-code-from pytest "$@"
+  # --build: the image holds the dependencies.
+  docker compose -p "$(projectName)-pytest" -f pytest.yml up --build --exit-code-from pytest "$@"
+
+elif [ $1 = "loop" ]; then
+  shift
+  # Suites side by side, as named runs. See docs/loop.md.
+  py=$(hostPython) || exit 1
+  "$py" "$(dirname "$0")/scripts/loop.py" "$@"
 
 elif [ $1 = "n" -o $1 = "nox" ]; then
   shift

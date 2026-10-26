@@ -5,33 +5,10 @@ The following generates a text clip which flies in from the right along a 2nd or
 : a: `(0,0)`
 : c2: `(0,1)`
 ``` json title="Animation" hl_lines="9-21"
-{
-  "edl": {
-    "clips": [
-      { 
-        "type" : "template",
-        "name" : "textBox",
-        "data": {
-          "text": "asdf",
-          "fxs": [
-            {
-              "name": "bezier2",
-              "data": {
-                "c1x": 1,
-                "c1y": 0,
-                "ax": 0,
-                "ay": 0,
-                "c2x": 0,
-                "c2y": 1
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
-}
+--8<-- "docs/examples/edl/animation.json"
 ```
+
+![The animation example in the editor: one text box clip, part way through its flight in from the right](../assets/screens/examples/animation.png)
 
 A curve moves the clip across the frame: only its x coordinates count, unless the curve's `data` also says `"axes": "xy"` or `"y"`. So this clip starts a frame's width to the right and comes to rest after a second where it would otherwise have been. It also fades in over that second, as every clip does unless it says `"fadeIn": 0`.
 

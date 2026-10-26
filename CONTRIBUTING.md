@@ -27,7 +27,7 @@ is the contributor of record.
 git clone --recurse-submodules https://github.com/quaternionmedia/alfred.git
 cd alfred
 ./al init          # builds the website image, which carries its dependencies
-./al dev           # the stack, on http://localhost:8000
+./al dev           # the stack, on http://127.0.0.1:8000
 ```
 
 [README.md](README.md) covers the Windows symlink step, and a first run with
@@ -54,6 +54,11 @@ and `pip install -e alfred/vox --no-deps` in that environment make the suite
 test the vendored engines the image runs, which
 `tests/unit/test_stack_config.py` checks. `pdm install -G render` adds the
 engine's render extra (gizeh), which its text templates draw with.
+
+Before a pull request, `./al loop` runs the host's quick tests, the API suite,
+the browser suite and the strict docs build at the same time, each under the
+run's own name, so a second run (`./al loop slow --only e2e --grep @slow`) can
+go beside it ([docs/loop.md](docs/loop.md)).
 
 A change that crosses repositories (alfred and otto, vox, joe or qmcp) has a
 loop of its own: `./al family loop` runs each repository's quick suite, brings

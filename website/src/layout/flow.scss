@@ -78,6 +78,31 @@ body > .stagerail {
   max-height: 45vh;
 }
 
+// The switch between the Edit stage's panels.
+.flowswitch {
+  display: flex;
+  flex: none;
+  gap: 0.3rem;
+  padding: 0.3rem 0.75rem 0;
+
+  .flowswitchitem {
+    min-height: 1.9rem;
+    padding: 0 0.8rem;
+    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    background: #222;
+    color: #d8d8d8;
+    font: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+
+    &.active {
+      border-color: #f2aa4c;
+      color: #f2aa4c;
+    }
+  }
+}
+
 .flowstage > .flowpanel {
   display: flex;
   flex-direction: column;
@@ -155,4 +180,9 @@ body:has(> .flowstage) > footer {
 // is drawn, so the workspace stays a fixed frame.
 body:has(> .flowstage) {
   overflow-y: auto;
+}
+
+// Notices sit over the timeline: let taps through. None is interactive.
+body:has(> .flowstage) > .alertify-notifier .ajs-message {
+  pointer-events: none;
 }

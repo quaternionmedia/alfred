@@ -2,11 +2,12 @@ networks:
   alfred_isolated:
   alfred_outgoing:
     driver: bridge
+# ALFRED_IMAGES: image prefix per checkout (./al sets it).
 services:
   # TODO Development Reloader description
   website:
     build: ./website/
-    image: alfred_site
+    image: ${ALFRED_IMAGES:-alfred}_site
     volumes:
       - ./website/:/app/
       # Keep the container's node_modules its own. The line above mounts the
@@ -25,7 +26,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    image: alfred_api
+    image: ${ALFRED_IMAGES:-alfred}_api
     depends_on:
       - website
       - db
@@ -50,6 +51,7 @@ services:
   db:
     image: mongo:bionic
     volumes:
-      - ./database:/data/db
+      # One directory per mongod (./al loop sets ALFRED_DB_DIR).
+      - ${ALFRED_DB_DIR:-./database}:/data/db
     networks:
       - alfred_isolated

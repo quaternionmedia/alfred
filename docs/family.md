@@ -130,4 +130,4 @@ Most of that needs a session. With the auth bypass (`ALFRED_DEV_SKIP_AUTH=1 ./al
 The helper prints no secret, under the project's logging rule (AGENTS.md, "Logging and secrets"):
 - It reads `ALFRED_SMOKE_PASSWORD` and the token a login returns, and prints neither.
 - Every line it shows from a log or an answer goes through a redactor first, which covers signed URLs' `sig=`, bearer tokens, `access_token`, and any `…SECRET…`, `…PASSWORD…`, `…TOKEN…` or `…KEY…` assignment.
-- The logs under `.family/logs/` are the suites' own output, kept on this machine and ignored by git.
+- The logs under `.family/logs/` are the suites' own output, kept on this machine and ignored by git. `ALFRED_FAMILY_STATE` moves them, with the record of the joe `up` started: each run of [`./al loop`](loop.md) but `main` keeps its own under `.loop/<name>/family/`, so taking its stack down never stops a joe another run started.

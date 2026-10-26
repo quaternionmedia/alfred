@@ -2,7 +2,7 @@
 
 ## Unreleased — review fixes
 
-Fixes from a review of alfred and otto, landed in eight rounds of parallel
+Fixes from a review of alfred and otto, landed in nine rounds of parallel
 branches:
 
 | Round | Integrated on | What it carried |
@@ -15,6 +15,7 @@ branches:
 | 6 | `integrate/wave-6` | the docs: every page this effort touched said in fewer words, across the repositories, and the main pages opening with screenshots that `./al recipes` takes from demo data, its GIFs kept out of git (otto f106775 and vox e630cb0, for their docs); then the docs checked against the code, the font list's parse tested, and the project filter test making the projects it filters |
 | 7 | `feat/journeys-and-onboarding` | the editor's journeys and the way in: the phone flow fitting a phone, templates named in words, the empty viewer saying where to start, and a Get started page with the docs in the order a newcomer reads them |
 | 8 | `feat/close-gaps` | the gaps left open: the Render stage's form and the zoom row on every screen, the tests the review asked for (the recipes' pipeline, `./al`'s dev key, `./al family`, `GET /fonts`) and the three bugs they found, the docs tooling pinned, the dev-server notes on the docs site, the API examples sent to the local stack, and the walkthroughs' recordings played only in docs served locally |
+| 9 | `feat/edit-by-text-and-loop` | edit-by-text on top of the joe and vox loop; `./al loop`, the suites side by side as named runs, and images named per checkout; screenshots of every tool and docs example taken by the suite, the examples on demo media; commands on each system; the docs tools locked on their own; the phone's notices letting taps through; the template preview carrying structured data |
 
 Read **Security** and **Changed** before deploying: several requests that were
 accepted are now refused, and a production stack needs its own signing key.
@@ -82,6 +83,26 @@ accepted are now refused, and a production stack needs its own signing key.
   log, commit or report (`docker compose config --no-interpolate`).
 
 ### Changed
+
+- **Images are named after the checkout** (`ALFRED_IMAGES`, set by `./al`).
+  Every checkout built the same `alfred_*` images, so two worktrees testing at
+  once could run each other's dependencies. A second stack can have its own
+  database directory (`ALFRED_DB_DIR`), and the browser suite takes its
+  projects, arguments and output directory from the environment.
+- **The docs tools are locked on their own**, in `pdm.docs.lock`, so the
+  `requirements*.lock` exports keep colorama Windows-only.
+  `docs/dependencies.md` says how each lockfile is made and why each pin is
+  there; `pyproject.toml`'s comments are a line each.
+- **The docs examples run on a fresh install.** They use the demo media
+  `POST /demo/media` makes, not `moon.mp4` and `train.mp4`, and each request
+  body is a file in `docs/examples/edl/` that its page includes.
+- **`GET /preview/template/{name}` takes `data`, a JSON object**, which the
+  editor sends; a plain field may still come as its own parameter.
+- **`./al pytest` builds its image first**, as `./al test` does.
+- **The pages and the start-up lines name `127.0.0.1`**, which on Windows
+  answers at once where `localhost` waits for IPv6 first.
+- **fastapi-users stays at 10.4 here.** 15.x needs pydantic 2; its move is
+  staged on its own branch.
 
 - **`./al pytest` checks formatting as CI does** and no longer rewrites the
   checkout; `./al nox -s blacken` formats.
@@ -188,6 +209,16 @@ accepted are now refused, and a production stack needs its own signing key.
   extension), and **the cookbook links only what git tracks**.
 
 ### Fixed
+
+- **On a phone, a tap goes through a notice.** "Logged in!" sat over the
+  timeline for ten seconds and took the tap meant for a clip: the host-only
+  failure of "a tap on a clip moves the playhead".
+- **The editor previews an animated template.** Each field went as its own
+  query parameter, so `fxs` arrived as `[object Object]`.
+- **`./al` stays LF on every checkout** (`.gitattributes`): a Windows clone run
+  from WSL failed on CRLF.
+- **The cookbook test restores a stale cookbook byte for byte**; on Windows it
+  wrote it back with CRLF.
 
 - **The Render stage shows its whole form on a phone.** Width and height sit
   side by side, and held upright the stage keeps its form's height while the
@@ -299,6 +330,22 @@ accepted are now refused, and a production stack needs its own signing key.
   bottom.
 
 ### Added
+
+- **Editing by text.** A transcription keeps the words it heard, in timeline
+  seconds (`GET /project/{id}/captions/words`; `PUT /project/{id}/captions`
+  takes `words`). The Transcript panel shows them as text: deleting words cuts
+  the stretch they were said in from every track and closes the gap, captions
+  and words shifting with it. Clicking a word seeks to it. On a phone, the
+  Edit stage switches between Captions and Transcript. No undo yet.
+- **`./al loop`**: the host's quick tests, the API suite, the browser suite
+  and the strict docs build at once, as one named run; `--stack --keep`
+  brings up joe and the dev stack and leaves them up; several runs go side by
+  side (`docs/loop.md`).
+- **Screenshots of every tool and docs example**, taken by the suite
+  (`docs/assets/screens/tools/`, `docs/assets/screens/examples/`), a test that
+  previews every example, and an *Editing tools* page (`docs/tools.md`).
+- **Commands on each system** (`docs/commands.md`): setup for Linux, macOS and
+  Windows, every task beside its PowerShell form.
 
 - **Docs served locally play each walkthrough's recording** under its line
   in the cookbook, from the recipe's start (`scripts/docs_recordings.py`, a
@@ -462,6 +509,7 @@ accepted are now refused, and a production stack needs its own signing key.
 | 6 | `integrate/wave-6` | 1831 passed, 2 skipped, 8 xfailed | 392 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning. `./al family loop` against joe#35's branch, with the auth bypass: every repository's quick suite green, and the live check's eight checks passing, the ninth skipped for want of a library file with sound. `./al recipes` against the same joe: all six recipes recorded, and every screenshot unchanged. Against a joe without the media API, the loop warns and captions refuse |
 | 7 | `feat/journeys-and-onboarding` | 1833 passed, 2 skipped, 8 xfailed | 399 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning. The `@screens` retaken against `./al family up` with joe#35's branch: all seven changed, for the phone's header, rail and transport and the templates' labels, the captions still shown with joe connected. The phone flow measured at 375x812 and 390x844: one screen on every stage, nothing scrolling sideways |
 | 8 | `feat/close-gaps` | 1892 passed, 8 skipped, 8 xfailed; black checked, not applied | 402 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning, with the recordings and without them. The `@screens` retaken against `./al family up` with joe#35's branch: seven changed, for the Render stage's form and the zoom row. The Render stage measured at 360x740, 375x812, 390x844 and 812x375: the whole form on the screen upright, and the whole picture held sideways |
+| 9 | `feat/edit-by-text-and-loop` | 1970 passed, 8 skipped, 8 xfailed; black and ruff checked | 442 passed, 1 passed only on retry (the zoom row's measure, since loosened) | Run side by side by `./al loop`, beside a running stack. `mkdocs build --strict` clean; the quick host suite 150 passed. Every screenshot retaken against joe#35's branch, the tools and examples among them |
 
 ## 0.3.0 — breaking
 
