@@ -157,13 +157,7 @@ body:has(> .flowstage) {
   overflow-y: auto;
 }
 
-// A notice never stands between a finger and the editor. alertify stacks its
-// notices at the bottom of the screen for ten seconds (index.js), which on a
-// phone is over the timeline and the transport, and a tap on one only
-// dismisses it: a tap meant for a clip just after logging in hit "Logged in!"
-// instead, and the playhead stayed put. None of them holds a link or a
-// button, so here a press goes through to what is under it, and each notice
-// leaves on its own time.
+// Notices sit over the timeline: let taps through. None is interactive.
 body:has(> .flowstage) > .alertify-notifier .ajs-message {
   pointer-events: none;
 }

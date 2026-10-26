@@ -111,12 +111,7 @@ test.describe('the phone flow', () => {
   })
 
   test('a notice lets a tap through to what is under it', async ({ authedPage }) => {
-    /**
-     * Notices stack at the foot of the screen for ten seconds, over the
-     * timeline and the transport. None holds a link or a button, so on a
-     * phone a press goes through one: a tap meant for a clip just after
-     * logging in reached "Logged in!" instead, and the playhead stayed put.
-     */
+    // Notices cover the timeline for ten seconds; taps must reach it.
     const notice = authedPage.locator('.alertify-notifier .ajs-message.ajs-visible').first()
     await expect(notice, "the login's own notice is up").toBeVisible()
     const box = await notice.boundingBox()

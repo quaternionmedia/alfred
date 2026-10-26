@@ -72,10 +72,7 @@ services:
       E2E_BASE_URL: http://api
       # The stub audio engine, for specs that check what it was sent.
       E2E_AUDIO_ENGINE_URL: http://audio
-      # What one run of several asks for (./al loop): which projects, more
-      # Playwright arguments (--grep and the like), and a directory under
-      # website/ for its report and results, so runs side by side from one
-      # checkout keep their own.
+      # Set per run by ./al loop. E2E_OUTPUT is under website/.
       E2E_PROJECTS: ${E2E_PROJECTS:---project=chromium --project=phone}
       E2E_ARGS: ${E2E_ARGS:-}
       E2E_OUTPUT: ${E2E_OUTPUT:-}

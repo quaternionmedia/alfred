@@ -120,10 +120,7 @@ projectName() {
   fi
 }
 
-# What this checkout's images are called: <checkout>_api, _site, _worker,
-# _test. Every checkout once built the same alfred_* tags, so two worktrees
-# testing at once could each run the other's dependencies under their own
-# code. The compose files read it, and default to alfred_ without it.
+# Image prefix, per checkout, so worktrees never share images.
 imagePrefix() {
   if [ -n "${ALFRED_IMAGES:-}" ]; then
     printf '%s\n' "$ALFRED_IMAGES"
@@ -563,19 +560,12 @@ elif [ $1 = "pt" -o $1 = "pytest" -o $1 = "py" ]; then
   # database is a service named `db`, as the dev stack's is, so under the
   # checkout's own project a run recreated a running dev stack's database
   # container with the test's -- and the api went on talking to it.
-  # --build, as `./al test` does: the image holds the dependencies, so a run
-  # tests this checkout's lockfiles rather than whatever image is there.
+  # --build: the image holds the dependencies.
   docker compose -p "$(projectName)-pytest" -f pytest.yml up --build --exit-code-from pytest "$@"
 
 elif [ $1 = "loop" ]; then
   shift
-  # One run of whichever suites its flags name, side by side, under a name of
-  # its own; several can run at once (scripts/loop.py, docs/loop.md):
-  #   ./al loop                        quick, pytest, e2e and docs at once
-  #   ./al loop --stack --keep         ... and joe with the dev stack, left up
-  #   ./al loop slow --only e2e --grep @slow
-  #   ./al loop b --stack --port 8100  a second stack beside the first
-  #   ./al loop NAME --down            take a run's stack down
+  # Suites side by side, as named runs. See docs/loop.md.
   py=$(hostPython) || exit 1
   "$py" "$(dirname "$0")/scripts/loop.py" "$@"
 

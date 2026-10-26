@@ -43,16 +43,14 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-# Where `up` records the joe it started, and the logs. ALFRED_FAMILY_STATE
-# gives a run of `./al loop` its own, so taking one stack down never stops the
-# joe another started.
+# joe's pid and the logs. ./al loop gives each run its own.
 STATE = Path(os.environ.get('ALFRED_FAMILY_STATE') or ROOT / '.family')
 LOGS = STATE / 'logs'
 JOE_PID = STATE / 'joe.json'
 
 
 def shown(path):
-    """`path` as a message names it: from the checkout, when it is inside."""
+    """`path` relative to the checkout, when inside it."""
     try:
         return Path(path).resolve().relative_to(ROOT).as_posix()
     except ValueError:

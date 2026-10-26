@@ -3,8 +3,7 @@ const { defineConfig, devices } = require('@playwright/test')
 
 const baseURL = process.env.E2E_BASE_URL || 'http://localhost:8000'
 
-// A directory of this run's own for its results and report, when several run
-// at once from one checkout (./al loop sets it). Relative to website/.
+// Per-run results and report (./al loop). Relative to website/.
 const output = process.env.E2E_OUTPUT
 const outputDir = output ? `${output}/test-results` : 'test-results'
 const html = ['html', { open: 'never', outputFolder: output ? `${output}/playwright-report` : 'playwright-report' }]

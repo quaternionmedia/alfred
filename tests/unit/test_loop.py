@@ -1,16 +1,4 @@
-"""`./al loop`: alfred's suites side by side, as one named run of several.
-
-scripts/loop.py decides which suites a run's flags name, what each one runs,
-and what a run is called everywhere it leaves a trace: its compose projects,
-its stack's ports and database, its logs and its browser results. Two runs
-must never share any of them, or the suites running side by side would test
-each other's containers. That is most of what is tested here, with the steps
-themselves run as stand-ins: a stack whose `up` fails is not taken down, and a
-stack left up by an earlier run of the same name is replaced.
-
-The runs against Docker are made by hand (docs/loop.md); `./al loop` itself
-is how this branch's counts were taken.
-"""
+"""`./al loop` (scripts/loop.py): which suites run, and that two runs share nothing."""
 
 import importlib.util
 import re
@@ -53,7 +41,7 @@ def flags(**given):
 
 
 def everywhere(name):
-    """Whatever finds a command finds it, so every suite plans."""
+    """Every tool is found."""
     return f'/bin/{name}'
 
 
@@ -105,8 +93,7 @@ class TestWhatARunIsCalled:
         assert Path(env['ALFRED_FAMILY_STATE']) == REPO / '.loop' / 'b' / 'family'
 
     def test_two_runs_share_no_project_port_or_directory(self):
-        # Mutation: name every run's projects after the checkout alone -- this
-        # fails, as two runs then recreate each other's containers.
+        # Mutation: name projects after the checkout alone -- this fails.
         a, b = loop.Run('a', 8100, root=REPO), loop.Run('b', 8200, root=REPO)
         traces = []
         for run in (a, b):
@@ -183,7 +170,7 @@ class TestWhatEachSuiteRuns:
         assert not steps and 'shell' in reason
 
     def test_no_step_is_handed_anything_but_names_ports_and_paths(self):
-        """The environment a step is given is shown; it holds no secret."""
+        """Step env is printed: names, ports and paths only."""
         allowed = re.compile(
             r'^(COMPOSE_PROJECT_NAME|ALFRED_(PORT|HMR_PORT|DB_PORT|DB_DIR|'
             r'FAMILY_STATE|FAMILY_JOE)|E2E_(OUTPUT|ARGS|PROJECTS|BASE_URL)|'
@@ -202,7 +189,7 @@ class TestRunningSteps:
         return [sys.executable, '-c', code]
 
     def test_a_stack_whose_up_failed_is_not_taken_down(self, tmp_path):
-        """`up` refusing (the port is someone else's) must not stop their stack."""
+        """A refused `up` must not stop someone else's stack."""
         # Mutation: drop run_suite's check of `after` -- this fails.
         marks = tmp_path / 'marks'
         mark = f'open(r"{marks}", "a").write("{{}}\\n")'
@@ -279,7 +266,7 @@ class TestWhatALogSays:
 
 
 class TestTheFilesItReliesOn:
-    """What makes runs side by side safe lives in the compose files and ./al."""
+    """Isolation lives in the compose files and ./al."""
 
     def test_every_image_this_checkout_builds_is_named_after_it(self):
         # Mutation: put back `image: alfred_api` in test_e2e.yml -- this fails.

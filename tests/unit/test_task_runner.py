@@ -488,13 +488,7 @@ class TestTheApiSuiteChecksFormatting:
 
 
 class TestLineEndings:
-    """./al runs on Linux's sh too: from WSL on a Windows clone, and in CI.
-
-    Git for Windows checks text out with CRLF unless told otherwise, and sh
-    reads the carriage return as part of each command, failing on `al`'s first
-    function. Git Bash tolerates it, so a Windows clone looks fine until WSL
-    runs it.
-    """
+    """./al must stay LF: Linux sh fails on CRLF."""
 
     def test_al_and_the_shell_scripts_are_checked_out_lf(self):
         # Mutation: drop the `al` line from .gitattributes -- this fails.

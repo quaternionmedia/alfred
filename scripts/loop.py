@@ -1,43 +1,18 @@
 #!/usr/bin/env python3
-"""alfred's suites side by side, as one named run; start as many runs as you like.
+"""Run alfred's suites side by side, as one named run. See docs/loop.md.
 
-`./al loop` runs this. Each run has a name (`main` unless one is given), and
-everything it starts is named after it: its compose projects, its stack's
-ports and database, its logs and its browser results. So two runs never meet,
-and the suites inside one run go at the same time:
-
-    ./al loop                          quick, pytest, e2e and docs, at once
-    ./al loop --stack --keep           ... then joe and the dev stack, left up
-    ./al loop fast --only quick,docs   the seconds-long ones
+    ./al loop                          quick, pytest, e2e, docs
+    ./al loop --stack --keep           + joe and the dev stack, left up
+    ./al loop fast --only quick,docs
     ./al loop slow --only e2e --grep @slow
     ./al loop b --stack --port 8100    a second stack beside the first
-    ./al loop shots --only stack --recipes
-                                       the docs' screenshots and recordings
-    ./al loop main --down              take a run's stack down
-    ./al loop --list                   the runs this checkout has made
+    ./al loop shots --only recipes     screenshots and recordings
+    ./al loop NAME --down              take a run's stack down
+    ./al loop --list
 
-The suites:
-
-    quick    the host's own tests of the tooling and the docs (uv; seconds)
-    pytest   the API suite in Docker, formatting and lint included (./al pytest)
-    e2e      the browser suite in Docker (./al test)
-    docs     the docs site, built --strict
-    family   the quick suites of otto, vox, joe, qmcp and the rest (--family)
-    stack    joe, then the dev stack pointed at it, checked live (--stack)
-    recipes  the docs' screenshots and the recipes' recordings (--recipes)
-
-`main`'s stack is the ordinary dev stack: this checkout's compose project, on
-8000, with ./database, so `./al stop` and `./al family down` still work on
-it. Any other run's stack is `<checkout>-<name>`, on ports of its own (`--port`,
-or the first free block of 8100, 8200 and so on) with a database under
-.loop/<name>/. Every stack shares the joe on ALFRED_JOE_PORT (8010): `up`
-uses a joe that already answers, and `--down` stops only a joe its own run
-started.
-
-The standard library only, as scripts/family.py, whose stack commands this
-drives. Nothing it prints carries a secret: the environment it hands a step
-is ports, names and paths, and a log's lines go through family's `redact`
-before they are shown (AGENTS.md, "Logging and secrets").
+Suites: quick, pytest, e2e, docs (default); family, stack, recipes.
+A run's projects, ports, database and logs carry its name. main's stack
+is the dev stack. Standard library only. Prints no secrets.
 """
 
 import argparse
@@ -61,8 +36,7 @@ LOOPBACK = family.LOOPBACK
 SUITES = ('quick', 'pytest', 'e2e', 'docs', 'family', 'stack', 'recipes')
 DEFAULT = ('quick', 'pytest', 'e2e', 'docs')
 
-# The host-side tests: the standard library, pytest and PyYAML, nothing of the
-# app's. They check the scripts and the docs, so they answer in seconds.
+# Host-side: stdlib, pytest and PyYAML only.
 QUICK = (
     'tests/unit/test_loop.py',
     'tests/unit/test_family.py',
@@ -75,10 +49,10 @@ QUICK = (
     'tests/unit/test_recipe_gifs.py',
 )
 
-# The same ranges as pyproject's docs group and .github/workflows/docs.yml.
+# Same ranges as pyproject's docs group.
 MKDOCS = ['--with', 'mkdocs-material>=9.7,<10', '--from', 'mkdocs>=1.6,<2']
 
-# The other repositories `--family` runs; alfred's own are pytest and e2e.
+# --family: the other repositories.
 KIN = ('otto', 'vox', 'joe', 'qmcp', 'codecartographer', 'org-dotgithub')
 
 NAME = re.compile(r'^[a-z0-9][a-z0-9_-]{0,30}$')
@@ -88,9 +62,8 @@ NAME = re.compile(r'^[a-z0-9][a-z0-9_-]{0,30}$')
 
 
 class Step:
-    """One command of a suite. After a step fails the rest are passed over,
-    except one that is `always` run, or that runs `after` a step that
-    succeeded: taking down a stack its own `up` started."""
+    """One command. After a failure, only `always` steps run, and `after`
+    steps whose named step succeeded."""
 
     def __init__(self, label, argv, env=None, always=False, after=None):
         self.label = label
@@ -110,7 +83,7 @@ class Run:
         self.root = root
         self.dir = root / '.loop' / name
         self.checkout = family.compose_project(root, {})
-        # pytest and e2e add their own -pytest and -e2e to this.
+        # pytest and e2e append -pytest and -e2e.
         self.project = f'{self.checkout}-{name}'
         self.main = name == 'main'
         self.stack_project = self.checkout if self.main else self.project
@@ -118,8 +91,7 @@ class Run:
 
     @property
     def ports(self):
-        """The stack's api, live-reload and database ports: 8000, 8001 and
-        27017 for main, and the same offsets from any other api port."""
+        """api, live-reload, database: 8000, 8001, 27017 for main."""
         return {
             'ALFRED_PORT': self.port,
             'ALFRED_HMR_PORT': self.port + 1,
@@ -227,9 +199,7 @@ def steps_for(suite, run, args, which=family.tool):
         env = run.stack_env()
         if args.joe:
             env['ALFRED_FAMILY_JOE'] = args.joe
-        # Down first: a stack this run's name left up (--keep) is replaced by
-        # this checkout's code as it is now, and main's is the dev stack, which
-        # `./al dev` refuses to start over.
+        # Down first: replaces a stack left up, which `./al dev` refuses.
         steps = [
             Step('replace', [python, 'scripts/family.py', 'down'], env),
             Step('up', [python, 'scripts/family.py', 'up', '--build'], env),
@@ -258,7 +228,7 @@ def chosen(args):
         names = set(args.only.split(','))
     names -= set(args.skip.split(',')) if args.skip else set()
     if 'recipes' in names:
-        # A step of the stack, not a suite of its own.
+        # A stack step, not a suite.
         args.recipes = True
         names.discard('recipes')
     if args.stack or args.recipes or args.keep:
@@ -287,8 +257,7 @@ def taken(port, host=LOOPBACK):
 
 
 def free_port(is_taken=taken, start=8100, step=100, tries=9):
-    """The first api port from `start` whose api, live-reload and database
-    ports are all free, or None."""
+    """First api port from `start` with all three ports free, or None."""
     for port in range(start, start + step * tries, step):
         if not any(is_taken(p) for p in (port, port + 1, port + 19017)):
             return port
@@ -308,12 +277,12 @@ SMOKE_SUMMARY = re.compile(r'^\d+ (pass|fail|skip)\b.*$')
 
 
 def plain(line):
-    """A log line without the `service-1  | ` compose puts in front of it."""
+    """A log line without compose's `service-1  | ` prefix."""
     return COMPOSE_PREFIX.sub('', line.rstrip('\n'))
 
 
 def summary(suite, text):
-    """What a finished suite's log says it counted, in one line, or ''."""
+    """A finished suite's counts, in one line, or ''."""
     lines = [plain(line) for line in text.splitlines()]
     if suite == 'pytest':
         counts = [m.group(1) for line in lines if (m := PYTEST_SUMMARY.match(line))]
@@ -358,7 +327,7 @@ def took(seconds):
 
 
 class Children:
-    """Every process the run started, so an interrupt can stop them all."""
+    """The run's processes, for Ctrl-C."""
 
     def __init__(self):
         self.lock = threading.Lock()
@@ -399,8 +368,7 @@ class Children:
 
 
 def run_suite(suite, steps, log, children, results):
-    """Run `steps` into `log`; after the first that fails, only the `always`
-    steps run. Puts (suite, ok, seconds, failed label) on `results`."""
+    """Run `steps` into `log`; append (suite, ok, seconds, failed step)."""
     started = time.monotonic()
     failed = None
     succeeded = set()
@@ -612,9 +580,9 @@ def main(argv=None):
         sys.stdout.reconfigure(errors='replace')
     parser = argparse.ArgumentParser(
         prog='./al loop',
-        description=__doc__.split('\n\n')[0],
+        description=__doc__.split('\n')[0],
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__.split('\n\n', 1)[1].split('\n\n`main`')[0],
+        epilog=__doc__.split('\n', 1)[1],
     )
     parser.add_argument('name', nargs='?', default='main', help='this run (main)')
     parser.add_argument('--only', help='these suites, comma-separated')
