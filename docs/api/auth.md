@@ -33,30 +33,44 @@ and cannot be given a password; see [Skipping login in development](../dev-auth.
 
 ## Password hashing
 
-Passwords are hashed with bcrypt, slow on purpose: about 0.3 s a hash or a
-check. fastapi-users 10.4 does that work inside its coroutines, on the api's
-one event loop, where nothing else (not a preview, not `/healthz`) would be
-answered while a login is checked. So alfred carries its own copies of the
-library's five methods that hash or check a password (`authenticate`,
-`create`, `forgot_password`, `reset_password` and `_update`), identical but
-for hashing in the thread pool, in `alfred/core/utils/passwords.py`.
+Passwords are hashed with Argon2 (argon2id, through pwdlib), slow on purpose:
+about 0.05 s a hash or a check on the api image, and 64 MiB of memory each.
+Accounts made before fastapi-users 15 hold bcrypt hashes (`$2b$`). Those still
+check, at about 0.2 s, and an account's hash becomes Argon2 the next time it
+logs in. Until then, a wrong password for that account takes about 0.2 s and
+one for an address with no account the 0.05 s of an Argon2 hash, so the time
+says the account exists. That closes as accounts log in.
+
+fastapi-users does that work inside its coroutines, on the api's one event
+loop, where nothing else (not a preview, not `/healthz`) would be answered
+while a login is checked; a handful of logins at once would hold the api, and
+anyone who can reach the login form can send a handful. The library leaves no
+seam: its methods call `password_helper` between awaits on the database. So
+alfred carries its own copies of the five methods that hash or check a
+password (`authenticate`, `create`, `forgot_password`, `reset_password` and
+`_update`), identical but for hashing in the thread pool, in
+`alfred/core/utils/passwords.py`. Argon2 and bcrypt release the GIL while they
+work, so the loop runs meanwhile. The thread pool runs up to 40 at once, so a
+burst of logins can hold about 2.5 GiB.
 
 Guards keep the copied security code from drifting quietly from the original:
 
 - **It refuses to run against any other release.** The copies name the
-  fastapi-users release they were checked against, 10.4.2, and a fingerprint
+  fastapi-users release they were checked against, 15.0.5, and a fingerprint
   of each original's source. On import, a different release or a changed
   method stops the api from starting, naming the method that changed and what
   to re-check.
 - **Tests hold each copy to its original**
   (`tests/unit/test_password_hashing.py`): the same lookups, writes, hashes,
   checks and answers, case by case. That includes the hash run for an unknown
-  address, which keeps its refusal as slow as a wrong password, and the upgrade
-  of an outdated hash at login. Other tests show `/healthz` answering while a
-  login is checked, and `tests/unit/test_blocking_calls.py` fails if a
-  coroutine hashes directly.
+  address, which keeps its refusal as slow as a wrong password, and a bcrypt
+  hash made by fastapi-users 10.4.2 logging in and becoming Argon2. Other
+  tests show `/healthz` answering while a login, a registration, a reset or a
+  change of password is hashed, and `tests/unit/test_blocking_calls.py` fails
+  if a coroutine hashes directly.
 - **The api says so as it starts**, in one line beginning `Password hashing:`.
 
-So upgrading fastapi-users starts with that module: read each replaced method
-in the new release, carry over what changed, and update the release and the
-fingerprints it records.
+So upgrading fastapi-users starts with that module, and the guard fails
+first. Read each replaced method in the new release, carry over what changed,
+and update the release and the fingerprints it records. If a release stops
+hashing on the loop, delete the copies instead.

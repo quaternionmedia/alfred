@@ -54,8 +54,9 @@ existed then: one missing package caused four separate failures.
 `pkg_resources` was gone; only `otto.models`, pure pydantic, imported cleanly.
 Its fixes, all in place:
 
-- `setuptools` is an explicit runtime dependency: three installed packages
-  import `pkg_resources` at runtime, and none of them declares it.
+- `setuptools` was an explicit runtime dependency while three installed
+  packages imported `pkg_resources` at runtime. None does now
+  ([dependencies](../docs/dependencies.md#no-passlib-and-no-setuptools)).
 - The Docker base image is pinned to a digest, at Python 3.11, and
   `requires-python` is narrowed to what is tested, `>=3.11,<3.12`.
 - The ImageMagick policy is removed with `rm -f`, at both its version-6 and
@@ -190,7 +191,7 @@ config is discovered only after a job has been queued and dispatched.
    every intermediate snapshot validates, and the final one validates as an
    `alfred.core.models.render.Render`. Build the snapshots as plain dicts, the
    shape the API receives, not as model instances.
-2. Round-trip stability: `Edl.parse_obj(edl.dict())` equals the original for
+2. Round-trip stability: `Edl.model_validate(edl.model_dump())` equals the original for
    each snapshot, which catches lossy or defaulted fields.
 3. One test per invariant below asserting **current** behavior (accepted),
    each paired with a strict xfail asserting it should be rejected:
