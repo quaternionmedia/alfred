@@ -22,6 +22,7 @@ import tomllib
 from pathlib import Path
 
 import pytest
+from packaging.markers import Marker
 from packaging.requirements import Requirement
 from packaging.specifiers import SpecifierSet
 from packaging.utils import canonicalize_name
@@ -332,6 +333,36 @@ class TestDependencyPinning:
         assert not mismatched, (
             f'{export} pins versions pdm.lock does not: {mismatched[:5]}. '
             'Regenerate it -- see the header of the file.'
+        )
+
+    @pytest.mark.parametrize('export', EXPORTS)
+    def test_each_export_carries_the_markers_pdm_lock_holds(self, export):
+        """The markers too, not only the versions: colorama installs on
+        Windows only."""
+        locked = {
+            (
+                canonicalize_name(package['name']),
+                frozenset(package.get('extras', [])),
+            ): package.get('marker')
+            for package in tomllib.loads(read('pdm.lock'))['package']
+        }
+        differ = []
+        for line in read(export).split('\n'):
+            line = line.strip()
+            if not line or line.startswith('#'):
+                continue
+            requirement = Requirement(line)
+            key = (canonicalize_name(requirement.name), frozenset(requirement.extras))
+            want = locked.get(key)
+            want = str(Marker(want)) if want else ''
+            have = str(requirement.marker or '')
+            if have != want:
+                differ.append(
+                    f'{requirement.name}: {have or "none"}, locked {want or "none"}'
+                )
+        assert not differ, (
+            f"{export}'s markers are not pdm.lock's: {differ}. Regenerate it "
+            '-- see the header of the file.'
         )
 
     def test_every_dependency_is_exported_at_a_version_it_accepts(self):
