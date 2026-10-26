@@ -81,11 +81,9 @@ build-backend = "pdm.backend"
 
 [tool.pdm.dev-dependencies]
 dev = ["uvicorn >= 0.20.0", "ruff~=0.0", "black"]
-# What `./al docs` runs on the host, `mkdocs serve`, and the docs workflow
-# builds with: the same two ranges as .github/workflows/docs.yml. Below MkDocs
-# 2, which Material for MkDocs does not run on. `./al prod` builds the site
-# with the image of the release pdm.lock holds here.
-docs = ["mkdocs>=1.6,<2", "mkdocs-material>=9.7,<10"]
+# Same ranges as .github/workflows/docs.yml. Locked in pdm.docs.lock, not
+# pdm.lock: see docs/dependencies.md.
+docs =["mkdocs>=1.6,<2", "mkdocs-material>=9.7,<10"]
 
 [project.optional-dependencies]
 test = [

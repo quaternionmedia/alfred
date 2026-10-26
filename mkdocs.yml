@@ -17,6 +17,7 @@ nav:
       - Family dev loop: family.md
       - dev-auth.md
       - ownership.md
+      - dependencies.md
   - Concepts:
       - about/index.md
       - about/concepts.md
