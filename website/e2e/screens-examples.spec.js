@@ -45,11 +45,6 @@ const projectName = name => `${name.replace(/-/g, ' ')} example`
 // Example name -> its project.
 const made = {}
 
-// Known editor bugs: the viewer cannot draw these yet. Remove when fixed.
-const NOT_YET = {
-  animation: 'the template preview sends fxs as "[object Object]" (Preview.js urlfy)',
-}
-
 test.use({ video: 'off' })
 
 test.describe('@screens', () => {
@@ -85,7 +80,6 @@ test.describe('@screens', () => {
 
   for (const example of examples()) {
     test(`screen: the ${example.name} example in the editor`, async ({ page }) => {
-      test.fail(example.name in NOT_YET, NOT_YET[example.name])
       const file = screenFile('examples', example.name)
       clear(file)
       const project = made[example.name]
