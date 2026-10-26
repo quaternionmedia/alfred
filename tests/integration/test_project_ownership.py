@@ -47,6 +47,7 @@ SINGLE_PROJECT_ROUTES = [
         '/project/{id}/captions',
         {'captions': [{'start': 0, 'end': 1, 'text': 'x'}]},
     ),
+    ('GET', '/project/{id}/captions/words', None),
     ('POST', '/project/{id}/captions/import', {'format': 'srt', 'text': CUE}),
     # POST /project/{id}/captions/transcribe answers 202 or 503 for its owner,
     # not 200; integration/test_captions_api.py holds it to the same 404s.

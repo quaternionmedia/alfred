@@ -58,12 +58,13 @@ const JOB_SAYS = {
   failed: job => `Transcription failed: ${job.error || 'no reason was given'}`,
 }
 
-const JobLine = {
-  view: () => {
+/** Where the last transcription got to. Shared with the Transcript panel. */
+export const JobLine = {
+  view: ({ attrs: { id = 'captions-job' } }) => {
     const job = Captions.job
     if (!job || !JOB_SAYS[job.state]) return null
     return m(
-      'p.captionsjob#captions-job',
+      `p.captionsjob#${id}`,
       { class: job.state, 'data-state': job.state, role: 'status' },
       JOB_SAYS[job.state](job)
     )
@@ -342,12 +343,13 @@ const Row = {
   },
 }
 
-const TranscribeButton = {
-  view: () => {
+/** Transcribe timeline; asks first if captions would be replaced. Shared with the Transcript panel. */
+export const TranscribeButton = {
+  view: ({ attrs: { id = 'captions-transcribe' } }) => {
     const blocker = transcribeBlocker()
     const running = Captions.running() || Captions.busy === 'transcribe'
     return m(
-      'button#captions-transcribe',
+      `button#${id}`,
       {
         disabled: Boolean(blocker) || running || !Captions.loaded || Boolean(Captions.busy),
         title: blocker || "Hear the saved timeline's sound and caption what it says",
@@ -359,6 +361,19 @@ const TranscribeButton = {
       },
       running ? 'Transcribing…' : 'Transcribe timeline'
     )
+  },
+}
+
+/** The question a transcription that would replace captions waits on. */
+export const TranscribeConfirm = {
+  view: ({ attrs: { id = 'captions-confirm' } }) => {
+    if (!Captions.confirming) return null
+    const count = Captions.list.length
+    return m(`.confirm#${id}`, [
+      m('span', `Replace the ${count} caption${count === 1 ? '' : 's'} with what the timeline says?`),
+      m(`button.primary#${id}-yes`, { onclick: () => Captions.transcribe() }, 'Replace'),
+      m(`button#${id}-no`, { onclick: () => (Captions.confirming = false) }, 'Cancel'),
+    ])
   },
 }
 
@@ -416,17 +431,7 @@ export const CaptionsPanel = {
           )
         : null,
 
-      Captions.confirming
-        ? m('.confirm#captions-confirm', [
-            m('span', `Replace the ${count} caption${count === 1 ? '' : 's'} with what the timeline says?`),
-            m('button.primary#captions-confirm-yes', { onclick: () => Captions.transcribe() }, 'Replace'),
-            m(
-              'button#captions-confirm-no',
-              { onclick: () => (Captions.confirming = false) },
-              'Cancel'
-            ),
-          ])
-        : null,
+      m(TranscribeConfirm),
       m(JobLine),
       Captions.error ? m('p.captionserror#captions-error', { role: 'alert' }, Captions.error) : null,
       m(Review),

@@ -20,6 +20,8 @@
  */
 
 const { test: base, expect, login } = require('./fixtures')
+// Screenshots for the docs (screens.js).
+const { save, clear } = require('./screens')
 
 // What a recipe's project is made from, of what `POST /demo/media` makes.
 const DEMO_MEDIA = ['demo-bars.mp4', 'demo-colour.mp4', 'demo-testcard.mp4']
@@ -396,5 +398,90 @@ test.describe('@recipe walkthroughs', () => {
     await authedPage.locator('#timeline .clip').nth(1).click()
     await expect(overlay).toHaveText('and drawn over the picture')
     await beat(authedPage, 1800)
+  })
+})
+
+// Narration for the text-editing recipe, `[start, end, text]`: put on through
+// the API (the demo media is silent). The second line crosses the 6 s clip cut.
+const NARRATION = [
+  [0.4, 2.8, 'A video editor that works in the browser.'],
+  [4.5, 8.1, 'Every frame you see here is drawn by the server.'],
+  [8.8, 11.6, 'The dull bits come out by deleting their words.'],
+]
+
+/** The narration's words, `{start, end, text, segment}`. */
+const narratedWords = () =>
+  NARRATION.flatMap(([start, end, line], segment) => {
+    const said = line.split(' ')
+    const step = (end - start) / said.length
+    return said.map((text, k) => ({
+      start: Math.round((start + k * step) * 1000) / 1000,
+      end: Math.round((start + (k + 1) * step) * 1000) / 1000,
+      text,
+      segment,
+    }))
+  })
+
+test.describe('@recipe editing by text', () => {
+  test.describe.configure({ timeout: 150_000 })
+  // The docs' screenshot size.
+  test.use({ viewport: { width: 1280, height: 800 } })
+
+  test('recipe: cut the video by deleting words from its transcript', async ({
+    authedPage,
+    project,
+    request,
+    token,
+  }) => {
+    /**
+     * Drag across "you see here", press Delete: the bars lose their end, the
+     * test card its start, and the captions after move up. Save keeps it.
+     */
+    clear('transcript')
+    clear('transcript-cut')
+    const res = await request.put(`/project/${project._id}/captions`, {
+      ...auth(token),
+      data: {
+        captions: NARRATION.map(([start, end, text]) => ({ start, end, text })),
+        words: narratedWords(),
+      },
+    })
+    expect(res.status(), await res.text()).toBe(200)
+
+    await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(project.edl.clips.length)
+    await authedPage.locator('#paneltab-transcript').click()
+    const words = authedPage.locator('#transcript-text .word')
+    await expect(words).toHaveCount(narratedWords().length)
+    await beat(authedPage)
+
+    const [you, here] = [words.nth(10), words.nth(12)]
+    await expect(you).toHaveText('you')
+    await expect(here).toHaveText('here')
+    const from = await you.boundingBox()
+    const to = await here.boundingBox()
+    await authedPage.mouse.move(from.x + 2, from.y + from.height / 2)
+    await authedPage.mouse.down()
+    await authedPage.mouse.move(to.x + to.width - 2, to.y + to.height / 2, { steps: 12 })
+    await authedPage.mouse.up()
+    await expect(authedPage.locator('#transcript-text .word.going')).toHaveText([
+      'you',
+      'see',
+      'here',
+    ])
+    await beat(authedPage, 1400)
+    await save(authedPage, 'transcript')
+
+    await authedPage.keyboard.press('Delete')
+    await expect(authedPage.locator('#transcript-text .transcriptpara').nth(1)).toHaveText(
+      'Every frame is drawn by the server.'
+    )
+    await expect(authedPage.locator('#transcript-last')).toContainText('Cut 3 words')
+    await beat(authedPage, 1400)
+    await save(authedPage, 'transcript-cut')
+
+    await authedPage.locator('#transcript-save').click()
+    await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+    await beat(authedPage)
   })
 })

@@ -146,6 +146,7 @@ module.exports.PANEL_IDS = [
   'render',
   'deliver',
   'captions',
+  'transcript',
 ]
 
 /** Where a viewer's arrangement of the workspace is kept (src/layout/saved_layout.js). */

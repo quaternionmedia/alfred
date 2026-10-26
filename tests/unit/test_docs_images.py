@@ -1,7 +1,8 @@
 """Every picture the docs show is there, and every one there is shown.
 
 `./al recipes` makes the docs' screenshots from the running app, into
-`docs/assets/screens/` (website/e2e/screens.spec.js). They are committed, so
+`docs/assets/screens/` (website/e2e/screens.spec.js and recipes.spec.js,
+through screens.js). They are committed, so
 these hold the pages and the files to each other: a page showing a picture
 that is not there, a picture nothing shows, a screenshot the spec no longer
 takes, and a page that no longer opens with what it shows. The recipes' GIFs
@@ -20,7 +21,11 @@ import pytest
 REPO = Path(__file__).resolve().parents[2]
 DOCS = REPO / 'docs'
 SCREENS = DOCS / 'assets' / 'screens'
-SCREENS_SPEC = REPO / 'website' / 'e2e' / 'screens.spec.js'
+# The specs that take them, each with `save(page, '<name>')`.
+SCREENS_SPECS = [
+    REPO / 'website' / 'e2e' / 'screens.spec.js',
+    REPO / 'website' / 'e2e' / 'recipes.spec.js',
+]
 # The examples' request bodies, and the tools beside the timeline.
 EDL = DOCS / 'examples' / 'edl'
 TOOLS = REPO / 'website' / 'src' / 'TimelineTools.js'
@@ -112,21 +117,23 @@ class TestEveryPictureIsShown:
 
 
 class TestTheScreens:
-    def screens_the_spec_takes(self):
-        return set(
-            re.findall(
-                r"save\(\s*page,\s*'([a-z0-9-]+)'\s*\)",
-                SCREENS_SPEC.read_text(encoding='utf-8'),
+    def screens_the_specs_take(self):
+        return {
+            name
+            for spec in SCREENS_SPECS
+            for name in re.findall(
+                r"\bsave\(\s*\w+,\s*'([a-z0-9-]+)'\s*\)",
+                spec.read_text(encoding='utf-8'),
             )
-        )
+        }
 
-    def test_the_screens_are_the_ones_the_spec_takes(self):
-        taken = self.screens_the_spec_takes()
-        assert len(taken) >= 7, 'found too few screens in the spec to be checking'
+    def test_the_screens_are_the_ones_the_specs_take(self):
+        taken = self.screens_the_specs_take()
+        assert len(taken) >= 9, 'found too few screens in the specs to be checking'
         there = {path.stem for path in SCREENS.glob('*.png')}
         assert there == taken, (
-            f'screens.spec.js takes {sorted(taken - there)} that are not in '
-            f'docs/assets/screens, which has {sorted(there - taken)} it does not '
+            f'the specs take {sorted(taken - there)} that are not in '
+            f'docs/assets/screens, which has {sorted(there - taken)} they do not '
             'take. Run ./al recipes.'
         )
 

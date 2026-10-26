@@ -392,6 +392,38 @@ fixture's two bursts of tone, as onsets and the silences around them.
 
 - **a library file is analysed by the engine**
 
+## cut ranges
+
+`cutRanges` (src/ClipWindow.js), the cut behind editing by text, at its edges.
+Plain arithmetic, run in Node: no browser, no server.
+
+### one cut
+
+- **a range across a clip boundary splits both clips, and what follows moves up by its length**
+- **the parts either side of a cut meet with hard edges, and keep their other fades**
+- **a template after a cut carries on its animation; a picture keeps its window**
+- **nothing it is given is changed**
+### every track
+
+- **several tracks are cut at once, audio-only clips with them**
+- **a clip wholly inside a range goes, on whichever track it is**
+### several ranges
+
+- **ranges apart and out of order are cut as one edit**
+- **ranges that overlap or meet are one range**
+### the edges of the timeline
+
+- **a range at the start takes the opening, and everything moves up**
+- **a range at the end takes the ending, and nothing moves**
+- **a range past the end cuts nothing, and one over it cuts up to the end**
+- **an empty or zero-length selection changes nothing**
+- **an empty timeline has nothing to cut**
+### the words
+
+- **the words cut go, later words shift, and one the cut only overlaps is trimmed**
+- **a word that takes no time goes when a range holds it, and moves when not**
+- **a caption being typed, its times not yet numbers, is left as it is**
+
 ## deliver
 
 Following a render from queued to delivered.
@@ -1334,6 +1366,12 @@ timeline sits with its tools and the media bin beneath.
   anything is kept. Use them, tick **Draw into renders** and save, and
   the caption under the playhead is drawn over the picture.
 
+### @recipe editing by text
+
+Drag across "you see here", press Delete: the bars lose their end, the
+test card its start, and the captions after move up. Save keeps it.
+
+- **recipe: cut the video by deleting words from its transcript**
 
 ## render api
 
@@ -2124,6 +2162,38 @@ spinner and `aria-busy` while their request is in flight.
 - **the render button reports itself busy**
 - **a busy button is disabled, so it cannot be double-fired**
 
+## transcript
+
+Editing by text: words deleted from the Transcript panel cut the timeline.
+
+# Recipe: cut the video by deleting words
+
+Select words, press Delete, Save. Desktop and phone; the @slow test transcribes via the stub engine.
+
+### @slow from the transcription to the cut
+
+Transcribe from the empty panel, delete "first thing": timeline, captions
+and words all lose the half second, saved together.
+
+- **words deleted from the transcript cut the timeline, the captions and the words**
+### the transcript
+
+"three four" spans the clip boundary: both clips lose a second.
+
+- **a drag selects words, and Cut takes them, however they were selected**
+- **a double-click selects one word, and Backspace cuts it**
+
+  The cut stays the page's until Save.
+
+- **clicking a word moves the playhead to it, and the word playing is marked**
+
+  Click seeks and drops the selection; Escape drops it; playback marks the word.
+
+- **without a transcript the panel says how to get one**
+
+  One line and a Transcribe button.
+
+
 ## views
 
 ### views
@@ -2178,8 +2248,8 @@ The desktop workspace: the editor's panels docked with Golden Layout.
 
 On a screen 1024 pixels wide or more the editor is a workspace of panels:
 projects and the library on the left, the viewer above the timeline in the
-middle, the selected clip's settings and the Render, Deliver and Captions
-tabs on the right. Drag a tab to move a panel, drag the gaps to resize
+middle, the selected clip's settings and the transcript over the Render,
+Deliver and Captions tabs on the right. Drag a tab to move a panel, drag the gaps to resize
 them, close what you do not need. The arrangement is kept in this browser
 and comes back on the next visit. The Panels menu brings back a closed
 panel, in its place, and Reset layout restores the arrangement above.

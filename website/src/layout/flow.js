@@ -12,14 +12,49 @@ import { Footer } from '../Footer'
  *
  * Edit had nothing of its own -- it *is* the timeline -- and is where the
  * captions are edited, the one thing about a timeline that is written rather
- * than arranged.
+ * than arranged; and the transcript.
  */
 export const FLOW_STAGE_PANELS = Object.freeze({
   source: ['projects', 'media'],
-  edit: ['captions'],
+  edit: ['captions', 'transcript'],
   render: ['render'],
   deliver: ['deliver'],
 })
+
+// Stages that show one of their panels at a time, chosen by a switch: two
+// stacked left each a sliver on a phone. The first is shown until another is chosen.
+export const ONE_AT_A_TIME = Object.freeze(new Set(['edit']))
+const chosen = {}
+
+/** Which of the stage's panels are drawn. */
+const shownOn = stage => {
+  const panels = FLOW_STAGE_PANELS[stage] || []
+  if (!ONE_AT_A_TIME.has(stage)) return panels
+  return [panels.includes(chosen[stage]) ? chosen[stage] : panels[0]]
+}
+
+/** The switch between a one-at-a-time stage's panels. */
+const Switch = {
+  view: ({ attrs: { stage } }) => {
+    const [shown] = shownOn(stage)
+    return m(
+      '.flowswitch',
+      { role: 'group', 'aria-label': 'Panel shown' },
+      FLOW_STAGE_PANELS[stage].map(id =>
+        m(
+          `button.flowswitchitem#flowswitch-${id}`,
+          {
+            type: 'button',
+            class: id === shown ? 'active' : '',
+            'aria-pressed': id === shown ? 'true' : 'false',
+            onclick: () => (chosen[stage] = id),
+          },
+          PanelRegistry.get(id).title
+        )
+      )
+    )
+  },
+}
 
 /**
  * A place in the flow for one panel from the registry.
@@ -60,7 +95,10 @@ export const StackedFlow = {
     m(
       '.flowstage',
       { class: `flowstage--${Flow.stage()}` },
-      (FLOW_STAGE_PANELS[Flow.stage()] || []).map(id => m(Slot, { key: id, panel: id }))
+      [
+        ...(ONE_AT_A_TIME.has(Flow.stage()) ? [m(Switch, { key: 'switch', stage: Flow.stage() })] : []),
+        ...shownOn(Flow.stage()).map(id => m(Slot, { key: id, panel: id })),
+      ]
     ),
     m(Slot, {
       panel: 'viewer',

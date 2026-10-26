@@ -63,6 +63,18 @@ def captions_of(api, account, project_id):
     return res.json()
 
 
+def words_of(api, account, project_id):
+    res = api.get(f'/project/{project_id}/captions/words', headers=account.headers)
+    assert res.status_code == 200, res.text
+    return res.json()['words']
+
+
+WORDS = [
+    {'start': 0.5, 'end': 0.9, 'text': 'Kept', 'segment': 0},
+    {'start': 0.9, 'end': 1.3, 'text': 'words.', 'segment': 0},
+]
+
+
 class TestTheRoundTrip:
     def test_saved_in_order_and_read_back(self, api, alice, make_project):
         project = make_project(alice)
@@ -105,6 +117,70 @@ class TestTheRoundTrip:
         assert res.status_code == 200, res.text
         assert [c['text'] for c in res.json()['captions']] == ['Sooner', 'Later']
         assert captions_of(api, alice, project['_id'])['captions'] == []
+
+
+class TestTheWords:
+    def test_saved_with_the_captions_and_read_back(self, api, alice, make_project):
+        project = make_project(alice)
+        assert words_of(api, alice, project['_id']) == []
+        res = api.put(
+            f'/project/{project["_id"]}/captions',
+            json={
+                'captions': [{'start': 0.5, 'end': 1.3, 'text': 'Kept words.'}],
+                'words': WORDS,
+            },
+            headers=alice.headers,
+        )
+        assert res.status_code == 200, res.text
+        assert words_of(api, alice, project['_id']) == WORDS
+        # A save that leaves them out keeps them.
+        api.put(
+            f'/project/{project["_id"]}/captions',
+            json={'captions': []},
+            headers=alice.headers,
+        )
+        assert words_of(api, alice, project['_id']) == WORDS
+
+    def test_the_project_does_not_carry_them(self, api, alice, make_project):
+        """Nor does the project list."""
+        project = make_project(alice)
+        api.put(
+            f'/project/{project["_id"]}/captions',
+            json={'captions': [], 'words': WORDS},
+            headers=alice.headers,
+        )
+        whole = api.get(f'/project/{project["_id"]}', headers=alice.headers).json()
+        assert 'words' not in whole
+        [listed] = [
+            p
+            for p in api.get('/project', headers=alice.headers).json()
+            if p['_id'] == project['_id']
+        ]
+        assert 'words' not in listed
+
+    def test_saving_the_project_or_its_timeline_keeps_them(
+        self, api, alice, make_project
+    ):
+        project = make_project(alice)
+        api.put(
+            f'/project/{project["_id"]}/captions',
+            json={'captions': [], 'words': WORDS},
+            headers=alice.headers,
+        )
+        api.put(f'/project/{project["_id"]}/timeline', json=TALK, headers=alice.headers)
+        res = api.put(
+            f'/project/{project["_id"]}',
+            json={'name': 'renamed', 'logic': {}, 'words': []},
+            headers=alice.headers,
+        )
+        assert res.status_code == 200, res.text
+        assert words_of(api, alice, project['_id']) == WORDS
+
+    def test_somebody_else_s_are_404(self, api, alice, make_account, make_project):
+        project = make_project(alice)
+        bob = make_account('bob')
+        res = api.get(f'/project/{project["_id"]}/captions/words', headers=bob.headers)
+        assert res.status_code == 404
 
 
 class TestTheRestOfTheProject:
@@ -212,7 +288,7 @@ class TestTranscribing:
     def test_the_whole_lifecycle(
         self, api, alice, make_project, queue, engine, monkeypatch
     ):
-        from alfred.core.models.captions import Caption
+        from alfred.core.models.captions import Caption, Word
         from alfred.core.utils import tasks
 
         project = make_project(alice, edl=TALK)
@@ -233,7 +309,11 @@ class TestTranscribing:
         def transcribe_timeline(edl):
             # Mid-job, the client sees it under way.
             seen.append(captions_of(api, alice, project['_id'])['job']['state'])
-            return [Caption(start=0.5, end=1.5, text='Heard')], 1
+            return (
+                [Caption(start=0.5, end=1.5, text='Heard')],
+                1,
+                [Word(start=0.5, end=1.5, text=' Heard', segment=0)],
+            )
 
         monkeypatch.setattr(tasks, 'transcribe_timeline', transcribe_timeline)
         tasks.transcribeCaptions(**queue.sent[0])
@@ -244,6 +324,9 @@ class TestTranscribing:
         assert body['job']['segments'] == 1
         assert body['job']['engine'] == 'http://engine.test:8010'
         assert body['captions'] == [{'start': 0.5, 'end': 1.5, 'text': 'Heard'}]
+        assert words_of(api, alice, project['_id']) == [
+            {'start': 0.5, 'end': 1.5, 'text': 'Heard', 'segment': 0}
+        ]
 
         # Done, so it may be asked for again.
         assert (
@@ -268,8 +351,15 @@ class TestTranscribing:
                 'the audio engine at http://engine.test:8010: connection refused'
             )
 
+        api.put(
+            f'/project/{project["_id"]}/captions',
+            json={'captions': [], 'words': WORDS},
+            headers=alice.headers,
+        )
         monkeypatch.setattr(tasks, 'transcribe_timeline', unreachable)
         tasks.transcribeCaptions(**queue.sent[0])
+        # Words from before are kept.
+        assert words_of(api, alice, project['_id']) == WORDS
         job = captions_of(api, alice, project['_id'])['job']
         assert job['state'] == 'failed'
         assert (
