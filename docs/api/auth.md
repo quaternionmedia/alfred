@@ -48,10 +48,14 @@ anyone who can reach the login form can send a handful. The library leaves no
 seam: its methods call `password_helper` between awaits on the database. So
 alfred carries its own copies of the five methods that hash or check a
 password (`authenticate`, `create`, `forgot_password`, `reset_password` and
-`_update`), identical but for hashing in the thread pool, in
+`_update`), identical but for hashing off the loop, in
 `alfred/core/utils/passwords.py`. Argon2 and bcrypt release the GIL while they
-work, so the loop runs meanwhile. The thread pool runs up to 40 at once, so a
-burst of logins can hold about 2.5 GiB.
+work, so the loop runs meanwhile.
+
+The hashing has a pool of its own, four threads wide (`HASHES_AT_ONCE`). At
+64 MiB a hash, a burst of logins holds at most 256 MiB and the rest wait their
+turn. In the shared thread pool, 40 at once could hold about 2.5 GiB, and would
+take the threads that previews and renders' bookkeeping run in.
 
 Guards keep the copied security code from drifting quietly from the original:
 
@@ -66,8 +70,8 @@ Guards keep the copied security code from drifting quietly from the original:
   address, which keeps its refusal as slow as a wrong password, and a bcrypt
   hash made by fastapi-users 10.4.2 logging in and becoming Argon2. Other
   tests show `/healthz` answering while a login, a registration, a reset or a
-  change of password is hashed, and `tests/unit/test_blocking_calls.py` fails
-  if a coroutine hashes directly.
+  change of password is hashed, and no more than four hashing at once; and
+  `tests/unit/test_blocking_calls.py` fails if a coroutine hashes directly.
 - **The api says so as it starts**, in one line beginning `Password hashing:`.
 
 So upgrading fastapi-users starts with that module, and the guard fails

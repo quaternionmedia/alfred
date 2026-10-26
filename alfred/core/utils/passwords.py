@@ -1,14 +1,16 @@
-"""Passwords hashed and checked in the thread pool, not on the event loop.
+"""Passwords hashed and checked in a pool of their own, not on the event loop.
 
 `HashesOffTheLoop` holds copies of the five fastapi-users methods that hash or
 check a password: the library's code line for line, but for awaiting every
-`password_helper` call in the thread pool. Importing this module refuses any
+`password_helper` call in a pool of HASHES_AT_ONCE threads of its own. Importing this module refuses any
 release but CHECKED_AGAINST, and any original that changed (`LibraryChanged`).
 Why, and how to upgrade: docs/api/auth.md#password-hashing.
 """
 
+import asyncio
 import hashlib
 import inspect
+from concurrent.futures import ThreadPoolExecutor
 from textwrap import wrap
 
 import fastapi_users
@@ -16,9 +18,12 @@ import jwt
 from fastapi_users import exceptions
 from fastapi_users.jwt import decode_jwt, generate_jwt
 from fastapi_users.manager import BaseUserManager
-from starlette.concurrency import run_in_threadpool
 
 CHECKED_AGAINST = '15.0.5'
+
+# Argon2 takes 64 MiB a hash; more logins than this wait their turn.
+HASHES_AT_ONCE = 4
+_hashing = ThreadPoolExecutor(HASHES_AT_ONCE, thread_name_prefix='password')
 
 # Each library method replaced: where it is in fastapi_users/manager.py at
 # CHECKED_AGAINST, and the sha256 of its source as `inspect.getsource` reads it.
@@ -53,9 +58,9 @@ NOT_REPLACED = {
 
 STARTUP_LINE = (
     f'Password hashing: alfred replaces the fastapi-users {CHECKED_AGAINST} '
-    f'methods {", ".join(REPLACED)} with copies that hash and check in the '
-    'thread pool (alfred/core/utils/passwords.py). Checked against that '
-    'release at import; any other refuses to start.'
+    f'methods {", ".join(REPLACED)} with copies that hash and check in a pool '
+    f'of {HASHES_AT_ONCE} threads (alfred/core/utils/passwords.py). Checked '
+    'against that release at import; any other refuses to start.'
 )
 
 
@@ -99,7 +104,7 @@ def refusal(changes):
     advice = (
         "alfred/core/utils/passwords.py replaces BaseUserManager's "
         f'{", ".join(REPLACED)} with copies of its own, which hash and check '
-        'passwords in the thread pool. A copy of security code that no longer '
+        'passwords off the event loop. A copy of security code that no longer '
         'matches the original is how an upstream fix goes missing, so the api '
         'will not start against it. Read each replaced method in the installed '
         'release, carry what changed into the copy, then update CHECKED_AGAINST '
@@ -121,20 +126,25 @@ def check_library():
 
 
 class HashesOffTheLoop:
-    """BaseUserManager's methods that hash or check passwords, in the thread pool.
+    """BaseUserManager's methods that hash or check passwords, off the loop.
 
     Listed before BaseUserManager in a manager's bases. Each body is the
     library's, comments included; only the `password_helper` calls differ.
     """
 
     async def hash_password(self, password):
-        """`password_helper.hash`, in the thread pool."""
-        return await run_in_threadpool(self.password_helper.hash, password)
+        """`password_helper.hash`, in the hashing pool."""
+        return await asyncio.get_running_loop().run_in_executor(
+            _hashing, self.password_helper.hash, password
+        )
 
     async def check_password(self, plain_password, hashed_password):
-        """`password_helper.verify_and_update`, in the thread pool."""
-        return await run_in_threadpool(
-            self.password_helper.verify_and_update, plain_password, hashed_password
+        """`password_helper.verify_and_update`, in the hashing pool."""
+        return await asyncio.get_running_loop().run_in_executor(
+            _hashing,
+            self.password_helper.verify_and_update,
+            plain_password,
+            hashed_password,
         )
 
     async def create(self, user_create, safe=False, request=None):

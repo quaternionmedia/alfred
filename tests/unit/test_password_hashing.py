@@ -4,6 +4,7 @@
   checked against; every method that touches the helper is accounted for.
 - `TestTheSameAsTheLibrary`: copy and original do the same things, in order;
   only where the hashing runs differs.
+- `TestTheHashingPool`: no more than HASHES_AT_ONCE hash at once.
 - `TestAlfredsOwnRules`: the dev login's refusal hashes off the loop too.
 - `TestWithRealHashes`: Argon2 and bcrypt, as fastapi-users 15 hashes them;
   a 10.4 bcrypt hash logs in and becomes Argon2.
@@ -16,6 +17,8 @@ import asyncio
 import importlib.util
 import inspect
 import re
+import threading
+import time
 from textwrap import dedent
 from types import SimpleNamespace
 
@@ -428,6 +431,47 @@ class TestTheSameAsTheLibrary:
             'carol@example.com',
             {'hashed_password': 'hashed(carol password)'},
         )
+
+
+class Crowd:
+    """A password helper that counts how many of its calls run at once."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.now = self.most = 0
+
+    def _busy(self):
+        with self.lock:
+            self.now += 1
+            self.most = max(self.most, self.now)
+        time.sleep(0.1)
+        with self.lock:
+            self.now -= 1
+
+    def hash(self, password):
+        self._busy()
+        return f'hashed({password})'
+
+    def verify_and_update(self, plain_password, hashed_password):
+        self._busy()
+        return True, None
+
+
+class TestTheHashingPool:
+    def test_a_burst_of_hashes_and_checks_waits_its_turn(self):
+        """Argon2 takes 64 MiB a hash: a burst must not take 40 threads' worth."""
+        crowd = Crowd()
+        manager = Copy(Users(*accounts()), crowd)
+        each = passwords.HASHES_AT_ONCE * 2
+
+        async def burst():
+            await asyncio.gather(
+                *(manager.hash_password('p') for _ in range(each)),
+                *(manager.check_password('p', 'hashed(p)') for _ in range(each)),
+            )
+
+        asyncio.run(burst())
+        assert 1 < crowd.most <= passwords.HASHES_AT_ONCE
 
 
 class TestAlfredsOwnRules:
