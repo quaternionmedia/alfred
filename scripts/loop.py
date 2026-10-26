@@ -318,6 +318,19 @@ def summary(suite, text):
     return ''
 
 
+FAILED_TEST = re.compile(r'^(\s+\d+\) \[[\w-]+\] .+|FAILED \S+.*)$')
+
+
+def failures(text):
+    """The failed tests a log names: Playwright's numbered ones, pytest's FAILED."""
+    found = [
+        line.strip()
+        for line in map(plain, text.splitlines())
+        if FAILED_TEST.match(line)
+    ]
+    return list(dict.fromkeys(found))
+
+
 def took(seconds):
     minutes, seconds = divmod(int(seconds), 60)
     return f'{minutes}m{seconds:02d}s' if minutes else f'{seconds}s'
@@ -529,12 +542,14 @@ def report(run, suite, ok, seconds, failed):
     if ok:
         say(f'ok {suite:<8} {took(seconds):>7}  {counted}')
         return
+    named = failures(text)
     say(
         f'XX {suite:<8} {took(seconds):>7}  {failed.label} failed'
-        f'{"; " + counted if counted else ""}; {family.shown(log)} ends:'
+        f'{"; " + counted if counted else ""}; {family.shown(log)}'
+        + (' names:' if named else ' ends:')
     )
-    for line in text.splitlines()[-15:]:
-        say(f'     {family.redact(plain(line))}')
+    for line in named[:15] or [plain(line) for line in text.splitlines()[-15:]]:
+        say(f'     {family.redact(line)}')
 
 
 # --- the other commands ------------------------------------------------------

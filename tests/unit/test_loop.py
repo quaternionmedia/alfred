@@ -261,6 +261,22 @@ class TestWhatALogSays:
         assert loop.summary('stack', 'PASS  x\n8 pass, 1 skip') == '8 pass, 1 skip'
         assert loop.summary('e2e', 'nothing counted') == ''
 
+    def test_a_failure_names_the_failed_tests(self):
+        # Mutation: report the log's last lines only -- this fails.
+        log = '\n'.join(
+            [
+                'alfred-check-e2e-e2e-1  |   1) [chromium] › e2e/a.spec.js:3:1 › a thing works',
+                'alfred-check-e2e-e2e-1  |     Error: nope',
+                'alfred-check-e2e-e2e-1  |   1) [chromium] › e2e/a.spec.js:3:1 › a thing works',
+                'alfred-main-pytest-pytest-1  | FAILED tests/unit/test_x.py::test_y - assert 1',
+                'alfred-check-e2e-db-1  | shutting down',
+            ]
+        )
+        assert loop.failures(log) == [
+            '1) [chromium] › e2e/a.spec.js:3:1 › a thing works',
+            'FAILED tests/unit/test_x.py::test_y - assert 1',
+        ]
+
     def test_minutes_and_seconds(self):
         assert (loop.took(9.6), loop.took(372)) == ('9s', '6m12s')
 
