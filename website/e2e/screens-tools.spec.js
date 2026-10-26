@@ -21,7 +21,7 @@ const {
 const PROJECT = 'tools demo'
 
 // Panels closed so the viewer and timeline take the full width.
-const ASIDE = ['projects', 'media', 'template', 'render', 'deliver', 'captions']
+const ASIDE = ['projects', 'media', 'template', 'transcript', 'render', 'deliver', 'captions']
 
 // Zoom-in presses: about 200 px a second, room for each clip's label.
 const ZOOMS = 3
