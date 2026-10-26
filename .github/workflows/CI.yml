@@ -9,9 +9,9 @@ jobs:
   # resolution, and the two engines vendored at alfred/otto (the picture) and
   # alfred/vox (the sound) rather than releases from an index. All with
   # --no-deps, as the Dockerfile and tests/noxfile.py install them: the lock
-  # carries overrides pip does not read (the Dockerfile says more). The org workflow's defaults are a
-  # floating 3.x -- 3.14, where reportlab<4 has no wheel and nothing installs
-  # -- with no submodules and no lockfile.
+  # carries overrides pip does not read (the Dockerfile says more). The org
+  # workflow's defaults are a floating 3.x -- 3.14, where reportlab<4 has no
+  # wheel and nothing installs -- with no submodules and no lockfile.
   #
   # The runner has no ImageMagick, so the needs_imagemagick tests -- the ones
   # that draw text, and through gizeh boxes -- skip here and run in the image

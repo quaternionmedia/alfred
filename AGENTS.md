@@ -178,10 +178,10 @@ between the markers), so it is kept here only.
   on loopback; `ALFRED_DB_BIND` moves it, for someone who means to.
 - **The signing key.** The committed `.secret_key` is a stub that leaves
   `ALFRED_SECRET_KEY` empty, and PyJWT refuses an empty key, so every login
-  would answer 500. `./al init`,
-  `./al dev` and `./al thin` create `.secret_key.local` (git-ignored) with a
-  random key for this checkout, and `dev.yml` loads it over the stub. Delete
-  it to rotate. Production never reads it: `./al prod` needs the key exported.
+  would answer 500. `./al init`, `./al dev` and `./al thin` create
+  `.secret_key.local` (git-ignored) with a random key for this checkout, and
+  `dev.yml` loads it over the stub. Delete it to rotate. Production never
+  reads it: `./al prod` needs the key exported.
 - **`UID`/`GID`.** `dev.yml` sets the db container's user from `${UID}:${GID}`.
   Most shells export neither, and `UID` is read-only in bash, so compose warns
   and substitutes blanks. Harmless on Docker Desktop; export both if the db
