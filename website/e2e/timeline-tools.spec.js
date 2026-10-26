@@ -822,7 +822,16 @@ test.describe('zoom', () => {
   test('its buttons and its bar sit side by side, none drawn over another', async ({
     authedPage,
   }) => {
-    // Mutation: zoom in `position: absolute; right: 0` (Scale.js) -- fails on a phone.
+    /**
+     * Zoom in was placed `absolute` at the right of whatever box held it: in
+     * the workspace's tools column it was drawn over the bar, whose end ran on
+     * under the bin beside the column; on a phone it sat at the far end of the
+     * row, away from its bar. The workspace's column has no room for a bar
+     * between two buttons, so there the buttons zoom alone (editor.scss).
+     *
+     * Mutation: put back `position: absolute; right: 0` on zoom in (Scale.js)
+     * and on a phone it leaves the bar's box, and this fails.
+     */
     await authedPage.goto('/')
     // Icons are words until the font loads; measure after.
     await authedPage.evaluate(() => document.fonts.ready)
