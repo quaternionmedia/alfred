@@ -11,7 +11,7 @@
  * send while it moves, so on a phone trimming did nothing at all.
  */
 
-const { test, expect, MEDIA_PROJECT } = require('./fixtures')
+const { test, expect, MEDIA_PROJECT, templateQuery } = require('./fixtures')
 
 async function mediaProject(request, token) {
   const projects = await (
@@ -312,7 +312,7 @@ test.describe('cut', () => {
     const frames = []
     authedPage.on('request', req => {
       const url = new URL(req.url())
-      if (url.pathname === '/preview/template/title') frames.push(url.searchParams)
+      if (url.pathname === '/preview/template/title') frames.push(templateQuery(url))
     })
     await authedPage.goto('/#!/?stage=edit')
     await authedPage.locator('#bin .binclip[data-bin-name="title"] .binadd').click()
