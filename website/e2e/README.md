@@ -100,10 +100,9 @@ The suite could not run as configured either: `cypress.json`,
 
 ## Verification status
 
-`./al test` on `feat/edit-by-text-and-loop`: **443 tests, 442 passed and 1 passed only on
-retry** (the zoom row's measure, since loosened to a wrap's size), across the
-`chromium` (workspace) and `phone` (stage flow) projects, including the
-`@slow` specs that wait on a real encode. The project
+`./al test` on `feat/pydantic-2`: **443 tests, all passed, none only on
+retry**, across the `chromium` (workspace) and `phone` (stage flow) projects,
+including the `@slow` specs that wait on a real encode. The project
 filter test makes the projects it filters, so nothing here skips for want of
 data.
 

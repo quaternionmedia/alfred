@@ -6,14 +6,15 @@ Scope: the backend and the render engine. Browser coverage lives in
 ## Status
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
-stack's own configuration: **1986 tests -- 1970 passed, 8 skipped, 8
-xfailed** in the `./al pytest` container, measured on `feat/edit-by-text-and-loop` with
+stack's own configuration: **1997 tests -- 1979 passed, 10 skipped, 8
+xfailed** in the `./al pytest` container, measured on `feat/pydantic-2` with
 its `db` service up, so the database tier ran too. One skip needs a Docker
 CLI and seven need node, neither of which that container has; so the
 byte-for-byte cookbook check (`test_cookbook.py`) and the recipes'
 collector tests (`test_recipe_gifs.py`) run in CI and on a host with node,
-not in `./al pytest`. Where ImageMagick cannot draw text, six more
-skip (`needs_imagemagick`).
+not in `./al pytest`. From a git worktree two more skip: they ask git what
+the checkout tracks, and the container cannot follow a worktree's `.git`.
+Where ImageMagick cannot draw text, six more skip (`needs_imagemagick`).
 
 IS-5's render queueing is tested without a database:
 `unit/test_render_requests.py`, `test_render_ownership.py` and
