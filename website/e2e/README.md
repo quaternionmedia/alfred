@@ -100,9 +100,10 @@ The suite could not run as configured either: `cypress.json`,
 
 ## Verification status
 
-`./al test` on `feat/close-gaps`: **402 passed**, across the `chromium`
-(workspace) and `phone` (stage flow) projects, including the `@slow` specs
-that wait on a real encode, with no test passed only on retry. The project
+`./al test` on `round-9`: **443 tests, 442 passed and 1 passed only on
+retry** (the zoom row's measure, since loosened to a wrap's size), across the
+`chromium` (workspace) and `phone` (stage flow) projects, including the
+`@slow` specs that wait on a real encode. The project
 filter test makes the projects it filters, so nothing here skips for want of
 data.
 
