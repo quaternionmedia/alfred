@@ -21,7 +21,7 @@ import re
 from datetime import datetime
 from typing import Literal, Optional, Tuple, Union
 
-from pydantic import BaseModel, conint, root_validator, validator
+from pydantic import BaseModel, conint, field_validator, model_validator
 
 # The longest a caption's text may be. Two full subtitle lines are under a
 # hundred characters; this is generous, and still bounds what a render has to
@@ -48,15 +48,15 @@ def clean_caption_text(text) -> str:
     return '\n'.join(line for line in lines if line)
 
 
-def timeline_seconds(value, field):
+def timeline_seconds(value, name):
     """`value` as a time on a timeline: finite, not negative, not past
     MAX_CAPTION_SECONDS, and to the millisecond."""
     if not math.isfinite(value):
-        raise ValueError(f'{field.name} must be a number of seconds')
+        raise ValueError(f'{name} must be a number of seconds')
     if value < 0:
-        raise ValueError(f'{field.name} must not be negative')
+        raise ValueError(f'{name} must not be negative')
     if value > MAX_CAPTION_SECONDS:
-        raise ValueError(f'{field.name} must be at most {MAX_CAPTION_SECONDS} seconds')
+        raise ValueError(f'{name} must be at most {MAX_CAPTION_SECONDS} seconds')
     # Milliseconds are what any subtitle format can say, and what the
     # editor shows; a float's last digits are noise.
     return round(value, 3)
@@ -69,11 +69,13 @@ class Caption(BaseModel):
     end: float
     text: str
 
-    @validator('start', 'end')
-    def a_time_on_a_timeline(cls, value, field):
-        return timeline_seconds(value, field)
+    @field_validator('start', 'end')
+    @classmethod
+    def a_time_on_a_timeline(cls, value, info):
+        return timeline_seconds(value, info.field_name)
 
-    @validator('text')
+    @field_validator('text')
+    @classmethod
     def something_to_read(cls, value):
         text = clean_caption_text(value)
         if not text:
@@ -85,14 +87,14 @@ class Caption(BaseModel):
             )
         return text
 
-    @root_validator(skip_on_failure=True)
-    def ends_after_it_starts(cls, values):
-        if values['end'] <= values['start']:
+    @model_validator(mode='after')
+    def ends_after_it_starts(self):
+        if self.end <= self.start:
             raise ValueError(
                 f'a caption must end after it starts '
-                f'(start {values["start"]}, end {values["end"]})'
+                f'(start {self.start}, end {self.end})'
             )
-        return values
+        return self
 
 
 # Longest word text kept; punctuation is attached to words.
@@ -106,13 +108,15 @@ class Word(BaseModel):
     start: float
     end: float
     text: str
-    segment: Optional[conint(ge=0)]
+    segment: Optional[conint(ge=0)] = None
 
-    @validator('start', 'end')
-    def a_time_on_a_timeline(cls, value, field):
-        return timeline_seconds(value, field)
+    @field_validator('start', 'end')
+    @classmethod
+    def a_time_on_a_timeline(cls, value, info):
+        return timeline_seconds(value, info.field_name)
 
-    @validator('text')
+    @field_validator('text')
+    @classmethod
     def one_word(cls, value):
         # One line; drops whisper's leading space.
         text = ' '.join(clean_caption_text(value).split())
@@ -124,14 +128,14 @@ class Word(BaseModel):
             )
         return text
 
-    @root_validator(skip_on_failure=True)
-    def does_not_end_before_it_starts(cls, values):
-        if values['end'] < values['start']:
+    @model_validator(mode='after')
+    def does_not_end_before_it_starts(self):
+        if self.end < self.start:
             raise ValueError(
                 f'a word must not end before it starts '
-                f'(start {values["start"]}, end {values["end"]})'
+                f'(start {self.start}, end {self.end})'
             )
-        return values
+        return self
 
 
 # Where a caption may sit: a word otto places a clip by, or a pair of them --
@@ -178,15 +182,16 @@ class CaptionStyle(BaseModel):
     # False keeps the captions without drawing them into renders.
     enabled: bool = True
     # Pixels at 1080 lines (see MIN_FONTSIZE); scaled with the render.
-    fontsize: Optional[float]
-    color: Optional[str]
+    fontsize: Optional[float] = None
+    color: Optional[str] = None
     # The box behind the text: a colour, drawn translucent, or '' for none.
-    bg: Optional[str]
-    position: Optional[Union[str, Tuple[str, str]]]
-    align: Optional[str]
-    font: Optional[str]
+    bg: Optional[str] = None
+    position: Optional[Union[str, Tuple[str, str]]] = None
+    align: Optional[str] = None
+    font: Optional[str] = None
 
-    @validator('fontsize')
+    @field_validator('fontsize')
+    @classmethod
     def a_readable_size(cls, value):
         if value is None:
             return value
@@ -197,11 +202,13 @@ class CaptionStyle(BaseModel):
             )
         return value
 
-    @validator('color')
+    @field_validator('color')
+    @classmethod
     def a_text_colour(cls, value):
         return None if value is None else hex_colour(value)
 
-    @validator('bg')
+    @field_validator('bg')
+    @classmethod
     def a_box_colour_or_none(cls, value):
         if value is None:
             return value
@@ -209,7 +216,8 @@ class CaptionStyle(BaseModel):
             return ''
         return hex_colour(value)
 
-    @validator('position')
+    @field_validator('position')
+    @classmethod
     def a_place_in_the_frame(cls, value):
         if value is None:
             return value
@@ -226,7 +234,8 @@ class CaptionStyle(BaseModel):
             f'not {value!r}'
         )
 
-    @validator('align')
+    @field_validator('align')
+    @classmethod
     def a_known_alignment(cls, value):
         if value is None:
             return value
@@ -237,7 +246,8 @@ class CaptionStyle(BaseModel):
             )
         return word
 
-    @validator('font')
+    @field_validator('font')
+    @classmethod
     def a_font_name(cls, value):
         if value is None:
             return value
@@ -260,9 +270,9 @@ class CaptionsJob(BaseModel):
     -- when it failed -- why, in a line."""
 
     state: JobState
-    error: Optional[str]
+    error: Optional[str] = None
     # The engine that was asked: its address, without credentials.
-    engine: Optional[str]
+    engine: Optional[str] = None
     # How many segments of speech the engine heard.
-    segments: Optional[int]
-    updated_at: Optional[datetime]
+    segments: Optional[int] = None
+    updated_at: Optional[datetime] = None

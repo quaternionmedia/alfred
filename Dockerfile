@@ -17,12 +17,10 @@ COPY alfred alfred
 # not testing the versions the application used, and two builds a month apart
 # were not the same application.
 #
-# --no-deps, on the lockfile and on the project, because pip cannot reproduce
-# what pdm resolved. pyproject.toml overrides fastapi-users' exact pin on
-# python-multipart (0.0.6, with nine advisories); pdm honours an override and
-# pip has none, so resolving either the lockfile or the project fails outright
-# (ResolutionImpossible). `pip check` here reports that one conflict, and it is
-# the intended one. What resolving used to catch -- a dependency added to
+# --no-deps, on the lockfile and on the project, so pip resolves nothing: the
+# versions are pdm's, overrides included, and pip reads no overrides. `pip
+# check` here reports only vox's speech and CLI dependencies, which alfred
+# never loads. What resolving used to catch -- a dependency added to
 # pyproject.toml and never locked, which --no-deps would leave out --
 # tests/unit/test_stack_config.py checks against requirements.lock instead.
 #

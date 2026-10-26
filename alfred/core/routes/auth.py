@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from alfred import config
 
@@ -44,7 +44,6 @@ auth.include_router(fastapi_users.get_verify_router(UserRead))
 
 @auth.post("/jwt/refresh")
 async def refresh_jwt(
-    response: Response,
     user=Depends(current_active_user),
     strategy=Depends(auth_backend.get_strategy),
 ):
@@ -60,4 +59,4 @@ async def refresh_jwt(
     existed on AuthenticationBackend for several major versions, so every
     refresh answered 500 until that was fixed.
     """
-    return await auth_backend.login(strategy, user, response)
+    return await auth_backend.login(strategy, user)

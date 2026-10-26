@@ -5,7 +5,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends
 from fastapi.encoders import jsonable_encoder
 from fastapi_crudrouter import MotorCRUDRouter
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from starlette.concurrency import run_in_threadpool
 
 from alfred.config import DB_NAME, DB_URL
@@ -144,7 +144,7 @@ def task_payload(render: Render) -> dict:
     rerender draws them as the first render did.
     """
     moviesize = [render.width or 1920, render.height or 1080]
-    edl = render.edl.dict()
+    edl = render.edl.model_dump()
     if render.captions:
         edl = with_captions(
             edl,
@@ -379,13 +379,12 @@ class RenderLabels(BaseModel):
     Everything else on a render is the server's record of what happened.
     """
 
-    name: Optional[str]
-    project: Optional[str]
-    project_id: Optional[PydanticObjectId]
-    description: Optional[str]
+    name: Optional[str] = None
+    project: Optional[str] = None
+    project_id: Optional[PydanticObjectId] = None
+    description: Optional[str] = None
 
-    class Config:
-        extra = 'forbid'
+    model_config = ConfigDict(extra='forbid')
 
 
 class RenderAPI(MotorCRUDRouter):
@@ -640,7 +639,7 @@ class RenderAPI(MotorCRUDRouter):
             other field is a 422 (see `RenderLabels`).
             """
             render = await load_owned_render(store, item_id, user)
-            changes = labels.dict(exclude_unset=True)
+            changes = labels.model_dump(exclude_unset=True)
             for name, value in changes.items():
                 setattr(render, name, value)
             changes['display_name'] = display_name_for(render)

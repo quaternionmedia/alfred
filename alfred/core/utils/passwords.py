@@ -1,46 +1,16 @@
-"""Passwords hashed and checked in the thread pool, not on the event loop.
+"""Passwords hashed and checked in a pool of their own, not on the event loop.
 
-fastapi-users 10.4 hashes and checks passwords inside its coroutines, so the
-work runs on the event loop. bcrypt is slow on purpose -- about 0.3 s a hash
-or a check on the api image -- and the api is one process with one loop:
-while a login was checked, nothing else was answered, not a preview and not
-`/healthz`. A handful of logins at once held the api for seconds, and anyone
-who can reach the login form can send a handful.
-
-The library leaves no seam for it. Its methods that hash or check call
-`password_helper` synchronously, between awaits on the database, so the helper
-cannot be made awaitable from outside and the methods cannot be run in a
-thread. `HashesOffTheLoop` replaces the five that alfred reaches --
-`authenticate`, `create`, `forgot_password`, `reset_password` and `_update` --
-with the library's own code, line for line, except that every `password_helper`
-call is awaited through the thread pool. bcrypt releases the GIL while it
-works, so the loop runs freely meanwhile.
-
-That is a copy of security code, and a copy drifts: a fix made upstream would
-go missing here without a sound. So it is guarded, loudly.
-
-- **The release and the source it was checked against.** `CHECKED_AGAINST`
-  names the fastapi-users release, and `REPLACED` holds a fingerprint of the
-  source of each method replaced. Importing this module compares both with the
-  installed library and raises `LibraryChanged` when either differs, so the
-  api does not start. The message names what differs and what to re-check.
-- **Tests that CI runs.** tests/unit/test_password_hashing.py holds the same
-  check. It requires every library method that touches the password helper
-  to be replaced or named in `NOT_REPLACED`. It drives each replacement and
-  the library's original through the same cases, and requires the same
-  outcome. And it shows the api answering `/healthz` while a login's check is
-  held. tests/unit/test_blocking_calls.py knows the helper's calls block.
-- **A line at every startup** (`STARTUP_LINE`, printed by main.py), so nobody
-  is surprised to find it.
-
-When fastapi-users is upgraded, the guard fails first. Read each method in
-`REPLACED` in the new release, carry what changed into the copy here, then
-update `CHECKED_AGAINST` and `REPLACED`. If the new release no longer hashes
-on the loop, delete the copy instead.
+`HashesOffTheLoop` holds copies of the five fastapi-users methods that hash or
+check a password: the library's code line for line, but for awaiting every
+`password_helper` call in a pool of HASHES_AT_ONCE threads of its own. Importing this module refuses any
+release but CHECKED_AGAINST, and any original that changed (`LibraryChanged`).
+Why, and how to upgrade: docs/api/auth.md#password-hashing.
 """
 
+import asyncio
 import hashlib
 import inspect
+from concurrent.futures import ThreadPoolExecutor
 from textwrap import wrap
 
 import fastapi_users
@@ -48,32 +18,35 @@ import jwt
 from fastapi_users import exceptions
 from fastapi_users.jwt import decode_jwt, generate_jwt
 from fastapi_users.manager import BaseUserManager
-from starlette.concurrency import run_in_threadpool
 
-CHECKED_AGAINST = '10.4.2'
+CHECKED_AGAINST = '15.0.5'
+
+# Argon2 takes 64 MiB a hash; more logins than this wait their turn.
+HASHES_AT_ONCE = 4
+_hashing = ThreadPoolExecutor(HASHES_AT_ONCE, thread_name_prefix='password')
 
 # Each library method replaced: where it is in fastapi_users/manager.py at
 # CHECKED_AGAINST, and the sha256 of its source as `inspect.getsource` reads it.
 REPLACED = {
     'authenticate': (
-        'manager.py:630',
-        'd00126280591fe2fab843278baf8248364a1ded05c050808f9eb008619e74e44',
+        'manager.py:636',
+        'e453ea340730cf50c47dfa131f0708706fcaaf1d196c5dcb93c07dc023903188',
     ),
     'create': (
         'manager.py:110',
-        '9ea6945bce6ccd45dba973fdf6176acf27a70c8c765f8b46b013d049910812a3',
+        '3d1328456778ffce42a3ec59f4ba5611468084c7336a533d07da4573df472cb7',
     ),
     'forgot_password': (
         'manager.py:358',
-        '5045b21bcee75c1d3e52b80b032b49f83dc4ebcdbc3720ea36442386f5b137d2',
+        '785379634e5059ec0baccd44c8fdd98fd0034bb5fb5952b733db62f73a456595',
     ),
     'reset_password': (
         'manager.py:386',
-        'c67e1e47b1766ebdc3d6d2fece77428d66bd758fb0c3a89772eae36d8a99b0db',
+        'f0c5df8b888017290be39b6cb3ea30567d28392e573a069875972729af73cb3e',
     ),
     '_update': (
-        'manager.py:659',
-        '89bb1bbc4482bc168f2d57f33bf46d64045b4d89c0ccd25736931575d24c0f4b',
+        'manager.py:667',
+        '1c49e7a79f770662558dc24d0ae60074ff4c03b60f83e23e82a02bc75f34936b',
     ),
 }
 
@@ -85,9 +58,9 @@ NOT_REPLACED = {
 
 STARTUP_LINE = (
     f'Password hashing: alfred replaces the fastapi-users {CHECKED_AGAINST} '
-    f'methods {", ".join(REPLACED)} with copies that hash and check in the '
-    'thread pool (alfred/core/utils/passwords.py). Checked against that '
-    'release at import; any other refuses to start.'
+    f'methods {", ".join(REPLACED)} with copies that hash and check in a pool '
+    f'of {HASHES_AT_ONCE} threads (alfred/core/utils/passwords.py). Checked '
+    'against that release at import; any other refuses to start.'
 )
 
 
@@ -131,7 +104,7 @@ def refusal(changes):
     advice = (
         "alfred/core/utils/passwords.py replaces BaseUserManager's "
         f'{", ".join(REPLACED)} with copies of its own, which hash and check '
-        'passwords in the thread pool. A copy of security code that no longer '
+        'passwords off the event loop. A copy of security code that no longer '
         'matches the original is how an upstream fix goes missing, so the api '
         'will not start against it. Read each replaced method in the installed '
         'release, carry what changed into the copy, then update CHECKED_AGAINST '
@@ -153,24 +126,25 @@ def check_library():
 
 
 class HashesOffTheLoop:
-    """BaseUserManager's methods that hash or check passwords, doing it in the
-    thread pool.
+    """BaseUserManager's methods that hash or check passwords, off the loop.
 
-    A manager lists this before BaseUserManager among its bases, so these are
-    the methods its own overrides reach through `super()`. Each body is the
-    library's, comments included, with every `password_helper` call awaited
-    through `hash_password` or `check_password`. Nothing else differs; the
-    tests hold each one to its original.
+    Listed before BaseUserManager in a manager's bases. Each body is the
+    library's, comments included; only the `password_helper` calls differ.
     """
 
     async def hash_password(self, password):
-        """`password_helper.hash`, in the thread pool."""
-        return await run_in_threadpool(self.password_helper.hash, password)
+        """`password_helper.hash`, in the hashing pool."""
+        return await asyncio.get_running_loop().run_in_executor(
+            _hashing, self.password_helper.hash, password
+        )
 
     async def check_password(self, plain_password, hashed_password):
-        """`password_helper.verify_and_update`, in the thread pool."""
-        return await run_in_threadpool(
-            self.password_helper.verify_and_update, plain_password, hashed_password
+        """`password_helper.verify_and_update`, in the hashing pool."""
+        return await asyncio.get_running_loop().run_in_executor(
+            _hashing,
+            self.password_helper.verify_and_update,
+            plain_password,
+            hashed_password,
         )
 
     async def create(self, user_create, safe=False, request=None):
@@ -278,7 +252,7 @@ class HashesOffTheLoop:
                 except exceptions.UserNotExists:
                     validated_update_dict["email"] = value
                     validated_update_dict["is_verified"] = False
-            elif field == "password":
+            elif field == "password" and value is not None:
                 await self.validate_password(value, user)
                 validated_update_dict["hashed_password"] = await self.hash_password(
                     value

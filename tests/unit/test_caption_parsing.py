@@ -245,5 +245,8 @@ class TestParse:
 
     def test_text_is_held_to_a_caption_s_limit(self):
         text = '1\n00:00:01,000 --> 00:00:02,000\n' + 'x' * 501 + '\n'
-        with pytest.raises(CaptionFormatError, match='line 2: .*500'):
+        # In the validator's own words, without pydantic's `Value error, `.
+        with pytest.raises(
+            CaptionFormatError, match='^line 2: a caption is at most 500 characters'
+        ):
             parse_srt(text)

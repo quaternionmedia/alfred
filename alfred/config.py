@@ -22,11 +22,10 @@ def secret_key_problem(env):
       500 -- PyJWT is handed None -- and nothing says why. That is not a
       production-only problem: test_e2e.yml's api had no key, and its whole
       suite failed at the first login.
-    - **Empty**, anywhere. The opposite failure, and the quieter one: PyJWT
-      signs and verifies with an empty key without complaint, so logins work
-      -- and anyone who knows the key is empty can mint a token for any
-      account. The committed `.secret_key` is such a stub; `./al` gives a
-      development checkout a random key of its own (`.secret_key.local`).
+    - **Empty**, anywhere. PyJWT 2.13 and later refuse an empty key, so as
+      unset: every login answers 500. The committed `.secret_key` is such a
+      stub; `./al` gives a development checkout a random key of its own
+      (`.secret_key.local`).
     - **Shorter than MIN_SECRET_KEY_LENGTH**, under ALFRED_PRODUCTION. Anyone
       holding a single token can guess HS256 keys offline until the signature
       matches, and a short key puts that within reach -- after which they can
@@ -44,10 +43,10 @@ def secret_key_problem(env):
         )
     if not key:
         return (
-            'ALFRED_SECRET_KEY is empty. Tokens are still signed, with a key '
-            'anyone can reproduce, so any session, password-reset or '
-            'verification token can be forged. In development, ./al init gives '
-            'this checkout a key of its own; in production, export a random one.'
+            'ALFRED_SECRET_KEY is empty, and an empty key signs nothing: every '
+            'login will fail with a server error. In development, ./al init '
+            'gives this checkout a key of its own; in production, export a '
+            'random one.'
         )
     if env.get('ALFRED_PRODUCTION') and len(key) < MIN_SECRET_KEY_LENGTH:
         return (

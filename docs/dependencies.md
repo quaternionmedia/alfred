@@ -17,8 +17,8 @@ comments to a line and points here.
 The image, nox (`tests/noxfile.py`) and CI install the three exports with
 `--no-deps`. Then they install otto, vox and alfred editable, also with
 `--no-deps`, so nothing is resolved on the day of a build. pdm honours
-`pyproject.toml`'s overrides and pip has no such thing, so a resolving install
-of these files fails with `ResolutionImpossible`.
+`pyproject.toml`'s overrides and pip reads none, so only pdm's resolution is
+the one the suites have tested.
 
 `tests/unit/test_stack_config.py` holds each export to `pdm.lock`: the same
 versions and the same markers.
@@ -61,14 +61,15 @@ An override in `[tool.pdm.resolution.overrides]` replaces every requirement on
 a package, its dependents' included. Only pdm reads them, which is why every
 install uses `--no-deps` (above).
 
-- **python-multipart `>=0.0.31`.** fastapi-users 10.4 pins 0.0.6, which has
-  nine advisories against it, CVE-2024-24762 and CVE-2024-53981 among them.
-  Every fastapi-users before 15.0.4 pins an exact release with some still open
-  (14.x pins 0.0.20, which has seven), and 15 cannot run here (below). 0.0.31
-  is the first release with none open. fastapi-users never imports it; FastAPI
-  and Starlette do, and both take it. alfred also declares it directly,
-  although nothing in alfred imports it. It parses every form the api takes,
-  the login form anyone can post included, so alfred depends on its fixes.
+- **python-multipart `>=0.0.31`.** fastapi-users 15.0.5 asks for
+  `>=0.0.22,<0.1.0`. Every release before 15.0.4 pinned an exact one with
+  advisories open: 10.4 pinned 0.0.6, with nine, CVE-2024-24762 and
+  CVE-2024-53981 among them. 0.0.31 is the first release with none open, and
+  the override holds that floor whatever a dependent asks for. fastapi-users
+  never imports it; FastAPI and Starlette do, and both take it. alfred also
+  declares it directly, although nothing in alfred imports it. It parses every
+  form the api takes, the login form anyone can post included, so alfred
+  depends on its fixes.
 - **al-otto from the submodule.** Every install path runs the engine at
   `alfred/otto`, so pdm locks it from there. Resolved from PyPI, the lock
   described al-otto 0.2.2 as published. That release is older than the
@@ -80,36 +81,99 @@ install uses `--no-deps` (above).
 
 ## Pins
 
-### fastapi-users 10.4
+### pydantic 2
+
+alfred, otto and fastapi-users run on pydantic 2: `pydantic[email]>=2.5,<3`
+here, `pydantic~=2.5` in otto. fastapi-users 15 dropped pydantic 1, and on
+1.10 its own register, login and `/users/me` routes answered 500, so the two
+moved together.
+
+- Every model uses pydantic 2's API: `model_dump`, `model_validate`,
+  `model_copy`, `field_validator`, `model_validator`, `ConfigDict`. An
+  `Optional` field says `= None`, since pydantic 2 requires one without a
+  default.
+- otto's models take a number sent for a text field as text, as pydantic 1
+  did (`coerce_numbers_to_str`); `alfred/otto/tests/test_models.py` holds an
+  Edl to what it was. alfred's own models do not: a number where text belongs
+  is refused with 422.
+- `GET /project/{id}` answers the EDL as stored (contract M4) through a field
+  serializer on `Project.edl`. pydantic 1 went through an overridden `dict()`,
+  which pydantic 2's serializer never calls.
+- On the wire, a UTC time ends `Z` rather than `+00:00` (a transcription's
+  `updated_at`). A 422's `detail` entries carry pydantic 2's types and words
+  (`missing`, `Field required`), and a reason from alfred's own validators
+  starts `Value error, `; the SPA shows `msg` as it comes.
+- The `email` extra brings email-validator 2, which `EmailStr` needs on
+  pydantic 2. fastapi-users allows 1.x and would not pull it in.
+- beanie stays on 1.30, which runs either pydantic. fastapi-users-db-beanie
+  4 is the newest adapter for beanie 1; 5 needs beanie 2, which trades motor
+  for PyMongo's async client, a move of its own.
+- beanie 1.30 and lazy-model read `model_fields` off instances, which
+  pydantic 2.11 deprecates. Those warnings are theirs, and harmless until
+  pydantic 3.
+
+### fastapi-users 15
 
 alfred carries copies of five fastapi-users methods that hash in the thread
-pool, and the api refuses to start on any release but 10.4.2. See [password
+pool, and the api refuses to start on any release but 15.0.5. See [password
 hashing](api/auth.md#password-hashing).
 
-fastapi-users 15 cannot run here yet. 15.0.0 removed its pydantic 1 support,
-and otto pins `pydantic~=1.10`. 15.x declares no bound on pydantic, so a
-resolver installs it beside 1.10 without complaint. On pydantic 1.10.26,
-though, the library's own register, login and `/users/me` routes answer 500.
-Its models call `model_dump()` and `model_validate()`, which are pydantic 2
-methods. 14.0.2 is the newest release that runs on pydantic 1.10.
+From 10.4.2 it took:
+
+- the copies, derived again from 15.0.5. One line of them changed upstream:
+  `_update` no longer hashes a password sent as null.
+- pwdlib, with Argon2 and bcrypt, in place of passlib. Accounts keep their
+  bcrypt hashes until they next log in; see [password
+  hashing](api/auth.md#password-hashing).
+- `AuthenticationBackend.login`, which takes no response now and returns one;
+  `POST /auth/jwt/refresh` follows it.
+- PyJWT 2.15; fastapi-users asks for 2.12 or later. PyJWT 2.13 and later
+  refuse an empty HMAC key, so an empty `ALFRED_SECRET_KEY` fails every login
+  with a 500, as an unset one does. PyJWT used to sign with it.
+- fastapi-users-db-beanie 4, and the email index below.
 
 GHSA-5j53-63w8-8625 (CVE-2025-68481), fixed in 15.0.2, is a CSRF in the OAuth
-router's state. alfred mounts no OAuth router;
+router's state. 15.0.5 has the fix, and alfred mounts no OAuth router anyway:
 `test_what_is_not_replaced_cannot_be_reached` in
 `tests/unit/test_password_hashing.py` fails if one appears.
 
-### passlib, and setuptools below 81
+### The users' email index
 
-fastapi-users 10.4 hashes with passlib. `passlib.pwd` imports `pkg_resources`
-at module scope, and setuptools 81 removed `pkg_resources`. Without the cap,
-every module that touches authentication raises `ImportError` on a clean
-install. That showed up as ten unrelated test modules failing to collect, and
-the errors named neither passlib nor setuptools. The `test` extra repeats the
-cap, because the test environment installs its own setuptools.
+fastapi-users-db-beanie 1.x declared two indexes on `email`: a unique one,
+and `case_insensitive_email_index`, which was not. beanie 1.30 keeps one
+index per field and builds the last, so every database alfred has made holds
+`case_insensitive_email_index`, not unique, and nothing else on `email`.
 
-The cap only buys time. passlib's last release was in 2020. The way out is
-fastapi-users 13 or later, which hashes with pwdlib instead. That comes with
-the fastapi-users upgrade.
+4.x declares that index unique, under the same name, and MongoDB will not
+build it over the one there ("already exists with different options"): the
+api would not start against any database it has used. alfred's `User`
+(`alfred/core/utils/db.py`) declares the index as those databases hold it,
+and `tests/integration/test_database_tier.py` starts the app against a
+collection that holds it.
+
+Uniqueness of an address therefore rests where it did, on the check before
+an insert. A unique index takes a migration: find any duplicates, drop the
+old index, build the new one.
+
+### fastapi-crudrouter, the QM fork
+
+The fork (`motor-reupdate`) runs on pydantic 2 unchanged. Its pydantic 1 code
+is `schema_factory` and `get_pk_type`, which read the attributes of pydantic
+1's fields. They run only to make a create or update schema a router was not
+given, and alfred gives both routers both. And every route the router
+generates is replaced by alfred's own: `ProjectAPI` overrides the route
+factories, `RenderAPI` registers each path again. The route inventory and the
+ownership tests pass as they did; `tests/unit/test_project_route_inventory.py`
+fails if a router reaches `schema_factory`. Neither explicit routes in place
+of the generated ones nor a patched fork was needed.
+
+### No passlib, and no setuptools
+
+passlib went with fastapi-users 10.4, and with it the cap of setuptools below
+81: `passlib.pwd` imported `pkg_resources`, which setuptools 81 removed.
+Nothing else the image installs imports `pkg_resources` (otto and vox
+included), so setuptools is no longer a dependency. Nor is bcrypt:
+fastapi-users brings it, through pwdlib, to check the hashes 10.4 made.
 
 ### Pillow 12.3, below 13
 
@@ -135,9 +199,10 @@ synthesizer, a CLI) serve parts alfred does not load. The floor is vox's.
 
 ### Python 3.11 only
 
-The image, CI, ruff and black all target 3.11. otto caps Python below 3.12:
-its `pydantic~=1.10` admits releases whose newest supported Python is 3.11.
-pdm locks for the whole `requires-python` range. With a floor of 3.8, any
+The image, CI, ruff and black all target 3.11. otto caps Python below 3.12,
+but pydantic no longer sets that cap: every release its `pydantic~=2.5`
+allows ships wheels for 3.12. Raising either cap waits on the suites passing
+on the newer Python. pdm locks for the whole `requires-python` range. With a floor of 3.8, any
 package that had since dropped 3.8 stayed at its last release for 3.8, numpy
 1.24 and anyio 4.5 among them, whatever Python ran.
 

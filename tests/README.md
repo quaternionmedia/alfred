@@ -6,14 +6,15 @@ Scope: the backend and the render engine. Browser coverage lives in
 ## Status
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
-stack's own configuration: **1986 tests -- 1970 passed, 8 skipped, 8
-xfailed** in the `./al pytest` container, measured on `feat/edit-by-text-and-loop` with
+stack's own configuration: **1997 tests -- 1979 passed, 10 skipped, 8
+xfailed** in the `./al pytest` container, measured on `feat/pydantic-2` with
 its `db` service up, so the database tier ran too. One skip needs a Docker
 CLI and seven need node, neither of which that container has; so the
 byte-for-byte cookbook check (`test_cookbook.py`) and the recipes'
 collector tests (`test_recipe_gifs.py`) run in CI and on a host with node,
-not in `./al pytest`. Where ImageMagick cannot draw text, six more
-skip (`needs_imagemagick`).
+not in `./al pytest`. From a git worktree two more skip: they ask git what
+the checkout tracks, and the container cannot follow a worktree's `.git`.
+Where ImageMagick cannot draw text, six more skip (`needs_imagemagick`).
 
 IS-5's render queueing is tested without a database:
 `unit/test_render_requests.py`, `test_render_ownership.py` and
@@ -54,8 +55,9 @@ existed then: one missing package caused four separate failures.
 `pkg_resources` was gone; only `otto.models`, pure pydantic, imported cleanly.
 Its fixes, all in place:
 
-- `setuptools` is an explicit runtime dependency: three installed packages
-  import `pkg_resources` at runtime, and none of them declares it.
+- `setuptools` was an explicit runtime dependency while three installed
+  packages imported `pkg_resources` at runtime. None does now
+  ([dependencies](../docs/dependencies.md#no-passlib-and-no-setuptools)).
 - The Docker base image is pinned to a digest, at Python 3.11, and
   `requires-python` is narrowed to what is tested, `>=3.11,<3.12`.
 - The ImageMagick policy is removed with `rm -f`, at both its version-6 and
@@ -190,7 +192,7 @@ config is discovered only after a job has been queued and dispatched.
    every intermediate snapshot validates, and the final one validates as an
    `alfred.core.models.render.Render`. Build the snapshots as plain dicts, the
    shape the API receives, not as model instances.
-2. Round-trip stability: `Edl.parse_obj(edl.dict())` equals the original for
+2. Round-trip stability: `Edl.model_validate(edl.model_dump())` equals the original for
    each snapshot, which catches lossy or defaulted fields.
 3. One test per invariant below asserting **current** behavior (accepted),
    each paired with a strict xfail asserting it should be rejected:

@@ -95,7 +95,7 @@ def transcribe_timeline(edl_data: dict) -> Heard:
     (AudioEngineError), or more captions or words than a project carries
     (TooManyCaptions, TooManyWords).
     """
-    edl = resolve_edl(Edl.parse_obj(edl_data))
+    edl = resolve_edl(Edl.model_validate(edl_data))
     until = timeline_end(edl)
     folder = tempfile.mkdtemp(prefix='alfred-transcribe-')
     try:

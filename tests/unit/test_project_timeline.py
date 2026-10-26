@@ -9,6 +9,8 @@ Two things had to be true before the timeline could show anything, and both are
 pinned here -- the field exists, and something seeded uses it.
 """
 
+from typing import Optional
+
 import pytest
 from otto.config import defaults
 from otto.models import Edl
@@ -52,7 +54,7 @@ def test_the_demo_text_shows_on_the_black_it_is_drawn_over(timeline):
 
 class TestTheModelCanHoldATimeline:
     def test_project_declares_an_edl_field(self):
-        assert 'edl' in Project.__fields__, (
+        assert 'edl' in Project.model_fields, (
             'Project has no edl field, so `project.edl` is undefined and the '
             'timeline editor has nothing to open'
         )
@@ -65,7 +67,7 @@ class TestTheModelCanHoldATimeline:
         filled-in form at render time. Requiring an edl would invalidate every
         one of them.
         """
-        assert not Project.__fields__['edl'].required
+        assert not Project.model_fields['edl'].is_required()
 
     def test_the_edl_field_uses_the_same_type_as_render(self):
         """One shape for an EDL across the API, not two.
@@ -77,7 +79,8 @@ class TestTheModelCanHoldATimeline:
         """
         from alfred.core.models.render import Render
 
-        assert Project.__fields__['edl'].type_ is Render.__fields__['edl'].type_
+        render_edl = Render.model_fields['edl'].annotation
+        assert Project.model_fields['edl'].annotation == Optional[render_edl]
 
 
 class TestTheSeedExercisesTheTimeline:

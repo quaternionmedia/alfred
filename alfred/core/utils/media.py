@@ -315,7 +315,7 @@ def resolve_edl(edl, video_dir=None, remote_hosts=None):
     through; anything else raises MediaNameError. The original is left alone,
     so what was stored is what the caller sent.
     """
-    resolved = edl.copy(deep=True)
+    resolved = edl.model_copy(deep=True)
     for number, clip in enumerate(resolved.clips, start=1):
         if clip.type in MEDIA_CLIP_TYPES:
             try:

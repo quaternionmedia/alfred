@@ -255,7 +255,7 @@ def world(monkeypatch, tmp_path):
 def refused_edl(edl):
     """What check_edl says of `edl`."""
     with pytest.raises(RefusedEdl) as refused:
-        check_edl(Edl.parse_obj(edl), TEMPLATE_NAMES)
+        check_edl(Edl.model_validate(edl), TEMPLATE_NAMES)
     return str(refused.value)
 
 

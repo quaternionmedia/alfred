@@ -121,19 +121,19 @@ class TestServing:
         """Read back, otto's models fill the defaults in again; the answer
         must not, or a client rendering what it read gets the fades anyway."""
         project = Project(logic={}, edl=as_sent(Edl(**SENT)))
-        served = project.dict()['edl']
+        served = project.model_dump()['edl']
         assert 'fadeIn' not in clip(served, 0)
         assert clip(served, 1)['fadeIn'] == 0
 
     def test_the_rest_of_the_project_is_served_as_before(self, offline):
         project = Project(logic={}, name='kept', edl=SENT)
-        served = project.dict()
+        served = project.model_dump()
         assert served['name'] == 'kept'
         assert served['render_settings'] is None
 
     def test_a_project_without_a_timeline_is_unaffected(self, offline):
-        assert Project(logic={}).dict()['edl'] is None
+        assert Project(logic={}).model_dump()['edl'] is None
 
     def test_an_excluded_edl_stays_excluded(self, offline):
         project = Project(logic={}, edl=SENT)
-        assert 'edl' not in project.dict(exclude={'edl'})
+        assert 'edl' not in project.model_dump(exclude={'edl'})

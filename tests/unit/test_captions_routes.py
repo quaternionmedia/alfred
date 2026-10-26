@@ -162,7 +162,7 @@ class TestReading:
         assert body['style']['enabled'] is False and body['style']['color'] == '#ffcc00'
         assert body['job']['state'] == 'done'
         # Stored naive, as MongoDB hands it back: it is UTC, and says so.
-        assert body['job']['updated_at'].endswith('+00:00')
+        assert body['job']['updated_at'].endswith('Z')
 
     def test_a_stored_caption_that_does_not_validate_is_left_out(self, api):
         mine = project(
