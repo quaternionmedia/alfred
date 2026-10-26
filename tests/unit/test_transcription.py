@@ -2,9 +2,9 @@
 
 What an engine heard becomes captions a person can read: long stretches of
 speech are cut at word boundaries, times are clamped to the timeline, empty
-text is dropped. The Celery task records where the job has got to on the
-project -- `transcribing`, then `done` or `failed` with a reason in a line --
-and the captions it made. The engine, the mixing and the database are stood
+text is dropped; the words are kept in timeline seconds. The Celery task
+records where the job has got to on the project -- `transcribing`, then
+`done` or `failed` with a reason in a line -- and the captions and words. The engine, the mixing and the database are stood
 in for here; the pipeline tier mixes a real timeline.
 """
 
@@ -21,7 +21,9 @@ from alfred.core.utils.captions import (
     TRANSCRIPT_CHARS,
     TRANSCRIPT_SECONDS,
     TooManyCaptions,
+    TooManyWords,
     captions_from_transcript,
+    words_from_transcript,
 )
 from alfred.core.utils.transcription import NothingToHear, sounding_clips
 
@@ -134,6 +136,75 @@ class TestFromATranscript:
         many = [Segment(i, i + 0.5, 'x', ()) for i in range(MAX_CAPTIONS + 1)]
         with pytest.raises(TooManyCaptions):
             captions_from_transcript(many)
+
+
+def kept(words):
+    """Words as `(start, end, text, segment)`."""
+    return [(w.start, w.end, w.text, w.segment) for w in words]
+
+
+class TestTheWordsKept:
+    def test_each_word_in_timeline_seconds_in_order_with_its_segment(self):
+        words = words_from_transcript(
+            [spoken(1.0, 'Hello there.'), spoken(3.0, 'Second one', step=0.5)]
+        )
+        # Whisper's leading space is not part of the word.
+        assert kept(words) == [
+            (1.0, 1.4, 'Hello', 0),
+            (1.4, 1.8, 'there.', 0),
+            (3.0, 3.5, 'Second', 1),
+            (3.5, 4.0, 'one', 1),
+        ]
+
+    def test_the_words_are_the_ones_the_captions_are_made_of(self):
+        """Non-speech keeps no words; segments are counted from those that do."""
+        segments = [
+            spoken(0, '[Music]'),
+            spoken(1.0, 'Said aloud'),
+            Segment(3.0, 4.0, 'No word timings', ()),
+            spoken(5.0, 'Said again'),
+        ]
+        assert [w.segment for w in words_from_transcript(segments)] == [0, 0, 1, 1]
+        assert texts(captions_from_transcript(segments)) == [
+            'Said aloud',
+            'No word timings',
+            'Said again',
+        ]
+
+    def test_a_segment_without_word_timings_keeps_none(self):
+        assert words_from_transcript([Segment(2.0, 4.0, 'Just this', ())]) == []
+
+    def test_times_are_clamped_to_the_timeline(self):
+        segment = Segment(
+            -0.5,
+            6.0,
+            'early on late gone',
+            (
+                Word(-0.5, 0.25, ' early'),
+                Word(2.0, 1.5, ' on'),
+                Word(4.8, 5.4, ' late'),
+                Word(5.0, 5.5, ' gone'),
+            ),
+        )
+        # Clamped to 0; end before start -> start; cut at the end; past it gone.
+        assert kept(words_from_transcript([segment], until=5.0)) == [
+            (0.0, 0.25, 'early', 0),
+            (2.0, 2.0, 'on', 0),
+            (4.8, 5.0, 'late', 0),
+        ]
+
+    def test_a_word_that_is_nothing_once_cleaned_is_left_out(self):
+        segment = Segment(
+            0, 2, 'a b', (Word(0, 1, ' a'), Word(1, 1.5, ''), Word(1.5, 2, ' b'))
+        )
+        assert [w.text for w in words_from_transcript([segment])] == ['a', 'b']
+
+    def test_more_than_a_project_keeps_says_so(self, monkeypatch):
+        from alfred.core.utils import captions
+
+        monkeypatch.setattr(captions, 'MAX_WORDS', 3)
+        with pytest.raises(TooManyWords, match='4 words is more than the 3'):
+            words_from_transcript([spoken(0, 'one two three four')])
 
 
 TIMELINE = {
@@ -261,6 +332,34 @@ class TestNothingHeard:
             )
 
 
+class TestWhatIsHeard:
+    def test_the_captions_the_segments_and_the_words(self, monkeypatch, tmp_path):
+        """Words come back with the captions, cut at the timeline's end."""
+        from alfred import config
+        from alfred.core.utils import transcription
+
+        monkeypatch.setattr(config, 'VIDEO_DIR', str(tmp_path))
+        (tmp_path / 'talk.wav').write_bytes(b'RIFF')
+        monkeypatch.setattr(transcription, 'mix_timeline', lambda edl, path: 3.0)
+        monkeypatch.setattr(
+            audio_engine,
+            'transcribe',
+            lambda path, content_type: audio_engine.Transcript(
+                segments=(spoken(0.5, 'Hello there.'), spoken(2.6, 'Cut off'))
+            ),
+        )
+        heard = transcription.transcribe_timeline(
+            {'clips': [{'type': 'audio', 'name': 'videos/talk.wav', 'duration': 3}]}
+        )
+        assert heard.segments == 2
+        assert texts(heard.captions) == ['Hello there.', 'Cut off']
+        assert kept(heard.words) == [
+            (0.5, 0.9, 'Hello', 0),
+            (0.9, 1.3, 'there.', 0),
+            (2.6, 3.0, 'Cut', 1),
+        ]
+
+
 class FakeCollection:
     def __init__(self, *documents):
         self.documents = {d['_id']: dict(d) for d in documents}
@@ -305,13 +404,22 @@ def heard(monkeypatch, outcome):
     return calls
 
 
+def said(start, end, text, segment=0):
+    from alfred.core.models.captions import Word as Kept
+
+    return Kept(start=start, end=end, text=text, segment=segment)
+
+
 class TestTheTask:
     def test_transcribing_then_done_with_the_captions(self, projects, monkeypatch):
         from alfred.core.models.captions import Caption
 
         project_id = ObjectId()
         collection = projects({'_id': project_id, 'edl': EDL})
-        calls = heard(monkeypatch, ([Caption(start=0.5, end=1.5, text='Hi')], 3))
+        calls = heard(
+            monkeypatch,
+            ([Caption(start=0.5, end=1.5, text='Hi')], 3, [said(0.5, 1.5, 'Hi')]),
+        )
 
         tasks.transcribeCaptions(projectId=str(project_id))
 
@@ -320,6 +428,11 @@ class TestTheTask:
         assert states == ['transcribing', 'done']
         stored = collection.documents[project_id]
         assert stored['captions'] == [{'start': 0.5, 'end': 1.5, 'text': 'Hi'}]
+        # The words it heard replace the project's, with the captions.
+        assert stored['words'] == [
+            {'start': 0.5, 'end': 1.5, 'text': 'Hi', 'segment': 0}
+        ]
+        assert 'words' in collection.updates[-1]
         assert stored['captions_job']['segments'] == 3
         assert stored['captions_job']['error'] is None
         assert stored['captions_job']['updated_at'] is not None
@@ -330,7 +443,7 @@ class TestTheTask:
         project_id = ObjectId()
         style = {'enabled': True, 'color': '#ffcc00'}
         collection = projects({'_id': project_id, 'edl': EDL, 'caption_style': style})
-        heard(monkeypatch, ([], 0))
+        heard(monkeypatch, ([], 0, []))
         tasks.transcribeCaptions(projectId=str(project_id))
         assert collection.documents[project_id]['caption_style'] == style
         assert all('caption_style' not in update for update in collection.updates)
@@ -349,6 +462,7 @@ class TestTheTask:
         assert job['state'] == 'failed'
         assert job['error'] == 'the audio engine at http://e: refused'
         assert 'captions' not in collection.documents[project_id]
+        assert 'words' not in collection.documents[project_id]
 
     def test_nothing_to_hear_is_recorded_plainly(self, projects, monkeypatch):
         project_id = ObjectId()
@@ -388,7 +502,7 @@ class TestTheTask:
     def test_a_project_without_a_timeline(self, projects, monkeypatch):
         project_id = ObjectId()
         collection = projects({'_id': project_id})
-        calls = heard(monkeypatch, ([], 0))
+        calls = heard(monkeypatch, ([], 0, []))
         tasks.transcribeCaptions(projectId=str(project_id))
         assert calls == []
         job = collection.documents[project_id]['captions_job']
@@ -401,7 +515,7 @@ class TestTheTask:
         self, projects, monkeypatch
     ):
         collection = projects()
-        calls = heard(monkeypatch, ([], 0))
+        calls = heard(monkeypatch, ([], 0, []))
         tasks.transcribeCaptions(projectId=str(ObjectId()))
         assert calls == [] and collection.updates == []
 
@@ -426,7 +540,7 @@ class TestTheTask:
         )
         project_id = ObjectId()
         collection = projects({'_id': project_id, 'edl': EDL})
-        heard(monkeypatch, ([], 0))
+        heard(monkeypatch, ([], 0, []))
         tasks.transcribeCaptions(projectId=str(project_id))
         assert collection.documents[project_id]['captions_job']['engine'] == (
             'http://engine.test:8010'
