@@ -7,7 +7,7 @@ Builds the `Edl` in the body and answers a signed URL for its frame at `t` secon
 See [examples/preview](../examples/preview.md)
 
 ## `GET /preview/template/{name}`
-Draws one template and answers the image itself, a JPEG: what the editor shows while a template clip is edited. The template's data comes as query parameters, such as `?text=asdf`, beside `width`, `height`, `t`, `fadeIn`, `fadeOut` and `length` (the clip's length), which describe the frame. There are no fades unless asked for.
+Draws one template and answers the image itself, a JPEG: what the editor shows while a template clip is edited. The template's data comes as `data`, a JSON object, which is how the editor sends it and the only way to send a structured field such as an animation's `fxs`. A plain field can also come as its own query parameter, such as `?text=asdf`. Beside it, `width`, `height`, `t`, `fadeIn`, `fadeOut` and `length` (the clip's length) describe the frame. There are no fades unless asked for. `data` that is not a JSON object is a 422.
 
 ``` bash title="Preview the title template at t=1"
 curl -o title.jpg \
