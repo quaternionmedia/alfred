@@ -49,7 +49,8 @@ Browse to <http://localhost:8000>. The editor opens at Edit, with the four
 stages on the rail along the top: Source, Edit, Render and Deliver. On a screen
 1024 pixels wide or more, every panel is open at once: the Source stage's two
 panels on the left, the viewer over the timeline in the middle, and on the
-right the selected clip's settings above the Render, Deliver and Captions tabs.
+right the selected clip's settings and the Transcript above the Render,
+Deliver and Captions tabs.
 Narrower, as on a phone, the editor shows one stage's panels at a time above
 the viewer and the timeline.
 

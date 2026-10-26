@@ -100,6 +100,37 @@ export function SpeedTools() {
   }
 }
 
+/**
+ * Save the timeline on screen to `project`; resolves to the clip count.
+ * Used by the toolbar's Save and the Transcript panel's.
+ *
+ * `/project/{id}/timeline`, and with a token. This posted to `/edl` with a
+ * bare `m.request` -- no route of that name has ever existed on this server,
+ * and no Authorization header would have been sent if it had. So the save
+ * button had never once saved anything, and said nothing when it failed: the
+ * response was parsed inside a `.then` with no `.catch`, so the rejection
+ * went nowhere.
+ *
+ * The timeline as a render receives it (contract M4): every clip placed by an
+ * explicit start, its fades explicit, its window in step with its length --
+ * built by the same function, so a saved project renders as this editor
+ * renders it, from here or from anything else that reads `project.edl`. This
+ * sent the raw clips, view bookkeeping (`i`) included, with no starts:
+ * rendered as saved, they stacked at second 0.
+ */
+export function saveTimeline(project) {
+  const edl = timelineEdl(Edl.edl)
+  return auth(`/project/${project}/timeline`, { method: 'PUT', body: edl }).then(updated => {
+    // The project list shows clip counts and lengths.
+    if (updated && updated._id) {
+      Flow.projects = Flow.projects.map(p => (p._id === updated._id ? updated : p))
+    }
+    // What was saved is no longer a draft (Draft.js).
+    Draft.saved(project, edl.clips)
+    return edl.clips.length
+  })
+}
+
 export function ProjectTools() {
   let saving = false
   let rendering = false
@@ -136,36 +167,10 @@ export function ProjectTools() {
             onclick: () => {
               if (cannotSave || saving) return
               saving = true
-              // `/project/{id}/timeline`, and with a token.
-              //
-              // This posted to `/edl` with a bare `m.request` -- no route of
-              // that name has ever existed on this server, and no
-              // Authorization header would have been sent if it had. So the
-              // save button had never once saved anything, and said nothing
-              // when it failed: the response was parsed inside a `.then` with
-              // no `.catch`, so the rejection went nowhere.
-              //
-              // The timeline as a render receives it (contract M4): every
-              // clip placed by an explicit start, its fades explicit, its
-              // window in step with its length -- built by the same function,
-              // so a saved project renders as this editor renders it, from
-              // here or from anything else that reads `project.edl`. This
-              // sent the raw clips, view bookkeeping (`i`) included, with no
-              // starts: rendered as saved, they stacked at second 0.
-              const edl = timelineEdl(Edl.edl)
-              auth(`/project/${project}/timeline`, {
-                method: 'PUT',
-                body: edl,
-              })
-                .then(updated => {
+              saveTimeline(project)
+                .then(saved => {
                   saving = false
-                  // The project list shows clip counts and lengths.
-                  if (updated && updated._id) {
-                    Flow.projects = Flow.projects.map(p => (p._id === updated._id ? updated : p))
-                  }
-                  // What was saved is no longer a draft (Draft.js).
-                  Draft.saved(project, edl.clips)
-                  success(`Saved ${edl.clips.length} clips to the project`)
+                  success(`Saved ${saved} clips to the project`)
                   m.redraw()
                 })
                 .catch(() => {

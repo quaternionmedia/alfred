@@ -71,7 +71,7 @@ module.exports = defineConfig({
       // panel that works in one place and not the other fails here.
       name: 'phone',
       use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } },
-      testMatch: /[\\/](flow|editor|timeline-tools|deliver|stacked)\.spec\.js$/,
+      testMatch: /[\\/](flow|editor|timeline-tools|deliver|stacked|transcript)\.spec\.js$/,
       grepInvert: /@perf|@recipe/,
     },
     {

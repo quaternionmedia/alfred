@@ -2116,6 +2116,38 @@ spinner and `aria-busy` while their request is in flight.
 - **the render button reports itself busy**
 - **a busy button is disabled, so it cannot be double-fired**
 
+## transcript
+
+Editing by text: words deleted from the Transcript panel cut the timeline.
+
+# Recipe: cut the video by deleting words
+
+Select words, press Delete, Save. Desktop and phone; the @slow test transcribes via the stub engine.
+
+### @slow from the transcription to the cut
+
+Transcribe from the empty panel, delete "first thing": timeline, captions
+and words all lose the half second, saved together.
+
+- **words deleted from the transcript cut the timeline, the captions and the words**
+### the transcript
+
+"three four" spans the clip boundary: both clips lose a second.
+
+- **a drag selects words, and Cut takes them, however they were selected**
+- **a double-click selects one word, and Backspace cuts it**
+
+  The cut stays the page's until Save.
+
+- **clicking a word moves the playhead to it, and the word playing is marked**
+
+  Click seeks and drops the selection; Escape drops it; playback marks the word.
+
+- **without a transcript the panel says how to get one**
+
+  One line and a Transcribe button.
+
+
 ## views
 
 ### views
@@ -2170,8 +2202,8 @@ The desktop workspace: the editor's panels docked with Golden Layout.
 
 On a screen 1024 pixels wide or more the editor is a workspace of panels:
 projects and the library on the left, the viewer above the timeline in the
-middle, the selected clip's settings and the Render, Deliver and Captions
-tabs on the right. Drag a tab to move a panel, drag the gaps to resize
+middle, the selected clip's settings and the transcript over the Render,
+Deliver and Captions tabs on the right. Drag a tab to move a panel, drag the gaps to resize
 them, close what you do not need. The arrangement is kept in this browser
 and comes back on the next visit. The Panels menu brings back a closed
 panel, in its place, and Reset layout restores the arrangement above.
