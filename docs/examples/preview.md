@@ -7,19 +7,7 @@ Preview one frame of an `Edl` without rendering the full video
 ## Request
 === "Edl"
     ``` json title="data.json"
-    {
-      "edl": {
-        "clips": [
-          { 
-            "type" : "template",
-            "name" : "title",
-            "data": {
-              "text": "asdf"
-            }
-          }
-        ]
-      }
-    }
+    --8<-- "docs/examples/edl/title.json"
     ```
 === "Request"
     ``` bash title="Preview template at t=1"

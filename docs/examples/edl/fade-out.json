@@ -1,0 +1,12 @@
+{
+  "edl": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/demo-bars.mp4",
+        "duration": 3,
+        "fadeOut": 2
+      }
+    ]
+  }
+}

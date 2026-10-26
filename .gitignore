@@ -118,8 +118,11 @@ docs/recipes/
 # The docs' screenshots, which `./al recipes` takes (screens.spec.js), are
 # committed despite *.png above.
 !docs/assets/screens/*.png
-# The tools' (screens-tools.spec.js).
+# The examples' and the tools' (screens-examples.spec.js, screens-tools.spec.js).
+!docs/assets/screens/examples/*.png
 !docs/assets/screens/tools/*.png
+# The docs examples' request bodies, which the pages include and the tests read.
+!docs/examples/edl/*.json
 
 # Test-render output moved aside during review prep; regenerable, never shipped.
 videos-test-output/

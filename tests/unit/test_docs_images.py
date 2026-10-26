@@ -11,6 +11,7 @@ mkdocs checks the links of the pages it builds, and not the README, which
 GitHub shows; nor does it notice a file nothing links. Hence these.
 """
 
+import json
 import re
 from pathlib import Path
 
@@ -20,6 +21,16 @@ REPO = Path(__file__).resolve().parents[2]
 DOCS = REPO / 'docs'
 SCREENS = DOCS / 'assets' / 'screens'
 SCREENS_SPEC = REPO / 'website' / 'e2e' / 'screens.spec.js'
+# The examples' request bodies, and the tools beside the timeline.
+EDL = DOCS / 'examples' / 'edl'
+TOOLS = REPO / 'website' / 'src' / 'TimelineTools.js'
+# What `POST /demo/media` makes, 3 s each.
+DEMO_MEDIA = {
+    'videos/demo-bars.mp4',
+    'videos/demo-colour.mp4',
+    'videos/demo-testcard.mp4',
+}
+DEMO_SECONDS = 3
 
 # The pages a person reads first, and what each opens with under its title.
 SHOWN_FIRST = [
@@ -170,3 +181,75 @@ class TestThePagesShowFirst:
         assert lines[0].strip() == '```text' and lines[1].startswith(
             '$ ./al family'
         ), f'{SHOWN_AS_OUTPUT} does not open with the output of ./al family'
+
+
+class TestTheExampleAndToolScreens:
+    """screens/examples/ and screens/tools/, from screens-examples.spec.js and
+    screens-tools.spec.js. docs/tools.md says how they are taken."""
+
+    def test_each_example_screen_is_of_an_example(self):
+        examples = {path.stem for path in EDL.glob('*.json')}
+        assert len(examples) >= 13, 'found too few examples to be checking'
+        stray = sorted(
+            path.name
+            for path in (SCREENS / 'examples').glob('*.png')
+            if path.stem not in examples
+        )
+        assert not stray, f'{stray} name no example in docs/examples/edl'
+
+    def test_each_tool_has_its_screen(self):
+        ids = re.findall(r"\bid: '([a-z ]+)'", TOOLS.read_text(encoding='utf-8'))
+        tools = {tool.replace(' ', '-') for tool in ids} | {'zoom'}
+        assert len(tools) == 8, f'expected seven tools and zoom: {sorted(tools)}'
+        there = {path.stem for path in (SCREENS / 'tools').glob('*.png')}
+        assert (
+            there == tools
+        ), f'missing {sorted(tools - there)}, extra {sorted(there - tools)}'
+
+    def test_each_is_shown_by_a_page(self):
+        shown = {resolved for page in pages() for _, resolved in images_on(page)}
+        unshown = [
+            str(path.relative_to(REPO))
+            for group in ('examples', 'tools')
+            for path in sorted((SCREENS / group).glob('*.png'))
+            if path.resolve() not in shown
+        ]
+        assert not unshown, f'{unshown} are shown by no page'
+
+    def test_each_is_a_desktop_screen_and_small(self):
+        problems = []
+        for group in ('examples', 'tools'):
+            for path in sorted((SCREENS / group).glob('*.png')):
+                if png_size(path) != DESKTOP:
+                    problems.append(f'{group}/{path.name} is {png_size(path)}')
+                if path.stat().st_size > MAX_SCREEN_BYTES:
+                    problems.append(f'{group}/{path.name}: {path.stat().st_size} B')
+        assert not problems, problems
+
+
+class TestTheExamples:
+    """Each example body is a file a page includes, on the demo media alone."""
+
+    def test_each_is_included_by_a_page(self):
+        text = ''.join(page.read_text(encoding='utf-8') for page in DOCS.rglob('*.md'))
+        missing = [
+            path.name
+            for path in sorted(EDL.glob('*.json'))
+            if f'--8<-- "docs/examples/edl/{path.name}"' not in text
+        ]
+        assert not missing, f'no page includes {missing}'
+
+    def test_each_plays_only_the_demo_media_within_its_length(self):
+        problems = []
+        for path in sorted(EDL.glob('*.json')):
+            clips = json.loads(path.read_text(encoding='utf-8'))['edl']['clips']
+            for number, clip in enumerate(clips, 1):
+                if clip.get('type') not in ('video', 'audio', 'image'):
+                    continue
+                if clip.get('name') not in DEMO_MEDIA:
+                    problems.append(f'{path.name} clip {number}: {clip.get("name")}')
+                inpoint = clip.get('inpoint', 0)
+                end = clip.get('outpoint', inpoint + clip.get('duration', 5))
+                if end > DEMO_SECONDS:
+                    problems.append(f'{path.name} clip {number} ends at {end} s')
+        assert not problems, problems
