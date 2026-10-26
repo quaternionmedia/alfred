@@ -11,6 +11,7 @@ nav:
   - Get started: start.md
   - Cookbook: cookbook.md
   - Captions: captions.md
+  - Editing tools: tools.md
   - Configuration: configuration.md
   - Develop:
       - dev-server.md
