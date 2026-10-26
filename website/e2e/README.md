@@ -100,7 +100,7 @@ The suite could not run as configured either: `cypress.json`,
 
 ## Verification status
 
-`./al test` on `round-9`: **443 tests, 442 passed and 1 passed only on
+`./al test` on `feat/edit-by-text-and-loop`: **443 tests, 442 passed and 1 passed only on
 retry** (the zoom row's measure, since loosened to a wrap's size), across the
 `chromium` (workspace) and `phone` (stage flow) projects, including the
 `@slow` specs that wait on a real encode. The project

@@ -7,7 +7,7 @@ Scope: the backend and the render engine. Browser coverage lives in
 
 Phase 0 and IS-1 through IS-4 are implemented, plus the DB layer and the
 stack's own configuration: **1986 tests -- 1970 passed, 8 skipped, 8
-xfailed** in the `./al pytest` container, measured on round-9 with
+xfailed** in the `./al pytest` container, measured on `feat/edit-by-text-and-loop` with
 its `db` service up, so the database tier ran too. One skip needs a Docker
 CLI and seven need node, neither of which that container has; so the
 byte-for-byte cookbook check (`test_cookbook.py`) and the recipes'
