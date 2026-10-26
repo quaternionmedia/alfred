@@ -193,6 +193,15 @@ class TestTheWordsKept:
             (4.8, 5.0, 'late', 0),
         ]
 
+    def test_a_stretch_wholly_past_the_end_is_not_counted(self):
+        segments = [spoken(1.0, 'kept'), spoken(6.0, 'gone'), spoken(2.0, 'also kept')]
+        words = words_from_transcript(segments, until=5.0)
+        assert [(w.text, w.segment) for w in words] == [
+            ('kept', 0),
+            ('also', 1),
+            ('kept', 1),
+        ]
+
     def test_a_word_that_is_nothing_once_cleaned_is_left_out(self):
         segment = Segment(
             0, 2, 'a b', (Word(0, 1, ' a'), Word(1, 1.5, ''), Word(1.5, 2, ' b'))

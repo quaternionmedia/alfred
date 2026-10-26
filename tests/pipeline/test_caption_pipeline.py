@@ -361,7 +361,7 @@ def test_a_timeline_is_heard_into_captions_on_its_own_clock(library, monkeypatch
     stub.media.clear()
     before = set(os.listdir(tempfile.gettempdir()))
 
-    captions, segments = transcribe_timeline(TIMELINE)
+    captions, segments, words = transcribe_timeline(TIMELINE)
 
     assert segments == 3
     assert [c.text for c in captions] == list(stub.SCRIPT)
@@ -370,6 +370,10 @@ def test_a_timeline_is_heard_into_captions_on_its_own_clock(library, monkeypatch
         (3.0, 4.2),
         (5.0, 6.0),
     ]
+    # The captions' words, on the same clock, a segment number each.
+    assert ' '.join(w.text for w in words) == ' '.join(stub.SCRIPT)
+    assert {w.segment for w in words} == {0, 1, 2}
+    assert round(words[0].start, 1) == 1.5 and round(words[-1].end, 1) == 6.0
     # What was sent: the mix, as speech engines want it.
     [sent] = stub.uploads
     assert (sent['content_type'], sent['sample_rate'], sent['channels']) == (
