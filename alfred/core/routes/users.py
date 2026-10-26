@@ -152,11 +152,9 @@ class UserManager(
     async def authenticate(self, credentials):
         """A login -- refused for the dev account like a wrong password.
 
-        It was refused, but as a 500: fastapi-users hands the stored value to
-        passlib to verify, and `!dev-no-login` is not a hash passlib can
-        identify, so every attempt raised. A 400 is the answer any wrong
-        password gets. The hash runs anyway, so the refusal takes as long --
-        in the thread pool, as every other hash does.
+        A 400, not the 500 of `!dev-no-login` reaching the hasher, which
+        identifies no such hash. The hash still runs, off the loop, so the
+        refusal takes as long.
         """
         if is_dev_address(credentials.username):
             await self.hash_password(credentials.password)
