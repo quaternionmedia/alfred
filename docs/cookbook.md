@@ -1356,6 +1356,12 @@ timeline sits with its tools and the media bin beneath.
   anything is kept. Use them, tick **Draw into renders** and save, and
   the caption under the playhead is drawn over the picture.
 
+### @recipe editing by text
+
+Drag across "you see here", press Delete: the bars lose their end, the
+test card its start, and the captions after move up. Save keeps it.
+
+- **recipe: cut the video by deleting words from its transcript**
 
 ## render api
 

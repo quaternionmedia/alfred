@@ -17,8 +17,10 @@ an audio engine, joe by default, over HTTP ([The family dev loop](family.md)).
 ## In the editor
 
 **Captions** is a tab in the workspace's right-hand column, beside Render and
-Deliver, on a screen 1024 CSS pixels wide or more. Narrower, as on a phone, it
-is the Edit stage's panel, above the viewer and the timeline.
+Deliver, on a screen 1024 CSS pixels wide or more. Narrower, as on a phone,
+it is the Edit stage's panel, above the viewer and the timeline; a switch at
+the top of the stage swaps it for the Transcript panel, which edits the
+timeline by what is said in it: [Editing by text](#editing-by-text).
 
 - **Add at playhead** adds a two-second caption at the playhead. Each row has a
   start and an end in seconds, typed or set from the playhead; the text; and
@@ -53,7 +55,8 @@ editor, saved or not, as it carries the timeline.
 | Route | |
 |---|---|
 | `GET /project/{id}/captions` | `{captions, style, job}` |
-| `PUT /project/{id}/captions` | `{captions, style?}`: stores those and nothing else; answers as `GET` does |
+| `PUT /project/{id}/captions` | `{captions, style?, words?}`: stores those and nothing else; answers as `GET` does |
+| `GET /project/{id}/captions/words` | `{words}`: the transcript, word by word |
 | `POST /project/{id}/captions/import` | `{format: "srt"\|"vtt"\|"json", text}` → `{captions, skipped}`; stores nothing |
 | `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine (`audio_engine_missing`) or the job could not be queued (`transcription_not_queued`); `409` while one runs; `422` when the saved timeline has nothing to hear |
 | `GET /media/{name}/audio` | the engine's analysis of a library file |
@@ -61,12 +64,23 @@ editor, saved or not, as it carries the timeline.
 
 Each route is scoped to the caller, like every project route: a project that
 is not yours answers 404. `GET /project/{id}` carries `captions` and
-`caption_style` too. A refusal carries a `code` beside its `detail`;
+`caption_style` too, and not the words, which run to thousands in a long
+talk. A refusal carries a `code` beside its `detail`;
 [Refusals](api/errors.md) lists them.
 
 A caption is `{start, end, text}`: `start` at or after 0, `end` after it, and
 text that says something, at most 500 characters. A project carries at most
 1000, kept in start order.
+
+A word is `{start, end, text, segment}`, in timeline seconds: `end` no earlier
+than `start` (an engine times some words as taking no time at all), `text` one
+word of at most 100 characters, and `segment` which stretch of speech it was
+heard in, counted from 0. A project keeps at most 50,000, in the order heard.
+A transcription replaces them; `PUT /project/{id}/captions` replaces them when
+it is sent `words`, and keeps them when it is not, so that the editor writes
+the captions and the words of a cut together ([Editing by
+text](#editing-by-text)). A request whose words break these rules is refused
+422, by FastAPI, with no `code`.
 
 The style is `{enabled, fontsize, color, bg, position, align, font}`, the
 textBox template's own fields, every one optional:
@@ -149,13 +163,92 @@ count says whether anything will pick it up.
    most two lines (84 characters) and seven seconds, ending at a sentence's end
    where there is one. Times are clamped to the timeline, and empty text is
    dropped.
-4. The captions replace the project's own, and the job says `done`. A project
-   that had no style gets one that does not draw them into renders until
-   someone ticks the box.
+4. The captions replace the project's own, the words they were made of
+   replace the project's words, and the job says `done`. A project that had no
+   style gets one that does not draw them into renders until someone ticks
+   the box. The words are those of the stretches that made captions, clamped
+   to the timeline as they are; a stretch the engine gave no word timings for
+   keeps none.
 
 A failure (no sound in the timeline, a media name the library does not hold, an
-engine that is missing, refuses or does not answer) leaves the captions as they
-were, and the job `failed` with the reason in a line.
+engine that is missing, refuses or does not answer) leaves the captions and the
+words as they were, and the job `failed` with the reason in a line.
+
+## Editing by text
+
+![The Transcript panel with three words struck through, ready to be cut](assets/screens/transcript.png)
+
+*"you see here" selected: the words a cut would take are struck through before they go.*
+
+Once the timeline has been transcribed, the **Transcript** panel shows what
+was said as running text, a paragraph to each stretch of speech the engine
+heard. Delete words from it, and the stretch they were said in is cut out of
+the video. On a screen 1024 CSS pixels wide or more it is a tab beside
+Template settings, above the Captions tab, and in the Panels menu. Narrower,
+as on a phone, the Edit stage shows one panel at a time, Captions until the
+switch at its top chooses **Transcript**: stacked, the two left each other
+too little of a phone's height to use.
+
+- **Select** words as any text is selected: drag across them, double-click
+  one, or click one and shift-click another; on a phone, press and hold. The
+  words a cut would take are struck through, and **Cut** says how many and how
+  long they last.
+- **Delete**, **Backspace** or **Cut** cuts them. The stretch goes from every
+  track of the timeline at once, video and sound alike: a clip is split at its
+  edges and loses what is inside it, and everything after it moves up by its
+  length. What is left of a clip plays on from where the cut ended, a
+  template's animation included, and meets its neighbour with a hard edit: a
+  part that begins or ends at a cut has no fade there.
+- The captions and the words move with it. A caption the stretch overlaps is
+  trimmed by it, and one with nothing left is dropped; those after it move up.
+  A caption's text is not rewritten: one that said a cut word still says it,
+  for less time. Correct it in the Captions panel, or transcribe the saved
+  timeline again.
+- **Click** a word to put the playhead where it starts. The word under the
+  playhead is underlined as the timeline plays. **Escape** lets go of a
+  selection.
+- **Save** keeps the timeline, then the captions and the words, through the
+  routes the toolbar and the Captions panel save with; until then, the cut is
+  the page's, as any edit of the timeline is. The toolbar's save keeps the
+  timeline alone.
+
+![The same transcript after the cut: the words are gone and the timeline is a second shorter](assets/screens/transcript-cut.png)
+
+*After the cut: the colour bars lost their end and the test card its start, and the captions after the cut moved up.*
+
+A project with no transcript says so in a line, beside **Transcribe timeline**
+([Transcribing a timeline](#transcribing-a-timeline)), which asks first if
+there are captions it would replace.
+
+**The span cut.** A cut takes the timeline from the first selected word's
+start to the last selected word's end, as the engine timed them, and nothing
+either side: no constant in alfred pads a word, so neither does the cut.
+Speech engines' word times can overlap and leave gaps. A gap between selected
+words goes with them; a word the span holds the whole of goes too, selected
+or not, and is struck through first; a word it only overlaps stays, trimmed. A
+word that takes no time goes when it sits in the span, its edges included.
+The span is clamped to the timeline, so a span past its end cuts nothing, and
+a selection that takes no time is no cut at all. What is left of a clip is
+kept however short, since dropping a sliver would cut more than was selected;
+a clip the span does not touch keeps its window as it was. Several spans can
+be cut as one edit, in any order (`cutRanges` takes a list): they are sorted,
+and those that overlap or meet are merged.
+
+**No undo.** The editor has none, so a cut has none either. Until it is
+saved, reloading the page and discarding the timeline it offers back returns
+the project as it was saved.
+
+**The words belong to the timeline that was heard.** They are in timeline
+seconds of the saved timeline as it was transcribed, and a cut moves them
+with the timeline; other edits -- a trim, a move, a clip added -- do not, so
+the text no longer lines up with the picture after them. Transcribe the saved
+timeline again to bring it back in step. The editor lays its clips end to end,
+so the words of a timeline saved from elsewhere with overlapping clips line up
+only once the editor has saved it.
+
+The cut itself is one function, `cutRanges` in `website/src/ClipWindow.js`:
+arithmetic on the timeline, which is the project's own state. It does no
+media work; otto renders the result as it renders any timeline.
 
 ## The audio engine
 
@@ -235,3 +328,11 @@ No test needs joe, a speech model or a download.
 - `tests/pipeline/test_caption_pipeline.py` encodes captions and reads the
   frames back: text and its box where the style puts them, while they are shown
   and not otherwise.
+- `website/e2e/cut-ranges.spec.js` holds `cutRanges` to its edges, in Node,
+  with no browser or server: a range across a clip boundary, several tracks and
+  sound-only clips, ranges apart, overlapping and out of order, at the
+  timeline's start and end and past it, and selections with no length.
+  `website/e2e/transcript.spec.js` edits by text in the browser, on the
+  workspace and on a phone: its `@slow` test transcribes a timeline through
+  the stub engine and cuts two of the words it heard; the others put words on
+  the project through the API.
