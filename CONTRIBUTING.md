@@ -27,7 +27,7 @@ is the contributor of record.
 git clone --recurse-submodules https://github.com/quaternionmedia/alfred.git
 cd alfred
 ./al init          # builds the website image, which carries its dependencies
-./al dev           # the stack, on http://localhost:8000
+./al dev           # the stack, on http://127.0.0.1:8000
 ```
 
 [README.md](README.md) covers the Windows symlink step, and a first run with

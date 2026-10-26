@@ -13,6 +13,9 @@ demo project and its media are made by the server you run.
 - **A POSIX shell** for `./al`, the repository's task runner, which is a `sh`
   script: on Windows, Git Bash or WSL.
 
+[Commands on each system](commands.md) has the setup for Linux, macOS and
+Windows, and every command beside its PowerShell form.
+
 On Windows, a clone has one optional step more, for the instruction files that
 are symlinks (`git config core.symlinks true`). `AGENTS.md`, at the root of the
 repository, has it under "One-time setup on a fresh clone"; running the app does
@@ -45,7 +48,7 @@ lists them.
 
 ## Open the app
 
-Browse to <http://localhost:8000>. The editor opens at Edit, with the four
+Browse to <http://127.0.0.1:8000>. The editor opens at Edit, with the four
 stages on the rail along the top: Source, Edit, Render and Deliver. On a screen
 1024 pixels wide or more, every panel is open at once: the Source stage's two
 panels on the left, the viewer over the timeline in the middle, and on the
@@ -112,6 +115,10 @@ render stays queued until a worker starts; `./al dev` starts one with the stack.
   generated from the browser tests that check them.
 - [Captions](captions.md): typing, importing and transcribing captions, drawing
   them into renders, and pointing Alfred at joe.
+- [Commands on each system](commands.md): running, testing and looking, on
+  Linux, macOS and Windows.
+- [The test loop](loop.md): every suite side by side, and the app left up to
+  try.
 - [Configuration](configuration.md): every setting the server reads.
 - [The family dev loop](family.md): alfred with otto, vox, joe and the rest,
   tested and run together.
@@ -119,4 +126,4 @@ render stays queued until a worker starts; `./al dev` starts one with the stack.
   renders.
 - [Examples](examples/index.md) and the [API](api/index.md): making videos
   with the API directly, with `curl`. Your own server's interactive reference
-  is at <http://localhost:8000/api>, linked from the editor's footer.
+  is at <http://127.0.0.1:8000/api>, linked from the editor's footer.

@@ -9,6 +9,7 @@ edit_uri: ''
 nav:
   - Home: index.md
   - Get started: start.md
+  - Commands: commands.md
   - Cookbook: cookbook.md
   - Captions: captions.md
   - Configuration: configuration.md

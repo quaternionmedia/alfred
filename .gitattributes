@@ -1,0 +1,7 @@
+# ./al and the shell scripts are read by sh, and Linux's sh takes a carriage
+# return as part of the command before it: a Windows clone with CRLF line
+# endings (Git for Windows' default, core.autocrlf=true) fails there with
+# `syntax error: unexpected word` as soon as it is run from WSL or a
+# container. Git Bash happens to tolerate it. LF on every checkout.
+al text eol=lf
+*.sh text eol=lf

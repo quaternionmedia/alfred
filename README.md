@@ -57,7 +57,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | Command | What it does |
 |---|---|
 | `./al init` | Install website dependencies |
-| `./al dev` | Run the dev stack; app on http://localhost:8000 (`ALFRED_PORT` to move it) |
+| `./al dev` | Run the dev stack; app on http://127.0.0.1:8000 (`ALFRED_PORT` to move it) |
 | `./al dev --build` | Rebuild images first |
 | `./al stop` | Stop the dev stack |
 | `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |

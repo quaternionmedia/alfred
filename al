@@ -39,8 +39,8 @@ n | nox                 a nox session in the test container: ./al nox -s lint
 cookbook                regenerate docs/cookbook.md from the browser specs
 family                  alfred with otto, vox, joe, qmcp and the rest: status, test, up, smoke, down, loop
 recipes                 record the recipes as GIFs, take the docs' screenshots (needs a dev stack)
-docs | doc              serve the docs on http://localhost:4000
-flower                  Celery monitoring on http://localhost:5555
+docs | doc              serve the docs on http://127.0.0.1:4000
+flower                  Celery monitoring on http://127.0.0.1:5555
 i | install             add a frontend dependency: ./al install PACKAGE
 w | worker              a render worker on this machine: ./al worker DB_HOST
 p | prod | production   the production stack (export ALFRED_SECRET_KEY first)
@@ -288,7 +288,7 @@ elif [ $1 = "d" ] || [ $1 = "dev" ]; then
   ensureDevKey
   refuseTakenPorts dev
   warnIfExposed
-  echo "Alfred! running dev $1  (http://localhost:$ALFRED_PORT)"
+  echo "Alfred! running dev $1  (http://127.0.0.1:$ALFRED_PORT)"
   ALFRED_PORT="$ALFRED_PORT" docker compose -f docker-compose.yml -f dev.yml up "$@"
 
 # Starts in production.
@@ -403,7 +403,7 @@ elif [ $1 = "thin" ]; then
   # The same three ports as `./al dev`, so the same guard.
   refuseTakenPorts thin
   warnIfExposed
-  echo "Alfred! thin dev stack, no renderer  (http://localhost:$ALFRED_PORT)"
+  echo "Alfred! thin dev stack, no renderer  (http://127.0.0.1:$ALFRED_PORT)"
   ALFRED_PORT="$ALFRED_PORT" docker compose     -f docker-compose.yml -f dev.yml -f thin.yml up "$@"
 
 # Stops the dev stack
