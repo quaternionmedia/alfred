@@ -66,6 +66,8 @@ services:
       # container's own install. The report directories still land on the
       # host, which is the point of the mount.
       - /e2e/node_modules
+      # The docs' example bodies, for examples.spec.js: ../../docs from e2e/.
+      - ./docs/examples/edl/:/docs/examples/edl/:ro
     working_dir: /e2e/
     environment:
       # The api service listens on port 80 inside the compose network.

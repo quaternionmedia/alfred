@@ -26,18 +26,12 @@ All examples here can be previewed or rendered as a full video. A clip's `name` 
 A video clip plays its file from the start for `duration` seconds (5 by default), fitted inside the frame with its proportions kept, and centred. Its sound is mixed into the render's.
 
 ``` json title="Video source"
-{
-  "edl": {
-    "clips": [
-      {
-        "type": "video",
-        "name": "videos/moon.mp4",
-        "duration": 10
-      }
-    ]
-  }
-}
+--8<-- "docs/examples/edl/video.json"
 ```
+
+![The video example in the editor: the test card from second 0 to 3](../assets/screens/examples/video.png)
+
+*The video example in the editor: the whole of the test card, `0  3`.*
 
 ## Images
 An image shows for `duration` seconds, fitted and centred as a video is. `videos/poster.jpg` stands for an image of yours in the library; `GET /media` lists each file with its `kind`.
