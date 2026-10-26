@@ -894,6 +894,16 @@ so it survives a reseed.
   None of them failed a test, because none of them threw.
 
 
+## examples
+
+Each docs example (docs/examples/edl/*.json) previews on the demo media alone.
+Fails by example name; never prints the frame's signed URL.
+
+### the docs examples
+
+- **are there to test**
+- **<example> previews on the demo media**
+
 ## flow
 
 The four-stage flow, end to end, against real data.
@@ -1451,6 +1461,31 @@ makes the Deliver button a guess.
   nothing rendered, and the test skipped itself.
 
 - **a delivered render says where it went**
+
+## screens examples
+
+Each docs example opened in the editor at its moment, saved as
+`docs/assets/screens/examples/<name>.png`. @screens, docs project.
+
+### @screens
+
+- **screen: the <example> example in the editor**
+
+## screens tools
+
+Each timeline tool chosen and its edit made, saved as
+`docs/assets/screens/tools/<tool>.png` for docs/tools.md. @screens, docs project.
+
+### @screens
+
+- **screen: time moves the playhead to where you press**
+- **screen: trim drags the end of a clip**
+- **screen: move drags a clip to another place in the order**
+- **screen: cut splits a clip where you press**
+- **screen: slip changes which part of its file a clip plays**
+- **screen: slide moves a clip between its neighbours**
+- **screen: dual roller moves the cut between two clips**
+- **screen: zoom draws the timeline larger**
 
 ## screens
 
