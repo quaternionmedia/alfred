@@ -1,23 +1,9 @@
 """How many previews the api draws at once, and what the rest are told.
 
-A preview -- a timeline's frame (`POST /preview/`) or a template's (`GET
-/preview/template/{name}`) -- opens and decodes media, composites a frame and
-encodes it. That runs in the thread pool, off the event loop, which is right;
-but the pool is AnyIO's forty threads, shared with every file response, every
-other route's offloaded work and `/health`'s broker ping. The editor asks for a
-preview on every playhead move and every keystroke in a template's text, so a
-few people editing at once, or one script, could take all forty, and then a
-download or a health check waited behind somebody's frames.
-
-So previews take a slot first: at most ALFRED_PREVIEW_CONCURRENCY run at once.
-The rest wait their turn in the order they came, for at most
-ALFRED_PREVIEW_WAIT seconds, and are then answered 503 with a Retry-After
-header and the code `previews_busy`, rather than queueing for as long as the
-others take. They wait on the event loop, not in a thread: a preview waiting
-for a slot holds no thread, so a burst of them cannot take the pool the cap is
-there to protect.
-
-`GET /health` reports the slots' use: `previews: {running, waiting, limit}`.
+At most ALFRED_PREVIEW_CONCURRENCY at once, so previews cannot take the thread
+pool every route shares. The rest wait on the event loop, holding no thread,
+for at most ALFRED_PREVIEW_WAIT seconds, then get 503 `previews_busy` with
+Retry-After. See docs/api/otto.md#previews-at-once.
 """
 
 import asyncio
@@ -31,9 +17,7 @@ from alfred import config
 
 from ..errors import Code, Refusal
 
-# When a preview turned away is worth asking for again, in seconds: the
-# Retry-After it is answered with. Short, because a slot frees as soon as any
-# one frame is drawn; the editor waits this long, then asks once more.
+# Retry-After, in seconds: a slot frees as soon as any one frame is drawn.
 RETRY_AFTER = 2
 
 
