@@ -93,6 +93,17 @@ function without(text, cut) {
   return text.replace(/\s+/g, ' ').trim()
 }
 
+/** Zoom out until the whole timeline fits its panel. */
+async function fitTimeline(page) {
+  const timeline = page.locator('#timeline')
+  const zoomOut = page.locator('.zoombar i', { hasText: 'zoom_out' })
+  for (let press = 0; press < 8; press++) {
+    if (await timeline.evaluate(box => box.scrollWidth <= box.clientWidth)) return
+    await zoomOut.click()
+    await page.evaluate(() => new Promise(done => requestAnimationFrame(done)))
+  }
+}
+
 /** Drag clip `from` to the front with the move tool, through each clip before it. */
 async function moveToFront(page, from) {
   const at = async (index, along) => {
@@ -140,6 +151,7 @@ async function walk(page, { project, speech, request, token }, { shown, pause = 
     await pause(600)
   }
   await expect(page.locator('#media-added')).toContainText('clip 3 on the timeline')
+  await fitTimeline(page)
   // Playhead back on the bars: the sound has no picture.
   await clips(page).first().click()
   await shown('media')
@@ -151,6 +163,7 @@ async function walk(page, { project, speech, request, token }, { shown, pause = 
   await page.locator('#param-duration').fill('3')
   await expect(clips(page).nth(3)).toContainText(TITLE)
   await pause()
+  await fitTimeline(page)
   await choose(page, 'move')
   await moveToFront(page, 3)
   await expect(clips(page).first()).toContainText(TITLE)
