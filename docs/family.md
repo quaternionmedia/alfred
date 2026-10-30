@@ -86,9 +86,9 @@ ALFRED_FAMILY_JOE=../../joe.worktrees/media ./al family up
 | codecartographer | `npm run typecheck`, `npm run test:pure` in `web/` | adds `test:state` and `build` |
 | org-dotgithub | none: its workflows run in the CI that calls them | |
 
-A repository that can't run its suite here (not found, or uv, docker or `node_modules` missing) is skipped with the reason, not failed. alfred's test image is built first because `./al nox` and `./al pytest` otherwise use whatever `alfred_test` image is there, however old.
+A repository that can't run its suite here (not found, or uv, docker or `node_modules` missing) is skipped with the reason, not failed. alfred's test image is built first because `./al nox` otherwise runs whatever `<prefix>_test` image is there, however old (`ALFRED_IMAGES`, the checkout's name, is the prefix).
 
-`./al pytest` and `./al nox` run as their own compose project, `<project>-pytest`, so a test run can't touch a running dev stack: their throwaway database is a service named `db`, as the dev stack's is.
+`./al pytest` and `./al nox` run as their own compose project, `<project>-pytest`, so a test run can't touch a running dev stack: their throwaway database is a service named `db`, as the dev stack's is ([Images and stacks](build.md#the-suites-stacks)).
 
 ## The stack, wired together
 

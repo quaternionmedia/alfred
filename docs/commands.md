@@ -84,6 +84,7 @@ variable in front of a command is set for that command only; in PowerShell,
 | ... and the joe it started | `./al family down` | `al family down` |
 | Follow its logs | `./al logs` | `al logs` |
 | A shell in the api | `./al sh` | `al sh` |
+| Tidy renders, orphans and fetched media | `./al storage migrate`, `orphans` or `cache`: a dry run, until `--apply` | `al storage ...`, the same |
 | After editing `alfred/`, on Windows and macOS | `./al docker restart api` | `al docker restart api` |
 | Every suite, side by side | `./al loop` | `al loop` |
 | ... then the app, left up to try | `./al loop --stack --keep` | `al loop --stack --keep` |

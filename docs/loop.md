@@ -38,7 +38,7 @@ A run is named by its first argument, `main` when there is none: lower case, dig
 
 | Suite | What it runs | Needs |
 |---|---|---|
-| `quick` | the host's own tests of the scripts and the docs (`tests/unit/test_loop.py`, `test_family.py`, `test_task_runner.py`, the docs and cookbook tests), in seconds | `uv` |
+| `quick` | the host's own tests of the scripts and the docs (`tests/unit/test_loop.py`, `test_family.py`, `test_task_runner.py`, the docs, cookbook and recipe GIF tests), in seconds | `uv` |
 | `pytest` | the API suite in Docker, with formatting and lint, as CI runs it (`./al pytest`) | Docker, a POSIX shell |
 | `e2e` | the browser suite in Docker, desktop and phone (`./al test`) | Docker, a POSIX shell |
 | `docs` | the docs site, built `--strict` into `.loop/<name>/site` | `uvx` |
@@ -46,7 +46,7 @@ A run is named by its first argument, `main` when there is none: lower case, dig
 | `stack` | joe, then the dev stack pointed at it, then the live check (`--stack`) | Docker, `uv` for joe |
 | `recipes` | against the stack: the docs' screenshots, the recipes' recordings and the cookbook (`--recipes`) | the host's `website/node_modules` |
 
-A run's suites start together and report as each one finishes. Each writes its whole output to `.loop/<name>/<suite>.log`; the console gets one line per suite with what it counted, and the end of the log when it fails. A suite that cannot run here is skipped with the reason, not failed. The run exits non-zero if any suite failed.
+A run's suites start together and report as each one finishes. Each writes its whole output to `.loop/<name>/<suite>.log`; the console gets one line per suite with what it counted. A suite that fails names its failed tests, Playwright's numbered ones or pytest's `FAILED` lines, and the end of its log when it names none. A suite that cannot run here is skipped with the reason, not failed. The run exits non-zero if any suite failed.
 
 ## Flags
 
@@ -80,7 +80,7 @@ Environment set in the shell, `ALFRED_DEV_SKIP_AUTH=1` for one, reaches every st
 
 `main`'s stack is the dev stack, so `./al stop` and `./al family down` work on it too, and a run replaces the stack that was up: it takes it down and brings it up again from the checkout as it is now. Every stack shares one joe. `--down` stops only the joe its own run started.
 
-Images are named after the checkout (`ALFRED_IMAGES`, which `./al` sets): every run from one checkout builds the same images from the same files, and two checkouts never swap each other's. Before this, every checkout built `alfred_api`, and a worktree's test run could start on another worktree's dependencies.
+Images are named after the checkout (`ALFRED_IMAGES`, which `./al` sets): every run from one checkout builds the same images from the same files, and two checkouts never swap each other's.
 
 ## Checking a change in the app
 
@@ -100,7 +100,7 @@ Ctrl-C stops every process the run started. Containers it brought up may stay: `
 
 ## What it never prints
 
-The steps are handed ports, project names and paths and nothing else, and `--dry-run` shows exactly those. The end of a failed suite's log goes through the same redaction as [`./al family`](family.md#what-it-never-prints) before it is shown. The logs themselves stay under `.loop/`, which git ignores.
+The steps are handed ports, project names and paths and nothing else, and `--dry-run` shows exactly those. Whatever a failed suite shows from its log, its failed tests or its last lines, goes through the same redaction as [`./al family`](family.md#what-it-never-prints) first. The logs themselves stay under `.loop/`, which git ignores.
 
 ## The loop and CI
 
