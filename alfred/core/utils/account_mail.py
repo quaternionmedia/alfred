@@ -105,9 +105,8 @@ def deliver(purpose, address, token, lifetime_seconds) -> bool:
     if not configured():
         return False
     message = compose(purpose, token, lifetime_seconds)
-    # Each step of reaching the mail server bounded by ALFRED_SMTP_TIMEOUT, as
-    # for every mail alfred sends. Mail is sent one message at a time, so a
-    # server that never answered would hold up every message after it.
+    # Bounded by ALFRED_SMTP_TIMEOUT: one message at a time, so a server that
+    # never answers would hold every message behind it.
     dispatch(
         partial(
             sendMail,

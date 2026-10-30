@@ -38,6 +38,16 @@ would 401 and bring back the login screen while every other endpoint stayed
 open. `/users/me` returns the id as a string, under real auth and the bypass
 alike; `tests/unit/test_user_serialisation.py` pins it.
 
+## The dev account's address
+
+`ALFRED_DEV_USER_EMAIL` is `dev@example.com` unless set. The address has to
+be reserved, so that mail sent to it reaches nobody, and valid to the
+`EmailStr` that `UserRead` types it as, or `/users/me` answers 500. Few
+addresses are both. `dev@localhost` is stored but fails validation on the way
+out, and the email validator refuses reserved top-level domains such as
+`.invalid`. RFC 2606 also reserves `example.com`, `example.net` and
+`example.org`, which validate.
+
 ## What the dev account sees
 
 Records belong to the account that created them, and other accounts get a 404
