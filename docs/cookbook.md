@@ -1036,6 +1036,30 @@ waiting for the encode.
 - **an unknown destination is refused**
 - **delivery requires authentication**
 
+## follow clips
+
+`followClips` (src/ClipWindow.js): captions and words follow an edit made
+with the timeline tools. Plain arithmetic, run in Node: no browser, no server.
+
+### what later material does
+
+- **a trim takes the end of a clip and what was said in it, and what follows moves up**
+- **a longer clip pushes what follows on; what spans the edit stays whole**
+- **a moved clip takes its words and captions with it; the rest close up**
+- **a deleted clip takes its words; a caption with none left goes**
+- **a clip put between two others moves what follows on; one at the end moves nothing**
+### the edits that keep the timeline its length
+
+- **a slip shows other material in place: its words move, or go out of the window**
+- **a roll moves the cut and nothing either side of it**
+- **a slide moves the clip and its words between its neighbours**
+### at the edges
+
+- **a moment goes with the clip that starts there, and from the timeline with it**
+- **a still loses its end, and a template its animation, as a file does**
+- **a caption being typed is left as it is, and nothing it is given is changed**
+- **an edit that moved nothing gives back what it was given**
+
 ## health
 
 Whether the stack can do its work.

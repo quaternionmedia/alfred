@@ -1,6 +1,7 @@
 /**
- * A clip's window arithmetic, and `cutRanges` for editing by text.
- * Imports nothing, so its tests run in Node (e2e/cut-ranges.spec.js).
+ * A clip's window arithmetic; `cutRanges` for editing by text; `followClips` for the
+ * timeline tools.
+ * Imports nothing, so its tests run in Node (e2e/cut-ranges.spec.js, e2e/follow-clips.spec.js).
  * Timing.js re-exports it.
  */
 
@@ -234,4 +235,102 @@ export function cutRanges({ clips = [], captions = [], words = [] } = {}, ranges
     removed,
     spans,
   }
+}
+
+// ---- following an edit made with the timeline tools -------------------------
+
+/** A placed clip's window: where it starts, where in its source, and for how long. */
+const windowOf = clip => ({ start: startOf(clip), from: inOf(clip), length: clipSeconds(clip) })
+
+/**
+ * What an edit kept of the timeline: `{from, to, at, place}`, old [from, to) now starting
+ * at `at`, in the edited timeline's clip `place`. Lineage by `key`; the common part of a
+ * clip's source windows is what it kept. Past the old end: left where it is.
+ */
+function keptPieces(before, after) {
+  const places = new Map()
+  after.forEach((clip, n) => places.set(clip.key, n))
+  const pieces = []
+  for (const clip of before) {
+    const n = places.get(clip.key)
+    if (n === undefined || clip.key === undefined || clip.key === null) continue
+    const was = windowOf(clip)
+    const now = windowOf(after[n])
+    const lo = Math.max(was.from, now.from)
+    const hi = Math.min(was.from + was.length, now.from + now.length)
+    if (toMs(hi - lo) <= 0) continue
+    pieces.push({
+      from: was.start + lo - was.from,
+      to: was.start + hi - was.from,
+      at: now.start + lo - now.from,
+      place: n,
+    })
+  }
+  const end = timelineEnd(before)
+  pieces.push({ from: end, to: Infinity, at: end, place: after.length })
+  return pieces.sort((x, y) => x.from - y.from)
+}
+
+/**
+ * A caption or word through `pieces`: null when none of it was kept. Its parts that
+ * still follow each other, in the same or neighbouring clips, stay one; else it keeps
+ * its longest such run. A moment goes with the piece holding it. Non-numeric: as is.
+ */
+function through(item, pieces) {
+  const times = timesOf(item)
+  if (!times) return item
+  const [start, end] = times
+  if (end <= start) {
+    const piece = pieces.find(p => p.from <= start && start < p.to)
+    if (!piece) return null
+    const t = toMs(piece.at + start - piece.from)
+    return at(item, t, t)
+  }
+  let best = null
+  let run = null
+  for (const p of pieces) {
+    if (p.to <= start || p.from >= end) continue
+    const a = p.at + Math.max(start, p.from) - p.from
+    const b = p.at + Math.min(end, p.to) - p.from
+    if (toMs(b - a) <= 0) continue
+    const follows =
+      run && a >= run.end - 0.0005 && (p.place === run.place || p.place === run.place + 1)
+    if (follows) {
+      run.end = b
+      run.place = p.place
+      run.length += b - a
+    } else {
+      run = { start: a, end: b, place: p.place, length: b - a }
+    }
+    // To the ms: a tie is a tie, and the first said wins it.
+    if (!best || toMs(run.length) > toMs(best.length)) best = run
+  }
+  return best ? at(item, toMs(best.start), toMs(best.end)) : null
+}
+
+/**
+ * Captions and words after an edit with the timeline tools: they follow the picture.
+ * `before`, `after`: placed clips (`start`, `duration`, `inpoint`, `type`), each with a
+ * `key` naming the clip it is, the same before and after. A clip with no partner is
+ * new, or gone. Pure: returns `{captions, words}`, words in timeline order, captions in
+ * the order given. Rules: docs/captions.md, "Words follow the picture".
+ */
+export function followClips({ before = [], after = [], captions = [], words = [] } = {}) {
+  const placed = clips =>
+    (clips || []).filter(Boolean).sort((x, y) => startOf(x) - startOf(y))
+  const pieces = keptPieces(placed(before), placed(after))
+  const keptWords = (words || []).map(word => through(word, pieces))
+  const keptCaptions = retext(
+    captions,
+    (captions || []).map(caption => through(caption, pieces)),
+    words,
+    keptWords
+  )
+  // A move can put later speech first; stable, so equal starts keep their order.
+  const ordered = keptWords
+    .map((word, j) => [word, j])
+    .filter(([word]) => word)
+    .sort(([x, i], [y, j]) => Number(x.start) - Number(y.start) || i - j)
+    .map(([word]) => word)
+  return { captions: keptCaptions.filter(Boolean), words: ordered }
 }
