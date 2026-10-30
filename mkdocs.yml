@@ -21,6 +21,7 @@ nav:
       - dev-auth.md
       - ownership.md
       - dependencies.md
+      - Images and stacks: build.md
   - Concepts:
       - about/index.md
       - about/concepts.md

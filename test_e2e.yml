@@ -1,120 +1,64 @@
-# The browser suite, self-contained: from a clean checkout (with submodules),
-#
+# The browser suite from a clean checkout, as CI and `./al test` run it:
 #   docker compose -f test_e2e.yml up --build --exit-code-from e2e
-#
-# builds the SPA, starts the api, a render worker and a database, and runs
-# Playwright against them. The CI job runs exactly this; `./al test` runs it
-# too, under a compose project of its own, after removing what its last run
-# left. Nothing is assumed to exist beforehand -- no `./al init`, no dev stack,
-# no earlier build of website/dist, no secrets.
-#
-# `--exit-code-from` stops every container as soon as any one exits, which is
-# why `site` below stays up after building instead of exiting when it is done.
+# Needs nothing beforehand. See docs/build.md#the-browser-suites-stack.
 
-# The settings the api and the renderer share, from one list so they agree on
-# where every file is. Nothing comes from the shell running the suite: a run
-# tests the same stack everywhere.
-#
-# What the suite makes -- renders, local deliveries, preview frames, fetched
-# media -- goes to the e2e-outputs volume, mounted at /outputs in both. With
-# the defaults it went into the checkout through the repository mount: every
-# e2e render into videos/renders/ and every local delivery into deliveries/,
-# where the dev stack listed them as orphans. The library itself stays the
-# checkout's videos/, which the suite generates its demo clips into and the
-# audio stub writes e2e-speech.wav into: inputs, not outputs.
+# Shared by the api and the renderer; nothing from the shell. Outputs go to
+# the e2e-outputs volume, inputs stay in the checkout's videos/.
 x-e2e-settings: &e2e-settings
   CELERY_BROKER: mongodb://db:27017/celery
   CELERY_BACKEND: mongodb://db:27017/celery
   DB_URL: mongodb://db:27017
   DB_NAME: alfred
-  # The library, shared through the repository mount.
   VIDEO_DIR: /app/videos
   ALFRED_RENDER_DIR: /outputs/renders
   ALFRED_DELIVERY_DIR: /outputs/deliveries
-  # The api's alone; here so it is not the one output left elsewhere.
   ALFRED_PREVIEW_DIR: /outputs/previews
-  # Fetched remote media, served by nothing (contract M6).
   OTTO_DOWNLOAD_DIR: /outputs/remote-cache
-  # The stub audio engine below, which the captions specs transcribe with;
-  # the renderer is what transcribes.
+  # The stub below.
   ALFRED_AUDIO_ENGINE_URL: http://audio
 
 volumes:
-  # Created with the stack, and removed with it by `down --volumes`, which
-  # `./al test` runs before each run.
+  # Removed by `./al test`'s `down --volumes` before each run.
   e2e-outputs:
 
 services:
   e2e:
     image: mcr.microsoft.com/playwright:v1.64.1-noble
     depends_on:
-      # Healthy, not merely started: global-setup's first request is
-      # /openapi.json, and a container that has started is not yet a server
-      # that answers.
+      # Healthy: started is not yet answering.
       api:
         condition: service_healthy
       db:
         condition: service_started
-      # The @slow specs queue real renders and wait for them to finish.
+      # For the @slow specs' real renders.
       renderer:
         condition: service_started
     volumes:
       - ./website/:/e2e/
-      # Same reason as the website service in docker-compose.yml, mirrored:
-      # the host's website/node_modules holds the host's platform binaries,
-      # and module resolution from /e2e would find them before the
-      # container's own install. The report directories still land on the
-      # host, which is the point of the mount.
+      # Hides the host's platform binaries; see docker-compose.yml.
       - /e2e/node_modules
-      # The docs' example bodies, for examples.spec.js: ../../docs from e2e/.
+      # For examples.spec.js: ../../docs from e2e/.
       - ./docs/examples/edl/:/docs/examples/edl/:ro
     working_dir: /e2e/
     environment:
-      # The api service listens on port 80 inside the compose network.
       E2E_BASE_URL: http://api
-      # The stub audio engine, for specs that check what it was sent.
+      # The stub, for specs that check what it was sent.
       E2E_AUDIO_ENGINE_URL: http://audio
       # Set per run by ./al loop. E2E_OUTPUT is under website/.
       E2E_PROJECTS: ${E2E_PROJECTS:---project=chromium --project=phone}
       E2E_ARGS: ${E2E_ARGS:-}
       E2E_OUTPUT: ${E2E_OUTPUT:-}
       CI: 'true'
-      # Where the runner's dependencies are installed; see the command.
       NODE_PATH: /tmp/deps/node_modules
-    # Dependencies are installed outside the checkout, from copies of its
-    # manifests. Installed in place, npm rewrote website/yarn.lock through the
-    # bind mount -- npm updates a yarn.lock it finds, and swapped the
-    # committed native bindings for this container's -- so every run left a
-    # modified lockfile in the developer's checkout, one `git add -A` from
-    # being committed. The suite needs only @playwright/test, which resolves
-    # from NODE_PATH, and the runner is called by path so it is the version
-    # just installed rather than whatever npx would fetch.
-    #
-    # No cloud recording. The Cypress setup this replaces ran
-    # `cypress run --record`, which shipped every run to Cypress Cloud -- a
-    # hosted service in the test path, holding a key in CI secrets. Reports
-    # are written to website/playwright-report/ and uploaded by the workflow
-    # as an artifact instead.
-    #
-    # Both layouts: `chromium` runs everything against the desktop workspace,
-    # `phone` the stage-walking specs against the stacked phone flow
-    # (website/playwright.config.js).
+    # Installed outside the checkout: in place, npm rewrites website/yarn.lock.
+    # The runner by path, so it is the version just installed.
     command: >-
       sh -c "mkdir -p /tmp/deps && cp package.json yarn.lock /tmp/deps/ &&
       npm install --prefix /tmp/deps --no-audit --no-fund &&
       /tmp/deps/node_modules/.bin/playwright test $$E2E_PROJECTS $$E2E_ARGS"
 
-  # The SPA the api serves, built from the committed lockfile.
-  #
-  # The api serves website/dist, which a clean checkout does not have. The
-  # suite depended on a dev stack or a separate build step having left one
-  # behind, and against a stale one it tested yesterday's frontend.
-  #
-  # It stays up after building because `up --exit-code-from e2e` aborts the
-  # whole run the moment any container exits: a one-shot build that exits 0
-  # stops the suite before it starts. The healthcheck is what the api waits
-  # for, and it reads a marker inside this container rather than dist/, so a
-  # bundle left over from an earlier run cannot satisfy it early.
+  # Builds website/dist, then stays up: --exit-code-from ends the run when any
+  # container exits. Healthy on a marker of its own, not on a stale dist/.
   site:
     build: ./website/
     image: ${ALFRED_IMAGES:-alfred}_site
@@ -122,7 +66,6 @@ services:
     command: sh -c "yarn build && touch /tmp/built && exec tail -f /dev/null"
     volumes:
       - ./website/:/app/
-      # The container's own node_modules; see docker-compose.yml.
       - /app/node_modules
     healthcheck:
       test: ['CMD', 'test', '-f', '/tmp/built']
@@ -137,11 +80,7 @@ services:
       context: .
       dockerfile: ./Dockerfile
     image: ${ALFRED_IMAGES:-alfred}_api
-    # The image's default command runs uvicorn with --reload. Combined with
-    # mounting the repo at /app, the reloader restarts the server whenever the
-    # test run writes playwright-report/ or test-results/ under website/,
-    # dropping in-flight connections and failing tests for no reason of their
-    # own. Reload is a development convenience and has no place in a test run.
+    # No --reload: the run's reports, written under /app, would restart it.
     command:
       ['uvicorn', 'alfred.main:app', '--host', '0.0.0.0', '--port', '80']
     depends_on:
@@ -151,23 +90,15 @@ services:
         condition: service_healthy
       audio:
         condition: service_healthy
-    # Mount the repo root, matching docker-compose.yml. The Cypress compose
-    # file this replaces mounted ./alfred/ onto /app, which shadows the
-    # installed package root that `uvicorn alfred.main:app` resolves against.
     volumes:
       - ./:/app/
       - ./website/dist/:/app/dist/
-      # Shared with the renderer, so the file the worker writes is the file
-      # the api delivers.
+      # Shared with the renderer.
       - e2e-outputs:/outputs
     environment:
       <<: *e2e-settings
       GOOGLE_APPLICATION_CREDENTIALS: /cred.json
-      # Signs this stack's session tokens and nothing else. docker-compose.yml
-      # reads the dev key from .secret_key; this file does not include it, so
-      # without a key here every login answered 500. A value written in the
-      # open is the honest kind for a test stack: it is not a secret, and it
-      # says so.
+      # This stack's alone, and not a secret.
       ALFRED_SECRET_KEY: e2e-only-signing-key-not-a-secret-never-use-outside-test-e2e
     healthcheck:
       test:
@@ -175,7 +106,7 @@ services:
           'CMD',
           'python',
           '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost/healthz', timeout=3)",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1/healthz', timeout=3)",
         ]
       interval: 5s
       timeout: 5s
@@ -183,14 +114,7 @@ services:
       start_period: 300s
       start_interval: 2s
 
-  # The Celery worker, so the @slow specs that wait on a real encode have
-  # something to do it. Without one a queued render never leaves `queued`,
-  # and those specs could only time out.
-  #
-  # The same image and command as dev.yml's renderer, without `--workdir`:
-  # the Celery app's `include` names `alfred.core.utils.tasks` and the worker
-  # resolves library clips against VIDEO_DIR, so the working directory decides
-  # nothing.
+  # dev.yml's renderer, for the @slow specs' real encodes.
   renderer:
     build:
       context: .
@@ -206,15 +130,8 @@ services:
     environment:
       <<: *e2e-settings
 
-  # The audio engine, as a stub: joe's media API, answered from what it is
-  # sent -- a segment of "speech" wherever the sound is -- with no model and
-  # no download (tests/stubs/audio_engine.py). The api and the renderer reach
-  # it through vox exactly as they would reach joe.
-  #
-  # It also writes the one piece of media the captions specs need and nothing
-  # here can generate: videos/e2e-speech.wav, four seconds holding two bursts
-  # of tone, into the library the api and the renderer share. Demo media is
-  # silent, and a timeline with nothing to hear has nothing to transcribe.
+  # A stub of joe's media API, no model (tests/stubs/audio_engine.py). Writes
+  # videos/e2e-speech.wav, the one clip with sound the captions specs need.
   audio:
     build:
       context: .
@@ -239,7 +156,7 @@ services:
           'CMD',
           'python',
           '-c',
-          "import urllib.request; urllib.request.urlopen('http://localhost/api/health', timeout=3)",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1/api/health', timeout=3)",
         ]
       interval: 5s
       timeout: 5s
