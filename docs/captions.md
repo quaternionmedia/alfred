@@ -55,7 +55,7 @@ editor, saved or not, as it carries the timeline.
 | Route | |
 |---|---|
 | `GET /project/{id}/captions` | `{captions, style, job}` |
-| `PUT /project/{id}/captions` | `{captions, style?, words?}`: stores those and nothing else; answers as `GET` does |
+| `PUT /project/{id}/captions` | `{captions, style?, words?, timeline?}`: stores those and nothing else, in one write; answers as `GET` does |
 | `GET /project/{id}/captions/words` | `{words}`: the transcript, word by word |
 | `POST /project/{id}/captions/import` | `{format: "srt"\|"vtt"\|"json", text}` → `{captions, skipped}`; stores nothing |
 | `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine (`audio_engine_missing`) or the job could not be queued (`transcription_not_queued`); `409` while one runs; `422` when the saved timeline has nothing to hear |
@@ -75,12 +75,18 @@ text that says something, at most 500 characters. A project carries at most
 A word is `{start, end, text, segment}`, in timeline seconds: `end` no earlier
 than `start` (an engine times some words as taking no time at all), `text` one
 word of at most 100 characters, and `segment` which stretch of speech it was
-heard in, counted from 0. A project keeps at most 50,000, in the order heard.
-A transcription replaces them; `PUT /project/{id}/captions` replaces them when
-it is sent `words`, and keeps them when it is not, so that the editor writes
-the captions and the words of a cut together ([Editing by
-text](#editing-by-text)). A request whose words break these rules is refused
-422, by FastAPI, with no `code`.
+heard in, counted from 0. A project keeps at most 50,000, in the order sent:
+the order heard, until an edit moves some ahead of others. A transcription
+replaces them; `PUT /project/{id}/captions` replaces them when it is sent
+`words`, and keeps them when it is not. A request whose words break these
+rules is refused 422, by FastAPI, with no `code`.
+
+`timeline` on the same request is the project's timeline, `{clips,
+duration}`, stored as `PUT /project/{id}/timeline` stores it. The editor
+sends the timeline, the captions and the words together whenever an edit has
+moved them, so the three are saved in one write and are never saved apart
+([Editing by text](#editing-by-text)). A timeline otto cannot read is refused
+422, and nothing is written.
 
 The style is `{enabled, fontsize, color, bg, position, align, font}`, the
 textBox template's own fields, every one optional:

@@ -182,6 +182,23 @@ class TestTheWords:
         res = api.get(f'/project/{project["_id"]}/captions/words', headers=bob.headers)
         assert res.status_code == 404
 
+    def test_saved_with_their_timeline_in_one_request(self, api, alice, make_project):
+        """As the timeline route stores it: as sent, no defaults written in."""
+        project = make_project(alice)
+        res = api.put(
+            f'/project/{project["_id"]}/captions',
+            json={
+                'captions': [{'start': 0.5, 'end': 1.3, 'text': 'Kept words.'}],
+                'words': WORDS,
+                'timeline': TALK,
+            },
+            headers=alice.headers,
+        )
+        assert res.status_code == 200, res.text
+        whole = api.get(f'/project/{project["_id"]}', headers=alice.headers).json()
+        assert whole['edl']['clips'] == TALK['clips']
+        assert words_of(api, alice, project['_id']) == WORDS
+
 
 class TestTheRestOfTheProject:
     def test_saving_the_whole_project_keeps_the_captions(
