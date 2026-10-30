@@ -233,3 +233,48 @@ test.describe('the words', () => {
     expect(cutRanges({ clips, captions: [typing] }, [[0, 1]]).captions).toEqual([typing])
   })
 })
+
+test.describe("a caption's text", () => {
+  // As a transcription makes them; the second runs on past its last word.
+  const WORDS = [
+    { start: 0.0, end: 0.5, text: 'Cut', segment: 0 },
+    { start: 0.5, end: 1.0, text: 'this', segment: 0 },
+    { start: 1.0, end: 1.5, text: 'bit,', segment: 0 },
+    { start: 2.0, end: 2.5, text: 'keep', segment: 1 },
+    { start: 2.5, end: 3.0, text: 'that.', segment: 1 },
+  ]
+  const CAPTIONS = [
+    { start: 0, end: 1.5, text: 'Cut this bit,' },
+    { start: 2, end: 4, text: 'keep that.' },
+  ]
+  const clips = [media('audio', 'talk.wav', 0, 5)]
+
+  test('a caption that loses words says the ones left', () => {
+    // Mutation: return the caption as moved in `retext` -- "Cut this bit," stays, fails.
+    const cut = cutRanges({ clips, captions: CAPTIONS, words: WORDS }, [[0.5, 1.0]])
+    expect(cut.captions).toEqual([
+      { start: 0, end: 1, text: 'Cut bit,' },
+      { start: 1.5, end: 3.5, text: 'keep that.' },
+    ])
+  })
+
+  test('a caption that loses every word goes, though some of its time is left', () => {
+    // Mutation: drop `if (!left.length) return null` -- an empty caption stays, fails.
+    const cut = cutRanges({ clips, captions: CAPTIONS, words: WORDS }, [[2, 3]])
+    expect(cut.captions).toEqual([{ start: 0, end: 1.5, text: 'Cut this bit,' }])
+  })
+
+  test('a caption whose words all stay keeps its text, corrections and all', () => {
+    // A pause cut, and a caption someone corrected.
+    const corrected = [{ ...CAPTIONS[0], text: 'Cut this bit' }, CAPTIONS[1]]
+    const cut = cutRanges({ clips, captions: corrected, words: WORDS }, [[1.5, 2]])
+    expect(cut.captions.map(c => c.text)).toEqual(['Cut this bit', 'keep that.'])
+  })
+
+  test("a word is a caption's when its middle is in it, whoever timed the caption", () => {
+    // Mutation: hold a word by its start, not its middle -- "Cut" drops out, fails.
+    const imported = [{ start: 0.2, end: 1.3, text: 'Cut this bit' }]
+    const cut = cutRanges({ clips, captions: imported, words: WORDS }, [[0.5, 1.0]])
+    expect(cut.captions).toEqual([{ start: 0.2, end: 0.8, text: 'Cut bit,' }])
+  })
+})

@@ -5,12 +5,14 @@ import { Edl } from '../Video'
 import { Player } from '../Player'
 import { Health } from '../Health'
 import { User } from '../User'
+import { requestProblem } from '../Problem'
+import { saveTimeline } from '../Tools'
 import { JobLine, TranscribeButton, TranscribeConfirm, transcribeBlocker } from './Captions'
 import '../captions/captions.scss'
 
 /**
- * Transcript panel: select words (native text selection), Delete or Cut to cut them.
- * Behaviour: docs/captions.md, "Editing by text".
+ * Transcript panel: select words (native text selection), Delete or Cut to cut them,
+ * Ctrl/Cmd+Z or Undo to take a cut back. Behaviour: docs/captions.md, "Editing by text".
  */
 
 const projectId = () => m.route.param('project')
@@ -95,11 +97,42 @@ const Paragraph = {
   },
 }
 
+/** Keep the keys in the panel once the button pressed is disabled. */
+const focusText = () => {
+  const text = document.getElementById('transcript-text')
+  if (text) text.focus({ preventScroll: true })
+}
+
 /** Cut the selection, and drop the page's text selection with it. */
 const cutSelection = () => {
   if (!Transcript.cut()) return
   const selection = document.getSelection()
   if (selection) selection.removeAllRanges()
+  focusText()
+}
+
+/** Undo the last cut; its words come back selected. */
+const undoCut = () => {
+  if (!Transcript.undo()) return
+  focusText()
+}
+
+/** Save the timeline, the captions and the words in one request (Tools.saveTimeline). */
+const save = () => {
+  const projectId = Transcript.projectId
+  if (!projectId || Transcript.busy || !Transcript.captionsHeld()) return
+  Transcript.busy = 'save'
+  Transcript.error = null
+  saveTimeline(projectId)
+    .catch(err => {
+      Transcript.error = `Could not save: ${requestProblem(err) || 'no answer'}`
+    })
+    .then(() => {
+      Transcript.busy = null
+      // The button went disabled under the focus: give it back to the words, for Ctrl+Z.
+      focusText()
+      m.redraw()
+    })
 }
 
 /** The words, selectable text. */
@@ -183,12 +216,19 @@ const Words = () => {
   }
 }
 
-/** Cut and Save. */
+/** Cut, Undo and Save. */
 const Actions = {
   view: () => {
     const blocker = Transcript.cannotCut()
     const going = Transcript.going()
     const span = Transcript.spans()[0]
+    const undo = Transcript.undoable()
+    const undoTitle = undo
+      ? `Put back the ${plural(undo.took.words, 'word')} the last cut took, ` +
+        'and the timeline and captions with them (Ctrl+Z or Cmd+Z)'
+      : Transcript.undos.length
+        ? 'The timeline, the captions or the words changed since the last cut, so it stays'
+        : 'Nothing to undo: a cut can be undone until something else changes'
     return m('.captionsactions', [
       m(
         'button#transcript-cut',
@@ -203,11 +243,20 @@ const Actions = {
         ]
       ),
       m(
+        'button#transcript-undo',
+        {
+          disabled: !undo || Boolean(Transcript.busy),
+          title: undoTitle,
+          onclick: undoCut,
+        },
+        [m('i.material-icons', { 'aria-hidden': 'true' }, 'undo'), ' Undo']
+      ),
+      m(
         'button.primary#transcript-save',
         {
           disabled: !Transcript.changed || Boolean(Transcript.busy) || !Transcript.captionsHeld(),
           title: 'Save the timeline, the captions and the words as they now are',
-          onclick: () => Transcript.save(),
+          onclick: save,
         },
         Transcript.busy === 'save' ? 'Saving…' : 'Save'
       ),
@@ -235,11 +284,18 @@ export const TranscriptPanel = {
     const id = projectId()
     const count = Transcript.words.length
     const last = Transcript.last
-    return m('.captionspanel.transcriptpanel#panel-transcript', [
+    return m('.captionspanel.transcriptpanel#panel-transcript', {
+      onkeydown: e => {
+        const z = e.key === 'z' || e.key === 'Z'
+        if (!z || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return
+        e.preventDefault()
+        undoCut()
+      },
+    }, [
       m('.captionshead', [
         m('h3', `Transcript${count ? ` (${plural(count, 'word')})` : ''}`),
         Transcript.changed ? m('span.captionsnote#transcript-unsaved', 'Unsaved changes') : null,
-        count ? m(Actions) : null,
+        count || Transcript.undos.length ? m(Actions) : null,
       ]),
 
       !id ? m('p.captionsnote', 'Choose a project on the Source stage to edit it by what is said.') : null,
@@ -273,7 +329,11 @@ export const TranscriptPanel = {
               ? m(
                   'p.captionsnote#transcript-last',
                   { role: 'status' },
-                  `Cut ${plural(last.words, 'word')}: the timeline is ${seconds(last.seconds)} shorter.` +
+                  (last.undone
+                    ? `Undid a cut of ${plural(last.words, 'word')}: ` +
+                      `the timeline is ${seconds(last.seconds)} longer.`
+                    : `Cut ${plural(last.words, 'word')}: ` +
+                      `the timeline is ${seconds(last.seconds)} shorter.`) +
                     (Transcript.changed ? ' Save to keep it.' : '')
                 )
               : null,

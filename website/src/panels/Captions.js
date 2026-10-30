@@ -4,6 +4,9 @@ import { Edl } from '../Video'
 import { Player } from '../Player'
 import { Health } from '../Health'
 import { User } from '../User'
+import { requestProblem } from '../Problem'
+import { saveTimeline } from '../Tools'
+import { Transcript } from '../captions/transcript'
 import '../captions/captions.scss'
 
 /**
@@ -69,6 +72,15 @@ export const JobLine = {
       JOB_SAYS[job.state](job)
     )
   },
+}
+
+/** Save; with the timeline and the words when an edit moved the captions with them. */
+const saveCaptions = id => {
+  if (!Transcript.moved(id)) return Captions.save()
+  Captions.error = null
+  return saveTimeline(id).catch(err => {
+    Captions.error = `Could not save: ${requestProblem(err) || 'no answer'}`
+  })
 }
 
 /** A file picker behind a button: the input itself is hidden. */
@@ -414,8 +426,10 @@ export const CaptionsPanel = {
               disabled: !Captions.canSave() || !Captions.dirty(),
               title: problems
                 ? 'Fix the captions marked in red first'
-                : 'Save the captions and their style to the project',
-              onclick: () => Captions.save(),
+                : Transcript.moved(id)
+                  ? 'Save the captions and their style, with the timeline and words they moved with'
+                  : 'Save the captions and their style to the project',
+              onclick: () => saveCaptions(id),
             },
             Captions.busy === 'save' ? 'Saving…' : 'Save'
           ),

@@ -42,7 +42,8 @@ timeline by what is said in it: [Editing by text](#editing-by-text).
   line alignment, text colour, box and box colour; and the font. **Draw into
   renders** is off until you tick it, since imported or transcribed captions
   are often still being corrected.
-- **Save** keeps the captions and the style on the project.
+- **Save** keeps the captions and the style on the project, and the timeline
+  and the words with them once an edit has moved them ([Saving](#saving)).
 
 The caption under the playhead shows over the viewer in its style, faint while
 the style does not draw into renders: a likeness the page draws, where the
@@ -55,7 +56,7 @@ editor, saved or not, as it carries the timeline.
 | Route | |
 |---|---|
 | `GET /project/{id}/captions` | `{captions, style, job}` |
-| `PUT /project/{id}/captions` | `{captions, style?, words?}`: stores those and nothing else; answers as `GET` does |
+| `PUT /project/{id}/captions` | `{captions, style?, words?, timeline?}`: stores those and nothing else, in one write; answers as `GET` does |
 | `GET /project/{id}/captions/words` | `{words}`: the transcript, word by word |
 | `POST /project/{id}/captions/import` | `{format: "srt"\|"vtt"\|"json", text}` → `{captions, skipped}`; stores nothing |
 | `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine (`audio_engine_missing`) or the job could not be queued (`transcription_not_queued`); `409` while one runs; `422` when the saved timeline has nothing to hear |
@@ -75,12 +76,18 @@ text that says something, at most 500 characters. A project carries at most
 A word is `{start, end, text, segment}`, in timeline seconds: `end` no earlier
 than `start` (an engine times some words as taking no time at all), `text` one
 word of at most 100 characters, and `segment` which stretch of speech it was
-heard in, counted from 0. A project keeps at most 50,000, in the order heard.
-A transcription replaces them; `PUT /project/{id}/captions` replaces them when
-it is sent `words`, and keeps them when it is not, so that the editor writes
-the captions and the words of a cut together ([Editing by
-text](#editing-by-text)). A request whose words break these rules is refused
-422, by FastAPI, with no `code`.
+heard in, counted from 0. A project keeps at most 50,000, in the order sent:
+the order heard, until an edit moves some ahead of others. A transcription
+replaces them; `PUT /project/{id}/captions` replaces them when it is sent
+`words`, and keeps them when it is not. A request whose words break these
+rules is refused 422, by FastAPI, with no `code`.
+
+`timeline` on the same request is the project's timeline, `{clips,
+duration}`, stored as `PUT /project/{id}/timeline` stores it. The editor
+sends the timeline, the captions and the words together whenever an edit has
+moved them, so the three are saved in one write and are never saved apart
+([Saving](#saving)). A timeline otto cannot read is refused 422, and nothing
+is written.
 
 The style is `{enabled, fontsize, color, bg, position, align, font}`, the
 textBox template's own fields, every one optional:
@@ -201,16 +208,16 @@ too little of a phone's height to use.
   part that begins or ends at a cut has no fade there.
 - The captions and the words move with it. A caption the stretch overlaps is
   trimmed by it, and one with nothing left is dropped; those after it move up.
-  A caption's text is not rewritten: one that said a cut word still says it,
-  for less time. Correct it in the Captions panel, or transcribe the saved
-  timeline again.
+  A caption that loses words says the words it has left: [A caption's
+  words](#a-captions-words).
+- **Ctrl+Z** (**Cmd+Z** on a Mac) or **Undo** takes back the last cut:
+  [Undo](#undo).
 - **Click** a word to put the playhead where it starts. The word under the
   playhead is underlined as the timeline plays. **Escape** lets go of a
   selection.
-- **Save** keeps the timeline, then the captions and the words, through the
-  routes the toolbar and the Captions panel save with; until then, the cut is
-  the page's, as any edit of the timeline is. The toolbar's save keeps the
-  timeline alone.
+- **Save** keeps the timeline, the captions and the words, in one request
+  ([Saving](#saving)); until then, the cut is the page's, as any edit of the
+  timeline is.
 
 ![The same transcript after the cut: the words are gone and the timeline is a second shorter](assets/screens/transcript-cut.png)
 
@@ -234,21 +241,107 @@ a clip the span does not touch keeps its window as it was. Several spans can
 be cut as one edit, in any order (`cutRanges` takes a list): they are sorted,
 and those that overlap or meet are merged.
 
-**No undo.** The editor has none, so a cut has none either. Until it is
-saved, reloading the page and discarding the timeline it offers back returns
-the project as it was saved.
-
-**The words belong to the timeline that was heard.** They are in timeline
-seconds of the saved timeline as it was transcribed, and a cut moves them
-with the timeline; other edits -- a trim, a move, a clip added -- do not, so
-the text no longer lines up with the picture after them. Transcribe the saved
-timeline again to bring it back in step. The editor lays its clips end to end,
-so the words of a timeline saved from elsewhere with overlapping clips line up
-only once the editor has saved it.
-
 The cut itself is one function, `cutRanges` in `website/src/ClipWindow.js`:
 arithmetic on the timeline, which is the project's own state. It does no
 media work; otto renders the result as it renders any timeline.
+
+### Undo
+
+**Ctrl+Z** (**Cmd+Z** on a Mac) in the Transcript panel, or its **Undo**
+button, takes back the last cut: the timeline, the captions and the words
+come back as they were before it, as one edit, and the words it took come
+back selected, so **Delete** would cut them again. Up to ten cuts are undone
+one at a time, the last first.
+
+Undo covers the cuts made in the Transcript panel, and nothing else. It
+takes one back only while nothing else has changed the timeline, the
+captions or the words since: an edit with the timeline tools, a caption
+typed, imported or transcribed, a restored draft, or opening another
+project keeps the cuts made before it, and Undo says so. Saving is not such a
+change. A saved cut can still be undone, which leaves the project as it was
+before the cut, unsaved, for **Save** to write as it wrote the cut. A reload
+forgets what could be undone, and the editor has no other undo.
+
+### Words follow the picture
+
+The words and the captions are in timeline seconds, so an edit that moves the
+picture moves them with it. The editor lays its clips end to end on one
+track, and no edit leaves a gap: what comes after an edited clip closes up or
+moves on by exactly what the edit changed. How each tool changes the clips
+decides what happens to what was said in them ([Editing tools](tools.md)):
+
+| Edit | The clips | The words and the captions |
+|---|---|---|
+| Trim | the clip's end moves, and everything after it by as much | those in the end it lost go; those after move with their clips |
+| Move | the clip goes elsewhere in the order, and the rest close up | its words go with it; the rest move as their clips do |
+| A clip dragged off the timeline | it goes, and what follows moves up | its words go |
+| A clip added | it goes in where it is put, and what follows moves on | those after it move on; nothing is said over the new clip |
+| Slip | the clip shows another part of its file, in the same place | its words move with the picture, and those now outside its window go |
+| Slide | the clip moves between its neighbours, which give and take the time | its words move with it; its neighbours' follow their windows |
+| Dual roller | the cut between two clips moves, and nothing else | what either clip lost at the cut goes; nothing moves |
+| Cut, or S | the clip becomes two that meet | nothing moves |
+| A template's **Duration**, typed | as a trim, once the field is left | as a trim |
+
+Each word and caption follows its material: the second of its clip's file,
+or of a template's animation, that it lies over. Where the edit kept that
+second, it goes wherever the second now plays; where the edit lost it, it
+goes. One that spans clips stays one stretch across the parts that still
+follow each other, in the same clip or neighbouring ones, with whatever new
+material lies between them, such as what a trim or a roll revealed. When an
+edit parts them, as a move can, it keeps its longest part. A caption that
+loses words says the words it has left ([A caption's words](#a-captions-words)).
+A caption past the end of the timeline, over nothing, stays where it is. A
+still picture has no place in a file, so what it loses is taken from its
+end. The words are kept in the order they play, so after a move the
+transcript reads as the picture does.
+
+This is one function, `followClips` in `website/src/ClipWindow.js`, given the
+clips before an edit and after it. A tool marks the timeline when its edit
+begins and hands the mark over when the edit is done: a drag the browser
+takes back moves nothing, and a typed duration is followed once, when its
+field is left. An edit made while the project's captions or words are still
+loading is followed once they arrive. The editor loads both whenever it opens
+a project, whether or not their panels are showing.
+
+The words are those of the saved timeline as it was transcribed, followed
+through every edit since. A transcription hears the *saved* timeline, so
+transcribe after saving. The editor lays its clips end to end, so the words
+of a timeline saved from elsewhere with overlapping clips line up only once
+the editor has saved it.
+
+### Saving
+
+An edit that moves the captions and the words leaves all three unsaved, and
+all three are saved together. The toolbar's save, the Transcript panel's
+**Save** and the Captions panel's **Save** each write the timeline, the
+captions and the words in one request, `PUT /project/{id}/captions` with
+`timeline` ([Through the API](#through-the-api)), so the project never holds
+a timeline and words from different edits. Until an edit has moved them, the
+toolbar's save writes the timeline alone, and the Captions panel's the
+captions and their style. A caption still marked in the Captions panel holds
+such a save back, and the save says so: the captions cannot be written as
+they are, and the timeline is not written without them.
+
+### Drafts
+
+An unsaved timeline is kept in the tab and offered back when the project is
+opened again (`website/src/Draft.js`). The captions and the words an edit
+moved are kept in the same entry, and **Restore them** brings the three back
+together, unsaved, for **Save** to write. It waits until the project's saved
+captions and words have loaded, so they cannot arrive after it and replace
+what it restored. **Discard** keeps what is saved, all three. A draft kept
+before this release holds the timeline alone and restores as it did.
+
+### A caption's words
+
+A caption's words are the transcript's words whose middle lies inside it:
+the words it was made of, for a caption a transcription made, and the words
+said while it is shown, for one typed or imported. When an edit takes some of
+them, the caption's text is rewritten as the words it has left, in the order
+they are said, joined by spaces; a correction typed into it goes with the rest
+of its old text. When an edit takes all of them, the caption goes, even if
+some of its time is left: it would show only what was cut. A caption that
+holds no words, or loses none of them, keeps its text as it is.
 
 ## The audio engine
 
@@ -331,8 +424,14 @@ No test needs joe, a speech model or a download.
 - `website/e2e/cut-ranges.spec.js` holds `cutRanges` to its edges, in Node,
   with no browser or server: a range across a clip boundary, several tracks and
   sound-only clips, ranges apart, overlapping and out of order, at the
-  timeline's start and end and past it, and selections with no length.
+  timeline's start and end and past it, selections with no length, and a
+  caption's text after a cut. `website/e2e/follow-clips.spec.js` holds
+  `followClips` to each tool's edit the same way.
   `website/e2e/transcript.spec.js` edits by text in the browser, on the
   workspace and on a phone: its `@slow` test transcribes a timeline through
   the stub engine and cuts two of the words it heard; the others put words on
-  the project through the API.
+  the project through the API, and undo cuts, trim a clip under the words, and
+  restore a draft.
+- `tests/unit/test_captions_routes.py` and
+  `tests/integration/test_captions_api.py` hold `PUT /project/{id}/captions`
+  to writing the timeline with the captions and the words, in one write.

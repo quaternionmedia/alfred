@@ -2,6 +2,8 @@ import m from 'mithril'
 import { Edl } from './Video'
 import { User } from './User'
 import { timelineEdl } from './RenderRequest'
+import { Captions } from './captions/store'
+import { Transcript } from './captions/transcript'
 
 /**
  * The unsaved timeline, kept so that leaving the page does not lose it.
@@ -25,6 +27,9 @@ import { timelineEdl } from './RenderRequest'
  * Every touch of storage is guarded: a browser can refuse it outright
  * (private browsing, a full quota, a policy), and losing the draft is better
  * than losing the editor.
+ *
+ * Captions and words an edit moved with the timeline are kept in the same
+ * entry, one write, and come back with it (docs/captions.md, "Drafts").
  */
 
 const PREFIX = 'alfred.draft.'
@@ -55,7 +60,8 @@ function write(project, value) {
   try {
     store().setItem(key(project), JSON.stringify(value))
   } catch (e) {
-    // Refused or full: this timeline goes unkept, and the editor carries on.
+    // Refused or full: this timeline goes unkept, and an older one with it.
+    forget(project)
   }
 }
 
@@ -77,6 +83,27 @@ const copies = clips =>
     return rest
   })
 
+/** A caption as it is kept: no list key. */
+const caption = ({ start, end, text }) => ({ start, end, text })
+
+/**
+ * The captions and words that moved with `project`'s timeline, unsaved: `{key, captions, words}`,
+ * or null. Read from the stores while they hold the project; after, the last read.
+ */
+function moved(project) {
+  if (Transcript.projectId === project && Captions.projectId === project) {
+    Draft.moved = Transcript.moved(project)
+      ? {
+          project,
+          key: `${Transcript.version}|${Captions.print()}`,
+          captions: Captions.loaded ? Captions.list : null,
+          words: Transcript.loaded ? Transcript.words : null,
+        }
+      : null
+  }
+  return Draft.moved && Draft.moved.project === project ? Draft.moved : null
+}
+
 export const Draft = {
   /** The project whose timeline is on screen, once its saved clips are known. */
   project: null,
@@ -86,6 +113,8 @@ export const Draft = {
   offer: null,
   /** What was last kept, as compared, so an unchanged timeline is not rewritten. */
   kept: null,
+  /** The captions and words last read as moved (`moved`). */
+  moved: null,
   timer: null,
   last: 0,
 
@@ -99,6 +128,7 @@ export const Draft = {
     Draft.base = null
     Draft.offer = null
     Draft.kept = null
+    Draft.moved = null
   },
 
   /**
@@ -120,7 +150,13 @@ export const Draft = {
       forget(project)
       return
     }
-    Draft.offer = { project, savedAt: stored.savedAt, clips: stored.clips }
+    Draft.offer = {
+      project,
+      savedAt: stored.savedAt,
+      clips: stored.clips,
+      captions: Array.isArray(stored.captions) ? stored.captions : null,
+      words: Array.isArray(stored.words) ? stored.words : null,
+    }
     m.redraw()
   },
 
@@ -140,19 +176,23 @@ export const Draft = {
     // answer, and what is on screen is not to overwrite it.
     if (!project || Draft.offer) return
     Draft.last = Date.now()
-    const now = shape(Edl.edl)
+    const timeline = shape(Edl.edl)
+    const extra = moved(project)
+    const now = extra ? `${timeline}|${extra.key}` : timeline
     if (now === Draft.kept) return
     Draft.kept = now
-    if (now === Draft.base) {
+    if (!extra && timeline === Draft.base) {
       forget(project)
       return
     }
     write(project, {
-      v: 1,
+      v: 2,
       project,
       user: User.username || null,
       savedAt: Date.now(),
       clips: copies(Edl.edl),
+      ...(extra && extra.captions ? { captions: extra.captions.map(caption) } : {}),
+      ...(extra && extra.words ? { words: extra.words } : {}),
     })
   },
 
@@ -161,6 +201,7 @@ export const Draft = {
     if (project !== Draft.project) return
     Draft.base = shape(clips)
     Draft.kept = null
+    Draft.moved = null
     // Saving what is on screen answers a waiting offer too: it is superseded.
     Draft.offer = null
     forget(project)
@@ -168,12 +209,17 @@ export const Draft = {
     Draft.observe()
   },
 
-  /** Put the kept timeline back on screen. */
+  /** The offer can be taken: its captions and words, if any, have somewhere to go. */
+  ready: offer =>
+    Boolean(offer) && (!(offer.captions || offer.words) || Transcript.settled(offer.project)),
+
+  /** Put the kept timeline back on screen, and the captions and words it moved. */
   restore: () => {
     const offer = Draft.offer
-    if (!offer) return
+    if (!Draft.ready(offer)) return
     Draft.offer = null
     Edl.edl = copies(offer.clips)
+    if (offer.captions || offer.words) Transcript.restore(offer)
     Edl.current = 0
     Edl.time = 0
     // The list changes under Sortable, so it is drawn afresh (see Edl.update).
@@ -198,6 +244,10 @@ if (typeof window !== 'undefined') {
   window.addEventListener('pagehide', () => Draft.flush())
 }
 
+// Kept while the stores still hold them, before another project's load.
+Captions.leaving.push(() => Draft.flush())
+Transcript.leaving.push(() => Draft.flush())
+
 /** The offer, where the stages are: on screen whichever stage is open. */
 export const DraftOffer = {
   view: () => {
@@ -207,15 +257,27 @@ export const DraftOffer = {
     const when = offer.savedAt
       ? new Date(offer.savedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : null
+    const ready = Draft.ready(offer)
+    const moved =
+      offer.captions || offer.words ? ', and the captions and words that moved with them' : ''
     return m('.draftoffer#draft-offer', { role: 'status' }, [
       m('i.material-icons', { 'aria-hidden': 'true' }, 'restore'),
       m(
         'span.draftmessage',
         `This timeline has unsaved changes${when ? ` from ${when}` : ''} — ${count} clip${
           count === 1 ? '' : 's'
-        }, kept when the page was left. The saved timeline is showing.`
+        }${moved}, kept when the page was left. The saved timeline is showing.`
       ),
-      m('button#draft-restore', { type: 'button', onclick: Draft.restore }, 'Restore them'),
+      m(
+        'button#draft-restore',
+        {
+          type: 'button',
+          disabled: !ready,
+          title: ready ? '' : 'Loading the captions and the words, which come back with it…',
+          onclick: Draft.restore,
+        },
+        'Restore them'
+      ),
       m('button#draft-discard', { type: 'button', onclick: Draft.discard }, 'Discard'),
     ])
   },

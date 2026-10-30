@@ -423,6 +423,12 @@ Plain arithmetic, run in Node: no browser, no server.
 - **the words cut go, later words shift, and one the cut only overlaps is trimmed**
 - **a word that takes no time goes when a range holds it, and moves when not**
 - **a caption being typed, its times not yet numbers, is left as it is**
+### a caption's text
+
+- **a caption that loses words says the ones left**
+- **a caption that loses every word goes, though some of its time is left**
+- **a caption whose words all stay keeps its text, corrections and all**
+- **a word is a caption's when its middle is in it, whoever timed the caption**
 
 ## deliver
 
@@ -1030,6 +1036,30 @@ waiting for the encode.
 - **an unknown destination is refused**
 - **delivery requires authentication**
 
+## follow clips
+
+`followClips` (src/ClipWindow.js): captions and words follow an edit made
+with the timeline tools. Plain arithmetic, run in Node: no browser, no server.
+
+### what later material does
+
+- **a trim takes the end of a clip and what was said in it, and what follows moves up**
+- **a longer clip pushes what follows on; what spans the edit stays whole**
+- **a moved clip takes its words and captions with it; the rest close up**
+- **a deleted clip takes its words; a caption with none left goes**
+- **a clip put between two others moves what follows on; one at the end moves nothing**
+### the edits that keep the timeline its length
+
+- **a slip shows other material in place: its words move, or go out of the window**
+- **a roll moves the cut and nothing either side of it**
+- **a slide moves the clip and its words between its neighbours**
+### at the edges
+
+- **a moment goes with the clip that starts there, and from the timeline with it**
+- **a still loses its end, and a template its animation, as a file does**
+- **a caption being typed is left as it is, and nothing it is given is changed**
+- **an edit that moved nothing gives back what it was given**
+
 ## health
 
 Whether the stack can do its work.
@@ -1369,7 +1399,8 @@ timeline sits with its tools and the media bin beneath.
 ### @recipe editing by text
 
 Drag across "you see here", press Delete: the bars lose their end, the
-test card its start, and the captions after move up. Save keeps it.
+test card its start, and the captions after move up. Ctrl+Z puts the
+words back, selected, and Delete takes them again. Save keeps it.
 
 - **recipe: cut the video by deleting words from its transcript**
 
@@ -2168,7 +2199,9 @@ Editing by text: words deleted from the Transcript panel cut the timeline.
 
 # Recipe: cut the video by deleting words
 
-Select words, press Delete, Save. Desktop and phone; the @slow test transcribes via the stub engine.
+Select words, press Delete, Save. Ctrl+Z, or Undo, takes a cut back. A trim
+moves the words with the picture, and a draft keeps them with its timeline.
+Desktop and phone; the @slow test transcribes via the stub engine.
 
 ### @slow from the transcription to the cut
 
@@ -2178,7 +2211,7 @@ and words all lose the half second, saved together.
 - **words deleted from the transcript cut the timeline, the captions and the words**
 ### the transcript
 
-"three four" spans the clip boundary: both clips lose a second.
+"three four" spans the clip boundary: both clips lose a second, and each caption a word.
 
 - **a drag selects words, and Cut takes them, however they were selected**
 - **a double-click selects one word, and Backspace cuts it**
@@ -2193,6 +2226,37 @@ and words all lose the half second, saved together.
 
   One line and a Transcribe button.
 
+### undo
+
+Ctrl+Z at a desk; the Undo button on a phone, which has no keys.
+
+- **Undo puts back what a cut took: the words, the clips and the captions**
+
+  Two cuts are undone one at a time, last first. The words come back
+  selected, so Delete would cut them again; the second undo is the
+  project as saved, with nothing to save.
+
+- **a saved cut can be undone, and saved again; another edit after a cut keeps it**
+
+  Undo after Save puts the project back as it was, unsaved, and Save
+  writes it. A cut followed by a split at the playhead (S) stays: Undo
+  takes back a cut only while nothing else has changed since.
+
+### words follow the picture
+
+The first clip trimmed to half its length: "three" goes with its end,
+"two" is cut short, the second clip's words and caption move up, and
+the first caption says what it has left. The toolbar's save writes
+the timeline, the captions and the words in one request.
+
+- **a trim moves the words and the captions with it, and the toolbar saves all three**
+### a draft
+
+Cut "five" and leave the page unsaved. Opened again, the project shows
+as saved, words and all, and offers the cut back; Restore brings the
+timeline, the captions and the words together, and Save writes them.
+
+- **a cut kept as a draft comes back with the captions and the words it moved**
 
 ## views
 
