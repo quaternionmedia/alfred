@@ -2,8 +2,8 @@
 
 This page makes one video, from nothing to a file you can play, in alfred's
 editor, and says which member of the QM family does each part for you. The
-pictures are taken by the browser suite as it walks the same steps
-(`website/e2e/screens-guide.spec.js`), and the
+pictures are taken by the browser suite as it walks the same steps, with a
+stand-in for joe ([below](#the-walk-recorded)), and the
 [cookbook](cookbook.md#recipe-making-a-video) plays a recording of the whole
 walk in the docs you serve yourself.
 
@@ -226,22 +226,28 @@ a stand-in alfred.
 
 The steps above are one browser test, `recipe: make a video from start to
 finish` in `website/e2e/recipes.spec.js`, which `./al recipes` records. To
-bring the family up, record every walkthrough, retake every picture and leave
-the stack up to try:
+bring the family up, record every walkthrough with joe, and leave the stack up
+to try:
 
 ```sh
-ALFRED_DEV_SKIP_AUTH=1 ./al loop --only recipes --keep --joe ../joe
+ALFRED_DEV_SKIP_AUTH=1 E2E_SPEECH=videos/talk.mp4 ./al loop --only recipes --keep --joe ../joe
 ./al docs
 ```
 
-`./al docs` then serves these pages at <http://127.0.0.1:4000>, where the
-[cookbook](cookbook.md#recipe-making-a-video) plays each recording. The
-recording runs Playwright on this machine, so `website/` needs its
-dependencies and a browser first: `yarn install` and `npx playwright install
-chromium` there.
+`E2E_SPEECH` names the sound the walk transcribes: a file of yours with speech
+in it, put in alfred's `videos/`. Without one, the walk is skipped. `./al
+docs` then serves these pages at <http://127.0.0.1:4000>, where the
+[cookbook](cookbook.md#recipe-making-a-video) plays each recording; the
+recordings stay on your machine, out of the repository. They are made by
+Playwright on this machine, so `website/` needs its dependencies and a browser
+first: `yarn install` and `npx playwright install chromium` there. [The test
+loop](loop.md) has the rest of `./al loop`.
 
-The walk's sound is `videos/e2e-speech.wav`, two bursts of tone that the
-browser suite's stand-in engine takes for speech. joe listens for real speech:
-put a file with some in `videos/` and name it, `E2E_SPEECH=videos/talk.mp4`
-before `./al loop`. Without the file, the walk is skipped and its pictures are
-left as they were. [The test loop](loop.md) has the rest of `./al loop`.
+The pictures on this page show nobody's own media, so they are taken in the
+browser suite's stack instead, where a stand-in for joe
+(`tests/stubs/audio_engine.py`) hears `videos/e2e-speech.wav`, two bursts of
+tone, as two lines of speech:
+
+```sh
+./al loop shots --only e2e --projects docs --grep making.a.video
+```

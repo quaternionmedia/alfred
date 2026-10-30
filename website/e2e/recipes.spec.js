@@ -507,18 +507,20 @@ test.describe('@recipe making a video', () => {
      * transcribed and two of its words cut, the captions corrected and styled,
      * then a render, delivered.
      */
-    const why = await guide.cannotWalk(request, token)
+    // The stub's tones, or a file of speech for joe: E2E_SPEECH.
+    const speech = guide.SPEECH
+    const why = await guide.cannotWalk(request, token, speech)
     test.skip(Boolean(why), why)
     const project = await guide.emptyProject(request, token)
     made.set(project._id, { name: project.name, owned: true })
-    await openRecipe(page, made, opened, guide.LIBRARY)
+    await openRecipe(page, made, opened, guide.library(speech))
 
     await guide.walk(
       page,
-      { project, request, token },
+      { project, speech, request, token },
       { shown: () => beat(page, 1600), pause: ms => beat(page, ms) }
     )
-    await everyRowIsItsOwn(page, made, guide.LIBRARY)
+    await everyRowIsItsOwn(page, made, guide.library(speech))
     // The Deliver panel's list can still be in flight as the page closes.
     await page.unrouteAll({ behavior: 'ignoreErrors' })
   })

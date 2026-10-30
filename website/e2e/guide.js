@@ -10,11 +10,13 @@ const { expect } = require('./fixtures')
 const DEMO_MEDIA = ['demo-bars.mp4', 'demo-colour.mp4', 'demo-testcard.mp4']
 const PICTURES = ['videos/demo-bars.mp4', 'videos/demo-testcard.mp4']
 
-// The sound transcribed: the stub engine's two tones (test_e2e.yml), or a file of speech.
-const SPEECH = process.env.E2E_SPEECH || 'videos/e2e-speech.wav'
+// The sound transcribed: the stub's two tones, where the stub is the engine (test_e2e.yml).
+const STUB_SPEECH = process.env.E2E_AUDIO_ENGINE_URL ? 'videos/e2e-speech.wav' : ''
+// Or a file of speech for joe: someone's own, so for recordings only, never screenshots.
+const SPEECH = process.env.E2E_SPEECH || STUB_SPEECH
 
-// The library files the walk may show.
-const LIBRARY = [...DEMO_MEDIA, SPEECH.split('/').pop()]
+/** The library files a walk with `speech` may show. */
+const library = speech => [...DEMO_MEDIA, speech.split('/').pop()]
 
 const PROJECT = 'My first video'
 const TITLE = 'My first video'
@@ -37,8 +39,9 @@ const TRANSCRIBE_TIMEOUT = 150_000
 
 const auth = token => ({ headers: { Authorization: token } })
 
-/** Why the walk cannot run on this stack, or '' when it can. */
-async function cannotWalk(request, token) {
+/** Why the walk cannot run here with `speech`, or '' when it can. */
+async function cannotWalk(request, token, speech) {
+  if (!speech) return 'no sound to transcribe: no stub engine, and no E2E_SPEECH'
   const health = await (await request.get('/health', auth(token))).json()
   const engine = health.audio_engine || {}
   if (!engine.configured) return 'no audio engine is configured on this stack'
@@ -46,9 +49,7 @@ async function cannotWalk(request, token) {
   if (!(health.renderer || {}).workers) return 'no render worker is running'
   expect((await request.post('/demo/media', auth(token))).status()).toBe(200)
   const videos = (await (await request.get('/videos', auth(token))).json()).map(String)
-  if (!videos.includes(SPEECH)) {
-    return `no ${SPEECH} in the library: the stub engine writes it; E2E_SPEECH names another`
-  }
+  if (!videos.includes(speech)) return `no ${speech} in the library`
   return ''
 }
 
@@ -122,7 +123,7 @@ async function choose(page, tool) {
  * Walk `project` from nothing to a delivered render. `shown(step)` runs as
  * each step's result is on the screen; `pause(ms)` between the actions in it.
  */
-async function walk(page, { project, request, token }, { shown, pause = async () => {} }) {
+async function walk(page, { project, speech, request, token }, { shown, pause = async () => {} }) {
   // Open the editor: nothing chosen yet.
   await page.goto('/')
   await expect(page.locator('#preview.empty')).toContainText('Nothing on the timeline yet')
@@ -133,7 +134,7 @@ async function walk(page, { project, request, token }, { shown, pause = async ()
   await page.locator('.projectchoice', { hasText: project.name }).click()
   await expect(page).toHaveURL(new RegExp(`project=${project._id}`))
   await pause()
-  for (const [count, name] of [...PICTURES, SPEECH].entries()) {
+  for (const [count, name] of [...PICTURES, speech].entries()) {
     await page.locator(`.mediachoice[data-media="${name}"]`).click()
     await expect(clips(page)).toHaveCount(count + 1)
     await pause(600)
@@ -234,12 +235,13 @@ async function walk(page, { project, request, token }, { shown, pause = async ()
 }
 
 module.exports = {
-  LIBRARY,
   PROJECT,
   SPEECH,
   STEPS,
+  STUB_SPEECH,
   cannotWalk,
   emptyProject,
+  library,
   removeProject,
   walk,
 }
