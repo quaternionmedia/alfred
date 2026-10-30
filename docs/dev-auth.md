@@ -23,7 +23,7 @@ While it is on, the stack prints a banner on every boot:
 Every route guarded by `current_active_user` or `current_active_superuser`
 resolves to one account instead of authenticating the caller. The bypass is
 all-or-nothing: the dev account is a verified superuser, so the admin routes
-open too. Anything finer grained is auth work, the next phase.
+open too. Anything finer grained is auth work.
 
 The account is a **real, persisted user**, not a stand-in. Routes attribute
 renders and projects to the caller's email (`render.username`,
@@ -77,9 +77,9 @@ which is refused (guard 5).
    the operator believing it took effect, with a process that looks healthy
    either way.
 3. **No production passthrough.** Only `dev.yml` wires the variable.
-   `production.yml` names it only to say it is withheld, so a production stack
-   has no variable to read even if the host sets one.
-   `tests/unit/test_stack_settings.py` holds that.
+   `production.yml` does not pass it, so a production stack has no variable to
+   read even if the host sets one. `tests/unit/test_stack_settings.py` holds
+   that.
 4. **Loopback by default.** `dev.yml` publishes the api on 127.0.0.1, so with
    the bypass on, the superuser is reachable from this machine only.
    `ALFRED_BIND=0.0.0.0` opens it to the network (to try the editor on a phone,
