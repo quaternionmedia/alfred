@@ -27,6 +27,7 @@ quick: ok  pytest: ok  e2e: ok  docs: ok
 ./al loop slow --only e2e --grep @slow
 ./al loop b --stack --port 8100      # a second stack beside the first
 ./al loop shots --only recipes       # the docs' screenshots and the recipes' recordings
+./al loop --only recipes --keep      # ... on the dev stack with joe, left up to try (guide.md)
 ./al loop main --down                # take a run's stack down
 ./al loop --list                     # the runs this checkout has made, and which stacks are up
 ./al loop b --stack --dry-run        # what a run would start, and nothing else

@@ -1403,6 +1403,14 @@ test card its start, and the captions after move up. Ctrl+Z puts the
 words back, selected, and Delete takes them again. Save keeps it.
 
 - **recipe: cut the video by deleting words from its transcript**
+### @recipe making a video
+
+[Make a video with the family](guide.md), step by step: two demo clips
+and a sound on an empty project, a title moved to the front, the sound
+transcribed and two of its words cut, the captions corrected and styled,
+then a render, delivered.
+
+- **recipe: make a video from start to finish**
 
 ## render api
 
@@ -1539,6 +1547,22 @@ Each docs example opened in the editor at its moment, saved as
 ### @screens
 
 - **screen: the <example> example in the editor**
+
+## screens guide
+
+Each step of making a video, from the editor opening to the render
+delivered, saved as `docs/assets/screens/guide/<step>.png` for
+docs/guide.md. One walk (guide.js) on an empty project, transcribed by the
+stub engine: so taken only in the browser suite's stack, where test_e2e.yml
+keeps them on the host. @screens, docs project.
+
+    ./al loop shots --only e2e --projects docs --grep making.a.video
+
+### @screens
+
+Nine steps in the guide; the first, starting the family, is a command.
+
+- **screen: each step of making a video**
 
 ## screens tools
 

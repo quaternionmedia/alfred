@@ -29,6 +29,9 @@ SCREENS_SPECS = [
 # The examples' request bodies, and the tools beside the timeline.
 EDL = DOCS / 'examples' / 'edl'
 TOOLS = REPO / 'website' / 'src' / 'TimelineTools.js'
+# The guide's walk, whose STEPS name its pictures, and the page that shows them.
+GUIDE_WALK = REPO / 'website' / 'e2e' / 'guide.js'
+GUIDE = DOCS / 'guide.md'
 # What `POST /demo/media` makes, 3 s each.
 DEMO_MEDIA = {
     'videos/demo-bars.mp4',
@@ -191,8 +194,9 @@ class TestThePagesShowFirst:
 
 
 class TestTheExampleAndToolScreens:
-    """screens/examples/ and screens/tools/, from screens-examples.spec.js and
-    screens-tools.spec.js. docs/tools.md says how they are taken."""
+    """screens/examples/, screens/tools/ and screens/guide/, from
+    screens-examples.spec.js, screens-tools.spec.js and screens-guide.spec.js.
+    docs/tools.md says how they are taken."""
 
     def test_each_example_screen_is_of_an_example(self):
         examples = {path.stem for path in EDL.glob('*.json')}
@@ -217,7 +221,7 @@ class TestTheExampleAndToolScreens:
         shown = {resolved for page in pages() for _, resolved in images_on(page)}
         unshown = [
             str(path.relative_to(REPO))
-            for group in ('examples', 'tools')
+            for group in ('examples', 'tools', 'guide')
             for path in sorted((SCREENS / group).glob('*.png'))
             if path.resolve() not in shown
         ]
@@ -225,13 +229,41 @@ class TestTheExampleAndToolScreens:
 
     def test_each_is_a_desktop_screen_and_small(self):
         problems = []
-        for group in ('examples', 'tools'):
+        for group in ('examples', 'tools', 'guide'):
             for path in sorted((SCREENS / group).glob('*.png')):
                 if png_size(path) != DESKTOP:
                     problems.append(f'{group}/{path.name} is {png_size(path)}')
                 if path.stat().st_size > MAX_SCREEN_BYTES:
                     problems.append(f'{group}/{path.name}: {path.stat().st_size} B')
         assert not problems, problems
+
+
+class TestTheGuideScreens:
+    """screens/guide/: a picture for each step guide.js walks, and docs/guide.md
+    showing them in the order walked."""
+
+    def steps(self):
+        source = GUIDE_WALK.read_text(encoding='utf-8')
+        listed = re.search(r'const STEPS = \[(.*?)\]', source, re.DOTALL)
+        assert listed, 'guide.js names no STEPS'
+        return re.findall(r"'([a-z-]+)'", listed.group(1))
+
+    def test_each_step_has_its_screen(self):
+        steps = set(self.steps())
+        assert len(steps) >= 8, f'found too few steps to be checking: {sorted(steps)}'
+        there = {path.stem for path in (SCREENS / 'guide').glob('*.png')}
+        assert (
+            there == steps
+        ), f'missing {sorted(steps - there)}, extra {sorted(there - steps)}'
+
+    def test_the_guide_shows_them_in_the_order_walked(self):
+        guide = (SCREENS / 'guide').resolve()
+        shown = [
+            resolved.stem
+            for _, resolved in images_on(GUIDE)
+            if resolved.parent == guide
+        ]
+        assert shown == self.steps(), f'docs/guide.md shows {shown}'
 
 
 class TestTheExamples:
