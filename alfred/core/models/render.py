@@ -21,44 +21,26 @@ class Render(Document):
     fps: Optional[float] = 30.0
     # One of the encoding presets in `utils.encoding`: draft, standard, high.
     quality: Optional[str] = None
-    # Never accepted from a client and never used to encode (contract C5):
-    # POST /render answers 422 if either is set, and the encoder settings come
-    # from `quality`. Kept, with their old types, so that renders stored when
-    # clients did send them still load.
+    # Refused on POST /render and never used (C5); kept so old renders load.
     bitrate: Optional[List] = None
     ffmpeg_params: Optional[List[str]] = None
     progress: Optional[float] = None
-    # Written by DbLogger throughout the encode and never modelled here, so the
-    # API dropped it on the way out: a caller could see progress reach 100 and
-    # still have no way to tell a finished render from a failed one. That is
-    # the field anything waiting on a render needs.
+    # The worker's own value (DbLogger); `render_state` reads it.
     status: Optional[str] = None
-    # Why a failed render failed, in a line, for whoever is waiting on it.
-    # Before this the reason went to the worker's log and nowhere else, so a
-    # failed render said only that it had failed.
+    # Why a failed render failed, in a line.
     error: Optional[str] = None
     link: Optional[str] = None
     username: Optional[str] = None
-    # The output file's name, `<id>.mp4` -- derived from the id alone, so
-    # nothing a client sends can reach the filesystem path.
+    # `<id>.mp4`: nothing a client sends reaches the path.
     filename: Optional[str] = None
     # What a download is called: readable, and sanitised to a safe file name.
     display_name: Optional[str] = None
-    # Where this render was sent, once it has been. `link` records the
-    # resulting URL or path; this records which transport produced it, so a
-    # link can be interpreted without guessing from its shape.
+    # The destination `link` came from, so a link is read without guessing.
     destination: Optional[str] = None
-    # Captions to draw over the timeline, in its seconds, and how (contract
-    # K2). Kept beside `edl` rather than written into it: the timeline stays
-    # what was sent, and the caption clips are made each time the render is
-    # queued -- so a rerender draws them too, at the render's own size. None,
-    # or a style with `enabled: false`, draws none.
+    # Drawn over the timeline at each queueing, not written into `edl` (K2).
+    # None, or a style with `enabled: false`, draws none.
     captions: Optional[List[Caption]] = None
     caption_style: Optional[CaptionStyle] = None
-
-    # class Config:
-    #     title = 'Alfred Render'
-    #     collection = 'Render'
 
 
 class RenderUpdate(Render):
@@ -83,12 +65,10 @@ FINISHED = ('RENDERED', 'UPLOADED')
 
 
 def render_state(status, progress) -> str:
-    """What a render is doing, from what the worker has stored (contract C2).
+    """What a render is doing, from what the worker stored (contract C2).
 
-    The stored values are left as they were -- `None` until the worker
-    finishes, then `RENDERED`, `UPLOADED` or `failed` -- because existing
-    clients read them. This is the one place they are interpreted, so a
-    client asks for `state` rather than re-deriving it.
+    The one reading of `status` (None, then `RENDERED`, `UPLOADED` or
+    `failed`), which clients still get raw beside `state`.
     """
     if status == 'failed':
         return 'failed'
@@ -109,10 +89,8 @@ class RenderStatus(BaseModel):
     filename: Optional[str] = None
     destination: Optional[str] = None
     error: Optional[str] = None
-    # A signed URL for the finished file, which a browser or any HTTP client
-    # can fetch without a session until it expires; null until the render has
-    # finished and its file is there. Decided by the route, which knows where
-    # files are and holds the signing key.
+    # Signed, fetchable without a session until it expires; null until the
+    # file is there. Set by the route.
     download_url: Optional[str] = None
 
     @classmethod
@@ -133,13 +111,7 @@ class RenderStatus(BaseModel):
 
 
 def output_filename(render_id) -> str:
-    """The file a render is written to: its id and nothing else.
-
-    It was built from the project name, the description and a timestamp, all
-    of which arrive in the request -- so a project called `../../x` became a
-    write to `/x_...mp4` from the worker. The id is the one part of a render
-    nothing outside the server chooses.
-    """
+    """The file a render is written to: its id, which no client chooses."""
     return f'{render_id}.mp4'
 
 

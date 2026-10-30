@@ -17,6 +17,15 @@ The `render` routes accept an `Edl` with its render settings, queue a server ren
 
 `POST /render` and `POST /render/rerender/{id}` answer `503` with `render_not_queued` when the broker will not take the job. The render is stored anyway, recorded `failed` with the reason, so `GET /render` lists it and `POST /render/rerender/{id}` can queue it again.
 
+## What the server decides
+
+- **Its own fields.** The server writes `username`, `filename`, `display_name`, `status`, `progress`, `error`, `link` and `destination`; whatever a request sends for them is discarded.
+- **The file's name** is the render's id, `<id>.mp4`, so nothing a request sends reaches a path on the server. A download is saved under the render's display name: its project, description and size, reduced to letters, digits, `.`, `_` and `-`.
+- **Encoding** is a `quality`, one of otto's presets: `draft`, `standard` (the default) or `high`. `ffmpeg_params` and `bitrate` are refused rather than ignored, so a client relying on them finds out at once. A frame is 16 to 7680 pixels each way, at 1 to 120 frames a second.
+- **A render queued again** is checked as a new one is, and a stored quality that no preset has, such as `web` or `TV`, becomes the default.
+- **Finished** means the worker said so. The encoder writes its file as it goes, so until then download and delivery answer 409, `render_not_finished`.
+- **Delivery** goes to `?destination=`, else to where the render last went, else `local`, which every server has. A refused delivery is a 502, not a 500: the render is fine, and asking again may deliver it. A bucket delivery records `gs://<bucket>/<object>`, and each caller is given a link signed then.
+
 ## Issues
 Report an issue with one of your renders with `POST /render/{id}/report`, whose body is the report as a JSON string:
 
