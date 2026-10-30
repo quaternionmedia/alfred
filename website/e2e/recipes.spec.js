@@ -435,7 +435,8 @@ test.describe('@recipe editing by text', () => {
   }) => {
     /**
      * Drag across "you see here", press Delete: the bars lose their end, the
-     * test card its start, and the captions after move up. Save keeps it.
+     * test card its start, and the captions after move up. Ctrl+Z puts the
+     * words back, selected, and Delete takes them again. Save keeps it.
      */
     clear('transcript')
     clear('transcript-cut')
@@ -479,6 +480,13 @@ test.describe('@recipe editing by text', () => {
     await expect(authedPage.locator('#transcript-last')).toContainText('Cut 3 words')
     await beat(authedPage, 1400)
     await save(authedPage, 'transcript-cut')
+
+    const said = authedPage.locator('#transcript-text .transcriptpara').nth(1)
+    await authedPage.keyboard.press('Control+z')
+    await expect(said).toHaveText('Every frame you see here is drawn by the server.')
+    await beat(authedPage, 1200)
+    await authedPage.keyboard.press('Delete')
+    await expect(said).toHaveText('Every frame is drawn by the server.')
 
     await authedPage.locator('#transcript-save').click()
     await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)

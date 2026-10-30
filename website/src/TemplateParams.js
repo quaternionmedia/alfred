@@ -5,6 +5,7 @@ import Bin from './Bin'
 import { auth } from './Login'
 import { User } from './User'
 import { SHORTEST, setLength } from './Timing'
+import { Transcript } from './captions/transcript'
 
 /** Two frame URLs for the same template and settings, at any time. */
 const sameSettings = (a, b) =>
@@ -128,6 +129,12 @@ export const TemplateParams = () => {
   let draft = null
   const typed = (clip, key, stored) =>
     draft && draft.clip === clip && draft.key === key ? draft.value : stored
+  // A duration being typed: the timeline before it, for words and captions to follow once.
+  let lengthening = null
+  const settleLength = () => {
+    if (lengthening) Transcript.follow(lengthening.before)
+    lengthening = null
+  }
 
   const colourField = (clip, { key, label }) => {
     const value = (clip.data && clip.data[key]) || ''
@@ -195,6 +202,7 @@ export const TemplateParams = () => {
   }
 
   return {
+    onremove: settleLength,
     view: () => {
       const index = Edl.current
       const clip = Edl.edl[index]
@@ -234,6 +242,8 @@ export const TemplateParams = () => {
             value: typed(clip, 'duration', clip.duration),
             oninput: e => {
               draft = { clip, key: 'duration', value: e.target.value }
+              if (lengthening && lengthening.clip !== clip) settleLength()
+              if (!lengthening) lengthening = { clip, before: Transcript.mark() }
               const seconds = Number(e.target.value)
               // Through the clip's window (Timing.js): the continuing half of
               // a cut template has an out-point, and it moves with the length.
@@ -241,6 +251,7 @@ export const TemplateParams = () => {
             },
             onblur: () => {
               draft = null
+              settleLength()
             },
           }),
 

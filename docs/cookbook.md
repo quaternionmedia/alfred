@@ -1399,7 +1399,8 @@ timeline sits with its tools and the media bin beneath.
 ### @recipe editing by text
 
 Drag across "you see here", press Delete: the bars lose their end, the
-test card its start, and the captions after move up. Save keeps it.
+test card its start, and the captions after move up. Ctrl+Z puts the
+words back, selected, and Delete takes them again. Save keeps it.
 
 - **recipe: cut the video by deleting words from its transcript**
 
@@ -2198,7 +2199,9 @@ Editing by text: words deleted from the Transcript panel cut the timeline.
 
 # Recipe: cut the video by deleting words
 
-Select words, press Delete, Save. Desktop and phone; the @slow test transcribes via the stub engine.
+Select words, press Delete, Save. Ctrl+Z, or Undo, takes a cut back. A trim
+moves the words with the picture, and a draft keeps them with its timeline.
+Desktop and phone; the @slow test transcribes via the stub engine.
 
 ### @slow from the transcription to the cut
 
@@ -2223,6 +2226,37 @@ and words all lose the half second, saved together.
 
   One line and a Transcribe button.
 
+### undo
+
+Ctrl+Z at a desk; the Undo button on a phone, which has no keys.
+
+- **Undo puts back what a cut took: the words, the clips and the captions**
+
+  Two cuts are undone one at a time, last first. The words come back
+  selected, so Delete would cut them again; the second undo is the
+  project as saved, with nothing to save.
+
+- **a saved cut can be undone, and saved again; another edit after a cut keeps it**
+
+  Undo after Save puts the project back as it was, unsaved, and Save
+  writes it. A cut followed by a split at the playhead (S) stays: Undo
+  takes back a cut only while nothing else has changed since.
+
+### words follow the picture
+
+The first clip trimmed to half its length: "three" goes with its end,
+"two" is cut short, the second clip's words and caption move up, and
+the first caption says what it has left. The toolbar's save writes
+the timeline, the captions and the words in one request.
+
+- **a trim moves the words and the captions with it, and the toolbar saves all three**
+### a draft
+
+Cut "five" and leave the page unsaved. Opened again, the project shows
+as saved, words and all, and offers the cut back; Restore brings the
+timeline, the captions and the words together, and Save writes them.
+
+- **a cut kept as a draft comes back with the captions and the words it moved**
 
 ## views
 
