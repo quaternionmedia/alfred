@@ -12,7 +12,8 @@ in use. Each token carries `iat` beside `exp`, so a client can count its
 lifetime, `exp - iat`, down on its own clock, whatever the server's says.
 
 Tokens are signed with `ALFRED_SECRET_KEY`. Unset or empty, PyJWT signs
-nothing, and every login answers 500; see [Configuration](../configuration.md#settings).
+nothing, and every login answers 500; see [the signing
+key](../configuration.md#the-signing-key).
 
 ## Password resets and address confirmation
 

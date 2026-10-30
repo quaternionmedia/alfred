@@ -94,6 +94,25 @@ alfred also reads plumbing, which is not settings:
   its own (`otto.log.configure`). alfred never asks otto for them, so setting
   it changes nothing here.
 
+## The signing key
+
+`ALFRED_SECRET_KEY` signs every session, password-reset and verification
+token (HS256), and the media URLs the api hands out. The api checks it at
+startup:
+
+- **Unset**, in any mode, nothing can be signed, and every login answers 500.
+  A stack file that gives no key fails its whole suite at the first login.
+- **Empty**, in any mode, is the same: PyJWT 2.13 and later refuse an empty
+  key. The committed `.secret_key` is such a stub, and `./al` gives a
+  development checkout a random key of its own, `.secret_key.local`.
+- **Shorter than 32 characters**, under `ALFRED_PRODUCTION`, is guessable.
+  Anyone holding one token can try keys offline until the signature matches,
+  and then sign a session for any account. Development keys may be short.
+
+Each case is reported, not enforced: the api prints `THE TOKEN SIGNING KEY IS
+NOT SAFE TO USE` at startup, and still starts. Whether production should
+refuse to start instead is an open decision.
+
 ## Docker hosts and joe
 
 `host.docker.internal` is a container's name for the machine it runs on.
