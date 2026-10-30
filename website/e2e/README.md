@@ -50,8 +50,8 @@ runs both:
   `stacked.spec.js`.
 - **`phone`** (390x844) runs `stacked.spec.js` against the phone flow, and
   only those specs that walk the stages, edit a timeline and follow a render:
-  `flow`, `editor`, `timeline-tools`, `deliver`. "Both layouts" below marks
-  those four; every other spec runs in `chromium` alone.
+  `flow`, `editor`, `timeline-tools`, `deliver`, `transcript`. "Both layouts"
+  below marks those five; every other spec runs in `chromium` alone.
 
 A spec about one layout's own shape sets the viewport it means
 (`appearance.spec.js` for the phone flow's rail and panels, `stacked.spec.js`
@@ -159,6 +159,8 @@ in and logout; `views.spec.js`, that a reload keeps the session.
 | Timeline editor with a project open (both layouts) | `editor.spec.js` | UI |
 | The timeline tools and the media they act on, the transport, saving; the toolbar | `tools.spec.js`, `otto.spec.js` | UI |
 | Trim, cut, slip, slide and roll, by mouse and touch (both layouts) | `timeline-tools.spec.js` | UI |
+| Editing by text: words deleted from the Transcript panel cut the timeline (both layouts) | `transcript.spec.js` | UI + API, one test `@slow` |
+| The cut behind editing by text, at its edges | `cut-ranges.spec.js` | Node, no browser |
 | Adding and editing template clips, fonts and placement; the viewer waiting as long as a busy server's `Retry-After` asks | `templates.spec.js` | UI |
 | The timeline tools from the keyboard, the footer | `editor-access.spec.js` | UI |
 | Media lengths and kinds, signed media and download URLs, the `/videos` fallback | `editor-media.spec.js` | UI |
