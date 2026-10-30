@@ -12,10 +12,21 @@ Alfred is a browser video editor for quick editing from anywhere, mobile
 devices included. The browser edits the timeline; every preview and render is
 made by an Alfred server you run yourself, with cloud storage optional.
 
+A video goes through four stages on the rail along the editor's top: Source,
+Edit, Render and Deliver. At Edit, the tools beside the timeline trim, move,
+cut, slip and slide its clips. Captions are typed, imported from a subtitle
+file, or transcribed from the timeline's sound by an audio engine, and the
+Transcript edits the video by what is said: delete words, and the stretch they
+were said in is cut out.
+
 Demo at [alfred.quaternion.media](https://alfred.quaternion.media)
 
 **Get started:** [docs/start.md](docs/start.md) runs it on your own machine and
 makes a first video, from Source to Deliver.
+
+**Make a video:** [docs/guide.md](docs/guide.md) takes one from nothing to a
+delivered file with the QM family: joe transcribes its sound, you cut it by
+deleting words, and otto renders it with its captions.
 
 ## Shape
 
