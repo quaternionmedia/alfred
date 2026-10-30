@@ -423,6 +423,12 @@ Plain arithmetic, run in Node: no browser, no server.
 - **the words cut go, later words shift, and one the cut only overlaps is trimmed**
 - **a word that takes no time goes when a range holds it, and moves when not**
 - **a caption being typed, its times not yet numbers, is left as it is**
+### a caption's text
+
+- **a caption that loses words says the ones left**
+- **a caption that loses every word goes, though some of its time is left**
+- **a caption whose words all stay keeps its text, corrections and all**
+- **a word is a caption's when its middle is in it, whoever timed the caption**
 
 ## deliver
 
@@ -2178,7 +2184,7 @@ and words all lose the half second, saved together.
 - **words deleted from the transcript cut the timeline, the captions and the words**
 ### the transcript
 
-"three four" spans the clip boundary: both clips lose a second.
+"three four" spans the clip boundary: both clips lose a second, and each caption a word.
 
 - **a drag selects words, and Cut takes them, however they were selected**
 - **a double-click selects one word, and Backspace cuts it**

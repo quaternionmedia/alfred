@@ -1,6 +1,7 @@
 /**
  * A clip's window arithmetic, and `cutRanges` for editing by text.
- * Imports nothing, so its tests run in Node (e2e/cut-ranges.spec.js); Timing.js re-exports it.
+ * Imports nothing, so its tests run in Node (e2e/cut-ranges.spec.js).
+ * Timing.js re-exports it.
  */
 
 // The shortest a clip may be made, in seconds. A trim, a cut or a roll that
@@ -113,19 +114,84 @@ const copy = clip => {
   return rest
 }
 
+/** An item's times as numbers, or null while one is not (a caption being typed). */
+function timesOf(item) {
+  const start = item.start === '' ? NaN : Number(item.start)
+  const end = item.end === '' ? NaN : Number(item.end)
+  return Number.isFinite(start) && Number.isFinite(end) ? [start, end] : null
+}
+
+/** `item` at `[from, to]`: itself when that is where it is. */
+const at = (item, from, to) =>
+  Number(item.start) === from && Number(item.end) === to ? item : { ...item, start: from, end: to }
+
 /**
  * A caption or word after the cut: moved and trimmed, or null when nothing is left.
  * Zero-length: gone if inside a span, edges included. Non-numeric times: left as is.
  */
 export function afterCut(item, spans) {
-  const start = item.start === '' ? NaN : Number(item.start)
-  const end = item.end === '' ? NaN : Number(item.end)
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return item
+  const times = timesOf(item)
+  if (!times) return item
+  const [start, end] = times
   if (end === start && spans.some(([a, b]) => a <= start && start <= b)) return null
   const from = moved(start, spans)
   const to = moved(end, spans)
   if (end > start && toMs(to - from) <= 0) return null
-  return { ...item, start: from, end: to }
+  return at(item, from, to)
+}
+
+// ---- a caption's words ------------------------------------------------------
+
+// The longest a caption's text may be (alfred/core/models/captions.py).
+const CAPTION_CHARS = 500
+
+const middle = ([start, end]) => (start + end) / 2
+
+/**
+ * Captions after an edit, their text rewritten where they lost words.
+ * `captions[i]` became `moved[i]`, `words[j]` became `kept[j]`; null is gone.
+ * A caption's words: those whose middle lies in it. Lost some: says the rest, by spaces.
+ * Lost all: null. Lost none, or held none: as moved. Rules: docs/captions.md, "Editing by text".
+ */
+export function retext(captions, moved, words, kept) {
+  // Words by middle, for a binary search per caption.
+  const order = []
+  ;(words || []).forEach((word, j) => {
+    const times = timesOf(word)
+    if (times) order.push([middle(times), j])
+  })
+  order.sort((x, y) => x[0] - y[0])
+  const firstFrom = t => {
+    let lo = 0
+    let hi = order.length
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1
+      if (order[mid][0] < t) lo = mid + 1
+      else hi = mid
+    }
+    return lo
+  }
+  return (captions || []).map((caption, i) => {
+    const after = moved[i]
+    const times = timesOf(caption)
+    if (!after || !times) return after
+    const members = []
+    for (let k = firstFrom(times[0]); k < order.length && order[k][0] <= times[1]; k++) {
+      members.push(order[k][1])
+    }
+    if (!members.length) return after
+    const span = timesOf(after)
+    // Survived, and still under the caption (a move can take a word elsewhere).
+    const left = members.filter(j => {
+      const word = kept[j] && timesOf(kept[j])
+      return word && span && word[0] <= span[1] && word[1] >= span[0]
+    })
+    if (left.length === members.length) return after
+    if (!left.length) return null
+    left.sort((a, b) => Number(kept[a].start) - Number(kept[b].start) || a - b)
+    const text = left.map(j => String(kept[j].text).trim()).join(' ')
+    return { ...after, text: text.slice(0, CAPTION_CHARS).trim() }
+  })
 }
 
 /**
@@ -158,6 +224,14 @@ export function cutRanges({ clips = [], captions = [], words = [] } = {}, ranges
       kept.push(part)
     }
   }
-  const cut = items => (items || []).map(item => afterCut(item, spans)).filter(Boolean)
-  return { clips: kept, captions: cut(captions), words: cut(words), removed, spans }
+  const cut = items => (items || []).map(item => afterCut(item, spans))
+  const keptWords = cut(words)
+  const keptCaptions = retext(captions, cut(captions), words, keptWords)
+  return {
+    clips: kept,
+    captions: keptCaptions.filter(Boolean),
+    words: keptWords.filter(Boolean),
+    removed,
+    spans,
+  }
 }

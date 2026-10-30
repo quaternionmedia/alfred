@@ -192,7 +192,8 @@ test.describe('@slow from the transcription to the cut', () => {
       ])
 
       const after = await captionsOf(request, token, project)
-      // First caption trimmed, second moved up.
+      // First caption trimmed, and says what is left of it; second moved up.
+      expect(after.map(c => c.text)).toEqual(['the said', 'and then a second line'])
       expect(after[0].start).toBeCloseTo(before[0].start, 3)
       expect(after[0].end).toBeCloseTo(before[0].end - removed, 3)
       expect(after[1].start).toBeCloseTo(before[1].start - removed, 3)
@@ -212,7 +213,7 @@ test.describe('the transcript', () => {
     request,
     token,
   }) => {
-    /** "three four" spans the clip boundary: both clips lose a second. */
+    /** "three four" spans the clip boundary: both clips lose a second, and each caption a word. */
     await withProject(request, token, COLOUR, async project => {
       await transcribed(request, token, project)
       await openTranscript(authedPage, project)
@@ -237,9 +238,10 @@ test.describe('the transcript', () => {
         // Resumes one second in.
         [2, 2, 1],
       ])
+      // Mutation: keep a caption's text through a cut -- fails.
       expect(await captionsOf(request, token, project)).toEqual([
-        { start: 0, end: 2, text: 'One two three' },
-        { start: 2, end: 4, text: 'four five six' },
+        { start: 0, end: 2, text: 'One two' },
+        { start: 2, end: 4, text: 'five six' },
       ])
     })
   })

@@ -201,9 +201,8 @@ too little of a phone's height to use.
   part that begins or ends at a cut has no fade there.
 - The captions and the words move with it. A caption the stretch overlaps is
   trimmed by it, and one with nothing left is dropped; those after it move up.
-  A caption's text is not rewritten: one that said a cut word still says it,
-  for less time. Correct it in the Captions panel, or transcribe the saved
-  timeline again.
+  A caption that loses words says the words it has left: [A caption's
+  words](#a-captions-words).
 - **Click** a word to put the playhead where it starts. The word under the
   playhead is underlined as the timeline plays. **Escape** lets go of a
   selection.
@@ -249,6 +248,17 @@ only once the editor has saved it.
 The cut itself is one function, `cutRanges` in `website/src/ClipWindow.js`:
 arithmetic on the timeline, which is the project's own state. It does no
 media work; otto renders the result as it renders any timeline.
+
+### A caption's words
+
+A caption's words are the transcript's words whose middle lies inside it:
+the words it was made of, for a caption a transcription made, and the words
+said while it is shown, for one typed or imported. When an edit takes some of
+them, the caption's text is rewritten as the words it has left, in the order
+they are said, joined by spaces; a correction typed into it goes with the rest
+of its old text. When an edit takes all of them, the caption goes, even if
+some of its time is left: it would show only what was cut. A caption that
+holds no words, or loses none of them, keeps its text as it is.
 
 ## The audio engine
 
