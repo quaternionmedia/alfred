@@ -169,12 +169,9 @@ def library_file(filename, video_dir=None) -> Optional[str]:
 def output_path(filename, render_dir=None, video_dir=None) -> Optional[str]:
     """Where a render's output file is, or None when there is none to serve.
 
-    Renders are written to RENDER_DIR. One finished before that was so is in
-    the media library itself, under the name it was given then, so the library
-    is looked in second. Both with the containment a library file has: a
-    plain name directly inside the directory, for a regular file that exists.
-    A stored name that would leave the directory -- renders stored before
-    output was named by id took theirs from the request -- finds nothing.
+    RENDER_DIR first, then the library, where older renders were written.
+    Either way a plain name directly inside the directory, for a regular file
+    that exists: a stored name that would leave it finds nothing.
     """
     for root in (render_dir or config.RENDER_DIR, video_dir or config.VIDEO_DIR):
         path = library_file(filename, root)

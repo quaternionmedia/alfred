@@ -1,20 +1,8 @@
-"""Generate a demo, rather than telling people they have none.
+"""Generate a demo, so an empty install has something to edit.
 
-The Source stage used to answer an empty install with "No projects yet." and
-"No media on the server. `./al demo` downloads some." Both are accurate and
-neither is useful: the first is a dead end, and the second sends you to a shell
-to download four files over the network before the editor will show you
-anything.
-
-Everything here is synthesised on the spot by the engine, from ffmpeg's own
-test sources -- colour bars, a test card, a plain colour (`otto.demo`). No
-network, no downloads, no CDN. That matters beyond convenience: `./al demo`
-fetches from a Google Cloud Storage bucket, and the adoption record lists
-third-party fetches as an open governance gap, so a first-run experience that
-needs one is a gap anybody evaluating this project walks straight into.
-
-The engine already carries ffmpeg -- it is how renders are encoded -- so this
-adds no dependency, and alfred runs no ffmpeg of its own.
+otto synthesises the clips from ffmpeg's test sources (`otto.demo`): no
+network, unlike `./al demo`, whose bucket fetch the adoption record lists as
+an open gap. alfred runs no ffmpeg of its own.
 """
 
 import os
@@ -44,17 +32,10 @@ demoAPI = APIRouter()
 async def keepOneDemoPerOwner():
     """Build the index that keeps one demo per account under concurrency.
 
-    By hand rather than declared on the model. beanie builds declared indexes
-    inside `init_beanie`, and a unique index cannot be built over duplicates
-    -- which a database can hold if the index went missing under a running
-    server, as `./al reseed` drops it with the collection -- so a declared one
-    would stop the API starting at all. Here a failed build is reported, with
-    the accounts to tidy, and the API starts without it: the route still
-    answers correctly, and only two simultaneous first requests could again
-    make two demos.
-
-    Before beanie is initialised (the router's hooks run first), so the
-    collection is reached by name: beanie names it after the class.
+    By hand, not declared for beanie: over existing duplicates (`./al reseed`
+    drops the index) a declared one stops the api starting. A failed build is
+    reported with the accounts to tidy, and the api starts without it. Runs
+    before beanie is initialised, so the collection is reached by name.
     """
     from ..models.project import ONE_DEMO_PER_OWNER, Project
 
@@ -82,10 +63,7 @@ async def keepOneDemoPerOwner():
         print(line, flush=True)
 
 
-# Small, short and synthetic. The point is to have something real to edit, not
-# to be representative footage -- the engine's demo clips are 3 seconds at
-# 320x180, which encode in about a second and cost a few kilobytes on disk.
-# Each file is named here, and its picture by the engine's name for it.
+# Each file, and its picture by otto's name: 3 s at 320x180, a second to make.
 DEMO_CLIPS = (
     ('demo-bars.mp4', 'bars'),
     ('demo-testcard.mp4', 'testcard'),
@@ -110,10 +88,9 @@ def partial_path(path):
 def generate_clip(path, source, duration=DEMO_DURATION):
     """Have the engine synthesise one clip. Returns nothing; raises on failure.
 
-    `source` is the engine's name for the picture (`otto.demo.DEMO_SOURCES`).
-    Written under `partial_path` and moved into place once the engine has
-    finished. Other requests are answered while it runs, and a listing taken
-    meanwhile must not offer a clip that is half written.
+    `source` is otto's name for the picture (`otto.demo.DEMO_SOURCES`).
+    Written under `partial_path`, then moved into place, so no listing offers
+    a half-written clip.
     """
     partial = partial_path(path)
     try:
@@ -139,17 +116,11 @@ def generate_clip(path, source, duration=DEMO_DURATION):
         raise
 
 
-# One generation at a time, in this process. Two presses of the button at
-# once would each find the clips missing and both have ffmpeg write the same
-# files; held here, the second waits for the first, finds its clips, and says
-# they were skipped.
+# One generation at a time: a second press waits, then finds the clips made.
 _generating = Lock()
 
 
-# A plain function, not a coroutine: FastAPI runs it in its thread pool. Each
-# clip is an ffmpeg run of about a second, in the engine, and as a coroutine
-# every one of them ran on the event loop, so the api answered nothing else --
-# `/healthz` included -- until the last clip was written.
+# A plain function, so each clip's ffmpeg run is off the event loop.
 @demoAPI.post('/demo/media', response_model=GeneratedMedia)
 def generateDemoMedia():
     """# Generate demo media
@@ -190,35 +161,17 @@ async def generateDemoProject(user: User = Depends(current_active_user)):
     something rather than onto an explanation of what it would show if you had
     any.
 
-    Template clips only. A project referring to media files would break the
-    moment those files were cleaned up, and templates render from nothing on
-    disk -- so this works on an install that has never generated media and
-    never will.
-
-    The project belongs to whoever asked, and is idempotent per account:
-    asking twice returns the one you already have rather than accumulating one
-    per click -- renamed or not. It was idempotent by name across the whole
-    server, which under ownership would have handed the second person to ask
-    somebody else's demo -- or, filtered properly, a demo they could not open.
+    Template clips only, which need no media on disk. One per account:
+    asking again returns the one you have, renamed or not.
     """
     from ..models import Project
 
-    # One find-or-insert, so the decision is MongoDB's rather than a
-    # check-then-create that two presses of the button could both pass. The
-    # upsert alone was not enough either: two requests could both match
-    # nothing and both insert, and the e2e suite, which presses it from
-    # several workers at once, ended up with two demos. The partial unique
-    # index on `{owner}` where `demo` (models/project.py) refuses the second
-    # insert, and the request that loses answers with the winner's project.
-    #
-    # The demo is the project marked `demo`. One called "Demo" without the
-    # mark is an account's demo from before the mark existed, or one it named
-    # itself, and is returned as before rather than joined by a second.
+    # One find-or-insert; the partial unique index (models/project.py) refuses
+    # a racing second insert. An unmarked project called "Demo" counts too.
     collection = Project.get_motor_collection()
     owner = owner_key(user)
     yours = {'owner': owner, '$or': [{'demo': True}, {'name': DEMO_PROJECT_NAME}]}
-    # Chosen here, so the answer says whether this request is the one that
-    # inserted: the document comes back either way.
+    # Chosen here, to tell whether this request inserted.
     new_id = ObjectId()
     try:
         demo = await collection.find_one_and_update(
@@ -230,12 +183,10 @@ async def generateDemoProject(user: User = Depends(current_active_user)):
             return_document=ReturnDocument.AFTER,
         )
     except DuplicateKeyError:
-        # Another request for this account inserted between this one's match
-        # and its insert, and the index refused this one. Theirs is the demo.
+        # A racing request inserted first; theirs is the demo.
         demo = await collection.find_one({'owner': owner, 'demo': True})
     if demo is None:
-        # Inserted by the winner and deleted again before this read: too
-        # fast to say anything but "again".
+        # Inserted and deleted again before this read.
         raise HTTPException(
             status_code=409, detail='The demo project changed meanwhile; ask again'
         )
@@ -248,9 +199,7 @@ async def generateDemoProject(user: User = Depends(current_active_user)):
 
 
 def _demo_project_document(owner):
-    # The text is drawn straight onto the frame, which is black: in the
-    # editor's amber it shows. It was the editor's near-black, #101820, which
-    # on black is all but invisible.
+    # Amber text, drawn on black.
     return dict(
         name=DEMO_PROJECT_NAME,
         owner=owner,

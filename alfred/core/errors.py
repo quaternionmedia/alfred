@@ -4,23 +4,10 @@ A refusal alfred's own routes raise answers
 
     {"detail": "<a sentence for a person>", "code": "<a word for a program>"}
 
-`detail` is the sentence it always was -- the editor shows it, and every
-client that reads it reads it unchanged -- and `code`, beside it, is one of
-`Code`: what the refusal means, which the sentence says only in words. Two
-refusals with one status, such as the two 503s a transcription can meet, are
-told apart by their codes, not by matching their wording, which is free to
-change.
-
-Each code has one status (`REFUSALS`), so a `Refusal` is built from its code
-and its sentence and cannot answer a status its code does not mean.
-docs/api/errors.md lists every code, and tests/unit/test_refusal_codes.py
-holds that table to `REFUSALS`, every code to a route that answers it, and
-the routes it covers to raising nothing without one.
-
-What answers without a code: FastAPI's 422 for a request its model refuses,
-whose `detail` is a list that already says where and what; the sign-in and
-account routes, whose fastapi-users `detail` is itself a code; a request
-without a session (401); and the routes the table says are not covered yet.
+Each code has one status (`REFUSALS`), so a `Refusal`, built from a code and
+a sentence, cannot answer a status its code does not mean. docs/api/errors.md
+lists every code, and what answers without one; tests/unit/test_refusal_codes.py
+holds that table to `REFUSALS`.
 """
 
 from enum import StrEnum

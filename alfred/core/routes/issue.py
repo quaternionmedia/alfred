@@ -39,18 +39,13 @@ async def reportIssue(
     503 when the server has no mail set up (`mail_not_configured`), or the
     queue will not take it (`mail_not_queued`).
 
-    The render has to be one the caller may see -- their own, or any for a
-    superuser -- and is looked up the way every other render route looks one
-    up: 422 for a malformed id, 404 otherwise. This route took any id, so
-    anyone signed in could have the server mail support about somebody else's
-    render, or about one that did not exist.
+    The render has to be one the caller may see, their own or any for a
+    superuser: 422 for a malformed id, 404 otherwise.
     """
     await load_owned_render(store, item_id, user)
     refuse_unless_configured()
-    # Queued, not sent: the mail went out over SMTP from here, with no
-    # timeout, and the request waited for the mail server -- or, with one
-    # that never replied, for as long as the connection held. Off the event
-    # loop, as every send to the broker is.
+    # Queued for the worker, not sent from here; off the loop, as every
+    # broker send is.
     return await run_in_threadpool(
         queue_mail,
         queue,

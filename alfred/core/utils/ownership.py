@@ -10,20 +10,11 @@ the only place that knows what that key is, and what follows from it:
 - `may_access(owner, user)` -- whether `user` may reach one record.
 
 The rule behind all three: an account reaches what it owns, and a superuser
-reaches everything, including records stored before ownership existed. Those
-have no owner, so they match nobody else's key and are superuser-only by
-construction rather than by a separate rule someone could forget.
+reaches everything, ownerless records included: they match nobody's key, so
+they are superuser-only by construction.
 
-Each collection used to carry its own copy of that rule -- `visible_to` beside
-the projects, `can_access` and a list filter beside the renders -- and two
-copies are two places for "may I see it" to disagree.
-
-**The key is the account's email**, because that is what both collections have
-always stored. It makes an email change an ownership change: the account keeps
-its id and loses everything recorded against its old address. So while the key
-is the email, an account's email cannot change (`changes_owner_key`; `PATCH
-/users/me` answers 422). docs/ownership.md describes moving the key to the user
-id, which lifts that restriction.
+**The key is the account's email**, so an email cannot change while it is
+(`changes_owner_key`; 422). docs/ownership.md describes moving it to the id.
 """
 
 # The account attribute an owner key is read from.

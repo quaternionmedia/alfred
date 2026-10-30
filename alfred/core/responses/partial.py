@@ -1,16 +1,8 @@
 """A file response that honours HTTP Range requests.
 
-This was a hand-written response that answered `206 Partial Content` to every
-request and stopped after 4 MB, Range header or not. A client asking for the
-whole file -- the editor's video preview fetches media into a blob -- got the
-first 4 MB, with a status claiming that was a deliberate part, and anything
-longer played truncated. A Range request was served for 4 MB from its start,
-wherever it had asked to end.
-
-Starlette's FileResponse has done this properly since 0.39: the whole file
-with 200 when no range is asked for, 206 with a correct `Content-Range` for a
-range, `multipart/byteranges` for several, 416 for a range past the end, and
-`If-Range`. So this is that, kept under the name the routes import, with one
+Starlette's FileResponse (0.39 and later): 200 for the whole file, 206 with
+`Content-Range` for a range, `multipart/byteranges` for several, 416 past the
+end, and `If-Range`. Kept under the name the routes import, with one
 correction: a suffix range longer than the file.
 
 Compression is not this response's business: media and byte ranges are left
@@ -52,9 +44,8 @@ def clamp_suffix_ranges(header: str, size: int) -> str:
 class PartialFileResponse(FileResponse):
     """A whole file for a plain request; the requested bytes for a Range one."""
 
-    # `status_code` named, with its default, because FastAPI reads it from
-    # this signature to document a route that declares this response class --
-    # behind a bare `**kwargs` it found none, and /openapi.json answered 500.
+    # Named, with its default: FastAPI reads it from this signature for the
+    # OpenAPI document, which is a 500 without it.
     def __init__(self, path, status_code: int = 200, **kwargs):
         super().__init__(path, status_code=status_code, **kwargs)
 
