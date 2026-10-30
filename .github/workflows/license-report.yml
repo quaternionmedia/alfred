@@ -1,36 +1,7 @@
 name: 📜 License report
 
-# Report-only. This workflow never fails a build.
-#
-# The org open-license record requires a machine-readable license report along
-# the path matching a project's runtime shape. Alfred has three such paths at
-# once -- a Python package, an npm frontend, and a container image -- so all
-# three are reported here rather than picking one.
-#
-# WHAT WOULD MAKE THIS A GATE, rather than a report:
-#
-#   1. An encoded allowlist of accepted license identifiers, and a
-#      normalization step ahead of it. License metadata is not clean enough to
-#      compare raw: this project's 84 Python packages declare roughly six
-#      distinct licenses using more than twenty different spellings, and at
-#      least one npm dependency declares its license only in the deprecated
-#      `licenses` array, where a reader of the modern `license` field sees
-#      null. A gate that compares unnormalized strings fails honest packages
-#      and passes unreadable ones.
-#   2. Coverage of the runtime path, not just the dependency manifests. The
-#      manifest scans below come back clean while the deployed stack runs a
-#      database image under a source-available license and pulls frontend
-#      assets from third-party CDNs. Neither appears in any manifest. A gate
-#      wired only to these scans would report full compliance for a stack that
-#      does not have it -- the exact failure the org record calls compliance
-#      theater. Closing this means an SBOM per built image plus an explicit,
-#      reviewed inventory of hosted services and externally-loaded assets.
-#   3. A decision on license compatibility, which is a separate question from
-#      per-component compliance. Every component here can be individually
-#      compliant while the combination is not distributable as declared.
-#
-# Those are prerequisites, not a schedule. Sequencing them is a human
-# decision recorded in governance/qm/adr/, not a property of this file.
+# Report-only: never fails a build. Python, npm and the image, the three
+# runtime paths. What would make it a gate: docs/build.md#license-report.
 
 on:
   push:
@@ -90,8 +61,7 @@ jobs:
       - name: 📰 Checkout
         uses: actions/checkout@v7
 
-      # The major website/Dockerfile's pinned base runs (22); Node 20 reached
-      # end of life in April 2026.
+      # website/Dockerfile's major.
       - name: 🟢 Setup Node
         uses: actions/setup-node@v7
         with:

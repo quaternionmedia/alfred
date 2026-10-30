@@ -30,25 +30,16 @@ from .templates import TEMPLATE_NAMES
 # What `frame_path` names a frame, and all `GET /preview/frames/{name}` serves.
 FRAME_NAME = re.compile(r'[0-9a-f]{32}\.jpg')
 
-# The most often frames are swept for expiry as new ones are written. The
-# editor previews on every playhead move, so sweeping on every write would
-# list the directory many times a second for nothing.
+# Seconds between sweeps as frames are written: previews come many a second.
 SWEEP_INTERVAL = 60
 
-# Read and written by previews in the thread pool, so two finishing together
-# can both find a sweep due. The second finds little or nothing to remove, and
-# a frame the first removed meanwhile is passed over (`storage.remove`).
+# Shared by threads unguarded: two sweeps at once are harmless.
 _last_sweep = float('-inf')
 
 
 def sweep_frames(now=None, force=False) -> int:
-    """Remove frames older than ALFRED_FRAME_TTL. Returns how many went.
-
-    Frames were never removed: every playhead move in the editor left one
-    behind, for good. Only names a preview makes are touched, so pointing
-    ALFRED_PREVIEW_DIR at a directory that holds anything else cannot cost
-    that anything.
-    """
+    """Remove frames older than ALFRED_FRAME_TTL; how many went. Only names a
+    preview makes are touched, whatever else ALFRED_PREVIEW_DIR holds."""
     global _last_sweep
     now = time() if now is None else now
     # A clock that went backwards sweeps rather than waiting to catch up.
@@ -61,49 +52,26 @@ def sweep_frames(now=None, force=False) -> int:
 
 
 async def sweep_frames_at_startup():
-    """Frames left from before a restart are swept at once, not a minute in.
-
-    Off the event loop, as the remote media cache's sweep at startup is: it
-    lists the directory and removes what has expired.
-    """
+    """Sweep frames left from before a restart at once, off the loop."""
     removed = await run_in_threadpool(sweep_frames, force=True)
     if removed:
         print(f'removed {removed} expired preview frames', flush=True)
 
 
-# Mounted behind the session. Each preview takes one of a few slots first
-# (`preview_slot`, ALFRED_PREVIEW_CONCURRENCY), and is turned away when none
-# comes free in time.
+# Behind the session. Each preview takes a slot first (`preview_slot`).
 previewAPI = APIRouter(
     responses={
         503: {'description': 'too many previews at once; ask again after Retry-After'}
     }
 )
 
-# The frames `POST /preview/` makes, on a router of their own: the form flow
-# shows one in a bare `<img>`, which carries no session, so it is fetched with
-# the signed URL the preview answered with (contract M1).
+# Not behind the session: an `<img>` fetches a frame by its signed URL (M1).
 previewFrameAPI = APIRouter(on_startup=[sweep_frames_at_startup])
 
 
 def frame_path():
-    """A path in PREVIEW_DIR no concurrent request will also choose.
-
-    Both preview routes wrote to `data/<timestr>.jpg`, and `timestr()` is
-    second-resolution -- so two previews in the same second produced the same
-    filename and one overwrote the other's frame before it was served. The
-    editor previews on every playhead move, so concurrent previews are the
-    normal case rather than an edge one, and the symptom is a preview showing
-    somebody else's frame.
-
-    Found by asking whether the same request twice returns the same bytes. It
-    did not: 2049 against 1588.
-
-    Still a name nobody can guess, though it no longer guards anything on its
-    own: frames were served by the unauthenticated /data mount, where the
-    name was all that stood between a frame and anyone. They are fetched with
-    a session or a signed URL now, from a directory nothing serves statically.
-    """
+    """A path in PREVIEW_DIR no concurrent request will also choose: previews
+    come many a second, and a shared name serves somebody else's frame."""
     makedirs(config.PREVIEW_DIR, exist_ok=True)
     return join(config.PREVIEW_DIR, f'{uuid4().hex}.jpg')
 
@@ -135,13 +103,7 @@ _FRAME_PARAMS = frozenset(
 )
 
 
-# A plain function, not a coroutine, like the template preview below: it runs
-# in the thread pool, once `preview_slot` has a slot for it. Making a frame
-# opens and decodes the timeline's media, fetches any that is remote,
-# composites the frame and encodes it, and as a coroutine it did all of that
-# on the event loop. The api is one process
-# with one loop, so every other request -- `/healthz` among them -- waited
-# for each preview, and the editor asks for one on every playhead move.
+# A plain function, so it runs in the thread pool, never on the event loop.
 @previewAPI.post('/')
 @preview_slot
 def previewFrame(t: float, render: Render):
@@ -153,11 +115,8 @@ def previewFrame(t: float, render: Render):
     error. Frames are kept for ALFRED_FRAME_TTL seconds.
     """
     print('previewing', render.edl, 'at frame', t)
-    # The same checks as a render (C4 and the template allowlist), then the
-    # same resolution the worker does. Previewing opened clip names against
-    # the api's working directory, which happens to hold `videos/` -- so a
-    # clip previewed fine and then failed to render -- and opened absolute
-    # paths and fetched URLs exactly as sent.
+    # A render's checks (C4, the template allowlist) and the worker's
+    # resolution, so a clip that previews also renders.
     refuse_unrenderable(render.edl)
     try:
         timeline = resolve_edl(Edl(clips=render.edl.clips))
@@ -168,22 +127,15 @@ def previewFrame(t: float, render: Render):
     frame_name = frame_path()
     print(f'saving frame {t} as: {frame_name}')
     try:
-        # The engine draws the frame and writes it: one call, which builds the
-        # whole timeline and refuses a clip it cannot build before writing
-        # anything.
+        # Builds the whole timeline, refusing a bad clip before writing.
         renderFrame(timeline, t, frame_name, moviesize=(render.width, render.height))
     except EdlException as exc:
-        # The engine's own refusal of a clip it cannot build (contract C8) is
-        # the request's fault, and names the clip: a 422 with that message,
-        # not a 500.
+        # otto's refusal names the clip (C8): the request's fault, a 422.
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     sweep_frames()
-    # A preview is where the api fetches remote media, so it is where the
-    # api keeps that cache within its TTL.
+    # The api fetches remote media here, so it sweeps that cache here.
     storage.sweep_remote_cache_now_and_then()
-    # Signed here, after the caller's session admitted the request: the URL is
-    # how the frame reaches an `<img>`. It was a path under the public /data
-    # mount.
+    # Signed after the session admitted the request.
     return media_url(frame_url_path(basename(frame_name)))
 
 
@@ -215,9 +167,7 @@ async def previewFrameFile(name: str, access: MediaAccess = Depends(media_access
     return FileResponse(path, media_type='image/jpeg')
 
 
-# A plain function for the same reason as `previewFrame`: drawing a template
-# is ImageMagick or gizeh, then an encoder, and the editor asks again on every
-# playhead move and every keystroke in the template's text.
+# A plain function, as `previewFrame` is.
 @previewAPI.get('/template/{name}')
 @preview_slot
 def previewTemplate(
@@ -236,19 +186,10 @@ def previewTemplate(
     Renders one template to a frame and returns the image, so the editor can
     show what a template clip looks like while it is being edited.
 
-    The editor has requested this since before it existed: `Preview.js` builds
-    `otto/template/{name}?...` as an `<img src>`, and it 404'd on every render
-    of a template clip. It is a GET returning an image rather than the
-    POST-and-filename shape of `/preview/` above, because that is what an
-    `<img>` can consume.
-
     The template's data is `data`, a JSON object, or one query parameter per
     plain field (`?text=Hello`). Nulls are dropped.
     """
-    # The allowlist, not the engine's registry: the engine refuses anything
-    # that is not a template, but it also renders `final`, which this server
-    # does not offer (see routes/templates.py). A name that is not offered is
-    # a missing resource.
+    # The allowlist, not otto's registry, which also draws `final`.
     if name not in TEMPLATE_NAMES:
         raise HTTPException(status_code=404, detail=f'No such template: {name}')
 
@@ -267,15 +208,9 @@ def previewTemplate(
         if key not in _FRAME_PARAMS and value not in ('null', 'undefined', '')
     )
 
-    # No fades unless the request asks for them. A clip fades in over its
-    # first second by default, so a preview sampled near the start -- which is
-    # where the editor samples a template it has just placed -- came out dimmed
-    # or black, rather than showing the template as it looks on screen.
-    # Built at the clip's own length when the editor says what it is (`length`:
-    # its outpoint, or its duration), the way a render builds it. A template
-    # paced by its length -- title's box reveal -- drew a different frame at the
-    # same `t` when it was built one second past `t`, which is what the second
-    # half of a cut or a slipped template showed.
+    # No fades unless asked: a clip fades in by default, and the editor
+    # samples near the start. Built at the clip's own `length` when given, as
+    # a render builds it, since some templates are paced by their length.
     duration = max(t, 0) + 1
     if length is not None and length > 0:
         duration = max(length, max(t, 0) + 0.04)
@@ -288,17 +223,8 @@ def previewTemplate(
         fadeOut=fadeOut,
     )
 
-    # A template that cannot render with the data it was given is a 422, not a
-    # 500: the request is incomplete, the server is not broken. The engine
-    # raises for it -- `GET /preview/template/title` with no `text` is an
-    # EdlException naming the template and the missing argument. (Its
-    # templates used to swallow the error and return None, and the failure
-    # surfaced as a 500 when there was no frame to save.)
-    #
-    # Written privately and deleted once sent. This route returns the image
-    # itself, so nothing needs the file afterwards -- and it was written under
-    # DATA_DIR, which the unauthenticated /data mount served, and kept there
-    # for good: every frame anyone previewed stayed public.
+    # Data a template cannot draw from (`title` without `text`) is a 422.
+    # The frame goes out in the response, then is deleted.
     frame_name = private_frame_path()
     try:
         renderFrame(Edl(clips=[clip]), t, frame_name, moviesize=(width, height))

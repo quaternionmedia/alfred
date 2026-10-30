@@ -1,12 +1,7 @@
 name: 🏛 Publish to PyPi
 
-# Publishes the package from a version tag, and from nothing else.
-#
-# A version tag is a claim (governance/qm/records/DRAFT-version-tags-are-claims.md),
-# and the first thing a machine can check about it is that it names the
-# version being published. This ran on any tag at all -- `alpha` included --
-# and built whatever alfred/_version.py said, so a tag and the package it
-# published could name two different versions without anything noticing.
+# From a version tag only, which must name the version it publishes
+# (governance/qm/records/DRAFT-version-tags-are-claims.md).
 
 on:
   workflow_dispatch:
@@ -25,11 +20,8 @@ jobs:
       - name: 📰 Checkout
         uses: actions/checkout@v7
 
-      # Exact, not normalised: the tag is `v` followed by the version string
-      # exactly as alfred/_version.py spells it, and website/package.json,
-      # which the README says tracks that file, has to agree as well. A
-      # manual dispatch must be started from the tag, so it is held to the
-      # same rule rather than publishing from a branch.
+      # Exact: `v` + alfred/_version.py, and website/package.json agrees.
+      # A manual dispatch must start from the tag too.
       - name: 🏷️ Compare the tag with alfred/_version.py
         env:
           REF_TYPE: ${{ github.ref_type }}
@@ -77,9 +69,7 @@ jobs:
           print(f'{ref_name} names version {version}')
           EOF
 
-  # The backend suite at the tagged commit, exactly as CI.yml's api_tests runs
-  # it; keep the two in step. A tag claims its automated validation passed,
-  # so nothing is built until it has.
+  # CI.yml's api_tests at the tag; keep the two in step. Nothing builds first.
   tests:
     name: 🐢 API tests
     needs: version
@@ -98,11 +88,7 @@ jobs:
       - name: 📰 Checkout
         uses: actions/checkout@v7
 
-      # The project's Python, not a floating 3.x. Nothing is installed first:
-      # `pdm build` builds in its own isolated environment, and the
-      # `pdm install --prod` this used to run could only fail the release --
-      # on the 3.14 that 3.x resolved to, reportlab<4 has no wheel and does
-      # not build.
+      # 3.11, not a floating 3.x. Nothing installed: `pdm build` isolates.
       - name: 📲 Setup PDM
         uses: pdm-project/setup-pdm@v4
         with:
@@ -125,9 +111,7 @@ jobs:
     permissions:
       id-token: write
     steps:
-      # By name, into dist/, which is where the publish action looks. v4 and
-      # later extract a named artifact straight into `path`, so without one
-      # the files would land in the workspace root.
+      # By name, straight into dist/, where the publish action looks.
       - name: 🛬 Download build files
         uses: actions/download-artifact@v8
         with:

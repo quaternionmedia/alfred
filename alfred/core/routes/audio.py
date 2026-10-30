@@ -28,10 +28,8 @@ from ..utils.probe import ProbeCache
 # Analyses kept. One holds a loudness envelope, a few kilobytes for a song.
 CACHE_SIZE = 128
 
-# The type a library file is sent to the engine as, where the one it is served
-# with will not do. Python's table can spell WAV `audio/x-wav`, which a
-# browser plays and an engine reading types strictly refuses; `audio/wav` is
-# the name every engine and browser takes.
+# Types sent to the engine where the served one will not do: Python may say
+# `audio/x-wav`, which a strict engine refuses.
 ENGINE_TYPES = {'.wav': 'audio/wav'}
 
 

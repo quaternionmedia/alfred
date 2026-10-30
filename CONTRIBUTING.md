@@ -146,9 +146,15 @@ exists because two other QM projects hit the cryptic version first.
 |---|---|
 | `CI.yml` | Black, Ruff, the backend suite, and the browser suite through `playwright.yml` |
 | `playwright.yml` | the browser suite, against the stack `test_e2e.yml` builds — the same run as `./al test` |
+| `docs.yml` | the strict docs build, as `./al loop`'s `docs` suite runs it; deploys only from a push |
+| `CD.yml` | builds the image, submodules included |
+| `license-report.yml` | the licenses of the Python, npm and image dependencies — **reporting only** |
 | `submodule-check.yml` | every submodule pin is reachable on its own remote |
 | `adr-lint.yml` | decision-record discipline, run from the governance submodule |
 | `reuse-lint.yml` | copyright and licence headers — **reporting only** |
+
+[Images and stacks](docs/build.md#ci) says more about each, and about
+`publish.yml`, which runs from a version tag.
 
 **REUSE is not blocking yet.** As of 2026-08-08, 0 of 206 files carry
 copyright or licence information, and there is no `LICENSES/` directory;

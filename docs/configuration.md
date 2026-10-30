@@ -46,7 +46,7 @@ it.
 | Setting | Default | What it does | Read by | Development and production |
 |---|---|---|---|---|
 | `ALFRED_PRODUCTION` | unset: off | Production mode: registration closed by default, single-use tokens kept out of the log, a short signing key reported, and the auth bypass refused at startup. Any non-empty value turns it on, `false` included. | api, renderer | `production.yml` sets it on both services; `dev.yml` never passes it. Production is a property of the stack file, not of the shell. |
-| `ALFRED_SECRET_KEY` | none | Signs every session, password-reset and verification token, and the media URLs the api hands out. Unset or empty, every login fails with a 500 (PyJWT 2.13 and later refuse an empty key); under production, shorter than 32 characters is reported as guessable. | api | Development: `.secret_key.local`, a random key for this checkout that `./al init`, `./al dev` and `./al thin` create, loaded over the committed empty stub `.secret_key`. Exporting it does nothing in development. Production: required; export it before `./al prod`, which refuses to start without it. |
+| `ALFRED_SECRET_KEY` | none | Signs every session, password-reset and verification token, and the media URLs the api hands out. Unset or empty, every login fails with a 500 (PyJWT 2.13 and later refuse an empty key); under production, shorter than 32 characters is reported as guessable. See [the signing key](#the-signing-key). | api | Development: `.secret_key.local`, a random key for this checkout that `./al init`, `./al dev` and `./al thin` create, loaded over the committed empty stub `.secret_key`. Exporting it does nothing in development. Production: required; export it before `./al prod`, which refuses to start without it. |
 | `ALFRED_ALLOW_REGISTRATION` | open in development, closed under `ALFRED_PRODUCTION` | Whether `POST /auth/register` creates accounts. `1`, `true`, `yes` or `on` open it; any other value closes it. | api | The only way to open registration on a production stack: `ALFRED_ALLOW_REGISTRATION=1 ./al prod`. |
 | `ALFRED_DEV_SKIP_AUTH` | off | Serves every request as a fixed superuser, the dev user, and skips the login screen. `1`, `true`, `yes` or `on` turn it on. See [Development auth](dev-auth.md). | api | Development only: `production.yml` does not pass it, and a process that sees it with `ALFRED_PRODUCTION` refuses to start. `./al dev` warns when it meets an `ALFRED_BIND` beyond loopback. |
 | `ALFRED_DEV_USER_EMAIL` | `dev@example.com` | The account the auth bypass acts as. Reserved in every mode: it cannot be registered, logged into or reset. Development seeds belong to it unless `ALFRED_SEED_OWNER` says otherwise. | api | Both. |
@@ -93,6 +93,25 @@ alfred also reads plumbing, which is not settings:
 - otto reads `LOG_DIR` when it is imported, as the directory for log files of
   its own (`otto.log.configure`). alfred never asks otto for them, so setting
   it changes nothing here.
+
+## The signing key
+
+`ALFRED_SECRET_KEY` signs every session, password-reset and verification
+token (HS256), and the media URLs the api hands out. The api checks it at
+startup:
+
+- **Unset**, in any mode, nothing can be signed, and every login answers 500.
+  A stack file that gives no key fails its whole suite at the first login.
+- **Empty**, in any mode, is the same: PyJWT 2.13 and later refuse an empty
+  key. The committed `.secret_key` is such a stub, and `./al` gives a
+  development checkout a random key of its own, `.secret_key.local`.
+- **Shorter than 32 characters**, under `ALFRED_PRODUCTION`, is guessable.
+  Anyone holding one token can try keys offline until the signature matches,
+  and then sign a session for any account. Development keys may be short.
+
+Each case is reported, not enforced: the api prints `THE TOKEN SIGNING KEY IS
+NOT SAFE TO USE` at startup, and still starts. Whether production should
+refuse to start instead is an open decision.
 
 ## Docker hosts and joe
 

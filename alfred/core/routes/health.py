@@ -1,12 +1,8 @@
 """Whether the parts of the stack are there (contract M3).
 
-On the thin stack (thin.yml scales the renderer to 0) a queued render sat in
-`queued` for ever, and the editor polled it for ever, because nothing could
-say that no renderer was running. `GET /health` says so: the database, how
-many render workers answer, and how many jobs are waiting for one.
-
-`GET /healthz` is for container health checks: no session, no database, no
-broker -- if the process can answer, it is up.
+`GET /health`: the database, how many render workers answer, how many jobs
+wait for one (on the thin stack, none ever comes), previews and the audio
+engine. `GET /healthz`: for container health checks, no session or database.
 """
 
 import asyncio

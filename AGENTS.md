@@ -150,23 +150,25 @@ between the markers), so it is kept here only.
   still starts the stack and reports it healthy, but every request from your
   machine reaches the other application: the host port belongs to whoever
   bound it first. Nothing errors; 27017 below is the loud version of the same
-  problem. `./al dev` refuses to start when 8000 already answers, and names
-  the occupant from its OpenAPI title. Override rather than kill whatever has
-  it: `ALFRED_PORT=8100 ./al dev`. `ALFRED_DB_PORT` and `ALFRED_HMR_PORT` do
-  the same for the other two.
+  problem. `./al dev` and `./al thin` refuse to start when anything else
+  holds 8000, 8001 or 27017, name what holds each (its OpenAPI title, or its
+  container), and give one command that starts clear of them all. Override
+  rather than kill whatever has it: `ALFRED_PORT=8100 ./al dev`.
+  `ALFRED_HMR_PORT` and `ALFRED_DB_PORT` do the same for the other two.
 
   The general rule, worth more than the fix: **a test result is only as good
   as your knowledge of what served it.** Before trusting a number, confirm the
-  server's identity; `curl localhost:$PORT/openapi.json` names it. During
+  server's identity; `curl 127.0.0.1:$PORT/openapi.json` names it. During
   0.3.0 it answered `Apothecary API`, another QM service on 8000, for a whole
   session while Alfred served correctly on its own network; see [the
   verification retrospective](https://github.com/quaternionmedia/alfred/blob/main/docs/retrospective-verification-discipline.md).
 - **Port 27017.** `dev.yml` publishes MongoDB on the host's loopback, for
-  attaching a GUI; nothing in the app needs it there. If anything else holds
-  27017 (a standalone `mongod`, another project's container), the stack fails
-  with `Bind for 127.0.0.1:27017 failed: port is already allocated`, which
-  names the port but not the culprit. Find it with `docker ps`, or move it
-  with `ALFRED_DB_PORT`.
+  attaching a GUI; nothing in the app needs it there. It is the most contended
+  port: a standalone `mongod` or another project's database takes it. `./al
+  dev` names a container that holds it; compose run by hand fails with `Bind
+  for 127.0.0.1:27017 failed: port is already allocated`, which names the port
+  but not the culprit. Find it with `docker ps`, or move it with
+  `ALFRED_DB_PORT`.
 - **Loopback only, unless you ask.** `dev.yml` publishes the api, the HMR port
   and the database on `127.0.0.1`, so the dev stack is reachable from this
   machine and nowhere else. With `ALFRED_DEV_SKIP_AUTH=1` every request is
@@ -201,13 +203,12 @@ between the markers), so it is kept here only.
   silently keeps running the code it loaded at startup. The symptom is a fix
   that does not take effect; the tell is a traceback frame showing a line
   number with **no source line** beside it: Python cannot map the frame,
-  because the file changed under the loaded module. Run `docker compose -f
-  docker-compose.yml -f dev.yml restart api` after editing anything under
-  `alfred/`.
+  because the file changed under the loaded module. Run `./al docker restart
+  api` after editing anything under `alfred/`.
 
   A syntax error is worse: the container reports `Up` while crash-looping, and
-  every request answers connection-refused rather than 500. `docker logs
-  alfred-api-1` names it immediately; nothing else does.
+  every request answers connection-refused rather than 500. `./al docker logs
+  api` names it immediately; nothing else does.
 
   On a Linux host `--reload` does restart the API on edits under `alfred/`, so
   a test run writing into the repo can restart the server mid-request;
