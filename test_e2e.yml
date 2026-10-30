@@ -68,6 +68,8 @@ services:
       - /e2e/node_modules
       # The docs' example bodies, for examples.spec.js: ../../docs from e2e/.
       - ./docs/examples/edl/:/docs/examples/edl/:ro
+      # The guide's screenshots, which need the stub engine: kept on the host.
+      - ./docs/assets/screens/guide/:/docs/assets/screens/guide/
     working_dir: /e2e/
     environment:
       # The api service listens on port 80 inside the compose network.
