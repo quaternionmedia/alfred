@@ -232,8 +232,6 @@ const Actions = {
         },
         [m('i.material-icons', { 'aria-hidden': 'true' }, 'undo'), ' Undo']
       ),
-      // A cut saves itself, with the captions and words it moved (Autosave.js).
-      m(SaveState, { id: 'transcript-save-state' }),
     ])
   },
 }
@@ -268,6 +266,8 @@ export const TranscriptPanel = {
     }, [
       m('.captionshead', [
         m('h3', `Transcript${count ? ` (${plural(count, 'word')})` : ''}`),
+        // A cut saves itself, with the captions and words it moved (Autosave.js).
+        m(SaveState, { id: 'transcript-save-state' }),
         count || Transcript.undos.length ? m(Actions) : null,
       ]),
 
