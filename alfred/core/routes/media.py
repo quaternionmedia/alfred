@@ -1,16 +1,11 @@
 """Media: who may fetch a file, and what the library holds.
 
-`media_access` is the half of contract M1 a route depends on: it admits a
-request carrying a session (as every route did), or one carrying a valid,
-unexpired signature for exactly the path it asks for (see `utils.signing`).
-The routes that serve files -- `GET /render/{id}/download`, `GET
-/videos/{name}` and `GET /preview/frames/{name}` -- depend on it instead of on
-the session alone, so the browser can fetch them by itself from `<video>`,
-`<img>` and `<a download>`.
-
-It lives here rather than beside the signing code because it needs the
-session dependency from the routes layer, and `utils` is imported by the
-worker, which has no business importing routes.
+`media_access` is the half of contract M1 a route depends on: a session, or
+a valid, unexpired signature for exactly the path asked for (`utils.signing`).
+The file routes (`GET /render/{id}/download`, `GET /videos/{name}`, `GET
+/preview/frames/{name}`) depend on it, so a browser can fetch them by itself.
+It is here, not in `utils`, because the worker imports `utils` and must not
+import routes.
 
 `GET /media` is contract M2: the library as `GET /videos` lists it, with what
 the editor needs to place each file -- its kind, how long it runs, its size
@@ -33,10 +28,8 @@ from ..utils.media import LIBRARY_PREFIX, library_file, library_files, media_kin
 from ..utils.probe import probe
 from .users import fastapi_users, get_dev_user
 
-# The session's user, or None when the request has no valid session. The
-# media routes cannot use `current_active_user`, which answers 401 before the
-# route can look for a signature. Under the dev auth bypass every request has
-# the dev user, as on every other route.
+# The session's user, or None: `current_active_user` would answer 401 before
+# the signature is looked at. Under the auth bypass, the dev user.
 optional_user = (
     get_dev_user
     if DEV_SKIP_AUTH

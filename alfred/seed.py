@@ -504,17 +504,8 @@ seed = [
             {"type": "Textarea", "attrs": {"name": "legaltext", "text": "Legal Text"}},
         ],
     },
-    # A project the timeline editor can actually open.
-    #
-    # The three projects above carry `logic` and `fields` and no `edl`: they
-    # drive the form flow, where a filled-in form is compiled into clips at
-    # render time. Nothing seeded had a timeline, so /otto opened empty on
-    # every project and there was no way to see whether it worked at all.
-    #
-    # Every clip here is a template, so this renders with no media files
-    # present -- `./al demo` is not a prerequisite for opening it. Template
-    # names are from the allowlist in core/routes/templates.py. The text is
-    # in the editor's amber because it is drawn straight onto a black frame.
+    # The one seed with a timeline; those above drive the form flow. Templates
+    # only (routes/templates.py's allowlist), so no media is needed.
     {
         "name": "Timeline demo",
         "logic": {},

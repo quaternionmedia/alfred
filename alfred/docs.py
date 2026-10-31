@@ -11,14 +11,12 @@ We believe in making video smarter, not harder.
 [github.com/quaternionmedia](https://github.com/quaternionmedia)"""
 
 version = __version__
-# terms_of_service = ""
 
 contact = {
     'name': 'Quaternion Media',
     'url': 'https://quaternion.media',
     'email': 'alfred@quaternion.media',
 }
-# license_info = {}
 
 tags_metadata = [
     {
@@ -35,10 +33,6 @@ Get information about a user, including self.""",
         'name': 'Project',
         'description': """# Project
 A **Project** is an alfred document with a `logic` object which contains the necessary logic to create an `Edl` and an optional `fields` object, which describes the variables needed to execute the `logic` object.""",  # noqa: E501
-        # 'externalDocs': {
-        #     'description': 'Project reference',
-        #     'url': 'https://docs.quaternion.media/alfred',
-        # },
     },
     {
         'name': 'otto',

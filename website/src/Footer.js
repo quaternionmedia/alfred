@@ -26,15 +26,7 @@ export const Footer = {
       // Ending a session is a rare, deliberate act, and it sat in the header
       // beside the navigation as though it were a destination. Here it is
       // still one click and no longer competes with the work.
-      m(
-        Link,
-        {
-          class: 'loginLink sessionLink',
-          href: User.username ? '/logout' : '/login',
-          id: 'login-link',
-        },
-        User.username ? 'Logout' : 'Login'
-      ),
+      m(SessionLink),
       separator(),
       m('.text', 'More information at '),
       m(
@@ -43,4 +35,26 @@ export const Footer = {
         'quaternion.media/alfred'
       ),
     ]),
+}
+
+/** Log out, or in. */
+const SessionLink = {
+  view: () =>
+    m(
+      Link,
+      {
+        class: 'loginLink sessionLink',
+        href: User.username ? '/logout' : '/login',
+        id: 'login-link',
+      },
+      User.username ? 'Logout' : 'Login'
+    ),
+}
+
+/** The footer's links where there is no room for a footer: the phone flow's header. */
+export const HeaderLinks = {
+  view: () => [
+    m('a.docLink#help-link', { href: '/docs/journeys/', target: '_blank', rel: 'noopener' }, 'Help'),
+    m(SessionLink),
+  ],
 }

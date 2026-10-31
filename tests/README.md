@@ -84,6 +84,8 @@ tests/
     test_db_layer.py     the DB helpers, without a database
     test_stack_config.py compose files and Dockerfiles
     test_stack_settings.py every setting reaches the services that read it
+    test_port_allocation.py alfred's and joe's default ports are qm's
+                         allocation's, read from governance/qm/ci/dashboard.py
     test_event_loop.py   the api answers while slow work is being done
     test_blocking_calls.py no coroutine in the api calls something that blocks
     test_family.py       ./al family: where each repository is, each one's suite,

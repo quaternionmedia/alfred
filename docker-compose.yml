@@ -4,24 +4,16 @@ networks:
     driver: bridge
 # ALFRED_IMAGES: image prefix per checkout (./al sets it).
 services:
-  # TODO Development Reloader description
+  # The site's build; dev.yml makes it watch.
   website:
     build: ./website/
     image: ${ALFRED_IMAGES:-alfred}_site
     volumes:
       - ./website/:/app/
-      # Keep the container's node_modules its own. The line above mounts the
-      # host's website/ over /app, which otherwise shadows the image's install
-      # with the host's -- and native bindings are per-platform, so a Windows
-      # or macOS host feeds an Alpine container bindings it cannot load. This
-      # anonymous volume masks that one path back out. src/ and dist/ stay
-      # shared, which is the point of the mount; the api serves dist/.
-      #
-      # Anonymous volumes persist across `up`, so after changing a dependency
-      # refresh it: `./al init`, or `docker compose up --renew-anon-volumes`.
+      # The image's own install, not the host's. After a dependency change:
+      # ./al init. See docs/dev-server.md.
       - /app/node_modules
 
-  # TODO API description
   api:
     build:
       context: .

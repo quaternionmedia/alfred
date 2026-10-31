@@ -1,7 +1,8 @@
 import m from 'mithril'
 import { auth } from '../Login'
 import { TemplateEditor } from '../TemplateEditor'
-import { Empty, Flow, FlowPanel, Generate } from '../Stages'
+import { AsyncButton, Empty, Flow, FlowPanel, Generate } from '../Stages'
+import { requestProblem } from '../Problem'
 
 /**
  * Projects: the Source stage's project picker, as a panel.
@@ -52,6 +53,8 @@ const ProjectsPanel = {
               },
             })
           : null,
+        // In the heading's row: a row of its own cost a phone a project.
+        m(NewProject),
       ]),
 
       Flow.projects.length
@@ -99,6 +102,84 @@ const ProjectsPanel = {
   },
 }
 
+/** Start an empty project, named, and open it on Source to fill. */
+const NewProject = () => {
+  let open = false
+  let name = ''
+  let busy = false
+  let error = null
+
+  const close = () => {
+    open = false
+    name = ''
+    error = null
+  }
+
+  const create = () => {
+    const title = name.trim()
+    if (!title || busy) return
+    busy = true
+    error = null
+    auth('/project', { method: 'POST', body: { name: title, logic: {}, edl: { clips: [] } } })
+      .then(project => {
+        busy = false
+        close()
+        Flow.projects = [project, ...Flow.projects.filter(p => p._id !== project._id)]
+        m.route.set('/', { project: project._id, stage: 'source' })
+      })
+      .catch(e => {
+        busy = false
+        error = `Could not create the project: ${requestProblem(e) || 'no answer'}`
+        m.redraw()
+      })
+  }
+
+  return {
+    view: () =>
+      open
+        ? m(
+            'form.newproject#project-new-form',
+            {
+              onsubmit: e => {
+                e.preventDefault()
+                create()
+              },
+            },
+            [
+              m('input#project-new-name', {
+                type: 'text',
+                placeholder: 'Name',
+                'aria-label': 'New project name',
+                value: name,
+                oninput: e => (name = e.target.value),
+                oncreate: ({ dom }) => dom.focus(),
+              }),
+              m(AsyncButton, {
+                id: 'project-new-create',
+                type: 'submit',
+                class: 'primary',
+                busy,
+                disabled: !name.trim(),
+                label: 'Create',
+                busyLabel: 'Creating…',
+              }),
+              m('button#project-new-cancel', { type: 'button', onclick: close }, 'Cancel'),
+              error ? m('p.stageerror', error) : null,
+            ]
+          )
+        : m(
+            'button.newprojectopen#project-new',
+            {
+              type: 'button',
+              title: 'New project: start an empty one, then add material to it',
+              'aria-label': 'New project',
+              onclick: () => (open = true),
+            },
+            [m('i.material-icons', { 'aria-hidden': 'true' }, 'add'), m('span.newprojectlabel', 'New project')]
+          ),
+  }
+}
+
 /** The selected project's logic and fields, collapsed until asked for.
  *
  * Collapsed because it is reference material: most visits to this stage are to
@@ -126,8 +207,9 @@ const ProjectTemplate = () => {
           {
             onclick: () => (open = !open),
             'aria-expanded': open ? 'true' : 'false',
+            title: "The project's form and the logic that builds its clips: for a project made from a form",
           },
-          [m('i.material-icons', open ? 'expand_more' : 'chevron_right'), 'Template']
+          [m('i.material-icons', open ? 'expand_more' : 'chevron_right'), 'Form and logic']
         ),
         open ? m('.templatebody', m(TemplateEditor)) : null,
       ])

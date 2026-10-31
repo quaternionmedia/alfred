@@ -159,7 +159,7 @@ def engine(monkeypatch):
         EngineAnswerMalformed=EngineAnswerMalformed,
     )
     monkeypatch.setattr(audio_engine, '_vox_media', lambda: fake)
-    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:8010')
+    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:1059')
     monkeypatch.setattr(config, 'AUDIO_ENGINE_CONTRACT', {})
     return answers
 
@@ -179,7 +179,7 @@ class TestTheContract:
     def test_the_url_and_timeout_are_the_settings(self, engine, monkeypatch):
         monkeypatch.setattr(config, 'AUDIO_ENGINE_TIMEOUT', 42)
         audio_engine.transcribe('/tmp/x.wav')
-        assert (made().base_url, made().timeout) == ('http://engine.test:8010', 42)
+        assert (made().base_url, made().timeout) == ('http://engine.test:1059', 42)
 
     def test_an_alien_contract_reaches_the_client_untouched(self, engine, monkeypatch):
         """Every field overridden from the environment, sharing nothing with
@@ -302,7 +302,7 @@ class TestFailures:
         urls = [
             u.rstrip('.,;:)') for u in re.findall(r'https?://\S+', str(raised.value))
         ]
-        assert urls == ['http://engine.test:8010']
+        assert urls == ['http://engine.test:1059']
         assert 'connection refused' in str(raised.value)
 
     def test_a_refusal_of_the_input_is_its_own_kind(self, engine):
@@ -336,13 +336,13 @@ class TestFailures:
 
     def test_credentials_in_the_url_are_never_repeated(self, engine, monkeypatch):
         monkeypatch.setattr(
-            config, 'AUDIO_ENGINE_URL', 'http://me:secret@engine.test:8010/'
+            config, 'AUDIO_ENGINE_URL', 'http://me:secret@engine.test:1059/'
         )
         engine['upload'] = EngineUnavailable('refused')
         with pytest.raises(audio_engine.AudioEngineFailed) as raised:
             audio_engine.transcribe('/tmp/x.wav')
         assert 'secret' not in str(raised.value)
-        assert audio_engine.describe() == 'http://engine.test:8010'
+        assert audio_engine.describe() == 'http://engine.test:1059'
 
 
 class TestAnalysis:
@@ -376,7 +376,7 @@ class TestNoEngine:
         with pytest.raises(audio_engine.NoAudioEngine):
             audio_engine.transcribe('/tmp/x.wav')
 
-    @pytest.mark.parametrize('url', ['engine:8010', 'ftp://engine', 'http://'])
+    @pytest.mark.parametrize('url', ['engine:1059', 'ftp://engine', 'http://'])
     def test_not_an_http_url(self, monkeypatch, url):
         monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', url)
         assert 'http(s) URL' in audio_engine.problem()
@@ -384,7 +384,7 @@ class TestNoEngine:
     def test_a_vox_without_its_media_client(self, monkeypatch):
         """Today's vendored vox: the engine is configured and cannot be asked,
         and that is said, rather than discovered by a failing job."""
-        monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:8010')
+        monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:1059')
 
         def missing():
             raise ImportError("cannot import name 'media' from 'vox'")
@@ -473,7 +473,7 @@ class TestWhatVoxRefuses:
         fake = adapter._vox_media()
         fake.EngineDoesNotOffer = EngineDoesNotOffer
         engine['analyze'] = EngineDoesNotOffer(
-            'the engine at http://engine.test:8010 does not offer analysis'
+            'the engine at http://engine.test:1059 does not offer analysis'
         )
         with pytest.raises(audio_engine.NoAudioEngine, match='does not offer analysis'):
             audio_engine.analyze('/tmp/x.mp3', 'audio/mpeg')

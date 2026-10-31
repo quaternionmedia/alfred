@@ -9,6 +9,8 @@ edit_uri: ''
 nav:
   - Home: index.md
   - Get started: start.md
+  - User journeys: journeys.md
+  - Make a video: guide.md
   - Commands: commands.md
   - Cookbook: cookbook.md
   - Captions: captions.md
@@ -21,6 +23,7 @@ nav:
       - dev-auth.md
       - ownership.md
       - dependencies.md
+      - Images and stacks: build.md
   - Concepts:
       - about/index.md
       - about/concepts.md

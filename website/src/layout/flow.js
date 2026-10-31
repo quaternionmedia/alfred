@@ -5,7 +5,8 @@ import { PanelHosts } from './hosts'
 import { Flow, StageRail } from '../Stages'
 import { DraftOffer } from '../Draft'
 import { Menu } from '../Menu'
-import { Footer } from '../Footer'
+import { HeaderLinks } from '../Footer'
+import { NextStep } from '../NextStep'
 
 /**
  * What each stage puts above the viewer in the phone flow.
@@ -85,8 +86,10 @@ const Slot = {
  */
 export const StackedFlow = {
   view: () => [
-    m(Menu),
+    // No footer here: its links go in the header, and the timeline keeps the room.
+    m(Menu, { links: HeaderLinks }),
     m(StageRail),
+    m(NextStep),
     // An unsaved timeline kept from before a reload or a new login, offered
     // back -- under the rail, so it is seen whichever stage is open.
     m(DraftOffer),
@@ -105,8 +108,5 @@ export const StackedFlow = {
       with: { settings: () => m(PanelRegistry.get('template').component, { quiet: true }) },
     }),
     m(Slot, { panel: 'timeline' }),
-    // The editor is the whole app, so it carries the footer -- which is where
-    // the documentation links and the session link live.
-    m(Footer),
   ],
 }

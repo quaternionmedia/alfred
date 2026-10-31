@@ -50,8 +50,8 @@ runs both:
   `stacked.spec.js`.
 - **`phone`** (390x844) runs `stacked.spec.js` against the phone flow, and
   only those specs that walk the stages, edit a timeline and follow a render:
-  `flow`, `editor`, `timeline-tools`, `deliver`. "Both layouts" below marks
-  those four; every other spec runs in `chromium` alone.
+  `flow`, `editor`, `timeline-tools`, `deliver`, `transcript`. "Both layouts"
+  below marks those five; every other spec runs in `chromium` alone.
 
 A spec about one layout's own shape sets the viewport it means
 (`appearance.spec.js` for the phone flow's rail and panels, `stacked.spec.js`
@@ -62,7 +62,7 @@ same either way.
 
 | Setting | What it does |
 |---|---|
-| `E2E_BASE_URL` | The stack under test; `http://localhost:8000` by default |
+| `E2E_BASE_URL` | The stack under test; `http://127.0.0.1:1732` by default |
 | `E2E_EMAIL`, `E2E_PASSWORD`, `E2E_NAME` | Override the test account |
 | `E2E_OTHER_EMAIL` | The second account `auth.spec.js` registers to show that a project is its owner's alone; `other@mail.me` by default, with the test account's password |
 | `E2E_LOAD_BUDGET_MS` | Overrides the performance budget |
@@ -71,8 +71,8 @@ same either way.
 Before the first test, `global-setup.js` fetches `/openapi.json` from
 `E2E_BASE_URL` and fails the run unless the title is `Alfred API`. A published
 port belongs to whoever bound it first, and this suite has produced real
-measurements of a different QM service that also defaults to 8000. If the
-guard fires, start Alfred elsewhere (`ALFRED_PORT=8100 ./al dev`) and point the
+measurements of a different QM service that also defaulted to 8000. If the
+guard fires, start Alfred elsewhere (`ALFRED_PORT=1832 ./al dev`) and point the
 suite at it.
 
 ## Why the conversion is not one-to-one
@@ -159,6 +159,8 @@ in and logout; `views.spec.js`, that a reload keeps the session.
 | Timeline editor with a project open (both layouts) | `editor.spec.js` | UI |
 | The timeline tools and the media they act on, the transport, saving; the toolbar | `tools.spec.js`, `otto.spec.js` | UI |
 | Trim, cut, slip, slide and roll, by mouse and touch (both layouts) | `timeline-tools.spec.js` | UI |
+| Editing by text: words deleted from the Transcript panel cut the timeline (both layouts) | `transcript.spec.js` | UI + API, one test `@slow` |
+| The cut behind editing by text, at its edges | `cut-ranges.spec.js` | Node, no browser |
 | Adding and editing template clips, fonts and placement; the viewer waiting as long as a busy server's `Retry-After` asks | `templates.spec.js` | UI |
 | The timeline tools from the keyboard, the footer | `editor-access.spec.js` | UI |
 | Media lengths and kinds, signed media and download URLs, the `/videos` fallback | `editor-media.spec.js` | UI |

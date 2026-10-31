@@ -1,20 +1,9 @@
-"""The set of render templates this control plane will accept.
+"""The render templates this server offers and accepts: an allowlist.
 
-The frontend's media bin has always asked for a template list -- `Bin.js` calls
-it on init -- and no such route has ever existed, so the request 404'd and the
-template bin rendered empty.
-
-The list is an **explicit allowlist**, not `dir(otto.templates)`. The module
-namespace holds far more callables than templates -- imports it happens to
-carry, `ColorClip`, `concatenate_videoclips`, `rgbToDec` and friends -- so
-publishing it would advertise those as templates. otto's own registry,
-`otto.templates.TEMPLATES`, is what the engine will render: `generateEdl`
-looks a clip's name up there and refuses any other. The allowlist is what this
-API offers and accepts, and it is narrower still -- see `final` below.
-
-Keeping the allowlist here rather than in `otto` follows the control-plane
-seam: which templates a caller may ask for is an API question, not a rendering
-one. `otto` stays the thing that knows how to draw them.
+Narrower than otto's registry (`otto.templates.TEMPLATES`), which is what the
+engine draws; never `dir(otto.templates)`, which holds helpers too. Which
+templates a caller may ask for is an API question, so it is answered here.
+See docs/api/otto.md#get-templates.
 """
 
 import inspect
@@ -36,10 +25,7 @@ TEMPLATE_NAMES = (
     'makeColor',
 )
 
-# What the editor calls each template. The names are otto's identifiers, and
-# the editor showed them as they are -- "textBox" and "makeColor" on buttons
-# beside "demo-bars.mp4" -- which reads as a leak from the engine rather than
-# as something to choose. A name without one here is shown as it is.
+# What the editor calls each template; a name without one is shown as it is.
 TEMPLATE_LABELS = {
     'title': 'Title',
     'textBox': 'Text box',
@@ -48,30 +34,16 @@ TEMPLATE_LABELS = {
     'makeColor': 'Colour',
 }
 
-# otto gives `makeColor` no docstring, so it had no description to show; one
-# written here is used wherever the engine's own is empty.
+# For templates whose otto docstring is empty.
 FALLBACK_DESCRIPTIONS = {
     'makeColor': 'Fill the frame with one colour',
 }
 
-# `final` is deliberately absent, and it is the interesting case.
-#
-# It draws a headline, an address, a website and a phone number, and
-# `TemplateData`, the only thing a clip's `data` can be, models none of the
-# last three. Pydantic drops unknown keys silently, so those values cannot
-# reach the template through an EDL or through the preview endpoint no matter
-# what a caller sends. The engine renders `final` without them -- the address
-# and website come from otto's own defaults and the phone is left out -- so
-# offered here, it would put otto's placeholder address and website into
-# somebody's video, with no field that could change them.
-#
-# otto's own docstring marks it DEPRICATED, so the fix is to stop advertising
-# it rather than to widen TemplateData for a template that is on the way out.
+# Not offered: `final` would draw otto's placeholder address and website,
+# which no field of `TemplateData` can change. Deprecated in otto.
 UNDRIVABLE_TEMPLATES = ('final',)
 
-# Parameters every template takes from the engine rather than from the caller.
-# Excluded from the advertised parameter list so the bin does not offer a field
-# for something the caller does not supply.
+# Parameters the engine supplies, so not advertised to the caller.
 _ENGINE_SUPPLIED = frozenset({'clipsize', 'duration', 'data', 'kwargs'})
 
 
@@ -85,8 +57,7 @@ class Template(BaseModel):
 
 
 def _describe(name):
-    # From the registry, which is what the engine renders, not from the
-    # module's namespace, which holds more than templates.
+    # From the registry, not the module's namespace.
     fn = otto_templates.TEMPLATES.get(name)
     if fn is None or not callable(fn):
         return None
@@ -105,21 +76,15 @@ def _describe(name):
         label=TEMPLATE_LABELS.get(name, name),
         description=summary or FALLBACK_DESCRIPTIONS.get(name, ''),
         parameters=params,
-        # otto spells it DEPRICATED. Match what is actually written rather
-        # than what it should say, and accept both so a later fix upstream
-        # does not silently un-deprecate five templates.
+        # otto spells it DEPRICATED; both spellings, for when it is fixed.
         deprecated='DEPRICATED' in doc.upper() or 'DEPRECATED' in doc.upper(),
     )
 
 
 def available_templates():
-    """Every allowlisted name that the installed engine actually provides.
-
-    Skips names the engine does not have rather than failing the request: a
-    version of otto without one template should still let the bin show the
-    others. `test_every_advertised_template_is_in_the_engine_s_registry` is
-    what turns that silence into a failure at test time instead.
-    """
+    """Every allowlisted name the installed engine provides. One it lacks is
+    skipped, not an error; a test fails on it instead
+    (`test_every_advertised_template_is_in_the_engine_s_registry`)."""
     described = (_describe(name) for name in TEMPLATE_NAMES)
     return [t for t in described if t is not None]
 
@@ -139,9 +104,7 @@ async def listTemplates():
 async def listDestinations():
     """# Destinations
 
-    Where a finished render may be sent. The editor builds its choices from
-    this rather than hardcoding them, so a destination becoming available is a
-    server change, not a frontend release.
+    Where a finished render may be sent: the editor's choices.
     """
     from ..utils.destinations import OFFERED_DESTINATIONS
 

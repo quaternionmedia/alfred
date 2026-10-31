@@ -2,7 +2,7 @@
 
 ## Unreleased — review fixes
 
-Fixes from a review of alfred and otto, landed in ten rounds of parallel
+Fixes from a review of alfred and otto, landed in twelve rounds of parallel
 branches:
 
 | Round | Integrated on | What it carried |
@@ -17,6 +17,8 @@ branches:
 | 8 | `feat/close-gaps` | the gaps left open: the Render stage's form and the zoom row on every screen, the tests the review asked for (the recipes' pipeline, `./al`'s dev key, `./al family`, `GET /fonts`) and the three bugs they found, the docs tooling pinned, the dev-server notes on the docs site, the API examples sent to the local stack, and the walkthroughs' recordings played only in docs served locally |
 | 9 | `feat/edit-by-text-and-loop` | edit-by-text on top of the joe and vox loop; `./al loop`, the suites side by side as named runs, and images named per checkout; screenshots of every tool and docs example taken by the suite, the examples on demo media; commands on each system; the docs tools locked on their own; the phone's notices letting taps through; the template preview carrying structured data |
 | 10 | `feat/pydantic-2` | pydantic 2 in alfred and the engine (otto pinned at c82efbd, `feat/pydantic-2`); fastapi-users 15.0.5, with passwords hashed by Argon2 in a pool of their own; passlib and setuptools gone |
+| 11 | `feat/family-onboarding` | making a video in the QM family, walked step by step (`docs/guide.md`, `./al family up`); editing by text completed (undo, the timeline tools carrying the words, a cut rewriting a caption's text); comments cut to a line or two, their reasons moved into the docs; the seed's workflows, with `governance/qm` at the propagation; the dev stack on 1732 and joe on 1059, qm's port allocation |
+| 12 | `feat/ui-journeys` | the editor made for the person using it: a line under the rail saying what to do next, the timeline saving itself, New project, and the user journeys (`docs/journeys.md`) that the editor's How? links open; `governance/qm` at project/alfred's propagation of 2026-10-31 |
 
 Read **Security** and **Changed** before deploying: several requests that were
 accepted are now refused, and a production stack needs its own signing key.
@@ -88,6 +90,24 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **The timeline saves itself**, a second after it stops changing, with the
+  captions and words a cut moved. There is no Save for the timeline, and the
+  Transcript panel's is gone too. An indicator says Saving…, Saved, or Not
+  saved with the reason and a Retry. Opening another project saves the one
+  left, and Transcribe timeline saves first. The Captions panel keeps its
+  Save, for captions typed or styled by hand. A failed save is kept in the
+  tab and offered back, as an unsaved timeline was.
+- **Deprecated templates are not offered** for a new clip; a project that has
+  one still draws it. Where the Media & templates panel shows, the bin under
+  the timeline steps aside.
+- **On a phone the footer's links are in the header** (Help, Logout), and the
+  timeline takes the room the footer had; on a wide screen they read on the
+  dark bar.
+- **The dev stack serves on 1732, and reaches joe on 1059**: qm's port
+  allocation gives alfred root three, with its live reload on 1733, and joe
+  the twelfth root of two. The database stays on 27017. `ALFRED_PORT`,
+  `ALFRED_HMR_PORT` and `ALFRED_JOE_PORT` still move them; a bookmark, a
+  script or a joe started by hand on 8000 or 8010 needs the new number.
 - **alfred and otto run on pydantic 2** (2.14.1 locked; otto needs
   `pydantic~=2.5` and `fastapi~=0.100`). A client sees three things: a UTC
   time ends `Z`, not `+00:00`; a 422's details carry pydantic 2's types and
@@ -344,12 +364,24 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Added
 
+- **The user journeys** (`docs/journeys.md`): a first video, your own
+  footage, titles, rendering, captions, a phone, coming back, an account, an
+  assistant, and what to do when something goes wrong. A line under the
+  stage rail says where you are and what comes next, with a button to that
+  stage and a **How?** link to the journey; with no project open, Source is
+  outlined.
+- **New project**, on Source: a name, then Create. The editor had no way to
+  start an empty project.
+- **The frame menus beside the viewer are named**, and the Render stage says
+  where the size it offers came from: the project's last render, or the
+  viewer's frame.
 - **Editing by text.** A transcription keeps the words it heard, in timeline
   seconds (`GET /project/{id}/captions/words`; `PUT /project/{id}/captions`
   takes `words`). The Transcript panel shows them as text: deleting words cuts
   the stretch they were said in from every track and closes the gap, captions
   and words shifting with it. Clicking a word seeks to it. On a phone, the
-  Edit stage switches between Captions and Transcript. No undo yet.
+  Edit stage switches between Captions and Transcript. Ctrl+Z, or Undo,
+  takes a cut back.
 - **`./al loop`**: the host's quick tests, the API suite, the browser suite
   and the strict docs build at once, as one named run; `--stack --keep`
   brings up joe and the dev stack and leaves them up; several runs go side by
@@ -524,6 +556,7 @@ accepted are now refused, and a production stack needs its own signing key.
 | 8 | `feat/close-gaps` | 1892 passed, 8 skipped, 8 xfailed; black checked, not applied | 402 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning, with the recordings and without them. The `@screens` retaken against `./al family up` with joe#35's branch: seven changed, for the Render stage's form and the zoom row. The Render stage measured at 360x740, 375x812, 390x844 and 812x375: the whole form on the screen upright, and the whole picture held sideways |
 | 9 | `feat/edit-by-text-and-loop` | 1970 passed, 8 skipped, 8 xfailed; black and ruff checked | 442 passed, 1 passed only on retry (the zoom row's measure, since loosened) | Run side by side by `./al loop`, beside a running stack. `mkdocs build --strict` clean; the quick host suite 150 passed. Every screenshot retaken against joe#35's branch, the tools and examples among them |
 | 10 | `feat/pydantic-2` | 1979 passed, 10 skipped, 8 xfailed, from a git worktree, whose `.git` the container cannot follow, so two tests that ask git skip; black and ruff checked; 489 warnings, 429 more than round 9, from beanie and lazy-model reading `model_fields` as pydantic 2.11 deprecates | 443 passed, none passing only on retry | Run by `./al loop`, beside a running stack. `mkdocs build --strict` clean; the quick host suite 150 passed. otto's own suite 361 passed, its model tests on pydantic 2.5.3 too. Live: register, login, refresh, a change and a reset of password, and a 10.4.2 bcrypt account logging in and becoming Argon2 |
+| 11 and 12 | `feat/ui-journeys` | 1991 passed, 8 skipped, 8 xfailed; black and ruff checked; 493 warnings | 477 passed, none passing only on retry | Run by `./al loop` beside a demo stack with joe on 1059. `mkdocs build --strict` clean; the quick host suite 154 passed, the port allocation's test running against `governance/qm` at `d324759`. Every screenshot retaken and looked at: the editor's by `./al recipes` against the dev stack with joe (37 recipes recorded), the guide's eight in the suite's stack with the stub engine. The family's live check: 8 passed, 1 skipped for want of a library file with sound. The phone flow measured at 390x844: one screen on every stage, and two whole projects on Source |
 
 ## 0.3.0 — breaking
 

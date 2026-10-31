@@ -545,12 +545,12 @@ class TestTheTask:
         from alfred import config
 
         monkeypatch.setattr(
-            config, 'AUDIO_ENGINE_URL', 'http://me:pw@engine.test:8010/'
+            config, 'AUDIO_ENGINE_URL', 'http://me:pw@engine.test:1059/'
         )
         project_id = ObjectId()
         collection = projects({'_id': project_id, 'edl': EDL})
         heard(monkeypatch, ([], 0, []))
         tasks.transcribeCaptions(projectId=str(project_id))
         assert collection.documents[project_id]['captions_job']['engine'] == (
-            'http://engine.test:8010'
+            'http://engine.test:1059'
         )

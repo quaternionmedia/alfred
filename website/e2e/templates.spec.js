@@ -17,7 +17,7 @@
  * clips only reached a timeline through demo and seed projects.
  */
 
-const { test, expect, templateQuery } = require('./fixtures')
+const { test, expect, addTemplate, showTheBin, templateQuery } = require('./fixtures')
 
 const DEFAULT_TEXT = 'Your text here'
 
@@ -50,11 +50,11 @@ function watchErrors(page) {
 }
 
 test.describe('adding a template', () => {
-  test('the bin adds a template as a clip with text and five seconds', async ({
+  test('a template is added as a clip with text and five seconds', async ({
     authedPage,
   }) => {
     /**
-     * Press + on a template in the bin. It lands on the end of the timeline
+     * Press + on a template in Media & templates. It lands on the end of the timeline
      * as five seconds of "Your text here", its settings open beside the
      * viewer, and that is exactly what a render receives.
      */
@@ -63,7 +63,7 @@ test.describe('adding a template', () => {
     await authedPage.goto('/#!/?stage=edit')
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(0)
 
-    await binEntry(authedPage, 'title').locator('.binadd').click()
+    await addTemplate(authedPage, 'title')
 
     const clip = authedPage.locator('#timeline .clip.template[name="title"]')
     await expect(clip).toHaveCount(1)
@@ -101,7 +101,7 @@ test.describe('adding a template', () => {
      * text field would invite an edit that changes nothing.
      */
     await authedPage.goto('/#!/?stage=edit')
-    await binEntry(authedPage, 'makeColor').locator('.binadd').click()
+    await addTemplate(authedPage, 'makeColor')
 
     const params = authedPage.locator('#template-params')
     await expect(params).toBeVisible()
@@ -117,13 +117,16 @@ test.describe('adding a template', () => {
   }) => {
     /**
      * Templates are material too, so the Source stage lists them beside the
-     * media, and says where an added one landed.
+     * media, and says where an added one landed. One the server marks
+     * deprecated is not offered for a new clip; a project that has one still
+     * draws it.
      */
-    const offered = await templates(request, token)
+    const offered = (await templates(request, token)).filter(t => !t.deprecated)
     await authedPage.goto('/#!/?stage=source')
 
     const choices = authedPage.locator('.templatechoice')
     await expect(choices).toHaveCount(offered.length)
+    await expect(authedPage.locator('#panel-media')).not.toContainText('deprecated')
     await authedPage.locator('.templatechoice[data-template="textBox"]').click()
 
     await expect(authedPage.locator('#timeline .clip.template[name="textBox"]')).toHaveCount(1)
@@ -144,19 +147,18 @@ test.describe('adding a template', () => {
      *
      * Mutation: show `t.name` in the Material panel again and this fails.
      */
-    const offered = await templates(request, token)
+    const offered = (await templates(request, token)).filter(t => !t.deprecated)
     expect(offered.every(t => t.label && t.label !== t.name)).toBe(true)
 
     await authedPage.goto('/#!/?stage=source')
     for (const t of offered) {
       await expect(authedPage.locator(`.templatechoice[data-template="${t.name}"]`)).toContainText(t.label)
-      await expect(binEntry(authedPage, t.name).locator('.binlabel')).toHaveText(t.label)
     }
 
     // A clip with no text of its own is named for its template, and so are
     // its settings.
     const colour = offered.find(t => t.name === 'makeColor')
-    await binEntry(authedPage, 'makeColor').locator('.binadd').click()
+    await addTemplate(authedPage, 'makeColor')
     const clip = authedPage.locator('#timeline .clip.template[name="makeColor"]')
     await expect(clip.locator('.clipname')).toHaveText(colour.label)
     await expect(authedPage.locator('#template-params h4')).toContainText(colour.label)
@@ -169,7 +171,8 @@ test.describe('adding a template', () => {
      * The bin and the timeline are two Sortable lists, and the timeline's
      * group accepted only itself -- so a drag from the bin was refused before
      * the drop handler ever ran. And the handler, had it run, read fields
-     * from the dragged element that template entries do not have.
+     * from the dragged element that template entries do not have. The bin
+     * shows where the Media & templates panel does not, so it is closed here.
      */
     const errors = watchErrors(authedPage)
     // Tall enough that the bin and the timeline are both fully on screen: a
@@ -177,6 +180,7 @@ test.describe('adding a template', () => {
     // under the footer.
     await authedPage.setViewportSize({ width: 1280, height: 1000 })
     await authedPage.goto('/#!/?stage=edit')
+    await showTheBin(authedPage)
     await binEntry(authedPage, 'makeColor').locator('.binadd').click()
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(1)
 
@@ -225,7 +229,7 @@ test.describe("changing a template clip's settings", () => {
     })
 
     await authedPage.goto('/#!/?stage=edit')
-    await binEntry(authedPage, 'title').locator('.binadd').click()
+    await addTemplate(authedPage, 'title')
     const clip = authedPage.locator('#timeline .clip.template[name="title"]')
     const widthBefore = (await clip.boundingBox()).width
 
@@ -266,7 +270,7 @@ test.describe("changing a template clip's settings", () => {
      * the clip's duration before the next digit arrived.
      */
     await authedPage.goto('/#!/?stage=edit')
-    await binEntry(authedPage, 'title').locator('.binadd').click()
+    await addTemplate(authedPage, 'title')
     const field = authedPage.locator('#param-duration')
     await field.fill('')
     await field.pressSequentially('1.75')
@@ -290,7 +294,7 @@ test.describe("changing a template clip's settings", () => {
     )
 
     await authedPage.goto('/#!/?stage=edit')
-    await binEntry(authedPage, 'title').locator('.binadd').click()
+    await addTemplate(authedPage, 'title')
     await expect(authedPage.locator('#preview img.preview, img.preview')).toBeVisible({
       timeout: 20_000,
     })
@@ -338,7 +342,7 @@ test.describe("a template's type and placement", () => {
     const frames = await serveFonts(authedPage)
     const sent = await captureRenders(authedPage)
     await authedPage.goto('/#!/?stage=edit')
-    await binEntry(authedPage, 'textBox').locator('.binadd').click()
+    await addTemplate(authedPage, 'textBox')
 
     const font = authedPage.locator('#param-font')
     await expect(font.locator('option')).toHaveText([
@@ -384,14 +388,14 @@ test.describe("a template's type and placement", () => {
     await serveFonts(authedPage)
     await authedPage.goto('/#!/?stage=edit')
 
-    await binEntry(authedPage, 'title').locator('.binadd').click()
+    await addTemplate(authedPage, 'title')
     const params = authedPage.locator('#template-params')
     await expect(params.locator('#param-font')).toBeVisible()
     await expect(params.locator('#param-fontsize')).toBeVisible()
     await expect(params.locator('#param-position')).toBeVisible()
     await expect(params.locator('#param-align')).toHaveCount(0)
 
-    await binEntry(authedPage, 'makeColor').locator('.binadd').click()
+    await addTemplate(authedPage, 'makeColor')
     // Named by the server's label, not otto's identifier.
     await expect(params.locator('h4')).toContainText('Colour')
     await expect(params.locator('#param-position')).toBeVisible()
@@ -416,7 +420,7 @@ test.describe("a template's type and placement", () => {
       route => route.fulfill({ status: 422, json: { detail: reason } })
     )
     await authedPage.goto('/#!/?stage=edit')
-    await binEntry(authedPage, 'title').locator('.binadd').click()
+    await addTemplate(authedPage, 'title')
 
     await authedPage.locator('#param-font').selectOption('Nimbus-Sans')
     await expect(authedPage.locator('#param-problem')).toHaveText(reason)
@@ -507,7 +511,7 @@ test.describe('a server busy with other previews', () => {
       }
     )
     await authedPage.goto('/#!/?stage=edit')
-    await binEntry(authedPage, 'makeColor').locator('.binadd').click()
+    await addTemplate(authedPage, 'makeColor')
 
     const viewer = authedPage.locator('.bkg')
     await expect(viewer.locator('.preview.busy')).toBeVisible()

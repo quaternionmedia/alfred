@@ -181,7 +181,7 @@ test.describe('the four-stage flow', () => {
     // and then fails is worse than one that says why it is not.
     await authedPage.goto('/#!/?stage=render')
     await expect(authedPage.locator('#queue-render')).toBeDisabled()
-    await expect(authedPage.getByText(/add a clip/i)).toBeVisible()
+    await expect(authedPage.getByText(/add material or a template/i)).toBeVisible()
   })
 
   test('stage 3 offers the render when there is something to render', async ({

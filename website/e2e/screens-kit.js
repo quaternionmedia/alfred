@@ -1,11 +1,12 @@
 /**
- * Shared by screens-examples.spec.js and screens-tools.spec.js.
- * Same rules as screens.spec.js: demo media only, lists narrowed, file cleared first.
+ * Shared by screens-examples.spec.js, screens-tools.spec.js and screens-guide.spec.js.
+ * Same rules as screens.spec.js: demo media only (and the guide's sound), lists
+ * narrowed, file cleared first.
  */
 
 const fs = require('fs')
 const path = require('path')
-const { expect, login } = require('./fixtures')
+const { expect, login, routeSaves } = require('./fixtures')
 
 const SCREENS = path.join(__dirname, '..', '..', 'docs', 'assets', 'screens')
 
@@ -45,14 +46,14 @@ async function makeProject(api, token, name, clips) {
   return created.json()
 }
 
-/** List only `projects` and the demo media, so no one's own data is shot.
+/** List only `projects` and the library's `files`, so no one's own data is shot.
  * Call before login: the lists load as the session starts. */
-async function narrow(page, projects) {
+async function narrow(page, projects, files = DEMO_MEDIA) {
   const ids = new Set(projects.map(project => project._id))
   const demo = {
     '/project': entry => ids.has(entry._id),
-    '/media': entry => DEMO_MEDIA.some(name => String(entry.name).endsWith(name)),
-    '/videos': entry => DEMO_MEDIA.some(name => String(entry).endsWith(name)),
+    '/media': entry => files.some(name => String(entry.name).endsWith(name)),
+    '/videos': entry => files.some(name => String(entry).endsWith(name)),
     '/render': entry => ids.has(entry.project_id),
   }
   await page.route(
@@ -70,9 +71,10 @@ async function narrow(page, projects) {
   )
 }
 
-/** `project` on the Edit stage, its timeline drawn. */
+/** `project` on the Edit stage, its timeline drawn. Its edits are not saved: the screens share it. */
 async function openProject(page, project) {
   await narrow(page, [project])
+  await routeSaves(page, 'answered')
   await login(page)
   await page.goto(`/#!/?project=${project._id}&stage=edit`)
   await expect(page.locator('#timeline .clip')).toHaveCount(project.edl.clips.length)

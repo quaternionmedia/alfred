@@ -1,0 +1,87 @@
+# No pull request is marked ready while it is stacked on another open one.
+#
+# SEED FILE: copy verbatim into .github/workflows/, the same discipline as
+# adr-lint.yml. Only the workflow is copied -- it runs check_one_pr.py out of
+# the governance submodule, so a fix to the rule reaches every project on its
+# next pin bump instead of needing N copies updated. The file, script and job
+# names are kept as they are, so a pin bump needs no re-copy and a required
+# `slot` context keeps reporting.
+#
+# The rule and the reasoning are handbook/async-contract.md §1: one change per
+# pull request, parallel when independent, stacked when dependent. A stacked
+# pull request's base is its parent's branch, and it stays a draft until the
+# parent merges.
+#
+# What this fails, and who can fix it
+#
+# Every ready pull request of this author whose base is another open pull
+# request's branch. The remedy is `gh pr ready <n> --undo`, which re-runs this.
+# Automation authors are not judged.
+
+name: Stacked PRs are drafts
+
+on:
+  pull_request:
+    # `edited` fires on a base change -- the retarget when the pull request
+    # beneath merges -- and `converted_to_draft` is the remedy this check
+    # names, so both must re-run it.
+    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, edited]
+
+# One run per branch per workflow. A second push supersedes the first: the
+# result of a run whose commit has been replaced is not read, and its minutes
+# are billed.
+#
+# Cancellation applies to pull requests only. On the default branch and on a
+# project branch the run is the record of what that commit reported, and
+# cancelling it would remove the only evidence that the commit was checked.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  slot:
+    runs-on: ubuntu-latest
+    steps:
+      # Only the governance submodule: `submodules: true` is all-or-nothing, and
+      # a project with a private submodule the runner has no credential for
+      # fails the checkout before the check runs.
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Check out the governance submodule only
+        run: git submodule update --init --depth 1 governance/qm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: No pull request of this contributor is ready while stacked
+        run: |
+          python governance/qm/project-seed/ci/check_one_pr.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --contributor "$PR_AUTHOR"
+        env:
+          # The token is what lets `gh api` read the list at all. Without it the
+          # script exits non-zero rather than reporting a repository it could
+          # not read as compliant.
+          GH_TOKEN: ${{ github.token }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+
+      # The body is posted under the contributor's account and is their statement
+      # of the change; a sentence addressed to them is a tool talking to its
+      # operator under the operator's name. Written to a file first: a body is
+      # multi-line and may hold anything, and an argument would re-parse it.
+      - name: This pull request speaks as its contributor, to the world
+        run: |
+          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
+          python governance/qm/project-seed/ci/check_pr_voice.py \
+            --body-file "$RUNNER_TEMP/pr-body.md" \
+            --contributor "$PR_AUTHOR"
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}

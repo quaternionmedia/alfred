@@ -13,7 +13,7 @@
  * cloud account.
  */
 
-const { test, expect, MEDIA_PROJECT } = require('./fixtures')
+const { test, expect, expectSaved, MEDIA_PROJECT } = require('./fixtures')
 
 /**
  * The shared media fixture, read rather than created.
@@ -297,6 +297,8 @@ test.describe('the tools pass their events', () => {
 })
 
 test.describe('the project actions', () => {
+  test.use({ saves: 'real' })
+
   test('saving a timeline persists it, and keeps the rest of the project', async ({
     authedPage,
     request,
@@ -305,7 +307,7 @@ test.describe('the project actions', () => {
     /**
      * # Recipe: saving a timeline
      *
-     * The save button posted to `/edl`, which is not a route on this server
+     * The timeline saves itself. The save posted to `/edl`, which is not a route on this server
      * and never has been, with a bare `m.request` that would not have carried
      * a token if it were. The rejection was handled nowhere, so the button
      * reported nothing. Timelines could not be saved at all.
@@ -366,7 +368,7 @@ test.describe('the project actions', () => {
       await loaded
       await expect(authedPage.locator('#timeline .clip')).toHaveCount(before + 1)
 
-      await authedPage.locator('#save-timeline').click()
+      await expectSaved(authedPage)
 
       await expect
         .poll(async () => {
@@ -400,16 +402,14 @@ test.describe('the project actions', () => {
   })
 
   test('the actions say why they are unavailable', async ({ authedPage }) => {
-    // Both were always enabled and always clickable, whether or not there was
-    // a project to act on or a clip to act with.
+    // Always enabled and always clickable, whether or not there was a project
+    // to act on or a clip to act with.
     await authedPage.goto('/#!/?stage=edit')
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(0)
 
-    for (const id of ['#save-timeline', '#render-timeline']) {
-      const button = authedPage.locator(id)
-      await expect(button).toHaveClass(/disabled/)
-      await expect(button).toHaveAttribute('title', /select a project|nothing on the timeline/i)
-    }
+    const button = authedPage.locator('#render-timeline')
+    await expect(button).toHaveClass(/disabled/)
+    await expect(button).toHaveAttribute('title', /select a project|nothing on the timeline/i)
   })
 })
 
@@ -476,18 +476,20 @@ test.describe('the editor layout groups its tools', () => {
       playbackInTransport: !!document.querySelector('.transport #PlaybackTools'),
       speedInTransport: !!document.querySelector('.transport .tools'),
       timelineToolsInEditor: !!document.querySelector('.editor #TTools'),
-      binUnderTimeline: (() => {
+      bin: (() => {
         const t = document.querySelector('#timeline')
         const b = document.querySelector('#bin')
-        if (!t || !b) return false
-        return b.getBoundingClientRect().y >= t.getBoundingClientRect().y
+        if (!b) return 'absent'
+        return t && b.getBoundingClientRect().y >= t.getBoundingClientRect().y ? 'under' : 'elsewhere'
       })(),
     }))
 
     expect(grouped.playbackInTransport).toBe(true)
     expect(grouped.speedInTransport).toBe(true)
     expect(grouped.timelineToolsInEditor).toBe(true)
-    expect(grouped.binUnderTimeline).toBe(true)
+    // Under the timeline where it shows; beside the Media & templates panel it steps aside.
+    const listed = await authedPage.locator('#panel-media').isVisible()
+    expect(grouped.bin).toBe(listed ? 'absent' : 'under')
   })
 })
 

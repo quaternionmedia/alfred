@@ -84,6 +84,7 @@ variable in front of a command is set for that command only; in PowerShell,
 | ... and the joe it started | `./al family down` | `al family down` |
 | Follow its logs | `./al logs` | `al logs` |
 | A shell in the api | `./al sh` | `al sh` |
+| Tidy renders, orphans and fetched media | `./al storage migrate`, `orphans` or `cache`: a dry run, until `--apply` | `al storage ...`, the same |
 | After editing `alfred/`, on Windows and macOS | `./al docker restart api` | `al docker restart api` |
 | Every suite, side by side | `./al loop` | `al loop` |
 | ... then the app, left up to try | `./al loop --stack --keep` | `al loop --stack --keep` |
@@ -106,10 +107,10 @@ family dev loop](family.md) what `./al family` does with joe and the rest.
 
 | What | Address |
 |---|---|
-| The editor | <http://127.0.0.1:8000> |
-| The API's own reference | <http://127.0.0.1:8000/api> |
+| The editor | <http://127.0.0.1:1732> |
+| The API's own reference | <http://127.0.0.1:1732/api> |
 | The docs, served | <http://127.0.0.1:4000/docs/> |
-| joe | <http://127.0.0.1:8010> |
+| joe | <http://127.0.0.1:1059> |
 | The database, for a GUI | `127.0.0.1:27017` |
 
 `127.0.0.1` rather than `localhost`: everything is published on IPv4 loopback,

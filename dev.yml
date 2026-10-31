@@ -1,68 +1,33 @@
-# Every setting alfred reads, passed through from the shell that starts the
-# stack: export one before `./al dev`, or name it in front of the command as
-# the examples below do, and the api and the renderer both get it. Exported
-# and not listed here, a setting did nothing at all. docs/configuration.md
-# says what each one does.
-#
-# Bare names: a setting reaches the containers when the shell sets it and
-# stays unset when it does not, so the code's own default holds. That is not
-# always what an empty value does -- ALFRED_RENDER_DIR or ALFRED_DELIVERY_DIR
-# set to nothing would write into the working directory, the checkout itself
-# -- so nothing here is handed a value the code would not choose.
-#
-# One list, merged into both services, so the two cannot drift apart;
-# tests/unit/test_stack_settings.py fails when alfred reads a setting this
-# does not pass. A directory setting is a path inside the containers, and one
-# the api and the renderer both use (ALFRED_RENDER_DIR: the renderer writes
-# there, the api reads) has to be somewhere both can see: under /app/videos,
-# which they share, or a volume added to both.
+# Every setting alfred reads, from the shell, by bare name: unset stays unset.
+# One list for the api and the renderer; test_stack_settings.py holds it to
+# what alfred reads. See docs/configuration.md and docs/build.md#settings.
 x-alfred-settings: &alfred-settings
-  # The auth bypass, off unless you ask for it:
-  #   ALFRED_DEV_SKIP_AUTH=1 ./al dev
-  # Serves every request as a fixed superuser and skips the login screen.
-  # config.py refuses to start if this is combined with ALFRED_PRODUCTION.
-  # Only in dev.yml -- production.yml has no such passthrough, so there is
-  # no environment variable a production stack will even look at.
+  # Development only; production.yml has no passthrough for it.
   ALFRED_DEV_SKIP_AUTH:
   ALFRED_DEV_USER_EMAIL:
   ALFRED_ALLOW_REGISTRATION:
   ALFRED_SEED_OWNER:
   ALFRED_PUBLIC_URL:
-  # Hosts a clip may name remote media on; none unless you ask for some:
-  #   ALFRED_REMOTE_MEDIA_HOSTS=storage.googleapis.com ./al dev
-  # The api refuses any other URL first, and the worker refuses it rather
-  # than downloading it.
   ALFRED_REMOTE_MEDIA_HOSTS:
-  # Also sets OTTO_DOWNLOAD_DIR, the engine's name for it, in each service.
+  # Also sets OTTO_DOWNLOAD_DIR in each service.
   ALFRED_REMOTE_CACHE_DIR:
   ALFRED_REMOTE_CACHE_TTL:
   ALFRED_RENDER_DIR:
   ALFRED_DELIVERY_DIR:
   ALFRED_PREVIEW_DIR:
   ALFRED_FRAME_TTL:
-  # How many previews the api draws at once, and how long one waits for its
-  # turn before a 503 with Retry-After.
   ALFRED_PREVIEW_CONCURRENCY:
   ALFRED_PREVIEW_WAIT:
   ALFRED_MEDIA_URL_TTL:
   ALFRED_BUCKET_NAME:
-  # Seconds each step of sending mail may take, for every mail alfred sends.
   ALFRED_SMTP_TIMEOUT:
-  # The audio engine captions are transcribed with, none unless you ask for
-  # one. joe on this machine, started in its own checkout with
-  # `uv run uvicorn api:app --port 8010` (its CLI binds 8000, ours):
-  #   ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010 ./al dev
-  # The renderer, which does the transcribing, gets it too. On a Linux host
-  # joe also has to listen where the Docker bridge can reach it; see
-  # docs/configuration.md.
+  # joe beside the stack: http://host.docker.internal:1059.
+  # See docs/configuration.md#docker-hosts-and-joe.
   ALFRED_AUDIO_ENGINE_URL:
   ALFRED_AUDIO_ENGINE_TIMEOUT:
 
-# Where an audio engine spells its API differently from vox's defaults: one
-# ALFRED_AUDIO_ENGINE_CONTRACT_<FIELD> per field of vox's EngineContract
-# (alfred/vox/vox/contract.py), in its order, passed through the same way.
-# Listed rather than matched, because compose passes names, not patterns; the
-# settings test holds this list to the contract's fields.
+# One per field of vox's EngineContract, in its order. Compose takes names,
+# not patterns; test_stack_settings.py holds the list to the contract.
 x-audio-engine-contract: &audio-engine-contract
   ALFRED_AUDIO_ENGINE_CONTRACT_HEALTH:
   ALFRED_AUDIO_ENGINE_CONTRACT_DEVICES:
@@ -133,91 +98,37 @@ x-audio-engine-contract: &audio-engine-contract
   ALFRED_AUDIO_ENGINE_CONTRACT_DETAIL_KEY:
 
 services:
-  # TODO Development Reloader description
+  # The site, rebuilt into website/dist as it changes.
   website:
     ports:
-      # Loopback unless asked otherwise; see the api's ports below.
-      - ${ALFRED_BIND:-127.0.0.1}:${ALFRED_HMR_PORT:-8001}:8001
-    # `yarn run dev` polls rather than watching; see website/dev-watch.js.
-    #
-    # @parcel/watcher subscribes to inotify, and inotify events do not cross a
-    # Docker Desktop bind mount from a Windows or macOS host. The container
-    # sees the edited file -- content and mtime both update -- but is never
-    # told it changed, so `parcel watch` sat idle and dist/ went stale
-    # silently. Every frontend edit needed a container restart.
-    #
-    # Parcel's own polling backend is not an option: `--watch-backend
-    # brute-force` aborts on startup (SIGABRT), and watchman is not installed.
-    # PARCEL_WATCHER_BACKEND looks like the obvious env var and parcel never
-    # reads it.
-    #
-    # The trade is that there is no HMR -- dist/ is current within a second,
-    # but the browser will not refresh itself. `yarn run dev:hmr` restores the
-    # original behaviour on a Linux host, where the events do arrive.
+      # One number both sides: parcel's HMR client dials the port it listens on.
+      - ${ALFRED_BIND:-127.0.0.1}:${ALFRED_HMR_PORT:-1733}:${ALFRED_HMR_PORT:-1733}
+    environment:
+      ALFRED_HMR_PORT: ${ALFRED_HMR_PORT:-1733}
+    # Polls: inotify does not cross the bind mount. No HMR; `yarn run dev:hmr`
+    # on a Linux host. See docs/build.md#the-sites-watcher.
     command: yarn run dev
 
-  # TODO API description
   api:
     ports:
-      # Overridable, because 8000 is not ours by right.
-      #
-      # Another QM project (apothecary) also defaults to 8000, and when both
-      # are up the host port goes to whichever bound first -- so `curl
-      # localhost:8000` answered a different application entirely while this
-      # container was healthy and serving on its own network. That is not a
-      # theoretical clash; it happened here, and it made every measurement
-      # taken through that port untrustworthy.
-      #
-      #   ALFRED_PORT=8100 ./al dev
-      #
-      # And on loopback unless asked otherwise. Published on every interface,
-      # the dev stack answered anything on the network -- and with
-      # ALFRED_DEV_SKIP_AUTH=1 it answers every request as a superuser. To try
-      # the app from a phone on the same network, opt in for that run:
-      #
-      #   ALFRED_BIND=0.0.0.0 ./al dev
-      - ${ALFRED_BIND:-127.0.0.1}:${ALFRED_PORT:-8000}:80
+      # Loopback unless ALFRED_BIND says otherwise. See docs/dev-server.md.
+      - ${ALFRED_BIND:-127.0.0.1}:${ALFRED_PORT:-1732}:80
     volumes:
       - ./alfred/otto:/otto/
-      # Mounted into a subdirectory, not over the system font directory.
-      #
-      # As `/usr/share/fonts/truetype/` this replaced the image's fonts with
-      # the host's -- and alfred/otto/fonts is empty, so the container ended
-      # up with no fonts at all. fontconfig reported 0, ImageMagick reported
-      # 0, and every text template silently returned None: `title`, `textBox`,
-      # `bullets`, `initial` and `final` are all TextClip, so five of the six
-      # templates could not render. generateEdl turned that into "A clip did
-      # not get made properly", which names neither fonts nor ImageMagick.
-      #
-      # A subdirectory is additive: project fonts appear alongside the image's
-      # eight rather than instead of them. Same shape as the node_modules
-      # mount in docker-compose.yml -- a bind mount over a populated path
-      # takes the host's version of it, empty or not.
+      # A subdirectory: over the font directory, it hides the image's fonts.
       - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
-    # This checkout's own signing key, merged after docker-compose.yml's
-    # `.secret_key` stub (an empty ALFRED_SECRET_KEY) so it wins. `./al init`,
-    # `./al dev` and `./al thin` create it; without it the stack still starts,
-    # on the stub, and the api announces that its tokens can be forged.
+    # Over docker-compose.yml's empty stub; ./al makes it.
     env_file:
       - path: .secret_key.local
         required: false
-    # The settings above, and two paths of the stack's own. Not
-    # ALFRED_SECRET_KEY, which the two env files supply: a bare name for it
-    # here would erase their key whenever the shell had none of its own.
+    # No ALFRED_SECRET_KEY here: a bare name would erase the env files' key.
     environment:
       <<: [*alfred-settings, *audio-engine-contract]
-      # The same absolute path the renderer writes to, so delivery reads the
-      # file the worker actually produced rather than guessing from its own
-      # working directory.
+      # Absolute, and the renderer's: delivery reads the file it wrote.
       VIDEO_DIR: /app/videos
-      # Where the engine keeps media it fetched from a URL: a hidden directory
-      # in the library mount the renderer shares, so a file previewed here is
-      # not fetched again to render, and is never listed or served (contract
-      # M6). The engine wrote downloads to `data/` under its working
-      # directory, which the api served publicly at /data. A container path.
+      # Hidden in the shared library; never listed or served (contract M6).
       OTTO_DOWNLOAD_DIR: ${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
-    # host.docker.internal is this machine as a container sees it. Docker
-    # Desktop provides the name; a Linux host does not, and this adds it.
+    # Docker Desktop has this name; a Linux host needs it added.
     extra_hosts:
       - host.docker.internal:host-gateway
 
@@ -226,49 +137,22 @@ services:
       context: .
       dockerfile: ./Dockerfile
     image: ${ALFRED_IMAGES:-alfred}_worker
-    # No `--workdir`: the image's own WORKDIR, /app, is the right one. The
-    # worker was started in /app/alfred only so that a stale `core.utils.tasks`
-    # entry in the Celery app's `include` would import -- and from there every
-    # library clip (`videos/x.mp4`) resolved to /app/alfred/videos, which does
-    # not exist, so no render with a media clip could succeed. The include is
-    # fixed and the worker resolves media against VIDEO_DIR itself now, so the
-    # working directory no longer decides what a clip name means.
+    # No --workdir: clips resolve against VIDEO_DIR, not the working directory.
     entrypoint: celery -A alfred.core.utils.tasks:renderer -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
     networks:
       - alfred_isolated
     volumes:
       - ./alfred/:/app/alfred/
-      # The renderer writes finished videos here, and had nowhere to write
-      # them: the api mounts ./videos and the renderer did not, so every render
-      # died with "Error opening output videos/....mp4: No such file or
-      # directory" -- reported into the database as a failed render and
-      # nowhere else. The render pipeline could not produce a file at all in
-      # this configuration.
+      # Where renders are written; the api reads the same directory.
       - ./videos/:/app/videos/
-      # Mounted into a subdirectory, not over the system font directory.
-      #
-      # As `/usr/share/fonts/truetype/` this replaced the image's fonts with
-      # the host's -- and alfred/otto/fonts is empty, so the container ended
-      # up with no fonts at all. fontconfig reported 0, ImageMagick reported
-      # 0, and every text template silently returned None: `title`, `textBox`,
-      # `bullets`, `initial` and `final` are all TextClip, so five of the six
-      # templates could not render. generateEdl turned that into "A clip did
-      # not get made properly", which names neither fonts nor ImageMagick.
-      #
-      # A subdirectory is additive: project fonts appear alongside the image's
-      # eight rather than instead of them. Same shape as the node_modules
-      # mount in docker-compose.yml -- a bind mount over a populated path
-      # takes the host's version of it, empty or not.
+      # A subdirectory; see the api.
       - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
       - ./cred.json:/cred.json
     depends_on:
       - 'db'
-    # The mail settings, which the api has from docker-compose.yml: the worker
-    # is what sends an issue report or an invoice (tasks.mailSupport), so it
-    # needs the server, the sender and the support addresses too.
+    # The worker sends issue reports and invoices.
     env_file:
       - .email
-    # The same settings as the api, from the same list.
     environment:
       <<: [*alfred-settings, *audio-engine-contract]
       CELERY_BROKER: mongodb://db:27017/celery
@@ -276,28 +160,15 @@ services:
       DB_URL: mongodb://db:27017
       DB_NAME: alfred
       GOOGLE_APPLICATION_CREDENTIALS: /cred.json
-      # Absolute, because a relative path here depends on a working directory
-      # nobody sets deliberately. Celery was started with `--workdir
-      # /app/alfred`, so a bare `videos/` resolved to /app/alfred/videos --
-      # which does not exist -- while the mount is at /app/videos. Every render
-      # died on "Error opening output videos/....mp4: No such file or
-      # directory", recorded as a failed render and nowhere else.
+      # Absolute, as the api's.
       VIDEO_DIR: /app/videos
-      # Where fetched remote media is kept; the api's, so one download serves
-      # both. See the api above.
+      # The api's, so one download serves both.
       OTTO_DOWNLOAD_DIR: ${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
     extra_hosts:
       - host.docker.internal:host-gateway
 
   db:
     ports:
-      # 27017 is the most contended port in this stack: a standalone mongod or
-      # any other project's database takes it, and the failure names the port
-      # without naming the culprit. Nothing in the app needs it published --
-      # it is here for attaching a GUI.
-      #
-      # Loopback, and not through ALFRED_BIND: that is for reaching the app
-      # from a phone, which never needs an unauthenticated database on the
-      # network as well. ALFRED_DB_BIND moves it, for someone who means to.
+      # For a GUI only. Not moved by ALFRED_BIND; see docs/dev-server.md.
       - ${ALFRED_DB_BIND:-127.0.0.1}:${ALFRED_DB_PORT:-27017}:27017
     user: '${UID}:${GID}'

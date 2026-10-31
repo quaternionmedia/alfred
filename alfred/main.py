@@ -38,15 +38,11 @@ from alfred.core.routes import (
     videoAPI,
     videoFileAPI,
 )
-
-# from alfred.core.utils.db import deOid
 from alfred.core.routes.users import (
     current_active_superuser,
     current_active_user,
     fastapi_users,
 )
-
-# from otto.main import app as ottoApi
 from alfred.core.utils import get_db
 from alfred.core.utils.bucket import INVALID_ID
 from alfred.core.utils.db import User
@@ -69,13 +65,8 @@ errors.install(app)
 
 @app.on_event('startup')
 async def warnIfAuthIsDisabled():
-    """Say so, every boot, unmissably.
-
-    A bypass that runs quietly is one that reaches an environment nobody
-    meant it to. config.py refuses to combine this with ALFRED_PRODUCTION, so
-    this cannot be a production process -- but ALFRED_PRODUCTION is only set
-    by production.yml, and a deployment that forgets it would get no such
-    refusal. The banner is the second line of defence.
+    """The auth bypass's banner, every boot: the backstop for a deployment
+    without ALFRED_PRODUCTION (docs/dev-auth.md#what-keeps-it-out-of-production).
     """
     if DEV_SKIP_AUTH:
         line = '=' * 72
@@ -90,25 +81,14 @@ async def warnIfAuthIsDisabled():
 
 @app.on_event('startup')
 async def namePasswordHashingOverride():
-    """Say, every boot, that alfred hashes passwords with its own copies.
-
-    It replaces library code that is security code (utils/passwords.py), and
-    somebody reading the log should learn that from the log, not from a diff.
-    One line: by the time it prints, the copies have been checked against the
-    installed fastapi-users, and a mismatch would have stopped the import.
-    """
+    """One line, every boot: alfred hashes passwords with its own copies of
+    library security code (docs/api/auth.md#password-hashing)."""
     print(PASSWORD_HASHING, flush=True)
 
 
 @app.on_event('startup')
 async def warnIfSecretKeyIsWeak():
-    """Say so, every boot, when the signing key will not do.
-
-    The same treatment as the auth bypass banner, for the same reason: a
-    process that starts successfully looks healthy, and a missing or short
-    key is invisible until a login fails -- or until somebody forges one.
-    Read from the environment at startup, the same place config.py read it.
-    """
+    """A banner, every boot, when the signing key is unset, empty or short."""
     problem = secret_key_problem(environ)
     if problem:
         line = '!' * 72
@@ -122,15 +102,11 @@ async def warnIfSecretKeyIsWeak():
 @app.on_event('startup')
 async def seedDb():
     db = get_db()
-    # `count_documents` is a coroutine on a motor handle. Calling it without
-    # awaiting returned a Future, which is always truthy, so `if not ...`
-    # never fired and this block never ran. The import was also `from seed`,
-    # which only resolves with alfred/ as the working directory.
+    # Awaited: an unawaited motor count is a Future, always truthy.
     if await db.Project.count_documents({}) == 0:
         from alfred.seed import owned_by, seed
 
-        # Owned like any other project. In development that is the dev user,
-        # so ALFRED_DEV_SKIP_AUTH still opens onto them; see SEED_OWNER.
+        # Owned by SEED_OWNER: in development, the dev user.
         await db.Project.insert_many(owned_by(SEED_OWNER, seed))
 
 
@@ -161,10 +137,7 @@ def font_styles(lines):
 @app.on_event('startup')
 async def checkFonts():
     db = get_db()
-    # In the thread pool, as every other process the api starts is run.
-    # Nothing waits on the loop yet at startup -- uvicorn serves once it is
-    # done -- but one rule for every coroutine, with no exceptions to
-    # remember, is the rule that holds.
+    # In the thread pool, like every process the api starts; no exceptions.
     fonts = await run_in_threadpool(installed_fonts)
     found = font_styles(fonts)
     for family, styles in found:
@@ -173,34 +146,17 @@ async def checkFonts():
             {'$set': {'style': styles}},
             upsert=True,
         )
-    # And forget each family fontconfig no longer lists. The collection
-    # outlives the image, so a font a later image dropped stayed in GET
-    # /fonts, offered to the editor as one this server could draw in.
+    # Drop families fontconfig no longer lists: the collection outlives the image.
     await db.fonts.delete_many({'family': {'$nin': [family for family, _ in found]}})
 
 
 @app.exception_handler(PydanticValidationError)
 async def malformedIdentifier(request, exc):
-    """Turn an unparseable path identifier into 422 rather than 500.
+    """An unparseable id in the path (`/project/undefined`) is a 422
+    `invalid_id`, not a 500; a well-formed id that matches nothing stays 404.
 
-    `GET /project/undefined` returned 500. fastapi-crudrouter hands the raw
-    path segment to beanie's `Document.get`, which parses it into a
-    PydanticObjectId and raises; nothing caught it. The frontend does send
-    `undefined` -- the editor routes read a `project` query parameter that is
-    not always there -- so this was reachable from the UI, and a 500 says the
-    server broke when the request was malformed.
-
-    A well-formed id that matches nothing already returned 404 correctly. This
-    only covers the unparseable case, and answers 422 rather than 404 to keep
-    "you sent something that is not an id" distinguishable from "that id does
-    not exist" -- the frontend can act on the difference.
-
-    Deliberately narrow: it re-raises anything that is not an identifier parse
-    failure. A blanket handler for pydantic's ValidationError would turn every
-    server-side model mistake into a client error, which is exactly the kind
-    of 500-shaped bug that should stay loud. Response validation is unaffected
-    either way -- FastAPI's ResponseValidationError does not inherit from
-    pydantic's ValidationError.
+    Narrow on purpose: any other ValidationError is re-raised, so a
+    server-side model mistake stays a loud 500.
     """
     if not _isIdentifierParseError(exc):
         raise exc
@@ -223,29 +179,14 @@ app.include_router(authAPI, prefix='/auth', tags=['auth'])
 app.include_router(healthAPI, tags=['health'])
 
 if DEV_SKIP_AUTH:
-    # Registered before the fastapi-users router so this match wins; FastAPI
-    # resolves routes in registration order.
-    #
-    # Swapping `current_active_user` is not enough to cover /users/me.
-    # get_users_router builds its own dependency internally from the
-    # authenticator, so it is a different callable from the one this module
-    # exports -- and dependency_overrides keys on identity, so that does not
-    # reach it either. Without this route the SPA's probe 401s and the login
-    # screen comes back, with every other endpoint open. Shadowing the one
-    # route is the smallest thing that makes the bypass coherent.
+    # Shadows fastapi-users' /users/me, so registered before it: overriding
+    # the dependency does not reach that route (docs/dev-auth.md#what-it-does).
     from alfred.core.routes.users import get_dev_user
 
     @app.get('/users/me', response_model=UserRead, tags=['users'])
     async def dev_users_me(user: User = Depends(get_dev_user)):
-        # Built explicitly rather than returned as a document.
-        #
-        # Returning the Beanie document worked while UserRead.id was optional
-        # and serialised as null. Once id became a required string -- the fix
-        # for /users/me handing back `{}` -- FastAPI could not find it on the
-        # document by field name and answered 500 with "field required". The
-        # bypass then failed at exactly the endpoint the SPA probes to decide
-        # whether it is logged in, so the app sat on the login screen with
-        # every other route wide open.
+        # Built field by field: UserRead.id is a required str, which the
+        # document does not offer by that name (a 500 otherwise).
         return UserRead(
             id=str(user.id),
             email=user.email,
@@ -310,15 +251,8 @@ app.include_router(
     adminAPI, dependencies=[Depends(current_active_superuser)], tags=['admin']
 )
 
-# Files a browser fetches by itself -- `<video src>`, `<img src>`, `<a
-# download>` -- which cannot carry the session's Authorization header. Each
-# route depends on `media_access` instead of the session alone: a session, or
-# a signed URL for exactly that path (contract M1).
-#
-# This replaces the unauthenticated /data mount, which existed because the EDL
-# preview's frame had to reach an `<img>`. Everything it served was public to
-# anyone with the name: preview frames, and in its time local deliveries and
-# the engine's downloads. Nothing reads from it any more.
+# Files a browser fetches by itself (`<video src>`, `<img src>`), with no
+# Authorization header: a session, or a signed URL for that path (contract M1).
 app.include_router(renderFileAPI, tags=['render'])
 app.include_router(videoFileAPI, tags=['video'])
 app.include_router(previewFrameAPI, prefix='/preview', tags=['preview'])
@@ -346,4 +280,4 @@ async def on_startup():
 if __name__ == '__main__':
     from uvicorn import run
 
-    run(app, host='0.0.0.0', port=8000)
+    run(app, host='0.0.0.0', port=1732)

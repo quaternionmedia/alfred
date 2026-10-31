@@ -303,7 +303,7 @@ def test_the_dev_api_signs_with_this_checkouts_key(name):
 def test_the_documented_engine_address_resolves_on_a_linux_host(name, service):
     """host.docker.internal is mapped to the host, for both services.
 
-    The docs point ALFRED_AUDIO_ENGINE_URL at http://host.docker.internal:8010,
+    The docs point ALFRED_AUDIO_ENGINE_URL at http://host.docker.internal:1059,
     an engine running beside the stack. Docker Desktop provides that name and
     a Linux host does not, so without the mapping the address resolves on a
     laptop and nowhere else -- on a Linux host the api and the worker would

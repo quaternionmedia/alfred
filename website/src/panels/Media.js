@@ -20,6 +20,15 @@ import { Flow, FlowPanel, Generate, addMedia, addTemplate, basename } from '../S
 const MediaPanel = {
   oninit: () => Bin.fill(),
   onupdate: () => Bin.fill(),
+  // While this list shows, the bin under the timeline steps aside (Timeline.js).
+  oncreate: () => {
+    Bin.listed++
+    setTimeout(m.redraw)
+  },
+  onremove: () => {
+    Bin.listed--
+    setTimeout(m.redraw)
+  },
   view: () =>
     m('.stagepanel#panel-media', [
       m('h3', `Material${Library.items.length ? ` (${Library.items.length})` : ''}`),
@@ -86,9 +95,9 @@ const MediaPanel = {
       // not uploaded. They were reachable only by dragging from the bin,
       // which never worked -- the timeline refused drops from it, and the
       // drop handler threw on the template's shape when one was let through.
-      Bin.templates.length
+      Bin.offered().length
         ? [
-            m('h3', `Templates (${Bin.templates.length})`),
+            m('h3', `Templates (${Bin.offered().length})`),
             Flow.added && Flow.added.kind === 'template'
               ? m('p.stageconfirm#template-added', [
                   m('i.material-icons', 'check'),
@@ -97,7 +106,7 @@ const MediaPanel = {
               : null,
             m(
               'ul.medialist.templatelist',
-              Bin.templates.map(t =>
+              Bin.offered().map(t =>
                 m(
                   'li.mediaitem',
                   // Drawn like a media choice, but not one: `.mediachoice` is
@@ -114,7 +123,6 @@ const MediaPanel = {
                     [
                       m('i.material-icons', 'add'),
                       t.label || t.name,
-                      t.deprecated ? m('span.deprecated', 'deprecated') : null,
                     ]
                   )
                 )

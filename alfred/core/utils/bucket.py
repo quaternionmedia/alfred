@@ -11,8 +11,7 @@ from alfred.config import BUCKET_NAME, DEFAULT_CHUNK_SIZE
 from ..errors import Code, Refusal
 from .db import get_sync_db
 
-# Where v4 signed URLs point. Recognised in stored links, which held a signed
-# URL until references replaced them.
+# Where signed URLs point; old stored links are signed URLs.
 GCS_HOST = 'storage.googleapis.com'
 
 # The canonical answers, for comparing against. Raise `fresh(...)` copies of
@@ -62,12 +61,8 @@ def signed_url(blob_name, minutes=15, bucket=None):
 
 
 def object_reference(blob_name, bucket=None) -> str:
-    """A lasting name for an object: `gs://<bucket>/<object>`.
-
-    What a bucket delivery records, rather than a link: a signed URL expires
-    in minutes, so storing one stored a dead link. A reference is signed when
-    somebody asks for the link (see `parse_reference`).
-    """
+    """A lasting name for an object, `gs://<bucket>/<object>`: what a bucket
+    delivery records, and signs only when somebody asks for the link."""
     return f'gs://{bucket or BUCKET_NAME}/{blob_name}'
 
 
@@ -98,13 +93,8 @@ def generate_signed_url(renderId, minutes=15):
     the render use `signed_url` with its filename instead.
     """
     db = get_sync_db()
-    # `ObjectId(renderId)` raises bson's InvalidId on anything unparseable,
-    # and nothing caught it, so `GET /render/undefined` answered 500 -- a
-    # request the editor really does make, because its routes read a `project`
-    # query parameter that is not always present. bson's error is not a
-    # pydantic one, so the identifier handler in main.py does not see it;
-    # this route needs its own guard, answering the same 422 that the project
-    # routes now give for the same mistake.
+    # bson's InvalidId is no pydantic error, so main.py's handler misses it:
+    # the same 422 here (`/render/undefined` is a real request).
     if not ObjectId.is_valid(renderId):
         raise fresh(INVALID_ID)
     res = db.Render.find_one({'_id': ObjectId(renderId)})

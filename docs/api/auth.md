@@ -3,6 +3,18 @@ Authentication is performed with JWT token headers. All requests must provide a 
 
 See [examples/login](../examples/login.md)
 
+## Tokens
+
+A token from `POST /auth/jwt/login` works for an hour. `POST /auth/jwt/refresh`,
+with a token that still works, answers a fresh one; an expired token is refused
+like any other, so a client renews before expiry, as the editor does while it is
+in use. Each token carries `iat` beside `exp`, so a client can count its
+lifetime, `exp - iat`, down on its own clock, whatever the server's says.
+
+Tokens are signed with `ALFRED_SECRET_KEY`. Unset or empty, PyJWT signs
+nothing, and every login answers 500; see [the signing
+key](../configuration.md#the-signing-key).
+
 ## Password resets and address confirmation
 
 `POST /auth/forgot-password` and `POST /auth/request-verify-token` issue a
@@ -17,11 +29,13 @@ mails it to the account's address as a link into the app:
 Both pages work without a session; the login screen's **forgot password** asks
 for the first. Asking answers `202` whether or not the address has an account.
 
-Account mail needs the mail settings the invoice mail uses (`EMAIL_SERVER`,
-`EMAIL_PORT`, `EMAIL_USERNAME`, `EMAIL_PASSWORD`) and `ALFRED_PUBLIC_URL`, the
-address people reach the app at (`https://alfred.example.com`). The link is
-built on that setting, never on the request's Host header, which whoever asks
-for a reset controls. Without all of them, nothing is mailed:
+Account mail needs a mail server, `EMAIL_SERVER` and `EMAIL_USERNAME` (with
+`EMAIL_PORT` and `EMAIL_PASSWORD` where the server wants them, as for the rest
+of the server's mail), and `ALFRED_PUBLIC_URL`, the address people reach the
+app at (`https://alfred.example.com`). The link is built on that setting,
+never on the request's Host header, which whoever asks for a reset controls.
+Without `EMAIL_SERVER`, `EMAIL_USERNAME` and `ALFRED_PUBLIC_URL`, nothing is
+mailed:
 
 - in development, the api's log prints the token, which is how a development
   stack finishes a reset;

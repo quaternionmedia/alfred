@@ -9,6 +9,7 @@ import { Flow, StageRail } from '../Stages'
 import { DraftOffer } from '../Draft'
 import { Menu } from '../Menu'
 import { Footer } from '../Footer'
+import { NextStep } from '../NextStep'
 
 /**
  * Where the workspace starts: 1024 CSS pixels wide.
@@ -33,6 +34,7 @@ const WorkspacePage = {
   view: () => [
     m(Menu),
     m('.workbar', [m(StageRail), m(PanelsMenu)]),
+    m(NextStep),
     // An unsaved timeline kept from before a reload or a new login, offered
     // back above every panel, so it is seen whichever is in front.
     m(DraftOffer),
