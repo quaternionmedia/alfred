@@ -32,18 +32,18 @@ cd alfred
 ALFRED_DEV_SKIP_AUTH=1 ./al family up
 ```
 
-`./al family up` starts the family in one command: joe's API on port 8010,
+`./al family up` starts the family in one command: joe's API on port 1059,
 then alfred's dev stack (the site, the api, a render worker and the database)
 pointed at it. It says where each one is:
 
 ```text
 $ ALFRED_DEV_SKIP_AUTH=1 ./al family up
-joe: starting from /home/you/src/joe on 127.0.0.1:8010 (log: .family/logs/joe.log)
-alfred: ./al dev -d, audio engine http://host.docker.internal:8010
+joe: starting from /home/you/src/joe on 127.0.0.1:1059 (log: .family/logs/joe.log)
+alfred: ./al dev -d, audio engine http://host.docker.internal:1059
 …
-alfred  http://127.0.0.1:8000   (docs: ./al docs; smoke: ./al family smoke)
-joe     http://127.0.0.1:8010
-qmcp    QMCP_ALFRED_URL=http://127.0.0.1:8000 for its alfred tools
+alfred  http://127.0.0.1:1732   (docs: ./al docs; smoke: ./al family smoke)
+joe     http://127.0.0.1:1059
+qmcp    QMCP_ALFRED_URL=http://127.0.0.1:1732 for its alfred tools
 ```
 
 *What `./al family up` prints, the stack's own output abridged.*
@@ -53,7 +53,7 @@ request #35, until it merges; `./al family up` warns when the joe it finds has
 none. joe is found beside alfred's checkout, or wherever `ALFRED_FAMILY_JOE`
 names:
 `ALFRED_FAMILY_JOE=../joe.worktrees/media ./al family up`. A joe already
-answering on 8010 is used as it is. `ALFRED_DEV_SKIP_AUTH=1` skips the login
+answering on 1059 is used as it is. `ALFRED_DEV_SKIP_AUTH=1` skips the login
 and serves you as a development account, on this machine only ([Skipping login
 in development](dev-auth.md)); leave it off to register and log in instead.
 `./al family smoke` then checks every part of the path, and
@@ -65,7 +65,7 @@ in development](dev-auth.md)); leave it off to register and log in instead.
 
 *The editor as it opens, with nothing chosen yet.*
 
-Browse to <http://127.0.0.1:8000>. The editor is one page. The rail along its
+Browse to <http://127.0.0.1:1732>. The editor is one page. The rail along its
 top names the four stages a video goes through, Source, Edit, Render and
 Deliver. On a screen 1024 pixels wide or more every panel is open at once: the
 projects and the material on the left, the viewer over the timeline in the

@@ -367,17 +367,17 @@ it says so in `GET /health`'s `audio_engine.detail`, answers a transcription
 
 ### Pointing alfred at joe
 
-joe's own CLI binds 8000, which is alfred's port. In joe's checkout, run its
-API on another one:
+joe's own CLI binds 8000. alfred looks for joe on 1059, the twelfth root of
+two, joe's place in qm's port allocation; in joe's checkout, run its API there:
 
 ```sh
-uv run uvicorn api:app --port 8010
+uv run uvicorn api:app --port 1059
 ```
 
 and start alfred with the address its containers reach the host by:
 
 ```sh
-ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010 ./al dev
+ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:1059 ./al dev
 ```
 
 On a Linux host, joe has to listen on an address the containers can reach: see

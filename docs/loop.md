@@ -75,8 +75,8 @@ Environment set in the shell, `ALFRED_DEV_SKIP_AUTH=1` for one, reaches every st
 |---|---|---|
 | API suite | compose project `<checkout>-main-pytest` | `<checkout>-b-pytest` |
 | Browser suite | `<checkout>-main-e2e`, results under `website/.loop/main/` | `<checkout>-b-e2e`, `website/.loop/b/` |
-| Stack | `<checkout>`, the ordinary dev stack, on 8000, 8001 and 27017, with `./database` | `<checkout>-b`, on `--port` or the first free block of 8100, 8200 and so on, with its database under `.loop/b/` |
-| joe | the joe on `ALFRED_JOE_PORT` (8010), started by this run if none answers | the same joe, shared |
+| Stack | `<checkout>`, the ordinary dev stack, on 1732, 1733 and 27017, with `./database` | `<checkout>-b`, on `--port` or the first free block of 8100, 8200 and so on, with its database under `.loop/b/` |
+| joe | the joe on `ALFRED_JOE_PORT` (1059), started by this run if none answers | the same joe, shared |
 | Logs | `.loop/main/` | `.loop/b/` |
 
 `main`'s stack is the dev stack, so `./al stop` and `./al family down` work on it too, and a run replaces the stack that was up: it takes it down and brings it up again from the checkout as it is now. Every stack shares one joe. `--down` stops only the joe its own run started.
@@ -89,7 +89,7 @@ Images are named after the checkout (`ALFRED_IMAGES`, which `./al` sets): every 
 ALFRED_DEV_SKIP_AUTH=1 ./al loop --stack --keep --joe ../../joe.worktrees/tighten
 ```
 
-That runs every suite, and leaves joe and the dev stack up at <http://127.0.0.1:8000> to try by hand. `./al loop --down` takes them down. While it is up, a second run can test something else beside it, on its own ports:
+That runs every suite, and leaves joe and the dev stack up at <http://127.0.0.1:1732> to try by hand. `./al loop --down` takes them down. While it is up, a second run can test something else beside it, on its own ports:
 
 ```sh
 ./al loop slow --only e2e --grep @slow

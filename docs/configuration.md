@@ -14,7 +14,7 @@ Export it in the shell that starts the stack, or put it before the command:
 
 ```sh
 ALFRED_ALLOW_REGISTRATION=1 ./al prod
-ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010 ./al dev
+ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:1059 ./al dev
 ```
 
 A container reads its environment when it starts: stop the stack and start it
@@ -64,12 +64,12 @@ it.
 | `ALFRED_MEDIA_URL_TTL` | `900` | Seconds a signed media URL works. Every listing and status reissues the URL. | api | Both. |
 | `ALFRED_SMTP_TIMEOUT` | `20` | Seconds each step of sending mail may take: connecting, then each command and reply. It applies to all of alfred's mail: account mail from the api, and the issue reports and invoices the worker sends. The worker retries a failure that may pass five more times, over about a quarter of an hour. | api, renderer | Both. |
 | `ALFRED_BUCKET_NAME` | `tower-renders` | The Google Cloud Storage bucket the worker uploads each finished render to, and that bucket delivery and cloud links use. Needs a service account key: `./cred.json` for the worker, `./cred_api.json` for the api. Without one, the worker's upload fails and is logged, and the render stands. | api, renderer | Both. |
-| `ALFRED_AUDIO_ENGINE_URL` | unset: no engine | The audio engine's base address, for transcribing captions and analysing media. Unset, captions can still be typed and imported, and transcribing says why it cannot. See [Captions](captions.md). | api, renderer | Both. joe beside the stack: `http://host.docker.internal:8010`; see [Docker hosts and joe](#docker-hosts-and-joe). |
+| `ALFRED_AUDIO_ENGINE_URL` | unset: no engine | The audio engine's base address, for transcribing captions and analysing media. Unset, captions can still be typed and imported, and transcribing says why it cannot. See [Captions](captions.md). | api, renderer | Both. joe beside the stack: `http://host.docker.internal:1059`; see [Docker hosts and joe](#docker-hosts-and-joe). |
 | `ALFRED_AUDIO_ENGINE_TIMEOUT` | `1800` | Seconds one request to the engine may take. | api, renderer | Both. |
 | `ALFRED_AUDIO_ENGINE_CONTRACT_<FIELD>` | vox's | One field of vox's `EngineContract`, for an engine that spells its API differently from joe: `ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_UPLOAD=/v2/upload`. `none` says the engine does not offer it. `GET /health` reports a name that is not a field. | api, renderer | Both. The stacks pass one variable per field, listed in each file. |
 | `OTTO_DOWNLOAD_DIR` | from `ALFRED_REMOTE_CACHE_DIR` | otto's name for the remote media cache. The stacks set it from `ALFRED_REMOTE_CACHE_DIR`, and so does alfred, in every process. | api, renderer | Set `ALFRED_REMOTE_CACHE_DIR` instead; exporting this does nothing in the stacks. |
-| `ALFRED_PORT` | `8000` | The host port the dev stack's api is published on. | `dev.yml`, `./al` | `./al dev` and `./al thin` refuse to start when it is taken, and name what holds it. |
-| `ALFRED_HMR_PORT` | `8001` | The host port of the site's live-reload server. | `dev.yml`, `./al` | Checked the same way. |
+| `ALFRED_PORT` | `1732` | The host port the dev stack's api is published on: root three, alfred's place in qm's port allocation. | `dev.yml`, `./al` | `./al dev` and `./al thin` refuse to start when it is taken, and name what holds it. |
+| `ALFRED_HMR_PORT` | `1733` | The host port of the site's live-reload server, and its port inside the container too: parcel's client dials it ([The site's watcher](build.md#the-sites-watcher)). | `dev.yml`, `./al` | Checked the same way. |
 | `ALFRED_DB_PORT` | `27017` | The host port the dev database is published on, for attaching a GUI. | `dev.yml`, `./al` | Checked the same way. |
 | `ALFRED_BIND` | `127.0.0.1` | The address the dev stack's api and site, `./al flower` and `./al docs` listen on. `0.0.0.0` opens them to the network, to try the app from a phone. | `dev.yml`, `flower.yml`, `./al` | Development. Production publishes nothing; traefik serves it. |
 | `ALFRED_DB_BIND` | `127.0.0.1` | The address the dev database listens on. `ALFRED_BIND` does not move it. | `dev.yml` | Development. |
@@ -119,19 +119,19 @@ refuse to start instead is an open decision.
 Docker Desktop provides it. A Linux host does not, so the api and the renderer
 in `dev.yml` and `production.yml` map it with
 `extra_hosts: host.docker.internal:host-gateway`, and
-`ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010` resolves on both.
+`ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:1059` resolves on both.
 On Linux, `host-gateway` is the address of Docker's default bridge, `docker0`,
 usually `172.17.0.1`.
 
 joe must also listen where a container can reach it.
-`uv run uvicorn api:app --port 8010` listens on loopback, which Docker Desktop
+`uv run uvicorn api:app --port 1059` listens on loopback, which Docker Desktop
 forwards to and a Linux bridge cannot reach. On Linux, either
 
 - listen on the bridge's address, which this machine's containers reach and
   other machines do not:
 
   ```sh
-  uv run uvicorn api:app --host 172.17.0.1 --port 8010
+  uv run uvicorn api:app --host 172.17.0.1 --port 1059
   ```
 
   (`ip -4 addr show docker0` gives the address, if it is not that one); or
