@@ -59,11 +59,17 @@ Narrower, as on a phone, the editor shows one stage's panels at a time above
 the viewer and the timeline. At Edit that is Captions, or the Transcript once
 the switch at the top of the stage chooses it.
 
+Under the rail, one line says what to do next, with a button to the next
+stage and a **How?** link to the [user journey](journeys.md) that step belongs
+to. With no project open, **Source** is outlined: start there.
+
 ## Make a first video
 
-Four stages, from a project to a file. [Make a video with alfred and the QM
-family](guide.md) goes on from here: a title, the sound transcribed by joe, a
-cut made by deleting words, and styled captions drawn into the render.
+Four stages, from a project to a file. [User journeys](journeys.md) has this
+walk and the others, from your own footage to an account. [Make a video with
+alfred and the QM family](guide.md) goes on from here: a title, the sound
+transcribed by joe, a cut made by deleting words, and styled captions drawn
+into the render.
 
 ### 1. Source
 
@@ -72,6 +78,7 @@ server seeds into an empty database; choose **Timeline demo**, three template
 clips that need no media: a title, a text box and a colour field. If the list
 is empty, as it is for a newly registered account, press **Generate a demo
 project**, which makes the same three clips as a project called **Demo**.
+**New project** starts an empty one of your own, by name.
 
 The **Media & templates** panel lists the files in the server's library. On a
 fresh install it has none, and **Generate demo media** makes three short clips
@@ -96,8 +103,9 @@ when the editor opens, moves the playhead; **Trim** drags a clip's end,
 **Move** its place, and **Cut** splits it in two; **Slip**, **Slide** and
 **Dual roller** shift what a clip plays, where it sits and where a cut falls;
 and the magnifiers below them zoom the timeline. [Editing tools](tools.md)
-shows each one. The disk icon beside the timeline saves the timeline to the
-project; a render takes the timeline as it stands, saved or not.
+shows each one. The timeline saves itself a second after each change: the
+indicator beside it says **Saving…**, then **Saved** ([Saving](journeys.md#saving)).
+A render takes the timeline as it is on the screen.
 
 The **Transcript** and **Captions** tabs work on what is said. Once an audio
 engine has transcribed the saved timeline, deleting words from the transcript
@@ -131,6 +139,8 @@ render stays queued until a worker starts; `./al dev` starts one with the stack.
 
 ## Where next
 
+- [User journeys](journeys.md): what you came to do, each walked through the
+  editor, and what to do when something goes wrong.
 - [Make a video with alfred and the QM family](guide.md): one video from
   nothing to a delivered file, with joe transcribing it, and what each member
   of the family does for you.

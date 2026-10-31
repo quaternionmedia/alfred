@@ -71,7 +71,8 @@ Deliver. On a screen 1024 pixels wide or more every panel is open at once: the
 projects and the material on the left, the viewer over the timeline in the
 middle, and on the right the selected clip's settings and the Transcript above
 the Render, Deliver and Captions tabs. On a phone the editor shows one stage at
-a time above the viewer and the timeline.
+a time above the viewer and the timeline. Under the rail, one line says what
+to do next, and its **How?** opens the step in the [user journeys](journeys.md).
 
 ## 3. Bring your media
 
@@ -80,9 +81,11 @@ a time above the viewer and the timeline.
 *Material chosen in the order it should play: colour bars, a test card and a sound.*
 
 Choose **Source** on the rail. Under **Projects**, choose the project to make
-the video in. An account with none is offered **Generate a demo project**,
-which makes one called Demo with a title, a text box and a colour field on its
-timeline. The pictures here start from a project with nothing on it yet.
+the video in, or press **New project**, type a name and press **Create** to
+start an empty one. An account with none is also offered **Generate a demo
+project**, which makes one called Demo with a title, a text box and a colour
+field on its timeline. The pictures here start from a project with nothing on
+it yet.
 
 **Material** lists the server's media library, each file with how long it
 runs where the server can tell. On an empty library, **Generate demo media**
@@ -111,8 +114,8 @@ what a clip plays, where it sits and where a cut falls; [Editing
 tools](tools.md) shows each one.
 Choose **Time** again, and a press on a clip puts the playhead there.
 
-Then press the disk icon beside the timeline. It saves the timeline to the
-project, and the next step hears the saved timeline.
+There is no Save to press: the timeline saves itself a second after each
+change, and the indicator beside it says **Saved**.
 
 ## 5. Transcribe the sound with joe
 
@@ -121,8 +124,8 @@ project, and the next step hears the saved timeline.
 *The Transcript once the sound is heard: a paragraph to each stretch of speech.*
 
 Open the **Transcript** tab, beside Template settings, and press **Transcribe
-timeline**. alfred has otto mix the saved timeline's sound, sends it through
-vox to joe, and joe says what is said in it and when. The words come back as
+timeline**. It saves the timeline, then alfred has otto mix its sound, sends
+it through vox to joe, and joe says what is said in it and when. The words come back as
 the transcript, and as captions timed to them. The panel says when it is done
 and how many stretches of speech were heard.
 
@@ -143,8 +146,8 @@ double-click one, or click one and shift-click another. The words a cut would
 take are struck through, and **Cut** says how many and how long they last.
 Press **Delete**, **Backspace** or **Cut**: the stretch they were said in is
 cut from the timeline, picture and sound alike, everything after it moves up,
-and the captions move with it. **Save** keeps the cut. Click a word to put the
-playhead where it starts.
+and the captions move with it. The cut saves itself, with the captions and
+the words it moved. Click a word to put the playhead where it starts.
 
 On a phone the Edit stage shows Captions, and a switch at its top chooses
 **Transcript** instead. [Editing by text](captions.md#editing-by-text) has the
@@ -156,11 +159,11 @@ rules of a cut.
 
 *The captions styled and saved; the caption under the playhead is drawn as a render will draw it.*
 
-Open the **Captions** tab, beside Render and Deliver. A cut does not rewrite a
-caption's text, so a caption that said a cut word still says it: correct it in
-its row. Tick **Draw into renders**, which is off until you do, and choose the
+Open the **Captions** tab, beside Render and Deliver. A caption that lost
+words to a cut says the words it has left; correct any caption in its row. Tick **Draw into renders**, which is off until you do, and choose the
 size, the position, how lines align, the text colour, a box behind the text
-and its colour, and the font. **Save** keeps the captions and their style.
+and its colour, and the font. **Save** keeps the captions and their style:
+captions typed by hand are saved by their own Save.
 
 The caption under the playhead shows over the viewer in its style, faint while
 it is not drawn into renders. Captions can also be typed (**Add at playhead**)

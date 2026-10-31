@@ -31,14 +31,17 @@ switch chooses Captions or the Transcript.
 
 1. [Get started](start.md): run Alfred on your own machine and make a first
    video, from Source to Deliver.
-2. [Make a video with alfred and the QM family](guide.md): one video from
+2. [User journeys](journeys.md): what you came to do, from a first video to
+   captions, a phone and an account, each walked through the editor. The
+   editor's own **How?** links open them.
+3. [Make a video with alfred and the QM family](guide.md): one video from
    nothing to a delivered file, transcribed by joe and cut by its words, with
    what each member of the family does for you.
-3. [Cookbook](cookbook.md): the journeys through the editor, step by step,
+4. [Cookbook](cookbook.md): every behaviour of the editor, step by step,
    generated from the browser tests that check them.
-4. [Captions](captions.md) and [Configuration](configuration.md): captions in
+5. [Captions](captions.md) and [Configuration](configuration.md): captions in
    the editor and through the API, and every setting the server reads.
-5. [Concepts](about/index.md): clips, templates, timelines, projects and
+6. [Concepts](about/index.md): clips, templates, timelines, projects and
    renders. [Examples](examples/index.md) and the [API](api/index.md) make
    videos without the editor, with `curl`.
 

@@ -183,12 +183,6 @@ The workspace brings a stage's panel forward instead
 
 - **clicking each stage shows its panel, and only its panel**
 - **the stages are reachable by keyboard**
-
-  The point of stages-of-one-view. Whichever stage is open, the timeline
-  stays on screen and keeps its clips -- if opening the render settings
-  scrolled the work out of view, these would be four routes wearing a
-  shared header.
-
 - **the rail is announced as a tablist**
 
   The point of stages-of-one-view. Whichever stage is open, the timeline
@@ -268,6 +262,30 @@ so the answer does not confirm the id is real.
 
 - **a project you create is yours**
 - **another account can neither list nor open it**
+
+## autosave
+
+The timeline saves itself.
+
+# Recipe: saving
+
+The timeline has no Save button. A moment after it stops changing (a clip
+added, moved, trimmed or cut, a title retyped, words cut from the
+transcript) it is saved to the project, with the captions and words a cut
+moved. The indicator beside the timeline says **Saving…**, then **Saved**.
+When a save fails it says **Not saved**, with the reason on hover and a
+**Retry**; the edits are kept in the tab meanwhile, and it tries again by
+itself. Opening another project saves the one being left, and transcribing
+saves first, so the audio engine hears what is on screen. Captions typed or
+styled by hand keep their own Save.
+
+### the timeline saves itself
+
+- **an edit is saved a moment later**
+- **opening another project saves the one being left**
+### a save that fails
+
+- **says so, keeps the edit, and saves once it can**
 
 ## captions
 
@@ -657,18 +675,20 @@ An unsaved timeline outlives the page that made it.
 
 # Recipe: getting unsaved edits back
 
-Edits to a project's timeline are kept in the tab until they are saved. If
-the page is reloaded, or the session runs out and you log in again, opening
-the project offers them back: **Restore them** puts the unsaved timeline on
-screen, **Discard** keeps the saved one. Saving clears what was kept. It is
-the tab's own, and goes when the tab does.
+The timeline saves itself a moment after each change. When a save cannot
+reach the server, the indicator beside the timeline says **Not saved**, and
+the edits are kept in the tab. If the page is reloaded, or the session runs
+out and you log in again, opening the project offers them back: **Restore
+them** puts the unsaved timeline on screen, and it saves itself again;
+**Discard** keeps the saved one. A save clears what was kept. It is the
+tab's own, and goes when the tab does.
 
 Every edit since the last save used to be lost, with no warning, whenever
 the page went away.
 
-These open the shared media project and never save it: what a test keeps
-stays in its own browser, and the one test that saves brings its own
-project.
+These open the shared media project with its saves refused, so nothing
+reaches it: what a test keeps stays in its own browser, and the one test
+that saves brings its own project.
 
 ### an unsaved timeline outlives a reload
 
@@ -684,6 +704,8 @@ project.
   Opening a project, selecting clips and playing them changes nothing,
   so nothing is kept -- and a stored `start` or fade, which the editor
   would send differently, is not counted as a change.
+
+### a save
 
 - **saving clears what was kept**
 ### an unsaved timeline outlives the session
@@ -833,10 +855,11 @@ at second 0, and the view's own bookkeeping went along with them.
 
 Served here with stale starts, the one-second fades the old routes
 wrote onto every clip, a chosen fade, and an out-point that disagrees
-with the clip's length. The save is answered here too: the shared
-fixture is not written.
+with the clip's length. A title added after them makes the timeline
+save itself; the save is answered here too, so the shared fixture is
+not written.
 
-- **Save sends exactly what Render sends: placed, with explicit fades**
+- **a save sends exactly what Render sends: placed, with explicit fades**
 ### the toolbar Render button
 
 It sent `?project=&width=&height=` and a body of bare clips. The route
@@ -893,7 +916,8 @@ so it survives a reseed.
 - **the media bin lists the templates the API offers**
 
   The bin was permanently empty: it asked for /otto/templates, which has
-  never existed, and the rejection was unhandled so nothing showed.
+  never existed, and the rejection was unhandled so nothing showed. It
+  shows where Media & templates does not, and offers no deprecated one.
 
 - **the old editor URL lands on the project stage**
 
@@ -1082,6 +1106,39 @@ also the case where a worker used to be deaf to pings until it restarted.
 - **GET /health needs a session**
 - **GET /health has the contract fields**
 - **the running worker answers, so the renderer is ok**
+
+## journeys
+
+The editor says what to do next.
+
+# Recipe: finding the way through
+
+A line under the stage rail says where you are and what comes next, with a
+button to that stage and a **How?** link to the journey it belongs to
+(docs/journeys.md). With no project open, Source is marked as the place to
+start, and **New project** there starts an empty one. The viewer's frame
+menus are named for what they set, and the Render stage says where the size
+it offers came from.
+
+### the line under the rail
+
+Edit with clips on the timeline points on to Render; Render says what
+to press. Once a project is open, Source is no longer marked.
+
+- **a first visit is told where to start**
+- **each stage says what comes next, and goes there**
+- **How? opens the journey for the step**
+### a project of your own
+
+- **New project starts an empty one and opens it on Source**
+### settings that say what they set
+
+16:9 and 1080p beside the viewer set the frame's shape and size: the
+picture's, and the size a project's first render starts at. After a
+render, Render offers the size the project last rendered at.
+
+- **the frame menus are named, and Render says where its size came from**
+- **the footer links read on the dark bar**
 
 ## login
 
@@ -1728,6 +1785,11 @@ Below 1024 pixels there is no dock and no Panels menu: the rail, and the
 regions under it.
 
 - **is a stack, not a dock**
+- **the footer's links are in the header, and the timeline keeps the room**
+
+  A footer under the timeline took two lines of a phone's height from it.
+  Help (the user journeys) and the session link sit beside the logo instead.
+
 - **a notice lets a tap through to what is under it**
 
   Choosing Source puts the project list and the library under the rail,
@@ -1829,8 +1891,8 @@ the window, from anywhere that does not scroll itself.
 ### held sideways
 
 The frame's room is two-fifths of the screen held sideways, and the
-header, the rail, the room, the transport and the footer are taller
-than the screen on their own, so this page has to scroll. The column
+header, the rail and the line under it, the room and the transport
+are taller than the screen on their own, so this page has to scroll. The column
 used to run on past the window's edge instead, out of reach.
 
 - **every stage shows the whole picture, and the page scrolls to the rest**
@@ -1856,11 +1918,11 @@ clips only reached a timeline through demo and seed projects.
 
 ### adding a template
 
-Press + on a template in the bin. It lands on the end of the timeline
+Press + on a template in Media & templates. It lands on the end of the timeline
 as five seconds of "Your text here", its settings open beside the
 viewer, and that is exactly what a render receives.
 
-- **the bin adds a template as a clip with text and five seconds**
+- **a template is added as a clip with text and five seconds**
 - **a template that takes no text is not given any**
 
   makeColor's parameters are a colour and a position. Offering it a
@@ -1869,7 +1931,9 @@ viewer, and that is exactly what a render receives.
 - **the Source stage lists every template, and adds one**
 
   Templates are material too, so the Source stage lists them beside the
-  media, and says where an added one landed.
+  media, and says where an added one landed. One the server marks
+  deprecated is not offered for a new clip; a project that has one still
+  draws it.
 
 - **every template is offered by the server's label, not otto's name**
 
@@ -1885,7 +1949,8 @@ viewer, and that is exactly what a render receives.
   The bin and the timeline are two Sortable lists, and the timeline's
   group accepted only itself -- so a drag from the bin was refused before
   the drop handler ever ran. And the handler, had it run, read fields
-  from the dragged element that template entries do not have.
+  from the dragged element that template entries do not have. The bin
+  shows where the Media & templates panel does not, so it is closed here.
 
 ### changing a template clip's settings
 
@@ -2178,7 +2243,7 @@ the file fetched with the token.
 
 # Recipe: saving a timeline
 
-The save button posted to `/edl`, which is not a route on this server
+The timeline saves itself. The save posted to `/edl`, which is not a route on this server
 and never has been, with a bare `m.request` that would not have carried
 a token if it were. The rejection was handled nowhere, so the button
 reported nothing. Timelines could not be saved at all.
@@ -2223,8 +2288,9 @@ Editing by text: words deleted from the Transcript panel cut the timeline.
 
 # Recipe: cut the video by deleting words
 
-Select words, press Delete, Save. Ctrl+Z, or Undo, takes a cut back. A trim
-moves the words with the picture, and a draft keeps them with its timeline.
+Select words and press Delete; the cut saves itself. Ctrl+Z, or Undo, takes
+a cut back. A trim moves the words with the picture, and a draft keeps them
+with its timeline.
 Desktop and phone; the @slow test transcribes via the stub engine.
 
 ### @slow from the transcription to the cut
@@ -2258,13 +2324,13 @@ Ctrl+Z at a desk; the Undo button on a phone, which has no keys.
 
   Two cuts are undone one at a time, last first. The words come back
   selected, so Delete would cut them again; the second undo is the
-  project as saved, with nothing to save.
+  project as it was, and the server comes back to it.
 
-- **a saved cut can be undone, and saved again; another edit after a cut keeps it**
+- **a saved cut can be undone, and that saves too; another edit after a cut keeps it**
 
-  Undo after Save puts the project back as it was, unsaved, and Save
-  writes it. A cut followed by a split at the playhead (S) stays: Undo
-  takes back a cut only while nothing else has changed since.
+  Undo after a cut has saved puts the project back as it was, and that
+  saves too. A cut followed by a trim stays: Undo takes back a cut only
+  while nothing else has changed since.
 
 ### words follow the picture
 
@@ -2276,9 +2342,10 @@ the timeline, the captions and the words in one request.
 - **a trim moves the words and the captions with it, and the toolbar saves all three**
 ### a draft
 
-Cut "five" and leave the page unsaved. Opened again, the project shows
-as saved, words and all, and offers the cut back; Restore brings the
-timeline, the captions and the words together, and Save writes them.
+Cut "five" while saves fail, and leave the page. Opened again, the
+project shows as saved, words and all, and offers the cut back; Restore
+brings the timeline, the captions and the words together, and once the
+server answers they save together.
 
 - **a cut kept as a draft comes back with the captions and the words it moved**
 

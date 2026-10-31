@@ -31,8 +31,8 @@ timeline by what is said in it: [Editing by text](#editing-by-text).
   file, and shows what it found: how many captions, how many cues were left out
   for having no text or no length, and the first few. Use them, add them to the
   captions there, or cancel. Accepting saves.
-- **Transcribe timeline** has the server's audio engine hear the project's
-  *saved* timeline, and replaces the captions with what it heard, asking first
+- **Transcribe timeline** saves the timeline, has the server's audio engine
+  hear it, and replaces the captions with what it heard, asking first
   if there are captions to replace. It is unavailable, and says why, when the
   server has no audio engine, the engine is not answering, or no renderer is
   running to mix the sound; until the server says which, it shows "Checking the
@@ -215,9 +215,8 @@ too little of a phone's height to use.
 - **Click** a word to put the playhead where it starts. The word under the
   playhead is underlined as the timeline plays. **Escape** lets go of a
   selection.
-- **Save** keeps the timeline, the captions and the words, in one request
-  ([Saving](#saving)); until then, the cut is the page's, as any edit of the
-  timeline is.
+- The cut saves itself a moment later: the timeline, the captions and the
+  words, in one request ([Saving](#saving)).
 
 ![The same transcript after the cut: the words are gone and the timeline is a second shorter](assets/screens/transcript-cut.png)
 
@@ -258,9 +257,9 @@ takes one back only while nothing else has changed the timeline, the
 captions or the words since: an edit with the timeline tools, a caption
 typed, imported or transcribed, a restored draft, or opening another
 project keeps the cuts made before it, and Undo says so. Saving is not such a
-change. A saved cut can still be undone, which leaves the project as it was
-before the cut, unsaved, for **Save** to write as it wrote the cut. A reload
-forgets what could be undone, and the editor has no other undo.
+change: a cut that has saved itself can still be undone, and the undo saves
+as the cut did. A reload forgets what could be undone, and the editor has no
+other undo.
 
 ### Words follow the picture
 
@@ -304,30 +303,40 @@ loading is followed once they arrive. The editor loads both whenever it opens
 a project, whether or not their panels are showing.
 
 The words are those of the saved timeline as it was transcribed, followed
-through every edit since. A transcription hears the *saved* timeline, so
-transcribe after saving. The editor lays its clips end to end, so the words
+through every edit since. A transcription hears the *saved* timeline, and
+**Transcribe timeline** saves it first. The editor lays its clips end to end, so the words
 of a timeline saved from elsewhere with overlapping clips line up only once
 the editor has saved it.
 
 ### Saving
 
-An edit that moves the captions and the words leaves all three unsaved, and
-all three are saved together. The toolbar's save, the Transcript panel's
-**Save** and the Captions panel's **Save** each write the timeline, the
-captions and the words in one request, `PUT /project/{id}/captions` with
-`timeline` ([Through the API](#through-the-api)), so the project never holds
-a timeline and words from different edits. Until an edit has moved them, the
-toolbar's save writes the timeline alone, and the Captions panel's the
-captions and their style. A caption still marked in the Captions panel holds
-such a save back, and the save says so: the captions cannot be written as
-they are, and the timeline is not written without them.
+The timeline saves itself a second after it stops changing
+(`website/src/Autosave.js`); the indicator beside the timeline, and in the
+Transcript panel, says **Saving…**, then **Saved**. An edit that moves the
+captions and the words saves all three together, in one request, `PUT
+/project/{id}/captions` with `timeline` ([Through the API](#through-the-api)),
+so the project never holds a timeline and words from different edits. The
+Captions panel's **Save** writes them the same way once an edit has moved
+them. Until then, a save writes the timeline alone, `PUT
+/project/{id}/timeline`, and the Captions panel's **Save** the captions and
+their style.
+
+A caption still marked in the Captions panel holds the timeline's save back,
+and the indicator says **Not saved**, with why: the captions cannot be
+written as they are, and the timeline is not written without them. A save
+that fails says so once, then tries again after 5, 15 and 30 seconds and on
+the next change; **Retry** tries at once. Meanwhile the edit is kept in the
+tab ([Drafts](#drafts)). Opening another project saves the one being left
+first, and **Transcribe timeline** saves before it asks for anything.
 
 ### Drafts
 
-An unsaved timeline is kept in the tab and offered back when the project is
+A timeline not yet saved, after a save that failed or a page left in the
+second before one, is kept in the tab and offered back when the project is
 opened again (`website/src/Draft.js`). The captions and the words an edit
 moved are kept in the same entry, and **Restore them** brings the three back
-together, unsaved, for **Save** to write. It waits until the project's saved
+together, and they save themselves. Until the offer is answered, the
+indicator says **Not saved**, and nothing is saved over it. It waits until the project's saved
 captions and words have loaded, so they cannot arrive after it and replace
 what it restored. **Discard** keeps what is saved, all three. A draft kept
 before this release holds the timeline alone and restores as it did.
