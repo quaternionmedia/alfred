@@ -124,7 +124,7 @@ arguments prints the full command list.
 
 | Command | What it does |
 |---|---|
-| `./al dev` | Run the dev stack; app on http://127.0.0.1:8000 (`ALFRED_PORT` to move it) |
+| `./al dev` | Run the dev stack; app on http://127.0.0.1:1732 (`ALFRED_PORT` to move it) |
 | `./al dev --build` | Rebuild images first |
 | `./al stop` | Stop the dev stack |
 | `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
@@ -146,22 +146,25 @@ shows this list as its dev-server page (`docs/dev-server.md` includes it
 between the markers), so it is kept here only.
 
 <!-- --8<-- [start:dev-server-notes] -->
-- **Port 8000 fails silently.** If something else already holds 8000, Docker
-  still starts the stack and reports it healthy, but every request from your
-  machine reaches the other application: the host port belongs to whoever
-  bound it first. Nothing errors; 27017 below is the loud version of the same
-  problem. `./al dev` and `./al thin` refuse to start when anything else
-  holds 8000, 8001 or 27017, name what holds each (its OpenAPI title, or its
-  container), and give one command that starts clear of them all. Override
-  rather than kill whatever has it: `ALFRED_PORT=8100 ./al dev`.
+- **Port 1732 fails silently.** The api is on 1732 and the site's live
+  reload on 1733 because qm's port allocation, in its dashboard
+  (`ci/dashboard.py`), gives alfred root three, as it gives each QM surface
+  the first four digits of a constant. If something else already holds 1732,
+  Docker still starts the stack and reports it healthy, but every request
+  from your machine reaches the other application: the host port belongs to
+  whoever bound it first. Nothing errors; 27017 below is the loud version of
+  the same problem. `./al dev` and `./al thin` refuse to start when anything
+  else holds 1732, 1733 or 27017, name what holds each (its OpenAPI title, or
+  its container), and give one command that starts clear of them all.
+  Override rather than kill whatever has it: `ALFRED_PORT=1832 ./al dev`.
   `ALFRED_HMR_PORT` and `ALFRED_DB_PORT` do the same for the other two.
 
   The general rule, worth more than the fix: **a test result is only as good
   as your knowledge of what served it.** Before trusting a number, confirm the
   server's identity; `curl 127.0.0.1:$PORT/openapi.json` names it. During
-  0.3.0 it answered `Apothecary API`, another QM service on 8000, for a whole
-  session while Alfred served correctly on its own network; see [the
-  verification retrospective](https://github.com/quaternionmedia/alfred/blob/main/docs/retrospective-verification-discipline.md).
+  0.3.0, when alfred's port was 8000, it answered `Apothecary API`, another
+  QM service on 8000, for a whole session while Alfred served correctly on its
+  own network; see [the verification retrospective](https://github.com/quaternionmedia/alfred/blob/main/docs/retrospective-verification-discipline.md).
 - **Port 27017.** `dev.yml` publishes MongoDB on the host's loopback, for
   attaching a GUI; nothing in the app needs it there. It is the most contended
   port: a standalone `mongod` or another project's database takes it. `./al
