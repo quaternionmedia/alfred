@@ -186,6 +186,7 @@ async function showTheBin(page) {
 module.exports = {
   test,
   expect,
+  routeSaves,
   expectSaved,
   savesSoFar,
   letSavesThrough,

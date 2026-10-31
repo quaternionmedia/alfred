@@ -6,7 +6,7 @@
 
 const fs = require('fs')
 const path = require('path')
-const { expect, login } = require('./fixtures')
+const { expect, login, routeSaves } = require('./fixtures')
 
 const SCREENS = path.join(__dirname, '..', '..', 'docs', 'assets', 'screens')
 
@@ -71,9 +71,10 @@ async function narrow(page, projects, files = DEMO_MEDIA) {
   )
 }
 
-/** `project` on the Edit stage, its timeline drawn. */
+/** `project` on the Edit stage, its timeline drawn. Its edits are not saved: the screens share it. */
 async function openProject(page, project) {
   await narrow(page, [project])
+  await routeSaves(page, 'answered')
   await login(page)
   await page.goto(`/#!/?project=${project._id}&stage=edit`)
   await expect(page.locator('#timeline .clip')).toHaveCount(project.edl.clips.length)

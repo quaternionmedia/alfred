@@ -8,7 +8,8 @@ import { AsyncButton, Empty, Flow, FlowPanel } from '../Stages'
 import { state } from '../Globals'
 
 /** Where the size on offer came from. */
-const sizeFrom = project => {
+const sizeFrom = (project, typed) => {
+  if (Object.keys(typed).length) return 'As typed. A render keeps it for this project.'
   const saved = (project && project.render_settings) || {}
   if (Number(saved.width) && Number(saved.height)) return 'The size this project last rendered at.'
   return `The viewer's frame: ${state.aspectWidth()}:${state.aspectHeight()} at ${state.resolution()}p.`
@@ -80,7 +81,7 @@ const RenderPanel = {
         m('label', ['Width', m('input#render-width', sizeInput('width'))]),
         m('label', ['Height', m('input#render-height', sizeInput('height'))]),
       ]),
-      m('p.stagehint#render-size-from', sizeFrom(project)),
+      m('p.stagehint#render-size-from', sizeFrom(project, Flow.draft.size)),
       m(AsyncButton, {
         id: 'queue-render',
         class: 'primary',
