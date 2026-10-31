@@ -9,7 +9,7 @@
  * recipe starts at: the recording opens on the login in front of it, which
  * the recipe notes (recipes.spec.js). `scripts/recipe_gifs.py` then turns
  * each into `docs/recipes/<recipe>.gif`. git ignores both: the docs served
- * locally play each recording in the cookbook, from its recipe's start
+ * locally play each recording on the page it walks, from its recipe's start
  * (scripts/docs_recordings.py), and nothing is committed.
  *
  * Only recipes that passed are listed, and every GIF and recording is cleared
@@ -30,7 +30,7 @@ const MANIFEST = path.join(WEBSITE, 'recipe-videos.json')
  * names, which are hashed and truncated -- "choose a project and edit its
  * timeline" arrives on disk as `oject-and-edit-its-timeline`. The report
  * carries the real title and the real attachment path, so the file name can
- * match the recipe the cookbook names.
+ * match the recipe the pages name.
  */
 function slugFor(title) {
   return title
@@ -117,7 +117,7 @@ function main() {
   fs.mkdirSync(OUT, { recursive: true })
 
   // Clear stale GIFs and recordings first, so a removed or newly failing
-  // recipe leaves nothing behind for the cookbook to keep linking to.
+  // recipe leaves nothing behind for a page to keep playing.
   for (const existing of fs.readdirSync(OUT)) {
     if (/\.(gif|webm|svg)$/.test(existing)) {
       fs.unlinkSync(path.join(OUT, existing))

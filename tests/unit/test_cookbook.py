@@ -1,9 +1,9 @@
 """The cookbook is generated, so it cannot disagree with the suite.
 
-The docs, tests and recipes are meant to be one object rather than three that
-drift. `website/e2e/cookbook.js` renders `docs/cookbook.md` from the end-to-end
-specs, which makes the tests the source and the prose a build artefact -- prose
-describing behaviour goes stale silently, a test describing behaviour goes red.
+`website/e2e/cookbook.js` renders `docs/cookbook.md` from the end-to-end specs:
+one line per spec, from its opening comment, and each walkthrough with the page
+that plays it. The specs are the source and the page a build artefact, so it
+cannot claim what the suite does not check.
 
 That only holds if the committed artefact matches its source, which is what
 these check. Without them the file is a snapshot of whatever the last person
@@ -21,7 +21,6 @@ REPO = Path(__file__).resolve().parents[2]
 E2E = REPO / 'website' / 'e2e'
 COOKBOOK = REPO / 'docs' / 'cookbook.md'
 GENERATOR = E2E / 'cookbook.js'
-RECIPES = REPO / 'docs' / 'recipes'
 
 
 def spec_files():
@@ -36,12 +35,6 @@ def titles_in(path):
         r"""\(\s*(['"`])((?:\\.|(?!\1)[^\\])*?)\1"""
     )
     return [m.group(2) for m in re.finditer(pattern, source)]
-
-
-def recipe_slug(title):
-    """A recipe's file name, as the collector and the generator make it."""
-    name = re.sub(r'^recipe:\s*', '', title, flags=re.I)
-    return re.sub(r'[^a-z0-9]+', '-', name, flags=re.I).strip('-').lower()
 
 
 def tracked_recipe_files():
@@ -90,36 +83,36 @@ class TestTheCookbookExists:
 class TestTheCookbookMatchesTheSuite:
     def test_every_spec_appears(self):
         text = COOKBOOK.read_text(encoding='utf-8')
-        missing = []
-        for spec in spec_files():
-            heading = spec.name.replace('.spec.js', '').replace('-', ' ')
-            if heading not in text:
-                missing.append(spec.name)
+        missing = [spec.name for spec in spec_files() if f'`{spec.name}`' not in text]
         assert not missing, f'specs absent from the cookbook: {missing}. Regenerate it.'
 
-    def test_every_test_title_appears(self):
-        """The recipes are the tests, so all of them have to be there.
-
-        Parameterised titles carry a `${...}` expression that the generator
-        renders as a placeholder, so those are compared on their literal
-        prefix rather than in full.
-        """
+    def test_every_spec_says_what_it_holds(self):
+        """A spec's line is its opening comment's first sentence."""
         text = COOKBOOK.read_text(encoding='utf-8')
-        missing = []
-        for spec in spec_files():
-            for title in titles_in(spec):
-                literal = title.split('${')[0].strip()
-                if len(literal) < 8:
-                    # Too short to identify; the placeholder cases are covered
-                    # by the spec-level check above.
-                    continue
-                if literal not in text:
-                    missing.append(f'{spec.name}: {title}')
-        assert not missing, (
-            'recipes missing from the cookbook, so it is out of date:\n'
-            + '\n'.join(missing[:10])
-            + '\nRegenerate with `node website/e2e/cookbook.js`.'
+        bare = [
+            spec.name
+            for spec in spec_files()
+            if re.search(rf'^\| `{re.escape(spec.name)}` \|\s*\|', text, re.M)
+        ]
+        assert not bare, (
+            f'{bare} open with no comment saying what they hold: give each a '
+            '/** ... */ above its first test, and regenerate'
         )
+
+    def test_every_walkthrough_says_where_it_plays(self):
+        text = COOKBOOK.read_text(encoding='utf-8')
+        walkthroughs = [
+            title
+            for spec in spec_files()
+            for title in titles_in(spec)
+            if title.startswith('recipe: ')
+        ]
+        assert walkthroughs, 'the suite has no walkthrough'
+        for title in walkthroughs:
+            assert f'| {title[len("recipe: "):]} | [' in text, (
+                f'the cookbook does not say where "{title}" plays: a page '
+                'places it with <!-- recipe: ... -->; regenerate'
+            )
 
     @pytest.mark.skipif(shutil.which('node') is None, reason='no node available')
     def test_regenerating_changes_nothing(self):
@@ -164,17 +157,22 @@ class TestTheDocsSiteCarriesIt:
 class TestTheRecipesMediaStaysOutOfGit:
     """`./al recipes` writes each recipe's recording and GIF to docs/recipes,
     for watching, and the docs served locally play the recordings; git ignores
-    them. A GIF does not compress
-    against its last version, so committing them added megabytes to history
-    on every refresh."""
+    them. A GIF does not compress against its last version, so committing them
+    added megabytes to history on every refresh."""
 
-    def test_the_cookbook_links_no_recipe_media(self):
-        linked = re.findall(
-            r'\]\((recipes/[^)\s]+)\)', COOKBOOK.read_text(encoding='utf-8')
-        )
+    def test_no_page_links_recipe_media(self):
+        """The hook makes a player only where the file is; a page never names it."""
+        linked = [
+            (page.relative_to(REPO).as_posix(), found)
+            for page in sorted((REPO / 'docs').rglob('*.md'))
+            for found in re.findall(
+                r'(?:\]\(|src=")((?:\.\./)*recipes/[^)"\s]+)',
+                page.read_text(encoding='utf-8'),
+            )
+        ]
         assert not linked, (
-            f'docs/cookbook.md links {linked}, which a clean checkout lacks. '
-            'Regenerate with `node website/e2e/cookbook.js`.'
+            f'{linked}: a clean checkout lacks these. Place a walkthrough '
+            'with <!-- recipe: TITLE --> instead.'
         )
 
     def test_git_tracks_nothing_in_docs_recipes(self):

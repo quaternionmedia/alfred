@@ -441,7 +441,7 @@ test.describe('@recipe editing by text', () => {
     /**
      * Drag across "you see here", press Delete: the bars lose their end, the
      * test card its start, and the captions after move up. Ctrl+Z puts the
-     * words back, selected, and Delete takes them again. Save keeps it.
+     * words back, selected, and Delete takes them again. The cut saves itself.
      */
     clear('transcript')
     clear('transcript-cut')
