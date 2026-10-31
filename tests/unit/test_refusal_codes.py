@@ -187,7 +187,7 @@ class World:
             app.dependency_overrides.pop(dependency, None)
 
     def an_engine(self):
-        self.monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:8010')
+        self.monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:1059')
         self.monkeypatch.setattr(audio_engine, 'problem', lambda: None)
 
     def transcribe(self, project_id):
@@ -434,13 +434,13 @@ def media_silent(world):
 
 
 def audio_engine_refused(world):
-    why = 'the audio engine at http://engine.test:8010: it refused this (415): no'
+    why = 'the audio engine at http://engine.test:1059: it refused this (415): no'
     world.engine_says(audio_engine.AudioEngineRefused(why))
     return world.sound_of('talk.wav'), why
 
 
 def audio_engine_failed(world):
-    why = 'the audio engine at http://engine.test:8010: it failed (500): broke'
+    why = 'the audio engine at http://engine.test:1059: it failed (500): broke'
     world.engine_says(audio_engine.AudioEngineFailed(why))
     return world.sound_of('talk.wav'), why
 

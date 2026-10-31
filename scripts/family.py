@@ -484,7 +484,7 @@ def title_at(base):
 
 def joe_port(env=None):
     env = os.environ if env is None else env
-    return int(env.get('ALFRED_JOE_PORT') or 8010)
+    return int(env.get('ALFRED_JOE_PORT') or 1059)
 
 
 def docker0_address():
