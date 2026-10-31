@@ -43,6 +43,10 @@ dashed outline: that is where to start.
 
 ## A first video { #first-video }
 
+![The editor with no project open: Source outlined on the rail, and the line under it saying Start here, with Go to Source](assets/screens/start.png)
+
+*With no project open: Source is outlined, and the line under the rail says where to start.*
+
 Nothing to bring: the server makes the project and its pictures.
 
 1. Open the editor. The line under the rail says **Start here**. Press **Go
@@ -67,8 +71,13 @@ render stays `queued`, see [When something goes wrong](#when-something-goes-wron
    **Material**, in the Media & templates panel, lists each file with how
    long it runs. To practise first, **Generate demo media** on an empty
    library makes three short clips.
-2. On **Source**, press **New project**, type a name, and press **Create**.
-   The project opens, empty.
+2. On **Source**, press **New project** (on a phone, the **+** beside the
+   filter), type a name, and press **Create**. The project opens, empty.
+
+   ![The Projects panel with New project open: a name typed, and Create ready](assets/screens/new-project.png)
+
+   *New project, named and ready to create.*
+
 3. Under **Material**, choose a file to put it on the end of the timeline. A
    line under the list says where it landed. Choose the next, in the order
    they should play.
@@ -77,6 +86,10 @@ render stays `queued`, see [When something goes wrong](#when-something-goes-wron
 There is nothing to save: the timeline saves itself ([Saving](#saving)).
 
 ## Arrange and title { #arrange-and-title }
+
+![The workspace at Edit: a title chosen on the timeline, its settings on the right, Saved beside the timeline, and the line under the rail pointing on to Render](assets/screens/edit.png)
+
+*At Edit: the title's settings on the right, and Saved beside the timeline.*
 
 1. Under **Templates**, in the Media & templates panel, choose **Title** to
    put a title card on the end of the timeline. Its settings open on the
@@ -99,9 +112,13 @@ how sharp it is drawn; a project's first render starts at that size.
 
 ## Render and deliver { #render-and-deliver }
 
+![A finished render on the Deliver stage, with Download and Deliver](assets/screens/deliver.png)
+
+*A finished render, ready to download or deliver.*
+
 1. On **Render**, **Width** and **Height** say the output's size, and the
    line under them says where it came from: the size this project last
-   rendered at, or the viewer's frame. A smaller size makes a smaller file
+   rendered at, the viewer's frame, or what was typed. A smaller size makes a smaller file
    sooner; 640 by 360 is quick to try.
 2. Press **Queue render**. The server renders the timeline as it is on the
    screen, with the captions over it once they are drawn into renders, and
@@ -139,6 +156,10 @@ video with alfred and the QM family](guide.md) walks all of it with
 pictures.
 
 ## On a phone { #on-a-phone }
+
+![The editor on a phone at Edit: the rail, the line under it, Captions above the viewer, and the timeline below](assets/screens/phone-edit.png)
+
+*Edit on a phone: one stage at a time, above the viewer and the timeline.*
 
 The same journeys, one stage at a time. The rail is at the top, the line
 under it says what comes next, and the stage's own panels sit above the

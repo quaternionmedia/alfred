@@ -183,6 +183,12 @@ The workspace brings a stage's panel forward instead
 
 - **clicking each stage shows its panel, and only its panel**
 - **the stages are reachable by keyboard**
+
+  The point of stages-of-one-view. Whichever stage is open, the timeline
+  stays on screen and keeps its clips -- if opening the render settings
+  scrolled the work out of view, these would be four routes wearing a
+  shared header.
+
 - **the rail is announced as a tablist**
 
   The point of stages-of-one-view. Whichever stage is open, the timeline
@@ -1277,11 +1283,12 @@ nothing.
 - **the rail exposes every stage**
 - **the header carries no navigation of its own**
 - **the header holds the logo and no control that does nothing**
-- **the session link is in the footer, at the size of the links beside it**
+- **the session link sits with the links beside it, at their size**
 
   Styled as the header link it once was: 28 pixels, and below 1026 pixels
   lifted out of the footer to the page's top right corner, where on a
-  phone it ran into the logo.
+  phone it ran into the logo. Under the workspace it is in the footer; on
+  a phone, which has no footer, it is in the header beside Help.
 
 - **choosing a stage changes the route**
 - **back and forward move between routes**
@@ -1662,6 +1669,8 @@ Desktop screens are 1280x800 and phone screens 390x844. Excluded from the
 
 ### @screens
 
+- **screen: where to start**
+- **screen: a new project**
 - **screen: the workspace at Edit**
 - **screen: captions over the picture**
 - **screen: Render**
