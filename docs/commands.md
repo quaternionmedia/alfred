@@ -107,10 +107,10 @@ family dev loop](family.md) what `./al family` does with joe and the rest.
 
 | What | Address |
 |---|---|
-| The editor | <http://127.0.0.1:8000> |
-| The API's own reference | <http://127.0.0.1:8000/api> |
+| The editor | <http://127.0.0.1:1732> |
+| The API's own reference | <http://127.0.0.1:1732/api> |
 | The docs, served | <http://127.0.0.1:4000/docs/> |
-| joe | <http://127.0.0.1:8010> |
+| joe | <http://127.0.0.1:1059> |
 | The database, for a GUI | `127.0.0.1:27017` |
 
 `127.0.0.1` rather than `localhost`: everything is published on IPv4 loopback,

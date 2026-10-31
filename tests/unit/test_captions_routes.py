@@ -97,7 +97,7 @@ def library(tmp_path, monkeypatch):
 @pytest.fixture
 def engine(monkeypatch):
     """An audio engine that is configured and usable."""
-    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:8010')
+    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:1059')
     monkeypatch.setattr(audio_engine, 'problem', lambda: None)
 
 
@@ -542,7 +542,7 @@ class TestTranscribing:
         assert res.status_code == 202, res.text
         job = res.json()['job']
         assert job['state'] == 'queued'
-        assert job['engine'] == 'http://engine.test:8010'
+        assert job['engine'] == 'http://engine.test:1059'
         assert queue.sent == [{'projectId': str(mine['_id'])}]
         assert store.projects[mine['_id']]['captions_job']['state'] == 'queued'
 
@@ -556,7 +556,7 @@ class TestTranscribing:
         assert queue.sent == []
 
     def test_an_engine_this_build_cannot_reach_is_503(self, api, monkeypatch):
-        monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:8010')
+        monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:1059')
 
         def missing():
             raise ImportError('no vox.media')

@@ -27,7 +27,7 @@ is the contributor of record.
 git clone --recurse-submodules https://github.com/quaternionmedia/alfred.git
 cd alfred
 ./al init          # builds the website image, which carries its dependencies
-./al dev           # the stack, on http://127.0.0.1:8000
+./al dev           # the stack, on http://127.0.0.1:1732
 ```
 
 [README.md](README.md) covers the Windows symlink step, and a first run with
@@ -93,7 +93,7 @@ the recipes' GIFs:
 ```
 
 `./al recipes` runs against a dev stack you already have up (`E2E_BASE_URL` if
-it is not on :8000). It writes each screen as `docs/assets/screens/<name>.png`
+it is not on :1732). It writes each screen as `docs/assets/screens/<name>.png`
 and each passing recipe as `docs/recipes/<recipe>.gif`, converting with the
 ffmpeg in the api container, and exits non-zero if any step fails. Both build
 their own demo data and show nothing else, so recording on your own stack

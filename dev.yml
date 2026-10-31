@@ -21,7 +21,7 @@ x-alfred-settings: &alfred-settings
   ALFRED_MEDIA_URL_TTL:
   ALFRED_BUCKET_NAME:
   ALFRED_SMTP_TIMEOUT:
-  # joe beside the stack: http://host.docker.internal:8010.
+  # joe beside the stack: http://host.docker.internal:1059.
   # See docs/configuration.md#docker-hosts-and-joe.
   ALFRED_AUDIO_ENGINE_URL:
   ALFRED_AUDIO_ENGINE_TIMEOUT:
@@ -101,7 +101,10 @@ services:
   # The site, rebuilt into website/dist as it changes.
   website:
     ports:
-      - ${ALFRED_BIND:-127.0.0.1}:${ALFRED_HMR_PORT:-8001}:8001
+      # One number both sides: parcel's HMR client dials the port it listens on.
+      - ${ALFRED_BIND:-127.0.0.1}:${ALFRED_HMR_PORT:-1733}:${ALFRED_HMR_PORT:-1733}
+    environment:
+      ALFRED_HMR_PORT: ${ALFRED_HMR_PORT:-1733}
     # Polls: inotify does not cross the bind mount. No HMR; `yarn run dev:hmr`
     # on a Linux host. See docs/build.md#the-sites-watcher.
     command: yarn run dev
@@ -109,7 +112,7 @@ services:
   api:
     ports:
       # Loopback unless ALFRED_BIND says otherwise. See docs/dev-server.md.
-      - ${ALFRED_BIND:-127.0.0.1}:${ALFRED_PORT:-8000}:80
+      - ${ALFRED_BIND:-127.0.0.1}:${ALFRED_PORT:-1732}:80
     volumes:
       - ./alfred/otto:/otto/
       # A subdirectory: over the font directory, it hides the image's fonts.

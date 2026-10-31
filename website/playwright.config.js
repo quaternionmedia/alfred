@@ -1,7 +1,7 @@
 // @ts-check
 const { defineConfig, devices } = require('@playwright/test')
 
-const baseURL = process.env.E2E_BASE_URL || 'http://localhost:8000'
+const baseURL = process.env.E2E_BASE_URL || 'http://127.0.0.1:1732'
 
 // Per-run results and report (./al loop). Relative to website/.
 const output = process.env.E2E_OUTPUT

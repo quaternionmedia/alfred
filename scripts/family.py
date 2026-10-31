@@ -484,7 +484,7 @@ def title_at(base):
 
 def joe_port(env=None):
     env = os.environ if env is None else env
-    return int(env.get('ALFRED_JOE_PORT') or 8010)
+    return int(env.get('ALFRED_JOE_PORT') or 1059)
 
 
 def docker0_address():
@@ -664,7 +664,7 @@ def down(args):
 
 def alfred_base(env=None):
     env = os.environ if env is None else env
-    return f'http://{LOOPBACK}:{env.get("ALFRED_PORT") or 8000}'
+    return f'http://{LOOPBACK}:{env.get("ALFRED_PORT") or 1732}'
 
 
 class Checks:

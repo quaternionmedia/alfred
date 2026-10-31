@@ -145,8 +145,8 @@ publisher() {
 # checkout's own stack holds are left to compose. See docs/dev-server.md.
 refuseTakenPorts() {
   run="./al $1"
-  ALFRED_PORT="${ALFRED_PORT:-8000}"
-  ALFRED_HMR_PORT="${ALFRED_HMR_PORT:-8001}"
+  ALFRED_PORT="${ALFRED_PORT:-1732}"
+  ALFRED_HMR_PORT="${ALFRED_HMR_PORT:-1733}"
   ALFRED_DB_PORT="${ALFRED_DB_PORT:-27017}"
   # No curl, no probe: start unguarded.
   command -v curl >/dev/null 2>&1 || return 0

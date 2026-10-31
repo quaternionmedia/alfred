@@ -88,6 +88,11 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **The dev stack serves on 1732, and reaches joe on 1059**: qm's port
+  allocation gives alfred root three, with its live reload on 1733, and joe
+  the twelfth root of two. The database stays on 27017. `ALFRED_PORT`,
+  `ALFRED_HMR_PORT` and `ALFRED_JOE_PORT` still move them; a bookmark, a
+  script or a joe started by hand on 8000 or 8010 needs the new number.
 - **alfred and otto run on pydantic 2** (2.14.1 locked; otto needs
   `pydantic~=2.5` and `fastapi~=0.100`). A client sees three things: a UTC
   time ends `Z`, not `+00:00`; a 422's details carry pydantic 2's types and

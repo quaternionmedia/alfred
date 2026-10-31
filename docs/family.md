@@ -10,7 +10,7 @@ ok qmcp              33s
 ok codecartographer  2s
 -  org-dotgithub     skipped: no suite of its own here: its workflows run in the CI that calls them
 …
-PASS  alfred answers -- "Alfred API" at http://127.0.0.1:8000
+PASS  alfred answers -- "Alfred API" at http://127.0.0.1:1732
 PASS  database and a render worker -- db ok, 1 worker(s)
 PASS  audio engine -- answers
 PASS  media library -- 5 files
@@ -95,7 +95,7 @@ A repository that can't run its suite here (not found, or uv, docker or `node_mo
 `./al family up`:
 
 1. **Starts joe.**
-   - It runs `uv run --frozen uvicorn api:app` from joe's checkout on `ALFRED_JOE_HOST:ALFRED_JOE_PORT`, by default loopback and 8010. On a Linux host, the host defaults to docker0's address, because a container can't reach the host's loopback ([Configuration](configuration.md#docker-hosts-and-joe)).
+   - It runs `uv run --frozen uvicorn api:app` from joe's checkout on `ALFRED_JOE_HOST:ALFRED_JOE_PORT`, by default loopback and 1059. On a Linux host, the host defaults to docker0's address, because a container can't reach the host's loopback ([Configuration](configuration.md#docker-hosts-and-joe)).
    - If joe already answers on that port, it uses that joe. If something else holds the port, it names it by its OpenAPI title and stops.
    - Its log is `.family/logs/joe.log`.
 2. **Starts the dev stack** with `./al dev -d` (`--build` to rebuild), with `ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:<port>` unless you've set it, then waits for `/healthz`.

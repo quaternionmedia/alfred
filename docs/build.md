@@ -127,6 +127,12 @@ Polling costs the HMR: `dist/` is current within a second, and the browser
 does not refresh itself. On a Linux host, `yarn run dev:hmr` runs parcel's own
 watcher.
 
+parcel builds its HMR port into the bundle, and the browser dials that port on
+the page's own host. So the port has one number on both sides of the
+container: `dev.yml` publishes `ALFRED_HMR_PORT` (1733) as itself and hands it
+to the site, and `dev:hmr` listens on it. A port mapped to a different one
+inside would leave the browser dialling a port nothing on the host publishes.
+
 ### Ports
 
 - **The dev stack** publishes on loopback unless `ALFRED_BIND` says otherwise,

@@ -260,25 +260,25 @@ class TestWhatIsSaid:
 
 class TestJoesPort:
     def test_nothing_there_or_joe_there_can_be_used(self):
-        assert family.joe_problem('', 8010) is None
-        assert family.joe_problem('Joe API', 8010) is None
+        assert family.joe_problem('', 1059) is None
+        assert family.joe_problem('Joe API', 1059) is None
 
     def test_another_server_on_the_port_is_named(self):
-        problem = family.joe_problem('Apothecary API', 8010)
+        problem = family.joe_problem('Apothecary API', 1059)
         assert 'Apothecary API' in problem and 'ALFRED_JOE_PORT' in problem
 
     def test_a_listener_that_is_not_an_api_is_refused(self):
-        assert 'not an OpenAPI server' in family.joe_problem(None, 8010)
+        assert 'not an OpenAPI server' in family.joe_problem(None, 1059)
 
     def test_the_settings_move_joe(self):
-        assert family.joe_port({}) == 8010
+        assert family.joe_port({}) == 1059
         assert family.joe_port({'ALFRED_JOE_PORT': '8020'}) == 8020
         assert family.joe_host({'ALFRED_JOE_HOST': '0.0.0.0'}) == '0.0.0.0'
 
     def test_alfred_is_reached_on_ipv4_loopback(self):
         """Not localhost: on Windows a client trying ::1 first waits about two
         seconds for each refusal, since the stacks publish on 127.0.0.1."""
-        assert family.alfred_base({}) == 'http://127.0.0.1:8000'
+        assert family.alfred_base({}) == 'http://127.0.0.1:1732'
         assert family.alfred_base({'ALFRED_PORT': '8100'}) == 'http://127.0.0.1:8100'
 
 

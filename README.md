@@ -68,7 +68,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | Command | What it does |
 |---|---|
 | `./al init` | Install website dependencies |
-| `./al dev` | Run the dev stack; app on http://127.0.0.1:8000 (`ALFRED_PORT` to move it) |
+| `./al dev` | Run the dev stack; app on http://127.0.0.1:1732 (`ALFRED_PORT` to move it) |
 | `./al dev --build` | Rebuild images first |
 | `./al stop` | Stop the dev stack |
 | `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
@@ -85,9 +85,9 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al install <pkg>` | Add a website dependency |
 | `./al family` | alfred with otto, vox, joe, qmcp and the rest: status, quick suites, the stack wired to joe, a live check ([docs/family.md](docs/family.md)) |
 
-`./al dev` publishes on 8000, 8001 and 27017, on `127.0.0.1` only. It refuses
+`./al dev` publishes on 1732, 1733 and 27017, on `127.0.0.1` only. It refuses
 to start on an occupied port and names what holds it; move the port rather
-than fight for it (`ALFRED_PORT=8100 ./al dev`, and `ALFRED_DB_PORT` /
+than fight for it (`ALFRED_PORT=1832 ./al dev`, and `ALFRED_DB_PORT` /
 `ALFRED_HMR_PORT` for the others). `ALFRED_BIND=0.0.0.0 ./al dev` publishes on
 every interface for that run, to try the app from a phone; with
 `ALFRED_DEV_SKIP_AUTH=1`, that makes anyone who can reach it a superuser. The

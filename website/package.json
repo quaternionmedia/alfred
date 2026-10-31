@@ -16,7 +16,7 @@
     "e2e:ui": "playwright test --project=chromium --ui",
     "e2e:perf": "playwright test --project=perf",
     "e2e:report": "playwright show-report",
-    "dev:hmr": "parcel watch src/index.html --hmr-port=8001"
+    "dev:hmr": "parcel watch src/index.html --hmr-port=${ALFRED_HMR_PORT:-1733}"
   },
   "dependencies": {
     "alertifyjs": "^1.14.0",

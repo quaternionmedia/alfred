@@ -128,7 +128,7 @@ def alfreds_settings():
 
 def host_settings():
     """What is read on the host: each name a compose file interpolates
-    (`${ALFRED_PORT:-8000}`), and each `./al` reads with a default, the way
+    (`${ALFRED_PORT:-1732}`), and each `./al` reads with a default, the way
     it reads what the shell may set (`${ALFRED_BIND:-127.0.0.1}`)."""
     found = set()
     for path in sorted(REPO.glob('*.yml')):

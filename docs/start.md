@@ -38,9 +38,9 @@ serves every request as a development superuser; [Skipping login in
 development](dev-auth.md) says what that opens, and how to use a normal
 account instead.
 
-The app is published on port 8000, on this machine only. If something else
+The app is published on port 1732, on this machine only. If something else
 already holds the port, `./al dev` refuses to start and names it: start on
-another with `ALFRED_PORT=8100 ./al dev`. The [dev-server notes](dev-server.md)
+another with `ALFRED_PORT=1832 ./al dev`. The [dev-server notes](dev-server.md)
 cover this and the other ports, and [Configuration](configuration.md#settings)
 lists them.
 
@@ -48,7 +48,7 @@ lists them.
 
 ## Open the app
 
-Browse to <http://127.0.0.1:8000>. The editor opens at Edit, with the four
+Browse to <http://127.0.0.1:1732>. The editor opens at Edit, with the four
 stages on the rail along the top: Source, Edit, Render and Deliver. On a screen
 1024 pixels wide or more, every panel is open at once: the Source stage's two
 panels on the left, the viewer over the timeline in the middle, and on the
@@ -150,4 +150,4 @@ render stays queued until a worker starts; `./al dev` starts one with the stack.
   renders.
 - [Examples](examples/index.md) and the [API](api/index.md): making videos
   with the API directly, with `curl`. Your own server's interactive reference
-  is at <http://127.0.0.1:8000/api>, linked from the editor's footer.
+  is at <http://127.0.0.1:1732/api>, linked from the editor's footer.
