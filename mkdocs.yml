@@ -4,54 +4,59 @@ site_url: https://alfred.quaternion.media/docs/
 # repo_url: https://github.com/quaternionmedia/alfred
 edit_uri: ''
 
-# In the order a newcomer reads: what Alfred is, running it, using it, then
-# developing it and the reference material, with the history last.
+# Six sections, as qm's own site: the journeys a person takes, the reference
+# they look things up in, then developing alfred, the API, and the history.
 nav:
   - Home: index.md
-  - Get started: start.md
-  - User journeys: journeys.md
-  - Make a video: guide.md
-  - Commands: commands.md
-  - Cookbook: cookbook.md
-  - Captions: captions.md
-  - Editing tools: tools.md
-  - Configuration: configuration.md
+  - Journeys:
+      - Get started: start.md
+      - User journeys: journeys.md
+      - Make a video: guide.md
+  - Reference:
+      - Captions: captions.md
+      - Editing by text: editing-by-text.md
+      - Editing tools: tools.md
+      - Configuration: configuration.md
   - Develop:
+      - Questions a new developer asks: develop.md
+      - Commands: commands.md
       - dev-server.md
       - Test loop: loop.md
       - Family dev loop: family.md
+      - Browser suite: cookbook.md
       - dev-auth.md
       - ownership.md
       - dependencies.md
       - Images and stacks: build.md
-  - Concepts:
-      - about/index.md
-      - about/concepts.md
-      - about/clip.md
-      - about/template.md
-      - about/edl.md
-      - about/project.md
-      - about/render.md
-  - Examples:
-      - examples/index.md
-      - examples/login.md
-      - examples/media.md
-      - examples/preview.md
-      - examples/render.md
-      - examples/trim.md
-      - examples/combine.md
-      - examples/adjust.md
-      - examples/fade.md
-      - examples/text.md
-      - examples/animation.md
-      - examples/project.md
   - API:
       - api/index.md
-      - api/auth.md
-      - api/otto.md
-      - api/fonts.md
-      - api/render.md
-      - api/errors.md
+      - Concepts:
+          - about/index.md
+          - about/concepts.md
+          - about/clip.md
+          - about/template.md
+          - about/edl.md
+          - about/project.md
+          - about/render.md
+      - Examples:
+          - examples/index.md
+          - examples/login.md
+          - examples/media.md
+          - examples/preview.md
+          - examples/render.md
+          - examples/trim.md
+          - examples/combine.md
+          - examples/adjust.md
+          - examples/fade.md
+          - examples/text.md
+          - examples/animation.md
+          - examples/project.md
+      - Routes:
+          - api/auth.md
+          - api/otto.md
+          - api/fonts.md
+          - api/render.md
+          - api/errors.md
   - History:
       - Retrospective (0.3.0): retrospective-0.3.0.md
       - Retrospective (verification): retrospective-verification-discipline.md
@@ -71,8 +76,9 @@ validation:
   unrecognized_links: warn
   anchors: warn
 
-# The cookbook plays each walkthrough's recording where `./al recipes` left
-# one in docs/recipes/, which git ignores: so only docs served locally do.
+# A page plays a walkthrough's recording at its `<!-- recipe: ... -->` marker
+# where `./al recipes` left one in docs/recipes/, which git ignores: so only
+# docs served locally do.
 hooks:
   - scripts/docs_recordings.py
 

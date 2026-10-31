@@ -103,9 +103,13 @@ A repository that can't run its suite here (not found, or uv, docker or `node_mo
 
 `./al family down` stops the dev stack, and the joe `up` started, if it did. A joe that `up` found already running is left alone.
 
-joe has no authentication: anything that reaches its port can use what it serves. `up` binds it to loopback, or on Linux to docker0, which only this machine's containers reach. Don't set `ALFRED_JOE_HOST=0.0.0.0` on a network you don't trust.
-
-A fresh joe serves only its media API, all alfred uses, so `up` sets nothing on it. Its microphone, transcripts and audio library stay off unless you start the loop with `JOE_ALLOW_MICROPHONE`, `JOE_ALLOW_TRANSCRIPTS` or `JOE_ALLOW_LIBRARY` set to 1; qmcp's and vox's voice loops need the microphone. Each one turned on is announced with a warning in `.family/logs/joe.log`. joe's `docs/security.md` says what each exposes.
+joe asks for no login: anything that reaches its port can use what it serves.
+`up` binds it to loopback, or on Linux to docker0, which only this machine's
+containers reach. Don't set `ALFRED_JOE_HOST=0.0.0.0` on a network you don't
+trust. `up` turns nothing on in joe beyond its media API, which is all alfred
+uses; a `JOE_ALLOW_…` setting in the shell reaches it, for qmcp's and vox's
+voice loops, and joe warns of each in `.family/logs/joe.log`. [joe's
+security](https://github.com/quaternionmedia/joe/blob/main/docs/security.md) says what each one exposes.
 
 ## The live check
 
