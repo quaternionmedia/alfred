@@ -43,9 +43,9 @@ module.exports = async () => {
 ` +
         `Something else holds that port. Start Alfred elsewhere and point the
 ` +
-        `suite at it:  ALFRED_PORT=8100 ./al dev
+        `suite at it:  ALFRED_PORT=1832 ./al dev
 ` +
-        `              E2E_BASE_URL=http://localhost:8100 npm run e2e`
+        `              E2E_BASE_URL=http://127.0.0.1:1832 npm run e2e`
     )
   }
 
