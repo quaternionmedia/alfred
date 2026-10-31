@@ -203,8 +203,10 @@
     margin-bottom: 0.4rem;
   }
 
+  // Gives way first, so the heading, the filter and New project share a phone's row.
   .filter {
-    min-width: 12rem;
+    flex: 1 1 8rem;
+    min-width: 6rem;
   }
 
   label.inline {
@@ -599,7 +601,7 @@
 // New project: a button, then a name and Create (Projects.js).
 .newprojectopen,
 .newproject {
-  margin: 0 0 0.6rem;
+  margin: 0 0 0.4rem;
 }
 
 .newprojectopen {
@@ -615,6 +617,7 @@
 .newproject {
   display: flex;
   flex-wrap: wrap;
+  flex-basis: 100%;
   align-items: center;
   gap: 0.4rem;
 
@@ -625,6 +628,13 @@
 
   .stageerror {
     flex-basis: 100%;
+  }
+}
+
+// On a phone, + alone: the heading, the filter and it share one row.
+@media only screen and (max-width: 480px) {
+  .newprojectopen .newprojectlabel {
+    display: none;
   }
 }
 

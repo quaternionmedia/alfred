@@ -53,8 +53,9 @@ const ProjectsPanel = {
               },
             })
           : null,
+        // In the heading's row: a row of its own cost a phone a project.
+        m(NewProject),
       ]),
-      m(NewProject),
 
       Flow.projects.length
         ? matches.length
@@ -168,8 +169,13 @@ const NewProject = () => {
           )
         : m(
             'button.newprojectopen#project-new',
-            { type: 'button', title: 'Start an empty project, then add material to it', onclick: () => (open = true) },
-            [m('i.material-icons', { 'aria-hidden': 'true' }, 'add'), 'New project']
+            {
+              type: 'button',
+              title: 'New project: start an empty one, then add material to it',
+              'aria-label': 'New project',
+              onclick: () => (open = true),
+            },
+            [m('i.material-icons', { 'aria-hidden': 'true' }, 'add'), m('span.newprojectlabel', 'New project')]
           ),
   }
 }

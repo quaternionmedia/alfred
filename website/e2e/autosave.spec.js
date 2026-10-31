@@ -59,6 +59,8 @@ test.describe('the timeline saves itself', () => {
     const next = await ownProject(request, token, 'next')
     try {
       await authedPage.goto(`/#!/?project=${left._id}&stage=source`)
+      // Made after the login: the list is fetched again.
+      await authedPage.reload()
       await addTemplate(authedPage, 'title')
       await expect(clips(authedPage)).toHaveCount(1)
       await authedPage.locator('.projectchoice', { hasText: next.name }).click()

@@ -54,21 +54,30 @@ test.describe('navigation', () => {
     await expect(authedPage.locator('header #home-link img')).toHaveAttribute('alt', 'Alfred')
   })
 
-  test('the session link is in the footer, at the size of the links beside it', async ({ authedPage }) => {
+  test('the session link sits with the links beside it, at their size', async ({ authedPage }) => {
     /**
      * Styled as the header link it once was: 28 pixels, and below 1026 pixels
      * lifted out of the footer to the page's top right corner, where on a
-     * phone it ran into the logo.
+     * phone it ran into the logo. Under the workspace it is in the footer; on
+     * a phone, which has no footer, it is in the header beside Help.
      */
-    await authedPage.setViewportSize({ width: 390, height: 844 })
-    await authedPage.goto('/')
-    const footer = await authedPage.locator('body > footer').boundingBox()
-    const session = authedPage.locator('footer a.loginLink')
-    const box = await session.boundingBox()
-    expect(box.y).toBeGreaterThanOrEqual(footer.y - 1)
-    expect(box.y + box.height).toBeLessThanOrEqual(footer.y + footer.height + 1)
     const size = el => parseFloat(getComputedStyle(el).fontSize)
+    const within = async (link, row) => {
+      const outer = await authedPage.locator(row).boundingBox()
+      const box = await link.boundingBox()
+      expect(box.y).toBeGreaterThanOrEqual(outer.y - 1)
+      expect(box.y + box.height).toBeLessThanOrEqual(outer.y + outer.height + 1)
+    }
+    await authedPage.goto('/')
+    const session = authedPage.locator('footer a.loginLink')
+    await within(session, 'body > footer')
     expect(await session.evaluate(size)).toBe(await authedPage.locator('footer a.docLink').first().evaluate(size))
+
+    await authedPage.setViewportSize({ width: 390, height: 844 })
+    await expect(authedPage.locator('body > footer')).toHaveCount(0)
+    const header = authedPage.locator('header a.loginLink')
+    await within(header, 'body > header')
+    expect(await header.evaluate(size)).toBe(await authedPage.locator('header #help-link').evaluate(size))
   })
 
   test('choosing a stage changes the route', async ({ authedPage }) => {
