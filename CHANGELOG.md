@@ -2,7 +2,7 @@
 
 ## Unreleased — review fixes
 
-Fixes from a review of alfred and otto, landed in ten rounds of parallel
+Fixes from a review of alfred and otto, landed in twelve rounds of parallel
 branches:
 
 | Round | Integrated on | What it carried |
@@ -17,6 +17,8 @@ branches:
 | 8 | `feat/close-gaps` | the gaps left open: the Render stage's form and the zoom row on every screen, the tests the review asked for (the recipes' pipeline, `./al`'s dev key, `./al family`, `GET /fonts`) and the three bugs they found, the docs tooling pinned, the dev-server notes on the docs site, the API examples sent to the local stack, and the walkthroughs' recordings played only in docs served locally |
 | 9 | `feat/edit-by-text-and-loop` | edit-by-text on top of the joe and vox loop; `./al loop`, the suites side by side as named runs, and images named per checkout; screenshots of every tool and docs example taken by the suite, the examples on demo media; commands on each system; the docs tools locked on their own; the phone's notices letting taps through; the template preview carrying structured data |
 | 10 | `feat/pydantic-2` | pydantic 2 in alfred and the engine (otto pinned at c82efbd, `feat/pydantic-2`); fastapi-users 15.0.5, with passwords hashed by Argon2 in a pool of their own; passlib and setuptools gone |
+| 11 | `feat/family-onboarding` | making a video in the QM family, walked step by step (`docs/guide.md`, `./al family up`); editing by text completed (undo, the timeline tools carrying the words, a cut rewriting a caption's text); comments cut to a line or two, their reasons moved into the docs; the seed's workflows, with `governance/qm` at the propagation; the dev stack on 1732 and joe on 1059, qm's port allocation |
+| 12 | `feat/ui-journeys` | the editor made for the person using it: a line under the rail saying what to do next, the timeline saving itself, New project, and the user journeys (`docs/journeys.md`) that the editor's How? links open; `governance/qm` at project/alfred's propagation of 2026-10-31 |
 
 Read **Security** and **Changed** before deploying: several requests that were
 accepted are now refused, and a production stack needs its own signing key.
@@ -88,6 +90,19 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **The timeline saves itself**, a second after it stops changing, with the
+  captions and words a cut moved. There is no Save for the timeline, and the
+  Transcript panel's is gone too. An indicator says Saving…, Saved, or Not
+  saved with the reason and a Retry. Opening another project saves the one
+  left, and Transcribe timeline saves first. The Captions panel keeps its
+  Save, for captions typed or styled by hand. A failed save is kept in the
+  tab and offered back, as an unsaved timeline was.
+- **Deprecated templates are not offered** for a new clip; a project that has
+  one still draws it. Where the Media & templates panel shows, the bin under
+  the timeline steps aside.
+- **On a phone the footer's links are in the header** (Help, Logout), and the
+  timeline takes the room the footer had; on a wide screen they read on the
+  dark bar.
 - **The dev stack serves on 1732, and reaches joe on 1059**: qm's port
   allocation gives alfred root three, with its live reload on 1733, and joe
   the twelfth root of two. The database stays on 27017. `ALFRED_PORT`,
@@ -349,12 +364,24 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Added
 
+- **The user journeys** (`docs/journeys.md`): a first video, your own
+  footage, titles, rendering, captions, a phone, coming back, an account, an
+  assistant, and what to do when something goes wrong. A line under the
+  stage rail says where you are and what comes next, with a button to that
+  stage and a **How?** link to the journey; with no project open, Source is
+  outlined.
+- **New project**, on Source: a name, then Create. The editor had no way to
+  start an empty project.
+- **The frame menus beside the viewer are named**, and the Render stage says
+  where the size it offers came from: the project's last render, or the
+  viewer's frame.
 - **Editing by text.** A transcription keeps the words it heard, in timeline
   seconds (`GET /project/{id}/captions/words`; `PUT /project/{id}/captions`
   takes `words`). The Transcript panel shows them as text: deleting words cuts
   the stretch they were said in from every track and closes the gap, captions
   and words shifting with it. Clicking a word seeks to it. On a phone, the
-  Edit stage switches between Captions and Transcript. No undo yet.
+  Edit stage switches between Captions and Transcript. Ctrl+Z, or Undo,
+  takes a cut back.
 - **`./al loop`**: the host's quick tests, the API suite, the browser suite
   and the strict docs build at once, as one named run; `--stack --keep`
   brings up joe and the dev stack and leaves them up; several runs go side by
