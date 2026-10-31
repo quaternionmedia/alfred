@@ -163,7 +163,7 @@ count says whether anything will pick it up.
 1. otto builds the project's saved timeline from its video and audio clips, as
    long as the whole timeline so times do not move (silence stands where the
    other clips were), and writes the mix as a 16 kHz mono WAV in a directory
-   private to the job, removed afterwards.
+   private to the job, removed afterwards ([otto's `renderSound`](https://github.com/quaternionmedia/otto/blob/51a1b0eb1d53d99f3ae55083406901ed1255ec40/docs/rendering.md#a-timelines-sound-alone)).
 2. The audio engine hears it, through vox, with word timings.
 3. What it heard becomes captions a person can read in the time they are
    shown. A stretch of speech is cut at word boundaries into captions of at

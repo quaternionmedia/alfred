@@ -33,9 +33,7 @@ nav:
       - Concepts:
           - about/index.md
           - about/concepts.md
-          - about/clip.md
           - about/template.md
-          - about/edl.md
           - about/project.md
           - about/render.md
       - Examples:
