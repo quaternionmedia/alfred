@@ -60,6 +60,16 @@ $rule: 1px solid #2e2e2e;
     flex-direction: column;
     gap: 0.4rem;
     flex: 0 0 auto;
+
+    // Under their label, not spread down the column (style.css centres every select).
+    select {
+      margin: 0;
+    }
+  }
+
+  .viewersettingslabel {
+    color: #9a9a9a;
+    font-size: 0.75rem;
   }
 }
 
@@ -136,6 +146,33 @@ $rule: 1px solid #2e2e2e;
   gap: 0.3rem;
   position: sticky;
   top: 0;
+}
+
+// Saved, saving, or not saved (Autosave.js).
+.savestate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  max-width: 6.5rem;
+  color: #9a9a9a;
+  font-size: 0.75rem;
+  text-align: center;
+
+  .material-icons {
+    font-size: 1.1rem;
+  }
+
+  &.saved .material-icons {
+    color: #7fbf7f;
+  }
+
+  &.failed,
+  &.held,
+  &.unsaved {
+    color: #f2aa4c;
+  }
 }
 
 // Zoom out, the bar, zoom in, in one row. Zoom in was placed `absolute` at

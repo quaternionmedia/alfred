@@ -10,6 +10,11 @@ footer {
   .link {
     text-decoration: underline;
   }
+  // Readable on the dark bar; the browser's blue was not.
+  a,
+  a:visited {
+    color: #9ec5ff;
+  }
   // The documentation links share a line with the session link and the
   // project link, so each is set apart by a separator and a little air.
   .doclinks {

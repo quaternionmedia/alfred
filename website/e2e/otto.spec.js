@@ -25,10 +25,9 @@ const TRANSPORT = ['start', 'back 5s', 'forward 5s', 'end']
 
 const SPEED = ['slower', 'reset speed', 'faster']
 
-// The project actions, by id. Their titles are now the reason they are
-// unavailable when they are -- "Nothing on the timeline to save" rather than
-// "save" -- so a title is not a stable handle for them.
-const ACTION_IDS = ['#save-timeline', '#render-timeline']
+// The project action, by id: its title is the reason it is unavailable when
+// it is, so not a stable handle. Saving has no control (Autosave.js).
+const ACTION_IDS = ['#render-timeline']
 
 test.describe('otto editor', () => {
   test.beforeEach(async ({ authedPage }) => {

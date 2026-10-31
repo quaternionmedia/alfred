@@ -2,10 +2,10 @@ import m from 'mithril'
 import { Player } from './Player'
 import { Video, Edl } from './Video'
 import { auth } from './Login'
-import { message, success, error, defaults } from 'alertifyjs'
+import { message, error } from 'alertifyjs'
 import { Resolution, Aspect } from './Resolution'
 import { queueRender, renderSize, timelineEdl, timelineRender } from './RenderRequest'
-import { escapeHtml, requestProblem } from './Problem'
+import { requestProblem } from './Problem'
 import { Flow } from './Stages'
 import { Draft } from './Draft'
 import { Captions } from './captions/store'
@@ -104,9 +104,9 @@ export function SpeedTools() {
 
 /**
  * Save the timeline on screen to `project`; resolves to the clip count.
- * Used by the toolbar's Save, the Transcript panel's, and the Captions panel's once
- * the captions moved. Captions and words that moved with the timeline go with it, in
- * one request (docs/captions.md, "Saving").
+ * Used by Autosave.js, and by the Captions panel's Save once the captions
+ * moved. Captions and words that moved with the timeline go with it, in one
+ * request (docs/captions.md, "Saving").
  *
  * `/project/{id}/timeline`, and with a token. This posted to `/edl` with a
  * bare `m.request` -- no route of that name has ever existed on this server,
@@ -171,7 +171,6 @@ function withCaptions(project, edl) {
 }
 
 export function ProjectTools() {
-  let saving = false
   let rendering = false
 
   return {
@@ -183,14 +182,7 @@ export function ProjectTools() {
       // this button has no fields of its own to show it.
       const size = renderSize(Flow.project())
 
-      // Why each action is unavailable, or null when it is available. Saying
-      // which of two preconditions is missing is the difference between a
-      // control a person can act on and one that is merely inert.
-      const cannotSave = !project
-        ? 'Select a project before saving a timeline to it'
-        : !clips
-          ? 'Nothing on the timeline to save'
-          : null
+      // Why rendering is unavailable, or null when it is available.
       const cannotRender = !project
         ? 'Select a project before rendering'
         : !clips
@@ -198,31 +190,6 @@ export function ProjectTools() {
           : null
 
       return m('.tools.toolbar', {}, [
-        m(
-          'i.material-icons#save-timeline',
-          {
-            title: cannotSave || 'Save this timeline to the project',
-            class: cannotSave ? 'disabled' : '',
-            onclick: () => {
-              if (cannotSave || saving) return
-              saving = true
-              saveTimeline(project)
-                .then(saved => {
-                  saving = false
-                  success(`Saved ${saved} clips to the project`)
-                  m.redraw()
-                })
-                .catch(e => {
-                  saving = false
-                  const why = requestProblem(e)
-                  const said = why ? `: ${escapeHtml(why)}` : ''
-                  error(`Could not save the timeline${said}`, 6)
-                  m.redraw()
-                })
-            },
-          },
-          saving ? 'hourglass_top' : 'save'
-        ),
         m(
           'i.material-icons#render-timeline',
           {

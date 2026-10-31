@@ -6,6 +6,7 @@ import { Health } from '../Health'
 import { User } from '../User'
 import { requestProblem } from '../Problem'
 import { saveTimeline } from '../Tools'
+import { Autosave } from '../Autosave'
 import { Transcript } from '../captions/transcript'
 import '../captions/captions.scss'
 
@@ -355,6 +356,23 @@ const Row = {
   },
 }
 
+/** Transcribe what is on screen: the server hears the saved timeline, so save it first. */
+const transcribeSaved = () => {
+  Captions.confirming = false
+  Captions.busy = 'transcribe'
+  Captions.error = null
+  return Autosave.settle().then(
+    () => {
+      Captions.busy = null
+      return Captions.transcribe()
+    },
+    err => {
+      Captions.busy = null
+      Captions.error = `Could not transcribe: the timeline is not saved (${requestProblem(err) || 'no answer'})`
+    }
+  )
+}
+
 /** Transcribe timeline; asks first if captions would be replaced. Shared with the Transcript panel. */
 export const TranscribeButton = {
   view: ({ attrs: { id = 'captions-transcribe' } }) => {
@@ -364,11 +382,11 @@ export const TranscribeButton = {
       `button#${id}`,
       {
         disabled: Boolean(blocker) || running || !Captions.loaded || Boolean(Captions.busy),
-        title: blocker || "Hear the saved timeline's sound and caption what it says",
+        title: blocker || "Save the timeline, hear its sound and caption what it says",
         'aria-busy': running ? 'true' : 'false',
         onclick: () => {
           if (Captions.list.length) Captions.confirming = true
-          else Captions.transcribe()
+          else transcribeSaved()
         },
       },
       running ? 'Transcribing…' : 'Transcribe timeline'
@@ -383,7 +401,7 @@ export const TranscribeConfirm = {
     const count = Captions.list.length
     return m(`.confirm#${id}`, [
       m('span', `Replace the ${count} caption${count === 1 ? '' : 's'} with what the timeline says?`),
-      m(`button.primary#${id}-yes`, { onclick: () => Captions.transcribe() }, 'Replace'),
+      m(`button.primary#${id}-yes`, { onclick: transcribeSaved }, 'Replace'),
       m(`button#${id}-no`, { onclick: () => (Captions.confirming = false) }, 'Cancel'),
     ])
   },
@@ -441,7 +459,7 @@ export const CaptionsPanel = {
       id && !blocker
         ? m(
             'p.captionsnote',
-            "Transcribing hears the project's saved timeline and replaces these captions."
+            'Transcribing saves the timeline, hears it, and replaces these captions.'
           )
         : null,
 

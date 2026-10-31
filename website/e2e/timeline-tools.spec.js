@@ -11,7 +11,7 @@
  * send while it moves, so on a phone trimming did nothing at all.
  */
 
-const { test, expect, MEDIA_PROJECT, templateQuery } = require('./fixtures')
+const { test, expect, addTemplate, MEDIA_PROJECT, templateQuery } = require('./fixtures')
 
 async function mediaProject(request, token) {
   const projects = await (
@@ -315,7 +315,7 @@ test.describe('cut', () => {
       if (url.pathname === '/preview/template/title') frames.push(templateQuery(url))
     })
     await authedPage.goto('/#!/?stage=edit')
-    await authedPage.locator('#bin .binclip[data-bin-name="title"] .binadd').click()
+    await addTemplate(authedPage, 'title')
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(1)
 
     await authedPage.locator('#TTools [data-tool="cut"]').click()
@@ -364,7 +364,7 @@ test.describe('cut', () => {
      */
     const sent = await captureRenders(authedPage)
     await authedPage.goto('/#!/?stage=edit')
-    await authedPage.locator('#bin .binclip[data-bin-name="title"] .binadd').click()
+    await addTemplate(authedPage, 'title')
     await authedPage.locator('#TTools [data-tool="cut"]').click()
     const clip = authedPage.locator('#timeline .clip').first()
     const box = await clip.boundingBox()

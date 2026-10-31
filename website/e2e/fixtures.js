@@ -54,9 +54,43 @@ async function apiLogin(request, creds = CREDENTIALS) {
   return `${body.token_type} ${body.access_token}`
 }
 
+/**
+ * What the page's timeline saves meet. The timeline saves itself
+ * (src/Autosave.js), so an edit in one test would change the shared projects
+ * every other test opens. `'answered'`, the default: answered in the browser
+ * as the server answers, and nothing stored. `'real'`: sent on. `'refused'`:
+ * a server that is down (503).
+ */
+async function routeSaves(page, saves) {
+  if (saves === 'real') return
+  await page.route(
+    url => /^\/project\/[^/]+\/(timeline|captions)$/.test(url.pathname),
+    async route => {
+      const request = route.request()
+      const body = request.method() === 'PUT' ? request.postDataJSON() : null
+      const timeline = url => url.endsWith('/timeline')
+      // A captions save is the timeline's only when it carries one.
+      if (!body || (!timeline(request.url()) && !body.timeline)) return route.fallback()
+      if (saves === 'refused') return route.fulfill({ status: 503, json: { detail: 'refused by the test' } })
+      if (timeline(request.url())) return route.fulfill({ json: {} })
+      return route.fulfill({ json: { captions: body.captions || [], style: body.style || {} } })
+    }
+  )
+}
+
+/** From now on the page's saves reach the server, whatever `saves` said (a later route wins). */
+const letSavesThrough = page =>
+  page.route(
+    url => /^\/project\/[^/]+\/(timeline|captions)$/.test(url.pathname),
+    route => route.continue()
+  )
+
 const test = base.extend({
+  saves: ['answered', { option: true }],
+
   /** A page with an authenticated session already established. */
-  authedPage: async ({ page }, use) => {
+  authedPage: async ({ page, saves }, use) => {
+    await routeSaves(page, saves)
     await login(page)
     await use(page)
   },
@@ -117,9 +151,46 @@ const holdTheRouter = page =>
 
 const releaseTheRouter = page => page.evaluate(() => window.releaseTheRouter())
 
+/** Saves the page has made so far, as its indicator `id` counts them (src/Autosave.js). */
+const savesSoFar = async (page, id = 'save-state') =>
+  Number((await page.locator(`#${id}`).getAttribute('data-saves')) || 0)
+
+/** Wait for the timeline to have saved itself, more than `since` saves into the page. */
+async function expectSaved(page, { since = 0, id = 'save-state' } = {}) {
+  const indicator = page.locator(`#${id}`)
+  await expect
+    .poll(async () => Number((await indicator.getAttribute('data-saves')) || 0), { timeout: 15000 })
+    .toBeGreaterThan(since)
+  await expect(indicator).toHaveAttribute('data-state', 'saved', { timeout: 15000 })
+}
+
+/**
+ * Put the template `name` on the end of the timeline: from the Media &
+ * templates panel where it shows, from the bin under the timeline where not.
+ */
+async function addTemplate(page, name) {
+  const listed = page.locator(`#panel-media button.templatechoice[data-template="${name}"]`)
+  const binned = page.locator(`#bin .binclip[data-bin-name="${name}"] .binadd`)
+  await expect(listed.or(binned).first()).toBeVisible()
+  return (await listed.isVisible()) ? listed.click() : binned.click()
+}
+
+/** Close Media & templates where it is open, so the bin under the timeline shows. */
+async function showTheBin(page) {
+  const media = page.locator('#paneltab-media')
+  await expect(page.locator('#bin').or(media).first()).toBeVisible()
+  if (await media.isVisible()) await media.locator('.lm_close_tab').click()
+  await expect(page.locator('#bin')).toBeVisible()
+}
+
 module.exports = {
   test,
   expect,
+  expectSaved,
+  savesSoFar,
+  letSavesThrough,
+  addTemplate,
+  showTheBin,
   login,
   apiLogin,
   holdTheRouter,

@@ -117,6 +117,10 @@ export const Draft = {
   moved: null,
   timer: null,
   last: 0,
+  /** Told `(project, differs)` when a project's timeline changes (Autosave.js). */
+  followers: [],
+  /** Told `(project)` before another project's timeline replaces this one's. */
+  leavers: [],
 
   /**
    * A project's timeline is about to load. Whatever is on screen now belongs
@@ -124,6 +128,7 @@ export const Draft = {
    */
   opening: () => {
     Draft.flush()
+    if (Draft.project) Draft.leavers.forEach(leave => leave(Draft.project))
     Draft.project = null
     Draft.base = null
     Draft.offer = null
@@ -181,7 +186,9 @@ export const Draft = {
     const now = extra ? `${timeline}|${extra.key}` : timeline
     if (now === Draft.kept) return
     Draft.kept = now
-    if (!extra && timeline === Draft.base) {
+    const differs = Boolean(extra) || timeline !== Draft.base
+    Draft.followers.forEach(follow => follow(project, differs))
+    if (!differs) {
       forget(project)
       return
     }

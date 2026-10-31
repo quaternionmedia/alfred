@@ -12,7 +12,7 @@
  * runs at a phone width too.
  */
 
-const { test, expect } = require('./fixtures')
+const { test, expect, showTheBin } = require('./fixtures')
 
 // A phone's size: the editor stacks one stage at a time below 1024 pixels
 // (src/layout/shell.js), and a few of these are about that layout.
@@ -410,6 +410,7 @@ test.describe('the timeline reads as a timeline', () => {
     test.skip(!demo, 'demo project not seeded')
 
     await authedPage.goto(`/#!/?project=${demo._id}&stage=edit`)
+    await showTheBin(authedPage)
     await expect(authedPage.locator('#bin .clip').first()).toBeVisible()
     await expect(authedPage.locator('#timeline .clip').first()).toBeVisible()
 

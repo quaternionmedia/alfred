@@ -47,14 +47,14 @@ const pictureShown = page =>
     return { frame: box.height, shown: Math.max(0, bottom - top) }
   })
 
-/** Where the footer, the last thing in the column, ends: pixels from the window's top. */
-const footerEnd = () => document.querySelector('body > footer').getBoundingClientRect().bottom
+/** Where the timeline's region, the last thing in the column, ends: pixels from the window's top. */
+const columnEnd = () => document.querySelector('section.editor').getBoundingClientRect().bottom
 
 /**
  * Every stage in turn, chosen on the rail: the whole picture is on the screen
  * as the stage opens, and the rest of the column can be reached below it --
  * scrolled as far as a wheel over the header (which scrolls nothing of its
- * own) takes the page, the footer is in the window. All four stages are
+ * own) takes the page, the timeline's region ends in the window. All four stages are
  * asked, so a failure says which of them hide the picture, and by how much.
  *
  * `oneScreen`: and the page does not scroll at all, every region fitting the
@@ -83,13 +83,13 @@ async function expectEveryStageToShowThePicture(page, { oneScreen = false } = {}
     const header = await page.locator('body > header').boundingBox()
     await page.mouse.move(header.x + header.width / 2, header.y + header.height / 2)
     await page.mouse.wheel(0, 5000)
-    // A wheel scrolls in its own time: wait for the footer, a little.
+    // A wheel scrolls in its own time: wait for the column's end, a little.
     await page
-      .waitForFunction(h => document.querySelector('body > footer').getBoundingClientRect().bottom <= h + 1, height, {
+      .waitForFunction(h => document.querySelector('section.editor').getBoundingClientRect().bottom <= h + 1, height, {
         timeout: 2000,
       })
       .catch(() => {})
-    const end = await page.evaluate(footerEnd)
+    const end = await page.evaluate(columnEnd)
     expect
       .soft(end, `${stage}: the column runs ${Math.round(end - height)} pixels past the window, out of reach`)
       .toBeLessThanOrEqual(height + 1)
@@ -108,6 +108,18 @@ test.describe('the phone flow', () => {
     await expect(authedPage.locator('#workspace')).toHaveCount(0)
     await expect(authedPage.locator('.lm_goldenlayout')).toHaveCount(0)
     await expect(authedPage.locator('#panels-button')).toHaveCount(0)
+  })
+
+  test("the footer's links are in the header, and the timeline keeps the room", async ({ authedPage }) => {
+    /**
+     * A footer under the timeline took two lines of a phone's height from it.
+     * Help (the user journeys) and the session link sit beside the logo instead.
+     */
+    await authedPage.goto('/#!/?stage=edit')
+    await expect(authedPage.locator('#timeline')).toBeVisible()
+    await expect(authedPage.locator('body > footer')).toHaveCount(0)
+    await expect(authedPage.locator('header #help-link')).toHaveAttribute('href', '/docs/journeys/')
+    await expect(authedPage.locator('header a.loginLink')).toHaveText('Logout')
   })
 
   test('a notice lets a tap through to what is under it', async ({ authedPage }) => {
@@ -409,8 +421,8 @@ test.describe('the picture keeps its room', () => {
     }) => {
       /**
        * The frame's room is two-fifths of the screen held sideways, and the
-       * header, the rail, the room, the transport and the footer are taller
-       * than the screen on their own, so this page has to scroll. The column
+       * header, the rail and the line under it, the room and the transport
+       * are taller than the screen on their own, so this page has to scroll. The column
        * used to run on past the window's edge instead, out of reach.
        */
       await expectEveryStageToShowThePicture(authedPage)

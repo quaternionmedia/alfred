@@ -4,7 +4,7 @@
  * screenshots (screens-guide.spec.js).
  */
 
-const { expect } = require('./fixtures')
+const { expect, expectSaved, savesSoFar } = require('./fixtures')
 
 // What `POST /demo/media` makes, 3 s each, and the two the walk puts on.
 const DEMO_MEDIA = ['demo-bars.mp4', 'demo-colour.mp4', 'demo-testcard.mp4']
@@ -170,8 +170,7 @@ async function walk(page, { project, speech, request, token }, { shown, pause = 
   await choose(page, 'time')
   await clips(page).first().click()
   await expect(page.locator('#param-text')).toHaveValue(TITLE)
-  // Transcribing hears the saved timeline.
-  await page.locator('#save-timeline').click()
+  // The timeline saves itself: the server has all four.
   await expect
     .poll(
       async () =>
@@ -202,13 +201,14 @@ async function walk(page, { project, speech, request, token }, { shown, pause = 
   const cut = await going.allTextContents()
   await shown('edit-by-text')
   const before = await words(page).count()
+  const saves = await savesSoFar(page)
   await page.keyboard.press('Delete')
   await expect(page.locator('#transcript-last')).toContainText('Cut 2 words')
   await expect.poll(() => words(page).count()).toBeLessThan(before)
   await expect.poll(() => clips(page).count()).toBeGreaterThan(4)
+  // The cut saves itself, with the captions and the words it moved.
+  await expectSaved(page, { since: saves, id: 'transcript-save-state' })
   await pause()
-  await page.locator('#transcript-save').click()
-  await expect(page.locator('#transcript-unsaved')).toHaveCount(0)
 
   // Captions: the first one's text without the words cut, then a style, saved.
   await page.locator('#paneltab-captions').click()

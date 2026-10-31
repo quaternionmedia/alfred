@@ -391,7 +391,12 @@ export var Preview = () => {
         // visitor sees, on the Edit stage, and it said only what was missing.
         return m('.preview.empty#preview', [
           m('p', 'Nothing on the timeline yet.'),
-          m('p.emptyhint', 'Open a project or add material on the Source stage.'),
+          m(
+            'p.emptyhint',
+            m.route.param('project')
+              ? 'Add material or a template on the Source stage.'
+              : 'Open a project or add material on the Source stage.'
+          ),
         ])
       }
       if (clip.type == 'template') {

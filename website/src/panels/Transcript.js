@@ -5,8 +5,7 @@ import { Edl } from '../Video'
 import { Player } from '../Player'
 import { Health } from '../Health'
 import { User } from '../User'
-import { requestProblem } from '../Problem'
-import { saveTimeline } from '../Tools'
+import { SaveState } from '../Autosave'
 import { JobLine, TranscribeButton, TranscribeConfirm, transcribeBlocker } from './Captions'
 import '../captions/captions.scss'
 
@@ -115,24 +114,6 @@ const cutSelection = () => {
 const undoCut = () => {
   if (!Transcript.undo()) return
   focusText()
-}
-
-/** Save the timeline, the captions and the words in one request (Tools.saveTimeline). */
-const save = () => {
-  const projectId = Transcript.projectId
-  if (!projectId || Transcript.busy || !Transcript.captionsHeld()) return
-  Transcript.busy = 'save'
-  Transcript.error = null
-  saveTimeline(projectId)
-    .catch(err => {
-      Transcript.error = `Could not save: ${requestProblem(err) || 'no answer'}`
-    })
-    .then(() => {
-      Transcript.busy = null
-      // The button went disabled under the focus: give it back to the words, for Ctrl+Z.
-      focusText()
-      m.redraw()
-    })
 }
 
 /** The words, selectable text. */
@@ -251,15 +232,8 @@ const Actions = {
         },
         [m('i.material-icons', { 'aria-hidden': 'true' }, 'undo'), ' Undo']
       ),
-      m(
-        'button.primary#transcript-save',
-        {
-          disabled: !Transcript.changed || Boolean(Transcript.busy) || !Transcript.captionsHeld(),
-          title: 'Save the timeline, the captions and the words as they now are',
-          onclick: save,
-        },
-        Transcript.busy === 'save' ? 'Saving…' : 'Save'
-      ),
+      // A cut saves itself, with the captions and words it moved (Autosave.js).
+      m(SaveState, { id: 'transcript-save-state' }),
     ])
   },
 }
@@ -294,7 +268,6 @@ export const TranscriptPanel = {
     }, [
       m('.captionshead', [
         m('h3', `Transcript${count ? ` (${plural(count, 'word')})` : ''}`),
-        Transcript.changed ? m('span.captionsnote#transcript-unsaved', 'Unsaved changes') : null,
         count || Transcript.undos.length ? m(Actions) : null,
       ]),
 
@@ -308,7 +281,7 @@ export const TranscriptPanel = {
             // One line; the blocker, if any, says why the button waits.
             m(
               'p.captionsnote#transcript-empty',
-              'No transcript yet: transcribe the saved timeline to edit it by what is said.' +
+              'No transcript yet: transcribe the timeline to edit it by what is said.' +
                 (transcribeBlocker() ? ` ${transcribeBlocker()}` : '')
             ),
             m(TranscribeButton, { id: 'transcript-transcribe' }),

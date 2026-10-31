@@ -3,12 +3,16 @@
  *
  * # Recipe: cut the video by deleting words
  *
- * Select words, press Delete, Save. Ctrl+Z, or Undo, takes a cut back. A trim
- * moves the words with the picture, and a draft keeps them with its timeline.
+ * Select words and press Delete; the cut saves itself. Ctrl+Z, or Undo, takes
+ * a cut back. A trim moves the words with the picture, and a draft keeps them
+ * with its timeline.
  * Desktop and phone; the @slow test transcribes via the stub engine.
  */
 
-const { test, expect } = require('./fixtures')
+const { test, expect, expectSaved, savesSoFar, letSavesThrough } = require('./fixtures')
+
+// These check what reaches the server.
+test.use({ saves: 'real' })
 
 // Stub engine fixture: tone at 0.5-1.5 and 2.0-3.2 s.
 const FIXTURE = 'videos/e2e-speech.wav'
@@ -183,13 +187,11 @@ test.describe('@slow from the transcription to the cut', () => {
       await expect(words(authedPage)).toHaveCount(7)
       await expect(authedPage.locator('#transcript-text .transcriptpara').first()).toHaveText('the said')
       await expect(going(authedPage)).toHaveCount(0)
-      await expect(authedPage.locator('#transcript-unsaved')).toBeVisible()
       // The sound clip is split: three clips.
       await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)
 
       const removed = Math.round((thing.end - first.start) * 1000) / 1000
-      await authedPage.locator('#transcript-save').click()
-      await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+      await expectSaved(authedPage, { id: 'transcript-save-state' })
 
       // Mutation: don't shift parts after the cut -- fails.
       const edl = await timelineOf(request, token, project)
@@ -239,8 +241,7 @@ test.describe('the transcript', () => {
       await authedPage.keyboard.press('End')
       await expect.poll(() => playhead(authedPage)).toBeCloseTo(4, 1)
 
-      await authedPage.locator('#transcript-save').click()
-      await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+      await expectSaved(authedPage, { id: 'transcript-save-state' })
       const edl = await timelineOf(request, token, project)
       expect(edl.clips.map(c => [c.start, c.duration, c.inpoint ?? null])).toEqual([
         [0, 2, null],
@@ -326,7 +327,7 @@ test.describe('undo', () => {
     /**
      * Two cuts are undone one at a time, last first. The words come back
      * selected, so Delete would cut them again; the second undo is the
-     * project as saved, with nothing to save.
+     * project as it was, and the server comes back to it.
      */
     await withProject(request, token, COLOUR, async project => {
       await transcribed(request, token, project)
@@ -353,22 +354,21 @@ test.describe('undo', () => {
       await undo(authedPage)
       await expect(words(authedPage)).toHaveText(['One', 'two', 'three', 'four', 'five', 'six'])
       await expect(authedPage.locator('#timeline .clip')).toHaveCount(2)
-      await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
       await expect(authedPage.locator('#transcript-undo')).toBeDisabled()
-      // On the page only.
-      expect((await wordsOf(request, token, project)).length).toBe(6)
+      // A cut that saved itself meanwhile is saved back.
+      await expect.poll(async () => (await wordsOf(request, token, project)).length).toBe(6)
     })
   })
 
-  test('a saved cut can be undone, and saved again; another edit after a cut keeps it', async ({
+  test('a saved cut can be undone, and that saves too; another edit after a cut keeps it', async ({
     authedPage,
     request,
     token,
   }) => {
     /**
-     * Undo after Save puts the project back as it was, unsaved, and Save
-     * writes it. A cut followed by a split at the playhead (S) stays: Undo
-     * takes back a cut only while nothing else has changed since.
+     * Undo after a cut has saved puts the project back as it was, and that
+     * saves too. A cut followed by a trim stays: Undo takes back a cut only
+     * while nothing else has changed since.
      */
     await withProject(request, token, COLOUR, async project => {
       await transcribed(request, token, project)
@@ -376,8 +376,7 @@ test.describe('undo', () => {
       await words(authedPage).nth(1).dblclick()
       await expect(going(authedPage)).toHaveText(['two'])
       await authedPage.keyboard.press('Delete')
-      await authedPage.locator('#transcript-save').click()
-      await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+      await expectSaved(authedPage, { id: 'transcript-save-state' })
       expect((await wordsOf(request, token, project)).map(w => w.text)).toEqual([
         'One',
         'three',
@@ -386,11 +385,10 @@ test.describe('undo', () => {
         'six',
       ])
 
+      const cut = await savesSoFar(authedPage, 'transcript-save-state')
       await undo(authedPage)
       await expect(words(authedPage)).toHaveCount(6)
-      await expect(authedPage.locator('#transcript-unsaved')).toBeVisible()
-      await authedPage.locator('#transcript-save').click()
-      await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+      await expectSaved(authedPage, { since: cut, id: 'transcript-save-state' })
       expect(await wordsOf(request, token, project)).toEqual(WORDS)
       expect(await captionsOf(request, token, project)).toEqual(CAPTIONS)
       expect((await timelineOf(request, token, project)).clips.map(c => c.duration)).toEqual([3, 3])
@@ -438,15 +436,13 @@ test.describe('words follow the picture', () => {
 
       // Mutation: drop Transcript.follow from the trim's release -- "three" stays, fails.
       await expect(words(authedPage)).toHaveText(['One', 'two', 'four', 'five', 'six'])
-      await expect(authedPage.locator('#transcript-unsaved')).toBeVisible()
 
+      // Saved with the trim: the timeline, the captions and the words in one request.
       const path = `/project/${project._id}/captions`
-      const saved = authedPage.waitForRequest(
-        r => r.method() === 'PUT' && new URL(r.url()).pathname === path
+      const saved = await authedPage.waitForResponse(
+        r => r.request().method() === 'PUT' && new URL(r.url()).pathname === path
       )
-      await authedPage.locator('#save-timeline').click()
-      expect((await saved).postDataJSON().timeline.clips).toHaveLength(2)
-      await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+      expect(saved.request().postDataJSON().timeline.clips).toHaveLength(2)
 
       const edl = await timelineOf(request, token, project)
       const first = edl.clips[0].duration
@@ -466,15 +462,19 @@ test.describe('words follow the picture', () => {
 })
 
 test.describe('a draft', () => {
+  // Kept, not saved, until the test lets saves through.
+  test.use({ saves: 'refused' })
+
   test('a cut kept as a draft comes back with the captions and the words it moved', async ({
     authedPage,
     request,
     token,
   }) => {
     /**
-     * Cut "five" and leave the page unsaved. Opened again, the project shows
-     * as saved, words and all, and offers the cut back; Restore brings the
-     * timeline, the captions and the words together, and Save writes them.
+     * Cut "five" while saves fail, and leave the page. Opened again, the
+     * project shows as saved, words and all, and offers the cut back; Restore
+     * brings the timeline, the captions and the words together, and once the
+     * server answers they save together.
      */
     await withProject(request, token, COLOUR, async project => {
       await transcribed(request, token, project)
@@ -494,10 +494,13 @@ test.describe('a draft', () => {
       // Mutation: drop Transcript.restore from Draft.restore -- six words, fails.
       await expect(words(authedPage)).toHaveText(['One', 'two', 'three', 'four', 'six'])
       await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)
-      await expect(authedPage.locator('#transcript-unsaved')).toBeVisible()
+      await expect(authedPage.locator('#transcript-save-state')).toHaveAttribute('data-state', 'failed', {
+        timeout: 15000,
+      })
 
-      await authedPage.locator('#transcript-save').click()
-      await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+      await letSavesThrough(authedPage)
+      await authedPage.locator('#transcript-save-state-retry').click()
+      await expectSaved(authedPage, { id: 'transcript-save-state' })
       expect((await wordsOf(request, token, project)).map(w => w.text)).toEqual([
         'One',
         'two',

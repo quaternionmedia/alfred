@@ -19,7 +19,7 @@
  * not pay for the pauses.
  */
 
-const { test: base, expect, login } = require('./fixtures')
+const { test: base, expect, expectSaved, savesSoFar, login } = require('./fixtures')
 // Screenshots for the docs (screens.js).
 const { save, clear } = require('./screens')
 // docs/guide.md's walk, from an empty project to a delivered render.
@@ -187,6 +187,9 @@ const test = base.extend({
     await page.unrouteAll({ behavior: 'ignoreErrors' })
   },
 })
+
+// Recordings of the real thing: saves reach the server.
+test.use({ saves: 'real' })
 
 // Long enough to read what changed, short enough that a full recording is
 // still a couple of minutes.
@@ -487,11 +490,12 @@ test.describe('@recipe editing by text', () => {
     await authedPage.keyboard.press('Control+z')
     await expect(said).toHaveText('Every frame you see here is drawn by the server.')
     await beat(authedPage, 1200)
+    const saves = await savesSoFar(authedPage)
     await authedPage.keyboard.press('Delete')
     await expect(said).toHaveText('Every frame is drawn by the server.')
 
-    await authedPage.locator('#transcript-save').click()
-    await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+    // The cut saves itself.
+    await expectSaved(authedPage, { since: saves, id: 'transcript-save-state' })
     await beat(authedPage)
   })
 })
