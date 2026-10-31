@@ -73,8 +73,8 @@ class TestWhatARunIsCalled:
         env = run.stack_env()
         assert env['COMPOSE_PROJECT_NAME'] == CHECKOUT
         assert (env['ALFRED_PORT'], env['ALFRED_HMR_PORT'], env['ALFRED_DB_PORT']) == (
-            '8000',
-            '8001',
+            '1732',
+            '1733',
             '27017',
         )
         assert Path(env['ALFRED_FAMILY_STATE']) == REPO / '.family'

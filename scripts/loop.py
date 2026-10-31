@@ -87,15 +87,16 @@ class Run:
         self.project = f'{self.checkout}-{name}'
         self.main = name == 'main'
         self.stack_project = self.checkout if self.main else self.project
-        self.port = port or int(env.get('ALFRED_PORT') or 8000)
+        self.port = port or int(env.get('ALFRED_PORT') or 1732)
 
     @property
     def ports(self):
-        """api, live-reload, database: 8000, 8001, 27017 for main."""
+        """api, live-reload, database: 1732, 1733, 27017 for main."""
         return {
             'ALFRED_PORT': self.port,
             'ALFRED_HMR_PORT': self.port + 1,
-            'ALFRED_DB_PORT': self.port + 19017,
+            # main's is the dev stack's database, wherever its api is.
+            'ALFRED_DB_PORT': 27017 if self.main else self.port + 19017,
         }
 
     @property

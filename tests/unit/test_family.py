@@ -278,7 +278,7 @@ class TestJoesPort:
     def test_alfred_is_reached_on_ipv4_loopback(self):
         """Not localhost: on Windows a client trying ::1 first waits about two
         seconds for each refusal, since the stacks publish on 127.0.0.1."""
-        assert family.alfred_base({}) == 'http://127.0.0.1:8000'
+        assert family.alfred_base({}) == 'http://127.0.0.1:1732'
         assert family.alfred_base({'ALFRED_PORT': '8100'}) == 'http://127.0.0.1:8100'
 
 

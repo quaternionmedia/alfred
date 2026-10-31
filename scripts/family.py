@@ -664,7 +664,7 @@ def down(args):
 
 def alfred_base(env=None):
     env = os.environ if env is None else env
-    return f'http://{LOOPBACK}:{env.get("ALFRED_PORT") or 8000}'
+    return f'http://{LOOPBACK}:{env.get("ALFRED_PORT") or 1732}'
 
 
 class Checks:

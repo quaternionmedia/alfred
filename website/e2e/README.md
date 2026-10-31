@@ -62,7 +62,7 @@ same either way.
 
 | Setting | What it does |
 |---|---|
-| `E2E_BASE_URL` | The stack under test; `http://localhost:8000` by default |
+| `E2E_BASE_URL` | The stack under test; `http://127.0.0.1:1732` by default |
 | `E2E_EMAIL`, `E2E_PASSWORD`, `E2E_NAME` | Override the test account |
 | `E2E_OTHER_EMAIL` | The second account `auth.spec.js` registers to show that a project is its owner's alone; `other@mail.me` by default, with the test account's password |
 | `E2E_LOAD_BUDGET_MS` | Overrides the performance budget |
@@ -71,8 +71,8 @@ same either way.
 Before the first test, `global-setup.js` fetches `/openapi.json` from
 `E2E_BASE_URL` and fails the run unless the title is `Alfred API`. A published
 port belongs to whoever bound it first, and this suite has produced real
-measurements of a different QM service that also defaults to 8000. If the
-guard fires, start Alfred elsewhere (`ALFRED_PORT=8100 ./al dev`) and point the
+measurements of a different QM service that also defaulted to 8000. If the
+guard fires, start Alfred elsewhere (`ALFRED_PORT=1832 ./al dev`) and point the
 suite at it.
 
 ## Why the conversion is not one-to-one
