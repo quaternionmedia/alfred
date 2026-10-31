@@ -39,7 +39,7 @@ A run is named by its first argument, `main` when there is none: lower case, dig
 
 | Suite | What it runs | Needs |
 |---|---|---|
-| `quick` | the host's own tests of the scripts and the docs (`tests/unit/test_loop.py`, `test_family.py`, `test_task_runner.py`, the docs, cookbook and recipe GIF tests), in seconds | `uv` |
+| `quick` | the host's own tests of the scripts and the docs (`tests/unit/test_loop.py`, `test_family.py`, `test_port_allocation.py`, `test_task_runner.py`, the docs, cookbook and recipe GIF tests), in seconds | `uv` |
 | `pytest` | the API suite in Docker, with formatting and lint, as CI runs it (`./al pytest`) | Docker, a POSIX shell |
 | `e2e` | the browser suite in Docker, desktop and phone (`./al test`) | Docker, a POSIX shell |
 | `docs` | the docs site, built `--strict` into `.loop/<name>/site` | `uvx` |

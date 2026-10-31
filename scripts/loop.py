@@ -40,6 +40,7 @@ DEFAULT = ('quick', 'pytest', 'e2e', 'docs')
 QUICK = (
     'tests/unit/test_loop.py',
     'tests/unit/test_family.py',
+    'tests/unit/test_port_allocation.py',
     'tests/unit/test_task_runner.py',
     'tests/unit/test_docs_site.py',
     'tests/unit/test_docs_images.py',
