@@ -161,8 +161,9 @@ It worked when the render's row says `rendered` and the download plays.
 ## From a form { #from-a-form }
 
 A project with a form makes its video from what is typed into the form.
-**Announcement**, which a new install starts with, is one: a headline, its
-details and the fine print over a background.
+**Announcement** is one: a headline, its details and the fine print over a
+background. A new install seeds it for the dev user, and any other account
+can add it ([Project](about/project.md#announcement)).
 
 1. Under **Projects**, choose **Announcement**, and press **Render** on the
    stage rail. The Render stage shows the project's form.

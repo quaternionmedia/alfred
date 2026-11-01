@@ -533,8 +533,9 @@ test.describe('a form-driven project', () => {
     token,
   }) => {
     /**
-     * The form project an empty database starts with (`alfred/seed.py`),
-     * through the editor's own json-logic: a background, a headline flying
+     * The form project an empty database starts with, from
+     * `alfred/examples/announcement.json`, through the editor's own
+     * json-logic: a background, a headline flying
      * in, and the details and fine print from 1s, for the seconds chosen,
      * with sizes in proportion to the frame.
      */
@@ -542,7 +543,7 @@ test.describe('a form-driven project', () => {
       request,
       token,
       'Announcement',
-      'the server seeds it into an empty database, and ./al reseed seeds it again'
+      'global-setup.js creates it from alfred/examples/announcement.json'
     )
     const sent = await captureRenders(authedPage)
     await authedPage.goto(`/#!/?project=${seeded._id}&stage=render`)

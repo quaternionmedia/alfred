@@ -71,8 +71,20 @@ first second on. Its details layer:
   proportion to the frame at every resolution.
 - `method: caption` wraps the text to fit its box.
 
-Every clip it makes is a template, so it needs no media; the whole project is
-`ANNOUNCEMENT` in `alfred/seed.py`. [examples/project](../examples/project.md)
-makes one through the API, with an image over a video.
+Every clip it makes is a template, so it needs no media. The whole project is
+`alfred/examples/announcement.json`, which an empty database seeds for the
+account `ALFRED_SEED_OWNER` names ([Configuration](../configuration.md)). Any
+other account adds it to its own projects by sending the file:
+
+``` bash title="Add Announcement to an account's projects"
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d @alfred/examples/announcement.json \
+  http://127.0.0.1:1732/project
+```
+
+[examples/project](../examples/project.md) makes one with an image over a
+video.
 
 Each project can also be rendered at several sizes.
