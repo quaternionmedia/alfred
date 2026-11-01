@@ -4,14 +4,18 @@ A page here says what alfred is and does at any commit. When each round
 landed, its pull request, what it measured and what it taught are history,
 and they live on qm's site, in alfred's subtree under its project page, with a
 timeline qm generates from git. The changelog is release notes: what changed
-in each version, and no dates or counts. These hold the line a reader can see;
-`.github/workflows/timeless-check.yml` holds the prose of every line a pull
-request adds.
+in each version, and no dates or counts. These hold the line a reader can see,
+and run the seed's timeless gate over every tracked line;
+`.github/workflows/timeless-check.yml` runs it on the lines a pull request
+adds.
 """
 
 import re
+import subprocess
+import sys
 from pathlib import Path
 
+import pytest
 import yaml
 
 REPO = Path(__file__).resolve().parents[2]
@@ -85,3 +89,20 @@ def test_the_pages_name_no_date():
         for match in DATE.finditer(page.read_text(encoding='utf-8'))
     ]
     assert not dated, f'dates in durable pages: {dated}'
+
+
+def test_no_tracked_line_narrates_or_shouts():
+    """The seed's gate over every tracked line, not only the lines a pull
+    request adds: comments and docstrings state what is true too."""
+    gate = REPO / 'governance' / 'qm' / 'project-seed' / 'ci' / 'check_timeless.py'
+    if not gate.is_file():
+        pytest.skip('the governance submodule is not checked out')
+    run = subprocess.run(
+        [sys.executable, str(gate), '--all'],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+    )
+    if run.returncode == 2:
+        pytest.skip(f'the gate cannot read the repository here: {run.stderr[-200:]}')
+    assert run.returncode == 0, run.stdout[-2000:]
