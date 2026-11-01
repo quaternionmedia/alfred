@@ -9,9 +9,8 @@ const separator = () => m('span.sep', { 'aria-hidden': 'true' }, ' · ')
 export const Footer = {
   view: vnode =>
     m('footer', {}, [
-      // The documentation links, which used to be a route of their own at
-      // #!/documents -- a whole view, outside the editor, for two links. They
-      // are always to hand here and cost nobody a navigation.
+      // The documentation links: always to hand here, inside the editor,
+      // and costing nobody a navigation.
       //
       // Separated. They were two bare anchors side by side with nothing
       // between them -- the stylesheet that spaced them is not loaded here --

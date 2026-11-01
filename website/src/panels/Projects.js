@@ -85,10 +85,9 @@ const ProjectsPanel = {
           ])
         : null,
 
-      // The template editor, which used to be a route of its own at #!/editor
-      // with no stage rail and no timeline -- a second interface reachable
-      // from this one and unable to get back to it. It is a property of the
-      // selected project, so it belongs beside the project you selected.
+      // The template editor: a property of the selected project, so it sits
+      // beside the project you selected, inside the stage flow and beside the
+      // timeline.
       // No `key` here. A keyed vnode among unkeyed siblings makes mithril
       // reject the whole fragment -- "vnodes must either all have keys or none
       // have keys" -- and it throws during render, so this entire panel

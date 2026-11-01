@@ -11,8 +11,8 @@
  * **Discard** keeps the saved one. A save clears what was kept. It is the
  * tab's own, and goes when the tab does.
  *
- * Every edit since the last save used to be lost, with no warning, whenever
- * the page went away.
+ * Without it, every edit since the last save would be lost, with no warning,
+ * whenever the page went away.
  *
  * These open the shared media project with its saves refused, so nothing
  * reaches it: what a test keeps stays in its own browser, and the one test

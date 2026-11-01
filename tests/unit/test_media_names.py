@@ -1,9 +1,9 @@
 """C4 -- what a clip may name as media, and where that resolves.
 
-A media clip's `name` used to be opened exactly as sent: relative to whichever
-process opened it, absolute paths anywhere on the machine, and any URL. Found
-by rendering a clip dragged from the media bin: the worker, started in
-/app/alfred, looked for `videos/demo-bars.mp4` there and failed every render,
+A media clip's `name` opened exactly as sent would resolve relative to
+whichever process opened it, reach absolute paths anywhere on the machine, and
+fetch any URL. A worker started in /app/alfred would look for
+`videos/demo-bars.mp4` there and fail every render,
 while an EDL naming `/etc/hostname` had the worker open that file.
 
 These pin the rule in `alfred.core.utils.media`: a library path exactly as

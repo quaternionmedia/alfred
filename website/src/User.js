@@ -374,11 +374,10 @@ export var User = {
   },
   /** Send an anonymous visitor to the login screen, once boot has settled.
    *
-   * The app is entirely gated: every view needs a session. That used to be
-   * enforced by accident -- each view fetched something, `auth` saw the 401 and
-   * redirected. Migrating #!/projects and #!/renders into the stage flow
-   * removed the accident: the flow's panels skip their fetches when there is no
-   * session, so an anonymous visitor landed on the editor shell and sat there.
+   * The app is entirely gated: every view needs a session. A 401 from a view's
+   * fetch cannot be what enforces it: the flow's panels skip their fetches
+   * when there is no session, and an anonymous visitor would sit on the
+   * editor shell.
    *
    * Called after `restore` and `detectDevMode` have settled, because both
    * resolve asynchronously and redirecting before they answer would bounce

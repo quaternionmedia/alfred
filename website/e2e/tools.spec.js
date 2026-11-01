@@ -416,10 +416,9 @@ test.describe('the project actions', () => {
 test.describe('the editor layout groups its tools', () => {
   test('the three regions are present and in order', async ({ authedPage }) => {
     /**
-     * Viewer, transport, editor. The arrangement used to be a stack of bars
-     * with related controls apart and unrelated controls together -- aspect
-     * and resolution floating above the preview, speed buried inside the
-     * timeline's grid, zoom stranded below it.
+     * Viewer, transport, editor: related controls together and unrelated
+     * ones apart, with aspect and resolution beside the preview, speed in the
+     * transport, and zoom with the timeline's tools.
      */
     await authedPage.goto('/')
     const tops = await authedPage

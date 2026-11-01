@@ -67,8 +67,7 @@ test.describe('adding a template', () => {
 
     const clip = authedPage.locator('#timeline .clip.template[name="title"]')
     await expect(clip).toHaveCount(1)
-    // Its text, not "Hello, world" twice: the contenteditable it used to be
-    // rendered two hard-coded placeholder divs before the real one.
+    // Its text alone: no placeholder divs drawn before the real one.
     await expect(clip).toHaveText(DEFAULT_TEXT)
 
     // Its settings are offered beside the viewer.

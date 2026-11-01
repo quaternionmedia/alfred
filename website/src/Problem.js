@@ -4,9 +4,9 @@
  * FastAPI answers a refused request with `{"detail": ...}`, where `detail` is
  * a sentence for errors the code raises itself and a list of `{loc, msg}`
  * objects for validation failures. Both are worth more on screen than "Could
- * not queue the render", which is what every failure used to say whatever the
- * reason -- so a render refused for its settings read exactly like a server
- * that was down.
+ * not queue the render" for every failure, whatever the reason, which would
+ * make a render refused for its settings read exactly like a server that is
+ * down.
  */
 
 /** Flatten a `detail` of either shape into a sentence, or '' when there is none. */
