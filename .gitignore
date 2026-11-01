@@ -109,18 +109,20 @@ website/recipe-report.json
 website/recipe-videos.json
 
 # Recipe recordings and GIFs. `./al recipes` writes both here, for watching:
-# the docs served locally play each recording in the cookbook
-# (scripts/docs_recordings.py). Neither is committed, because a GIF does not
-# compress against its last version and every refresh would add megabytes to
-# history. The committed cookbook links none of them.
+# the docs served locally play each recording on the page it walks
+# (scripts/docs_recordings.py). Neither is committed, because a recording does
+# not compress against its last version and every refresh would add megabytes
+# to history. No committed page links them.
 docs/recipes/
 
 # The docs' screenshots, which `./al recipes` takes (screens.spec.js), are
 # committed despite *.png above.
 !docs/assets/screens/*.png
-# The examples' and the tools' (screens-examples.spec.js, screens-tools.spec.js).
+# The examples', the tools' and the guide's (screens-examples.spec.js,
+# screens-tools.spec.js, screens-guide.spec.js).
 !docs/assets/screens/examples/*.png
 !docs/assets/screens/tools/*.png
+!docs/assets/screens/guide/*.png
 # The docs examples' request bodies, which the pages include and the tests read.
 !docs/examples/edl/*.json
 
