@@ -1,64 +1,56 @@
-# Concepts
+# What makes a video
 
-## Timeline
-A `Timeline` represents how to make a video.
+A video in alfred is a project's timeline, rendered. Four things make it up.
+The timeline's format is otto's, and [otto's timeline
+page](https://github.com/quaternionmedia/otto/blob/51a1b0eb1d53d99f3ae55083406901ed1255ec40/docs/timeline.md)
+has every field of it; where it and this page differ, otto's decides. This page
+says what alfred adds.
 
-Most video editors show `Clips` as blocks, left to right in time, each as long as its duration.
+## The timeline
 
-### Single Track Video Editing
-A `Timeline` that plays one clip at a time.
+A timeline is an `Edl`, an edit decision list: `clips`, and an optional
+`duration`. Each clip is a `video`, `image`, `audio` or `template`, placed on
+the output by its own timing (`start`, `inpoint`, `outpoint` and `duration`),
+and where clips overlap a later one is drawn over an earlier one. otto's page
+has [the clips](https://github.com/quaternionmedia/otto/blob/51a1b0eb1d53d99f3ae55083406901ed1255ec40/docs/timeline.md#a-clip)
+and [the timing rules](https://github.com/quaternionmedia/otto/blob/51a1b0eb1d53d99f3ae55083406901ed1255ec40/docs/timeline.md#timing).
 
-It is a list of clips, in any order. Each clip plays for its `duration`, and the next starts where it ends, so the video lasts the sum of its clips' `duration`s.
+The editor lays its clips end to end on one track. It sends each clip a
+`start`, its place on the timeline, and both an `outpoint` and a `duration`
+equal to `outpoint - inpoint`, so a render places the clips as the screen
+shows them.
 
-### Multitrack Video Editing
-A `Timeline` where several videos play at once, as layering needs.
+What alfred adds to otto's rules:
 
-It is also a list of clips, each rendered on its own "track", so videos stack on top of each other. With transparency, that allows any compositing.
-
-## [Clip](clip.md)
-A `Clip` is a single, continuous section of a video, referenced in a `Timeline`, of one of four types: `video`, `image`, `audio` or `template`.
-
-These set its timing:
-
-### `start`
-: Where the clip begins in the finished video, in seconds. Default: `0`
-
-### `inpoint`
-: The start time for playing this video, in seconds. Default: `0`
-
-### `outpoint`
-: The end time for playing this video, in seconds. Optional.
-
-### `duration`
-: The length in seconds to play this video, when it has no `outpoint`. Default: `5`
-
-??? abstract "Timing math"
-    With an `outpoint`, a clip plays from its `inpoint` to its `outpoint`, for `outpoint - inpoint` seconds, and its `duration` is not read. Without one, it plays for `duration` seconds from its `inpoint`.
-    
-    The editor sends both, with `duration` equal to `outpoint - inpoint`, and a `start` for every clip: clips are layered by their own timing, not played one after another.
-
-[Clip](clip.md) has every field.
+- **A media clip's `name` is in the library**: `videos/<file>`, as `GET
+  /videos` lists it, or an `http(s)` URL on a host `ALFRED_REMOTE_MEDIA_HOSTS`
+  allows ([Configuration](../configuration.md#media-renders-and-delivery)).
+  Absolute paths, `..` and other schemes are refused.
+- **A template clip names a template this server offers**, which `GET
+  /templates` lists ([Template](template.md)).
+- **A clip alfred will not touch is refused when the request arrives**: an
+  unknown type, media outside the library, a template not offered. The 422
+  names the clip by its place, counted from 1, before anything is stored or
+  queued. A clip otto cannot build, such as an `outpoint` before its
+  `inpoint`, is a 422 from a preview and fails a render, with the reason in
+  its `error`.
 
 ## [Template](template.md)
-A `Template` is a predefined `Clip` generator that renders custom text and graphics into video.
 
-Each template takes parameters such as `text`, `font`, `fontsize`, `color`, `position` and `fxs`.
-
-Templates are transparent by default, so they stack into more complex compositions.
-
-## [EDL](edl.md)
-An `EDL`, or **E**dit **D**ecision **L**ist, is a list of `Clips` combined into one video.
-
-It is the data of the final video: every step from the source material (`video`, `photo`, `audio`, `templates`, etc.) to the finished product.
-
-A `Timeline` can show any `EDL`.
+A clip whose picture is drawn rather than read from a file: a title, a block
+of text, a colour. Templates are transparent around what they draw, so they
+stack over video.
 
 ## [Project](project.md)
-A `Project` is a saved piece of work: its name, its timeline as an `EDL`, its captions, and the size it last rendered at and where it was last delivered. Choosing one in the editor brings all of it back.
 
-A project can also be built from data: it holds `logic` to build the end product and `fields` that describe the data it needs. The `fields` are rendered as a `Form` to enter data into, on the editor's Render stage. The data is applied to the `logic`, which generates the `EDL` to render into a finished video.
+A saved piece of work: its name, its timeline, its captions, and the size it
+last rendered at and where it was last delivered. Choosing one in the editor
+brings all of it back. A project can also be built from data: `logic` makes
+the timeline from what a form, described by its `fields`, collects on the
+Render stage.
 
 ## [Render](render.md)
-A `Render` finalizes a video into a single file that any capable player can play.
 
-Rendering is computationally expensive and usually needs powerful hardware. Alfred renders on the server you run, in its render worker, so any device with a browser can edit video.
+One request to make a video of a timeline, at a size and a quality, which the
+server's render worker draws with otto into one file any player can play. So
+any device with a browser can edit video.

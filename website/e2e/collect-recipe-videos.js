@@ -5,11 +5,12 @@
  *
  * `./al recipes` records the @recipe walkthroughs as video. Each passing
  * recipe's recording is copied here as `docs/recipes/<recipe>.webm`, which
- * git ignores, and listed in `website/recipe-videos.json` with the second its
- * recipe starts at: the recording opens on the login in front of it, which
- * the recipe notes (recipes.spec.js). `scripts/recipe_gifs.py` then turns
+ * git ignores, and listed in `website/recipe-videos.json` with the seconds its
+ * recipe starts and ends at: the recording opens on the login in front of it
+ * and runs on through the cleanup after it, and the recipe notes both
+ * (recipes.spec.js). `scripts/recipe_gifs.py` then turns
  * each into `docs/recipes/<recipe>.gif`. git ignores both: the docs served
- * locally play each recording in the cookbook, from its recipe's start
+ * locally play each recording on the page it walks, from its recipe's start
  * (scripts/docs_recordings.py), and nothing is committed.
  *
  * Only recipes that passed are listed, and every GIF and recording is cleared
@@ -30,7 +31,7 @@ const MANIFEST = path.join(WEBSITE, 'recipe-videos.json')
  * names, which are hashed and truncated -- "choose a project and edit its
  * timeline" arrives on disk as `oject-and-edit-its-timeline`. The report
  * carries the real title and the real attachment path, so the file name can
- * match the recipe the cookbook names.
+ * match the recipe the pages name.
  */
 function slugFor(title) {
   return title
@@ -40,12 +41,23 @@ function slugFor(title) {
     .toLowerCase()
 }
 
+/** The second the recipe noted under `type`, or null. */
+function noted(test, result, type) {
+  const notes = [...(result.annotations || []), ...(test.annotations || [])]
+  const note = notes.find(annotation => annotation.type === type)
+  const seconds = note ? Number(note.description) : NaN
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : null
+}
+
 /** The second a recording's recipe starts at, as the recipe noted it. */
 function startOf(test, result) {
-  const notes = [...(result.annotations || []), ...(test.annotations || [])]
-  const note = notes.find(annotation => annotation.type === 'recipe-starts')
-  const seconds = note ? Number(note.description) : 0
-  return Number.isFinite(seconds) && seconds > 0 ? seconds : 0
+  return noted(test, result, 'recipe-starts') || 0
+}
+
+/** The second it ends at, before its cleanup, or null where it noted none. */
+function endOf(test, result) {
+  const end = noted(test, result, 'recipe-ends')
+  return end !== null && end > startOf(test, result) ? end : null
 }
 
 /**
@@ -79,6 +91,7 @@ function videosFromReport(reportPath) {
                   title: spec.title,
                   path: attachment.path,
                   start: startOf(test, result),
+                  end: endOf(test, result),
                 })
               }
             }
@@ -117,7 +130,7 @@ function main() {
   fs.mkdirSync(OUT, { recursive: true })
 
   // Clear stale GIFs and recordings first, so a removed or newly failing
-  // recipe leaves nothing behind for the cookbook to keep linking to.
+  // recipe leaves nothing behind for a page to keep playing.
   for (const existing of fs.readdirSync(OUT)) {
     if (/\.(gif|webm|svg)$/.test(existing)) {
       fs.unlinkSync(path.join(OUT, existing))
@@ -132,17 +145,19 @@ function main() {
     collected.push({
       slug,
       start: video.start,
+      end: video.end,
       bytes: fs.statSync(path.join(OUT, `${slug}.webm`)).size,
     })
   }
 
   collected.sort((a, b) => a.slug.localeCompare(b.slug))
-  const listed = { recipes: collected.map(({ slug, start }) => ({ slug, start })) }
+  const listed = {
+    recipes: collected.map(({ slug, start, end }) => (end ? { slug, start, end } : { slug, start })),
+  }
   fs.writeFileSync(MANIFEST, JSON.stringify(listed, null, 2) + '\n', 'utf8')
-  for (const { slug, start, bytes } of collected) {
-    console.log(
-      `  ${slug}.webm  ${(bytes / 1024).toFixed(0)} kB, the recipe from ${start.toFixed(2)} s`
-    )
+  for (const { slug, start, end, bytes } of collected) {
+    const span = end ? `${start.toFixed(2)} to ${end.toFixed(2)} s` : `from ${start.toFixed(2)} s`
+    console.log(`  ${slug}.webm  ${(bytes / 1024).toFixed(0)} kB, the recipe ${span}`)
   }
   console.log(
     `docs/recipes: ${collected.length} recordings, which git ignores; ` +

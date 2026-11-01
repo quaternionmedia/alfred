@@ -1,8 +1,9 @@
-"""The cookbook plays a walkthrough's recording where one is on disk, only there.
+"""A walkthrough's recording plays on the page it walks, where one is on disk, only there.
 
 `scripts/docs_recordings.py` is the mkdocs hook. Recordings are git-ignored,
-so the published docs must come out exactly as generated, and docs served
-after `./al recipes` must play each one from its recipe's start.
+so the published docs must come out exactly as committed, and docs served
+after `./al recipes` must play each one from its recipe's start to its end, at
+the marker the page places it with.
 """
 
 import importlib.util
@@ -11,7 +12,8 @@ import re
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-COOKBOOK = REPO / 'docs' / 'cookbook.md'
+DOCS = REPO / 'docs'
+RECIPES = REPO / 'website' / 'e2e' / 'recipes.spec.js'
 
 
 def load():
@@ -26,14 +28,28 @@ def load():
 recordings = load()
 
 PAGE = (
-    '### @recipe walkthroughs\n\n'
-    '- **recipe: open the editor and look around**\n'
-    '- **recipe: generate a demo from an empty install**\n\n'
-    '  A first run needs no downloads.\n'
+    '## A first video { #first-video }\n\n'
+    '<!-- recipe: generate a demo from an empty install -->\n\n'
+    'Nothing to bring.\n'
 )
 
 
-def test_no_recording_leaves_the_page_as_generated():
+def markers():
+    """Each marker in the docs, as (page, title)."""
+    return [
+        (page.relative_to(DOCS).as_posix(), found['title'])
+        for page in sorted(DOCS.rglob('*.md'))
+        for line in page.read_text(encoding='utf-8').splitlines()
+        if (found := recordings.MARKER.match(line))
+    ]
+
+
+def recipe_titles():
+    source = RECIPES.read_text(encoding='utf-8')
+    return re.findall(r"test\(\s*'recipe: ([^']+)'", source)
+
+
+def test_no_recording_leaves_the_page_as_committed():
     # Mutation: insert a player whatever url_of answers -- this fails.
     assert recordings.with_recordings(PAGE, lambda path: None, {}) == PAGE
 
@@ -43,39 +59,63 @@ def test_a_recording_is_played_from_its_recipe_start():
         'recipes/generate-a-demo-from-an-empty-install.webm': '../recipes/g.webm'
     }
     out = recordings.with_recordings(
-        PAGE, present.get, {'generate-a-demo-from-an-empty-install': 1.16}
+        PAGE, present.get, {'generate-a-demo-from-an-empty-install': (1.16, None)}
     )
     players = re.findall(r'<video [^>]*src="([^"]+)"', out)
     assert players == ['../recipes/g.webm#t=1.16']
-    # Under its own recipe, inside the list item, before the recipe's prose.
-    lines = out.split('\n')
-    title = lines.index('- **recipe: generate a demo from an empty install**')
-    assert lines[title + 2].startswith('  <video ')
-    assert out.index('<video ') < out.index('A first run needs no downloads.')
+    # In the marker's place, under its heading, before the prose.
+    assert '<!-- recipe:' not in out
+    assert out.index('{ #first-video }') < out.index('<video ')
+    assert out.index('<video ') < out.index('Nothing to bring.')
 
 
 def test_a_recording_with_no_start_plays_from_the_beginning():
-    present = {'recipes/open-the-editor-and-look-around.webm': 'o.webm'}
+    present = {'recipes/generate-a-demo-from-an-empty-install.webm': 'g.webm'}
     out = recordings.with_recordings(PAGE, present.get, {})
-    assert 'src="o.webm"' in out
+    assert 'src="g.webm"' in out
 
 
-def test_the_slug_is_the_collector_s(tmp_path):
-    """Every walkthrough the cookbook lists names the file the collector writes."""
-    titles = re.findall(r'^- \*\*recipe: (.+)\*\*$', COOKBOOK.read_text('utf-8'), re.M)
-    assert titles, 'the cookbook lists no recorded walkthrough'
+def test_a_recording_stops_where_its_recipe_ends():
+    """The cleanup after the recipe is recorded too; the player stops before it."""
+    present = {'recipes/generate-a-demo-from-an-empty-install.webm': 'g.webm'}
+    span = {'generate-a-demo-from-an-empty-install': (1.5, 21.25)}
+    out = recordings.with_recordings(PAGE, present.get, span)
+    assert 'src="g.webm#t=1.5,21.25"' in out
+    span = {'generate-a-demo-from-an-empty-install': (0, 9.0)}
+    assert 'src="g.webm#t=0,9"' in recordings.with_recordings(PAGE, present.get, span)
+
+
+def test_every_walkthrough_is_placed_once_by_a_page():
+    placed = [title for _, title in markers()]
+    titles = recipe_titles()
+    assert titles, 'recipes.spec.js has no walkthrough'
+    unplaced = [t for t in titles if t not in placed]
+    assert not unplaced, f'no page places {unplaced}: add <!-- recipe: TITLE -->'
+    twice = sorted({t for t in placed if placed.count(t) > 1})
+    assert not twice, f'placed more than once: {twice}'
+
+
+def test_every_marker_names_a_walkthrough():
+    titles = set(recipe_titles())
+    stray = [(page, title) for page, title in markers() if title not in titles]
+    assert not stray, f'markers naming no recipe in recipes.spec.js: {stray}'
+
+
+def test_the_slug_is_the_collector_s():
+    """Every walkthrough names the file the collector writes."""
     # collect-recipe-videos.js: drop "recipe:", runs of non-alphanumerics to -,
     # trim the ends, lowercase.
-    for title in titles:
+    for title in recipe_titles():
         expected = re.sub(r'[^a-z0-9]+', '-', title, flags=re.I).strip('-').lower()
         assert recordings.slug_for(title) == expected
 
 
-def test_starts_reads_the_collector_s_manifest(tmp_path):
+def test_spans_reads_the_collector_s_manifest(tmp_path):
     manifest = tmp_path / 'recipe-videos.json'
-    manifest.write_text(json.dumps({'recipes': [{'slug': 'a', 'start': 2.5}]}))
-    assert recordings.starts(manifest) == {'a': 2.5}
-    assert recordings.starts(tmp_path / 'absent.json') == {}
+    listed = [{'slug': 'a', 'start': 2.5}, {'slug': 'b', 'start': 1, 'end': 20.5}]
+    manifest.write_text(json.dumps({'recipes': listed}))
+    assert recordings.spans(manifest) == {'a': (2.5, None), 'b': (1.0, 20.5)}
+    assert recordings.spans(tmp_path / 'absent.json') == {}
 
 
 def test_mkdocs_runs_the_hook():

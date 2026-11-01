@@ -92,6 +92,8 @@ tests/
                          and up, smoke and down against stand-ins
     test_cookbook.py     docs/cookbook.md is what the specs generate, linking
                          only what git tracks
+    test_docs_recordings.py  each recipe's recording plays on the page that
+                         places it, and only where it is on disk
     test_recipe_gifs.py  ./al recipes keeps only passing recipes, and fails a
                          GIF over its cap or an ffmpeg that fails
     test_docs_site.py    the docs build's strict checks and what it loads

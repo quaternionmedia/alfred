@@ -2,7 +2,7 @@
 
 ## Unreleased — review fixes
 
-Fixes from a review of alfred and otto, landed in twelve rounds of parallel
+Fixes from a review of alfred and otto, landed in thirteen rounds of parallel
 branches:
 
 | Round | Integrated on | What it carried |
@@ -19,6 +19,7 @@ branches:
 | 10 | `feat/pydantic-2` | pydantic 2 in alfred and the engine (otto pinned at c82efbd, `feat/pydantic-2`); fastapi-users 15.0.5, with passwords hashed by Argon2 in a pool of their own; passlib and setuptools gone |
 | 11 | `feat/family-onboarding` | making a video in the QM family, walked step by step (`docs/guide.md`, `./al family up`); editing by text completed (undo, the timeline tools carrying the words, a cut rewriting a caption's text); comments cut to a line or two, their reasons moved into the docs; the seed's workflows, with `governance/qm` at the propagation; the dev stack on 1732 and joe on 1059, qm's port allocation |
 | 12 | `feat/ui-journeys` | the editor made for the person using it: a line under the rail saying what to do next, the timeline saving itself, New project, and the user journeys (`docs/journeys.md`) that the editor's How? links open; `governance/qm` at project/alfred's propagation of 2026-10-31 |
+| 13 | `docs/one-pass` | the docs in six sections, as qm's own site lays out its: the cookbook cut to the browser suite's index, each walkthrough played on the journey it walks; Get started a journey to the running editor; Configuration by purpose; the questions a new developer asks; otto's timeline format in otto (pinned at 51a1b0e, `docs/timeline`), and vox's and joe's rules left to their own docs |
 
 Read **Security** and **Changed** before deploying: several requests that were
 accepted are now refused, and a production stack needs its own signing key.
@@ -240,6 +241,22 @@ accepted are now refused, and a production stack needs its own signing key.
   over a running dev stack nor leaves anonymous volumes behind.
 - **The docs site loads nothing from another host** (system fonts, no emoji
   extension), and **the cookbook links only what git tracks**.
+- **The docs are six sections**: Home, Journeys, Reference, Develop, API and
+  History, where there were fourteen tabs.
+  - The cookbook is the browser suite's index, one line per spec from the
+    comment it opens with, where it printed every test's title and note (2574
+    lines, now under 80). Each user journey names the specs that walk it, and
+    in docs served locally each walkthrough's recording plays on the journey it
+    walks, placed by `<!-- recipe: <title> -->`.
+  - Get started ends at the editor answering, and says what to do when it
+    does not; the first video is the journeys'.
+  - Configuration opens with the settings people set, then every setting by
+    what it is for, in tables of three columns.
+  - Develop opens with the questions a new developer asks, each settled by
+    one command and naming the document that owns the answer.
+  - What an engine owns is the engine's page: otto's timeline format, vox's
+    contract and media client, and joe's security and media API. alfred's
+    pages say what alfred adds, and link to the commit alfred pins.
 
 ### Fixed
 

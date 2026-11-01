@@ -3,9 +3,8 @@
 This page makes one video, from nothing to a file you can play, in alfred's
 editor, and says which member of the QM family does each part for you. The
 pictures are taken by the browser suite as it walks the same steps, with a
-stand-in for joe ([below](#the-walk-recorded)), and the
-[cookbook](cookbook.md#recipe-making-a-video) plays a recording of the whole
-walk in the docs you serve yourself.
+stand-in for joe, and in docs you serve yourself a recording of the whole walk
+plays [at the end](#the-walk-recorded).
 
 ## Who does what
 
@@ -26,7 +25,7 @@ beside it:
 
 ```sh
 git clone --recurse-submodules https://github.com/quaternionmedia/alfred.git
-git clone --branch docs/tighten-language https://github.com/quaternionmedia/joe.git
+git clone https://github.com/quaternionmedia/joe.git
 cd alfred
 ./al init
 ALFRED_DEV_SKIP_AUTH=1 ./al family up
@@ -48,12 +47,10 @@ qmcp    QMCP_ALFRED_URL=http://127.0.0.1:1732 for its alfred tools
 
 *What `./al family up` prints, the stack's own output abridged.*
 
-The media API alfred asks joe through is on that branch of joe, its pull
-request #35, until it merges; `./al family up` warns when the joe it finds has
-none. joe is found beside alfred's checkout, or wherever `ALFRED_FAMILY_JOE`
-names:
+joe is found beside alfred's checkout, or wherever `ALFRED_FAMILY_JOE` names:
 `ALFRED_FAMILY_JOE=../joe.worktrees/media ./al family up`. A joe already
-answering on 1059 is used as it is. `ALFRED_DEV_SKIP_AUTH=1` skips the login
+answering on 1059 is used as it is, and `up` warns when the joe it finds has
+no media API, which alfred asks joe through ([joe's media API](https://github.com/quaternionmedia/joe/blob/main/docs/media.md)). `ALFRED_DEV_SKIP_AUTH=1` skips the login
 and serves you as a development account, on this machine only ([Skipping login
 in development](dev-auth.md)); leave it off to register and log in instead.
 `./al family smoke` then checks every part of the path, and
@@ -65,14 +62,11 @@ in development](dev-auth.md)); leave it off to register and log in instead.
 
 *The editor as it opens, with nothing chosen yet.*
 
-Browse to <http://127.0.0.1:1732>. The editor is one page. The rail along its
-top names the four stages a video goes through, Source, Edit, Render and
-Deliver. On a screen 1024 pixels wide or more every panel is open at once: the
-projects and the material on the left, the viewer over the timeline in the
-middle, and on the right the selected clip's settings and the Transcript above
-the Render, Deliver and Captions tabs. On a phone the editor shows one stage at
-a time above the viewer and the timeline. Under the rail, one line says what
-to do next, and its **How?** opens the step in the [user journeys](journeys.md).
+Browse to <http://127.0.0.1:1732>. The rail along the top names the four
+stages a video goes through, Source, Edit, Render and Deliver, and the line
+under it says what to do next; its **How?** opens the step in the [user
+journeys](journeys.md), whose [first section](journeys.md#the-editor-in-one-look)
+says where each panel is.
 
 ## 3. Bring your media
 
@@ -150,7 +144,7 @@ and the captions move with it. The cut saves itself, with the captions and
 the words it moved. Click a word to put the playhead where it starts.
 
 On a phone the Edit stage shows Captions, and a switch at its top chooses
-**Transcript** instead. [Editing by text](captions.md#editing-by-text) has the
+**Transcript** instead. [Editing by text](editing-by-text.md) has the
 rules of a cut.
 
 ## 7. Style the captions
@@ -227,6 +221,8 @@ a stand-in alfred.
 
 ## The walk, recorded
 
+<!-- recipe: make a video from start to finish -->
+
 The steps above are one browser test, `recipe: make a video from start to
 finish` in `website/e2e/recipes.spec.js`, which `./al recipes` records. To
 bring the family up, record every walkthrough with joe, and leave the stack up
@@ -239,9 +235,9 @@ ALFRED_DEV_SKIP_AUTH=1 E2E_SPEECH=videos/talk.mp4 ./al loop --only recipes --kee
 
 `E2E_SPEECH` names the sound the walk transcribes: a file of yours with speech
 in it, put in alfred's `videos/`. Without one, the walk is skipped. `./al
-docs` then serves these pages at <http://127.0.0.1:4000>, where the
-[cookbook](cookbook.md#recipe-making-a-video) plays each recording; the
-recordings stay on your machine, out of the repository. They are made by
+docs` then serves these pages at <http://127.0.0.1:4000>, which play each
+recording on the page it walks, this one above; the recordings stay on your
+machine, out of the repository. They are made by
 Playwright on this machine, so `website/` needs its dependencies and a browser
 first: `yarn install` and `npx playwright install chromium` there. [The test
 loop](loop.md) has the rest of `./al loop`.

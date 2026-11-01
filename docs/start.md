@@ -1,8 +1,8 @@
 # Get started
 
-This page runs Alfred on your own machine and makes a first video with it,
-from a fresh clone to a file you can play. No cloud account is needed: the
-demo project and its media are made by the server you run.
+The journey from a fresh clone to the editor answering on your own machine. No
+cloud account is needed: the demo project and its media are made by the server
+you run. From there, [the user journeys](journeys.md) make the first video.
 
 ## What you need
 
@@ -41,123 +41,43 @@ account instead.
 The app is published on port 1732, on this machine only. If something else
 already holds the port, `./al dev` refuses to start and names it: start on
 another with `ALFRED_PORT=1832 ./al dev`. The [dev-server notes](dev-server.md)
-cover this and the other ports, and [Configuration](configuration.md#settings)
+cover this and the other ports, and [Configuration](configuration.md#the-dev-stack-on-the-host)
 lists them.
 
 `./al stop` stops the stack.
 
 ## Open the app
 
-Browse to <http://127.0.0.1:1732>. The editor opens at Edit, with the four
-stages on the rail along the top: Source, Edit, Render and Deliver. On a screen
-1024 pixels wide or more, every panel is open at once: the Source stage's two
-panels on the left, the viewer over the timeline in the middle, and on the
-right the selected clip's settings and the Transcript above the Render,
-Deliver and Captions tabs. A panel closed by its ✕ comes back from the
-**Panels** menu.
-Narrower, as on a phone, the editor shows one stage's panels at a time above
-the viewer and the timeline. At Edit that is Captions, or the Transcript once
-the switch at the top of the stage chooses it.
+Browse to <http://127.0.0.1:1732>.
 
-Under the rail, one line says what to do next, with a button to the next
-stage and a **How?** link to the [user journey](journeys.md) that step belongs
-to. With no project open, **Source** is outlined: start there.
+![The editor with no project open: Source outlined on the rail, and the line under it saying Start here, with Go to Source](assets/screens/start.png)
 
-## Make a first video
+*What a first visit shows: Source outlined, and the line under the rail saying where to start.*
 
-Four stages, from a project to a file. [User journeys](journeys.md) has this
-walk and the others, from your own footage to an account. [Make a video with
-alfred and the QM family](guide.md) goes on from here: a title, the sound
-transcribed by joe, a cut made by deleting words, and styled captions drawn
-into the render.
+It worked when the editor opens with the four stages on the rail, Source,
+Edit, Render and Deliver, and the line under it says **Start here**. On a
+screen 1024 pixels wide or more every panel is open at once; on a phone, one
+stage at a time ([The editor in one look](journeys.md#the-editor-in-one-look)).
 
-### 1. Source
+If the page does not load, or loads something else:
 
-Choose **Source** on the rail. The **Projects** panel lists the projects the
-server seeds into an empty database; choose **Timeline demo**, three template
-clips that need no media: a title, a text box and a colour field. If the list
-is empty, as it is for a newly registered account, press **Generate a demo
-project**, which makes the same three clips as a project called **Demo**.
-**New project** starts an empty one of your own, by name.
+- **Another application answers.** Something else held 1732 first. `./al dev`
+  refuses to start in that case and names it; `curl 127.0.0.1:1732/openapi.json`
+  names whatever answers. Start clear of it with `ALFRED_PORT=1832 ./al dev`.
+- **Every request is refused.** The api is crash-looping: `./al docker logs
+  api` says why.
+- **The login screen, every time.** The stack started without
+  `ALFRED_DEV_SKIP_AUTH=1`: register an account on it ([An
+  account](journeys.md#an-account)), or start it again with the bypass.
 
-The **Media & templates** panel lists the files in the server's library. On a
-fresh install it has none, and **Generate demo media** makes three short clips
-there (colour bars, a test card and a colour field), on the server, without the
-network.
+The [dev-server notes](dev-server.md) have the rest of what bites on a first
+run.
 
-### 2. Edit
+## Next
 
-![The Edit stage: projects and media on the left, the viewer over the timeline, and a title's settings on the right](assets/screens/edit.png)
-
-*The workspace at Edit, with a title chosen on the timeline and its settings on the right.*
-
-Choosing a project opens it at Edit, its clips on the timeline from left to
-right. Press a clip and the playhead moves to that point of it, and the viewer
-shows it: for a template clip, a frame the server draws, and **Template
-settings** changes its text, length, font and colour. Choose a file under
-**Material**, or a template under **Templates**, to put it on the end of the
-timeline.
-
-The tools in the column beside the timeline change the clips. **Time**, chosen
-when the editor opens, moves the playhead; **Trim** drags a clip's end,
-**Move** its place, and **Cut** splits it in two; **Slip**, **Slide** and
-**Dual roller** shift what a clip plays, where it sits and where a cut falls;
-and the magnifiers below them zoom the timeline. [Editing tools](tools.md)
-shows each one. The timeline saves itself a second after each change: the
-indicator beside it says **Saving…**, then **Saved** ([Saving](journeys.md#saving)).
-A render takes the timeline as it is on the screen.
-
-The **Transcript** and **Captions** tabs work on what is said. Once an audio
-engine has transcribed the saved timeline, deleting words from the transcript
-cuts the stretch they were said in out of the video, and the captions can be
-corrected, styled and drawn into renders. The dev stack alone has no audio
-engine; `./al family up` starts joe with it ([Make a video](guide.md#1-start-the-family)).
-
-### 3. Render
-
-![The Render stage: the output's width and height, and Queue render](assets/screens/render.png)
-
-*The Render stage: the output's size, then Queue render.*
-
-Choose **Render** on the rail. **Width** and **Height** start at the size the
-project last rendered at, or else the viewer's; a smaller size, such as 640 by
-360, makes a smaller file sooner. Press **Queue render**: the server queues the
-render for its worker, and the editor moves to Deliver.
-
-### 4. Deliver
-
-![A finished render on the Deliver stage, with Download and Deliver](assets/screens/deliver.png)
-
-*The Deliver stage: a finished render, with Download and Deliver.*
-
-The **Deliver** panel lists the render as `queued`, then `rendering` with its
-progress, then `rendered`. Once it is rendered, **Download** saves the video
-through your browser, and **Deliver** sends it to the **Destination** above the
-list: `local`, the one this server offers, copies it into the checkout's
-`deliveries/` directory. If the panel says that no renderer is running, the
-render stays queued until a worker starts; `./al dev` starts one with the stack.
-
-## Where next
-
-- [User journeys](journeys.md): what you came to do, each walked through the
-  editor, and what to do when something goes wrong.
-- [Make a video with alfred and the QM family](guide.md): one video from
-  nothing to a delivered file, with joe transcribing it, and what each member
-  of the family does for you.
-- [Cookbook](cookbook.md): the journeys through the editor, step by step,
-  generated from the browser tests that check them.
-- [Captions](captions.md): typing, importing and transcribing captions, editing
-  the video by its transcript, drawing captions into renders, and pointing
-  Alfred at joe.
-- [Commands on each system](commands.md): running, testing and looking, on
-  Linux, macOS and Windows.
-- [The test loop](loop.md): every suite side by side, and the app left up to
-  try.
-- [Configuration](configuration.md): every setting the server reads.
-- [The family dev loop](family.md): alfred with otto, vox, joe and the rest,
-  tested and run together.
-- [Concepts](about/index.md): clips, templates, timelines, projects and
-  renders.
-- [Examples](examples/index.md) and the [API](api/index.md): making videos
-  with the API directly, with `curl`. Your own server's interactive reference
-  is at <http://127.0.0.1:1732/api>, linked from the editor's footer.
+- [A first video](journeys.md#first-video): Source to Deliver, in a few
+  minutes, with nothing to bring.
+- [Make a video with alfred and the QM family](guide.md): joe beside the
+  stack, the sound transcribed, and a cut made by deleting words.
+- [Questions a new developer asks](develop.md): to change alfred rather than
+  use it.

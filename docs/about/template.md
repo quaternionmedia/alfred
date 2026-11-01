@@ -14,7 +14,7 @@ A `Template` is a `Clip` whose picture is drawn rather than read from a file: te
 }
 ```
 
-A template clip needs `data`, and is otherwise placed and timed like any [Clip](clip.md): `start`, `duration`, `inpoint` and `outpoint`, `fadeIn` and `fadeOut`, `opacity`, `position`, and `clipsize`, the size the template is drawn at (the frame, by default).
+A template clip needs `data`, and is otherwise placed and timed like any [clip](https://github.com/quaternionmedia/otto/blob/51a1b0eb1d53d99f3ae55083406901ed1255ec40/docs/timeline.md#a-clip): `start`, `duration`, `inpoint` and `outpoint`, `fadeIn` and `fadeOut`, `opacity`, `position`, and `clipsize`, the size the template is drawn at (the frame, by default).
 
 !!! info
     `GET /templates` lists the templates this server offers, each with its `name` (what a clip's `name` must be), a `label` for people to read (`Text box` for `textBox`), a `description`, the `parameters` its template takes, and whether it is `deprecated`.
@@ -33,74 +33,18 @@ A template clip needs `data`, and is otherwise placed and timed like any [Clip](
     Any other name is refused: a 422 from a render or a preview, and a 404 from `GET /preview/template/{name}`. That includes `final`, which otto draws but this server does not offer: its address, website and phone come from otto's own defaults, and nothing in `data` changes them.
 
 ## `data`
-`data` holds the fields below. Any other key is dropped without an error, so some `parameters` that `GET /templates` lists, such as `opacity`, `fps` and `start`, cannot be set through it: the template keeps its own value.
 
-``` python
-class TemplateData:
-    text: str
-    color: str
-    themecolor: str
-    bg: str
-    fontsize: float
-    textsize: tuple
-    font: str
-    method: str = 'label'
-    align: str
-    position: tuple | str
-    fxs: List[FX]
-```
+`data` is otto's `TemplateData`: [otto's table](https://github.com/quaternionmedia/otto/blob/51a1b0eb1d53d99f3ae55083406901ed1255ec40/docs/timeline.md#template-data) has
+each field, what it draws and its default, and [`fxs`](https://github.com/quaternionmedia/otto/blob/51a1b0eb1d53d99f3ae55083406901ed1255ec40/docs/timeline.md#fxs) the
+movement. Any other key is dropped without an error, so some `parameters`
+that `GET /templates` lists, such as `opacity`, `fps` and `start`, cannot be
+set through it: the template keeps its own value. What this server adds:
 
-### `text`
-: `#!python str`
+- **`text`** is needed by every template but `makeColor`: without it, a
+  preview is a 422, and a render fails with the reason in its `error`.
+- **`font`** is a name as ImageMagick lists it on the server, such as
+  `DejaVu-Sans`. [`GET /fonts`](../api/fonts.md) lists the families this
+  server has. An unknown name is drawn in the default font, without an error.
+- **`fxs`** naming anything but `bezier2` is a 422. See [Animate
+  text](../examples/animation.md).
 
-    The words to draw. Every template but `makeColor` needs it: without it, a preview is a 422, and a render fails with the reason in its `error`.
-
-### `color`
-: `#!python str`
-
-    The text's colour, as `#rrggbb`; white by default. For `makeColor`, the colour it fills the clip with.
-
-### `themecolor`
-: `#!python str`
-
-    The colour of `title`'s box and of `bullets`' bar; yellow by default.
-
-### `bg`
-: `#!python str`
-
-    A box of this colour behind the text, drawn at 40% opacity, for `title`, `textBox` and `initial`.
-
-### `fontsize`
-: `#!python float`
-
-    The text's size. Without one, the text is sized to fill `textsize`.
-
-### `textsize`
-: `#!python tuple`
-
-    The (width, height) of the box the text is set in; half the frame each way by default.
-
-### `font`
-: `#!python str`
-
-    A font name as ImageMagick lists it on the server (`convert -list font`), such as `DejaVu-Sans`; [`GET /fonts`](../api/fonts.md) lists the families this server has. An unknown name is drawn in the default font, without an error.
-
-### `method`
-: `#!python str = 'label'`
-
-    How the text is set: `label` keeps the lines it is given, and `caption` wraps it to the width of `textsize`.
-
-### `align`
-: `#!python str`
-
-    For `textBox`, how its lines line up: `center` by default, or `west` or `east`.
-
-### `position`
-: `#!python tuple | str`
-
-    Where the text sits in the template's frame, as a clip's [`position`](clip.md#position) is given.
-
-### `fxs`
-: `#!python List[FX]`
-
-    Movements for `textBox`, `initial` and `bullets`, each `{"name": "bezier2", "data": {...}}`: the clip moves along a curve over its first second. See [Animate text](../examples/animation.md). Any other name is a 422.

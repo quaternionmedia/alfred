@@ -1,9 +1,15 @@
 # User journeys
 
 Each journey here starts from something you came to do, and walks the editor
-to it. In the editor, the line under the stage rail says the next step as you
-go, and its **How?** opens the journey that step belongs to, on this page.
-**Help**, at the top of the editor on a phone, opens this page too.
+to it: where to press, and what you see when it worked. In the editor, the
+line under the stage rail says the next step as you go, and its **How?** opens
+the journey that step belongs to, on this page. **Help**, at the top of the
+editor on a phone, opens this page too.
+
+The browser suite walks every journey, and each one names the specs that go
+red when it stops working ([The browser suite](cookbook.md)). In docs served
+locally after `./al recipes`, the recorded walkthroughs play here, each under
+the journey it walks.
 
 | To do this | Follow | What it needs |
 |---|---|---|
@@ -41,6 +47,10 @@ Under the rail, one line says where you are and what comes next, with a
 button to the next stage. With no project open, **Source** on the rail has a
 dashed outline: that is where to start.
 
+<!-- recipe: open the editor and look around -->
+
+*Checked by `workspace.spec.js`, `stacked.spec.js` and `journeys.spec.js`.*
+
 ## A first video { #first-video }
 
 ![The editor with no project open: Source outlined on the rail, and the line under it saying Start here, with Go to Source](assets/screens/start.png)
@@ -48,6 +58,8 @@ dashed outline: that is where to start.
 *With no project open: Source is outlined, and the line under the rail says where to start.*
 
 Nothing to bring: the server makes the project and its pictures.
+
+<!-- recipe: generate a demo from an empty install -->
 
 1. Open the editor. The line under the rail says **Start here**. Press **Go
    to Source**.
@@ -63,6 +75,8 @@ Nothing to bring: the server makes the project and its pictures.
 
 It worked when the browser saves a video file as long as the timeline. If the
 render stays `queued`, see [When something goes wrong](#when-something-goes-wrong).
+
+*Checked by `demo.spec.js` and `deliver.spec.js`.*
 
 ## Your own footage { #your-own-footage }
 
@@ -85,11 +99,15 @@ render stays `queued`, see [When something goes wrong](#when-something-goes-wron
 
 There is nothing to save: the timeline saves itself ([Saving](#saving)).
 
+*Checked by `editor-media.spec.js` and `journeys.spec.js`.*
+
 ## Arrange and title { #arrange-and-title }
 
 ![The workspace at Edit: a title chosen on the timeline, its settings on the right, Saved beside the timeline, and the line under the rail pointing on to Render](assets/screens/edit.png)
 
 *At Edit: the title's settings on the right, and Saved beside the timeline.*
+
+<!-- recipe: choose a project and edit its timeline -->
 
 1. Under **Templates**, in the Media & templates panel, choose **Title** to
    put a title card on the end of the timeline. Its settings open on the
@@ -110,11 +128,17 @@ The magnifiers under the tools zoom the timeline. The **Frame** menus beside
 the viewer set the picture's shape (16:9, or 9:16 for a phone's screen) and
 how sharp it is drawn; a project's first render starts at that size.
 
+<!-- recipe: pick a tool and move the playhead -->
+
+*Checked by `templates.spec.js`, `timeline-tools.spec.js` and `tools.spec.js`.*
+
 ## Render and deliver { #render-and-deliver }
 
 ![A finished render on the Deliver stage, with Download and Deliver](assets/screens/deliver.png)
 
 *A finished render, ready to download or deliver.*
+
+<!-- recipe: render the timeline and deliver the result -->
 
 1. On **Render**, **Width** and **Height** say the output's size, and the
    line under them says where it came from: the size this project last
@@ -128,6 +152,10 @@ how sharp it is drawn; a project's first render starts at that size.
 4. Press **Download** to save the video through the browser, or choose a
    **Destination** and press **Deliver** to send it there. `local` copies it
    into the `deliveries/` directory of alfred's checkout.
+
+It worked when the render's row says `rendered` and the download plays.
+
+*Checked by `editor-render.spec.js`, `deliver.spec.js` and `render-pipeline.spec.js`.*
 
 ## Captions and cutting by words { #captions-and-cutting-by-words }
 
@@ -155,6 +183,12 @@ WebVTT or JSON file. [Captions](captions.md) has every rule, and [Make a
 video with alfred and the QM family](guide.md) walks all of it with
 pictures.
 
+<!-- recipe: import captions and show them over the picture -->
+
+<!-- recipe: cut the video by deleting words from its transcript -->
+
+*Checked by `captions.spec.js` and `transcript.spec.js`.*
+
 ## On a phone { #on-a-phone }
 
 ![The editor on a phone at Edit: the rail, the line under it, Captions above the viewer, and the timeline below](assets/screens/phone-edit.png)
@@ -168,6 +202,8 @@ viewer and the timeline. At Edit, a switch chooses **Captions** or
 and **Logout** are at the top right, beside the logo. To try it from a phone
 on the same network as a dev stack, see the [dev-server notes](dev-server.md).
 
+*Checked by `flow.spec.js` and `stacked.spec.js`.*
+
 ## Coming back { #coming-back }
 
 A project keeps its timeline, its captions, and the size it last rendered at.
@@ -180,6 +216,8 @@ the edit back above the panels: **Restore them** puts it on the screen and it
 saves itself, **Discard** keeps what was saved. What is kept belongs to the
 browser tab, and goes with it.
 
+*Checked by `flow.spec.js` and `editor-draft.spec.js`.*
+
 ## Saving { #saving }
 
 The timeline saves itself a second after it stops changing. The indicator
@@ -188,7 +226,9 @@ beside the timeline, and in the Transcript panel, says **Saving…**, then
 point at it, and a **Retry**; it tries again by itself too, and keeps the edit
 in the tab meanwhile. Opening another project saves the one you are leaving.
 Captions typed or styled by hand are saved with the Captions panel's
-**Save**. [Captions](captions.md#saving) has the detail.
+**Save**. [Editing by text](editing-by-text.md#saving) has the detail.
+
+*Checked by `autosave.spec.js`.*
 
 ## An account { #an-account }
 
@@ -206,12 +246,16 @@ development](dev-auth.md)). Otherwise:
 A server in production takes registrations only when its operator opens
 them, and says so when it does not.
 
+*Checked by `login.spec.js` and `session.spec.js`.*
+
 ## With an assistant { #with-an-assistant }
 
 qmcp, QM's tool server, lets an assistant list projects, transcribe and
 correct captions, render and deliver. Arranging the timeline is the
 editor's alone. [Let an assistant drive it](guide.md#let-an-assistant-drive-it)
 says how to connect one.
+
+*Checked in qmcp, whose tests drive its tools against a stand-in alfred.*
 
 ## When something goes wrong { #when-something-goes-wrong }
 
@@ -223,3 +267,5 @@ says how to connect one.
 | **Transcribe timeline** is greyed out | It says why when you point at it: no audio engine is configured or answering, or no render worker is running to mix the sound. |
 | **Material** is empty | The library has no files. Put some in `videos/`, or press **Generate demo media**. |
 | The page shows the login screen again | The session ran out. Log in; the editor goes back to the project, and offers back anything not saved. |
+
+*Checked by `health.spec.js`, `deliver.spec.js` and `editor-draft.spec.js`.*
