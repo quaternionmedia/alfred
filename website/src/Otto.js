@@ -6,10 +6,10 @@ import { Shell } from './layout/shell'
 /**
  * The editor: the route `/` (and `/otto`) draws.
  *
- * The timeline is the subject; everything else adorns it. What used to be
- * drawn here region by region -- the stage panels, the viewer and its
- * transport, the timeline with its tools and its bin -- is a set of panels
- * now (panels/), each one module, and a layout (layout/) decides where they
+ * The timeline is the subject; everything else adorns it. The regions -- the
+ * stage panels, the viewer and its transport, the timeline with its tools and
+ * its bin -- are a set of panels (panels/), each one module, and a layout
+ * (layout/) decides where they
  * sit: a Golden Layout workspace on a wide screen, the stage flow on a
  * narrow one (layout/shell.js).
  */

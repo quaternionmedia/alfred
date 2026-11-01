@@ -137,8 +137,8 @@ startup:
   anyone holding one token can try keys offline until the signature matches,
   then sign a session for any account. Development keys may be short.
 
-Each case is reported, not enforced: the api prints `THE TOKEN SIGNING KEY IS
-NOT SAFE TO USE` at startup, and still starts. Whether production should
+Each case is reported, not enforced: at startup the api prints a banner
+saying the token signing key is not safe to use, and still starts. Whether production should
 refuse to start instead is an open decision.
 
 ## Docker hosts and joe

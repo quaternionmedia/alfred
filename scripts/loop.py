@@ -47,6 +47,7 @@ QUICK = (
     'tests/unit/test_docs_accounted.py',
     'tests/unit/test_docs_recordings.py',
     'tests/unit/test_docs_engines.py',
+    'tests/unit/test_docs_timeless.py',
     'tests/unit/test_cookbook.py',
     'tests/unit/test_recipe_gifs.py',
 )

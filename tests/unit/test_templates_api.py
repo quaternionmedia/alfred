@@ -27,10 +27,10 @@ def unadvertised_callables():
     Derived, not typed. The guard below used a hand-written list of four
     names -- `ColorClip`, `TextClip`, `CompositeVideoClip`,
     `concatenate_videoclips` -- against a namespace holding eight that must be
-    refused, so five were unchecked and nothing said so. A list written once
-    describes the namespace on the day it was written; this describes it on
-    the day the test runs, and a new import in otto arrives as a new test
-    case rather than as a silent gap.
+    refused, so five were unchecked and nothing said so. A list written by
+    hand describes the namespace as its author saw it; this one is read from
+    the namespace as the test runs, so a new import in otto arrives as a new
+    test case rather than as a silent gap.
     """
     allowed = set(TEMPLATE_NAMES) | set(UNDRIVABLE_TEMPLATES)
     return sorted(

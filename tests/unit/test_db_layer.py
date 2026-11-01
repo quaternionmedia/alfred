@@ -82,13 +82,13 @@ def test_sync_clients_are_reused():
 
 
 def test_get_client_honours_db_url():
-    """`get_client(db_url=...)` used to be ignored in favour of the module
-    constant, so a caller could ask for one host and silently get another."""
+    """`get_client(db_url=...)` reaches the host it names, not the module
+    constant: a caller asking for one host never silently gets another."""
     assert ('elsewhere.test', 27017) in seeds(dblayer.get_client(ELSEWHERE))
 
 
 def test_get_db_honours_database():
-    """`get_db(database=...)` used to be ignored in favour of DB_NAME."""
+    """`get_db(database=...)` opens the database it names, not DB_NAME."""
     assert dblayer.get_db(database='other').name == 'other'
     assert dblayer.get_db().name == DB_NAME
 

@@ -9,8 +9,8 @@ import { Edl } from '../Video'
 
 /**
  * The timeline, flanked by the tools that edit it and the zoom that scales
- * it, with the bin beneath as its source of clips -- the editor region of
- * the page it used to be, as one panel.
+ * it, with the bin beneath as its source of clips -- the editor region, as
+ * one panel.
  *
  * The bin stays under the timeline it feeds: that is the direction clips are
  * dragged. Where the Media & templates panel (Media.js) is showing, it is the

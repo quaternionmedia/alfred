@@ -173,7 +173,7 @@ in and logout; `views.spec.js`, that a reload keeps the session.
 | Captions transcribed through the stub audio engine and the worker; library media analysed | `captions.spec.js` | UI + API, `@slow` |
 | Render list | `renders.spec.js` | API + UI |
 | `GET /healthz` with no session; `GET /health` needing one, its contract fields (the preview slots among them), the running worker answering | `health.spec.js` | API |
-| The media library (`GET /media`), signed URLs for media, preview frames and downloads that load in a page with no session, nothing served from `/data` | `media.spec.js` | API + UI |
+| The media library (`GET /media`), signed URLs for media, preview frames and downloads that load in a page with no session, and `/data` answering no file | `media.spec.js` | API + UI |
 | Preview contract, malformed input, partial writes | `api-contract.spec.js` | API |
 | Routing, history, menu, unique ids | `navigation.spec.js` | UI |
 | Views render, no uncaught page errors, reload | `views.spec.js` | UI |

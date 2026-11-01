@@ -237,8 +237,8 @@ class TestTheDownloadRoute:
     def test_a_render_finished_before_the_render_directory_still_downloads(
         self, api, library
     ):
-        """Finished renders used to be written into the media library itself,
-        under their old composite names."""
+        """A render stored in the media library itself, under a composite
+        name, still downloads."""
         client, store = api
         render = make_render(
             status='RENDERED', filename='demo_320x180_1.0s_20260101-000000_x.mp4'

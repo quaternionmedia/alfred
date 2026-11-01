@@ -30,8 +30,9 @@ The editor is one page, worked in four stages named on the rail along its top:
   built.
 - **[API](api/index.md)**: what a timeline, a project and a render are, and
   videos made without the editor, with `curl`.
-- **[History](retrospective-0.3.0.md)**: what earlier rounds taught, and the
-  rules they left.
+- **[History](https://quaternionmedia.github.io/qm/projects/alfred/timeline/)**, on qm's site: when each round
+  landed, its pull request and what it measured, and the retrospectives. These
+  pages say what is true; the dated account lives there.
 
 ## How it is built
 
