@@ -5,6 +5,7 @@ import { authBlob, blobProblem, retryAfterMs } from './Download'
 import { cutAtPlayhead } from './TimelineTools'
 import { Library } from './Library'
 import { isSigned } from './Signed'
+import { Flow, madeFromForm } from './Stages'
 var state = require("./Globals").state
 
 // JSON, so structured fields (an animation's fxs) survive the query.
@@ -387,23 +388,23 @@ export var Preview = () => {
     view: () => {
       const clip = Edl.edl[Edl.current]
       if (!clip) {
-        // And where to start. The empty frame is the first thing a new
-        // visitor sees, on the Edit stage, and it said only what was missing.
+        // And where to start: the empty frame is the first thing a new
+        // visitor sees, on the Edit stage.
         return m('.preview.empty#preview', [
           m('p', 'Nothing on the timeline yet.'),
           m(
             'p.emptyhint',
-            m.route.param('project')
+            madeFromForm(Flow.project())
+              ? 'This project is made from its form, on the Render stage.'
+              : m.route.param('project')
               ? 'Add material or a template on the Source stage.'
               : 'Open a project or add material on the Source stage.'
           ),
         ])
       }
       if (clip.type == 'template') {
-        // `preview/template/...`, not `otto/template/...`. The latter has
-        // never been a route on this server, so previewing a template clip
-        // 404'd every time; the endpoint now lives under the preview router
-        // and validates the name against the template allowlist.
+        // `preview/template/...`, under the preview router, which checks the
+        // name against the template allowlist.
         return m('.bkg#preview', {}, [
           m(AuthedImage, {
             id: 'preview',

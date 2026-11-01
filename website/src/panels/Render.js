@@ -4,7 +4,7 @@ import { ProjectForm } from '../ProjectForm'
 import { queueRender, renderSize, timelineRender } from '../RenderRequest'
 import { Health, RendererNotice } from '../Health'
 import { requestProblem } from '../Problem'
-import { AsyncButton, Empty, Flow, FlowPanel } from '../Stages'
+import { AsyncButton, Empty, Flow, FlowPanel, madeFromForm } from '../Stages'
 import { state } from '../Globals'
 
 /** Where the size on offer came from. */
@@ -26,8 +26,7 @@ const RenderPanel = {
 
     // A project with `fields` renders from its form, which its `logic` turns
     // into clips; any other renders its timeline. The project decides.
-    const formDriven = project && (project.fields || []).length > 0
-    if (formDriven) {
+    if (madeFromForm(project)) {
       return m('.stagepanel#panel-render', [
         m('h3', 'Render from the project form'),
         m(RendererNotice),

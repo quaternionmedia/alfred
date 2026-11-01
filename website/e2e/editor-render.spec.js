@@ -548,6 +548,7 @@ test.describe('a form-driven project', () => {
     await authedPage.goto(`/#!/?project=${seeded._id}&stage=render`)
     const form = authedPage.locator('#template_form')
     await expect(form.locator('input[name="headline"]')).toHaveValue('Something new')
+    await expect(authedPage.locator('#next-step')).toContainText('Fill in the form')
     await form.locator('input[name="headline"]').fill('Open on Saturday')
     await form.locator('select[name="align"]').selectOption('left')
     await form.locator('select[name="duration"]').selectOption('10')
