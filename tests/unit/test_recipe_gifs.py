@@ -66,6 +66,8 @@ call = {
     'colours': int(re.search(r'max_colors=(\d+)', graph).group(1)),
     'start': float(args[args.index('-ss') + 1]) if '-ss' in args else None,
 }
+if '-t' in args:
+    call['length'] = float(args[args.index('-t') + 1])
 with Path(plan['log']).open('a', encoding='utf-8') as log:
     log.write(json.dumps(call) + '\n')
 if not source.is_file():
@@ -157,6 +159,14 @@ class TestTheConverter:
         result = converter([{'slug': 'open-a-project', 'start': 0}])
         assert result.code == 0 and result.calls[0]['start'] is None
 
+    def test_a_recipe_that_noted_its_end_is_cut_there(self, converter):
+        """The cleanup after it is recorded too, and is not the recipe."""
+        result = converter([{'slug': 'open-a-project', 'start': 2.5, 'end': 20}])
+        assert result.code == 0
+        assert result.calls[0]['start'] == 2.5 and result.calls[0]['length'] == 17.5
+        result = converter([{'slug': 'calm', 'start': 2.5}])
+        assert 'length' not in result.calls[-1]
+
     def test_one_too_big_is_made_again_at_each_lower_setting_until_it_fits(
         self, converter, capsys
     ):
@@ -233,14 +243,15 @@ class TestTheConverter:
 
 def report_of(*results, errors=()):
     """A Playwright JSON report: one spec per `(title, status, video, start)`,
-    in a describe block, as the docs project writes them."""
+    or `(..., start, end)`, in a describe block, as the docs project writes
+    them."""
     specs = []
-    for title, status, video, start in results:
+    for title, status, video, start, *end in results:
         annotations = (
             []
             if start is None
             else [{'type': 'recipe-starts', 'description': f'{start:.2f}'}]
-        )
+        ) + [{'type': 'recipe-ends', 'description': f'{e:.2f}'} for e in end]
         attachments = (
             []
             if video is None
@@ -361,6 +372,28 @@ class TestTheCollector:
         ]
         copied = collector.recipes / 'choose-a-project-and-edit-its-timeline.webm'
         assert copied.read_bytes() == b'recording of passed'
+
+    def test_a_recipe_that_noted_its_end_is_listed_with_it(self, collector):
+        """The cleanup after a recipe is recorded too; its end says where it stops."""
+        result = collector.run(
+            report_of(
+                (
+                    'recipe: choose a project and edit its timeline',
+                    'passed',
+                    collector.video('passed'),
+                    4.5,
+                    31.25,
+                )
+            )
+        )
+        assert result.returncode == 0, result.stderr
+        assert result.listed == [
+            {
+                'slug': 'choose-a-project-and-edit-its-timeline',
+                'start': 4.5,
+                'end': 31.25,
+            }
+        ]
 
     def test_a_run_whose_recipes_all_failed_clears_their_gifs(self, collector):
         """They ran and broke: their GIFs go, rather than claiming they work."""

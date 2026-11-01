@@ -61,19 +61,62 @@ async function onlyWhatItMade(page, made, library = DEMO_MEDIA) {
   )
 }
 
+// When each recipe's page opened, for the end its recording is cut at.
+const openedAt = new WeakMap()
+
+/**
+ * Draw the pointer: a headless recording has none, so a click lands unseen.
+ * A ring follows the mouse and fills while a button is down.
+ */
+function showPointer() {
+  const draw = () => {
+    const ring = document.createElement('div')
+    ring.id = 'recipe-pointer'
+    ring.style.cssText =
+      'position:fixed;left:-40px;top:-40px;width:22px;height:22px;margin:-11px 0 0 -11px;' +
+      'border:3px solid #f2aa4c;border-radius:50%;pointer-events:none;z-index:2147483647;' +
+      'transition:background 120ms,transform 120ms'
+    document.body.appendChild(ring)
+    addEventListener('mousemove', e => { ring.style.left = `${e.clientX}px`; ring.style.top = `${e.clientY}px` }, true)
+    addEventListener('mousedown', () => { ring.style.background = '#f2aa4c99'; ring.style.transform = 'scale(0.8)' }, true)
+    addEventListener('mouseup', () => { ring.style.background = ''; ring.style.transform = '' }, true)
+  }
+  if (document.body) draw()
+  else addEventListener('DOMContentLoaded', draw)
+}
+
 /**
  * Open the recipe's page: its lists narrowed, then logged in.
  *
  * Narrowed first, because the page fetches its lists as the session starts.
- * A recording starts with the page, so each one opens on this login; the
- * seconds it took are noted on the test, and `./al recipes` starts the
- * recipe's GIF there.
+ * A recording starts with the page, so each one opens on this login and its
+ * notices; the recipe starts once they have gone, and that second is noted on
+ * the test. `./al recipes` cuts the recording there.
  */
 async function openRecipe(page, made, opened, library) {
+  await page.addInitScript(showPointer)
   await onlyWhatItMade(page, made, library)
   await login(page)
+  await expect(page.locator('.ajs-message.ajs-visible')).toHaveCount(0, { timeout: 10_000 })
+  openedAt.set(page, opened)
   test.info().annotations.push({
     type: 'recipe-starts',
+    description: ((Date.now() - opened) / 1000).toFixed(2),
+  })
+  await beat(page)
+}
+
+/**
+ * Hold the last of the recipe, then note the second its recording ends: what
+ * follows is cleanup, and `./al recipes` cuts it off.
+ */
+async function endRecipe(page) {
+  const opened = openedAt.get(page)
+  if (opened === undefined) return
+  openedAt.delete(page)
+  await beat(page, HOLD)
+  test.info().annotations.push({
+    type: 'recipe-ends',
     description: ((Date.now() - opened) / 1000).toFixed(2),
   })
 }
@@ -181,6 +224,7 @@ const test = base.extend({
     expect(made.has(project._id)).toBe(true)
     await openRecipe(page, made, opened)
     await use(page)
+    await endRecipe(page)
     await everyRowIsItsOwn(page, made)
     // The Deliver panel polls the renders, so a list can still be in flight
     // as the page closes; its answer has nowhere to go and is not a failure.
@@ -191,12 +235,18 @@ const test = base.extend({
 // Recordings of the real thing: saves reach the server.
 test.use({ saves: 'real' })
 
-// Long enough to read what changed, short enough that a full recording is
-// still a couple of minutes.
+// Paced for a person watching: every action waits SLOW_MO first, so a click
+// or a key is seen before what it does, and every beat lasts PACE times the
+// pause written beside it, long enough to read what changed.
+const SLOW_MO = 350
+const PACE = 2
 const BEAT = 900
+// The last frame, held before the recording is cut.
+const HOLD = 500
+test.use({ launchOptions: { slowMo: SLOW_MO } })
 
 async function beat(page, ms = BEAT) {
-  await page.waitForTimeout(ms)
+  await page.waitForTimeout(ms * PACE)
 }
 
 // The subtitle file the captions recipe imports.
@@ -232,7 +282,7 @@ test.describe('@recipe walkthroughs', () => {
     // The stage rail names the whole flow without leaving the page.
     for (const stage of ['source', 'edit', 'render', 'deliver']) {
       await authedPage.locator(`#stage-${stage}`).hover()
-      await beat(authedPage, 400)
+      await beat(authedPage, 450)
     }
   })
 
@@ -270,7 +320,7 @@ test.describe('@recipe walkthroughs', () => {
 
     await page.reload()
     await expect(page.locator('.projectchoice')).toHaveCount(1)
-    await beat(page)
+    await endRecipe(page)
     await everyRowIsItsOwn(page, made)
   })
 
@@ -532,6 +582,7 @@ test.describe('@recipe making a video', () => {
       { project, speech, request, token },
       { shown: () => beat(page, 1600), pause: ms => beat(page, ms) }
     )
+    await endRecipe(page)
     await everyRowIsItsOwn(page, made, guide.library(speech))
     // The Deliver panel's list can still be in flight as the page closes.
     await page.unrouteAll({ behavior: 'ignoreErrors' })

@@ -2,8 +2,8 @@
 
 `scripts/docs_recordings.py` is the mkdocs hook. Recordings are git-ignored,
 so the published docs must come out exactly as committed, and docs served
-after `./al recipes` must play each one from its recipe's start, at the marker
-the page places it with.
+after `./al recipes` must play each one from its recipe's start to its end, at
+the marker the page places it with.
 """
 
 import importlib.util
@@ -59,7 +59,7 @@ def test_a_recording_is_played_from_its_recipe_start():
         'recipes/generate-a-demo-from-an-empty-install.webm': '../recipes/g.webm'
     }
     out = recordings.with_recordings(
-        PAGE, present.get, {'generate-a-demo-from-an-empty-install': 1.16}
+        PAGE, present.get, {'generate-a-demo-from-an-empty-install': (1.16, None)}
     )
     players = re.findall(r'<video [^>]*src="([^"]+)"', out)
     assert players == ['../recipes/g.webm#t=1.16']
@@ -73,6 +73,16 @@ def test_a_recording_with_no_start_plays_from_the_beginning():
     present = {'recipes/generate-a-demo-from-an-empty-install.webm': 'g.webm'}
     out = recordings.with_recordings(PAGE, present.get, {})
     assert 'src="g.webm"' in out
+
+
+def test_a_recording_stops_where_its_recipe_ends():
+    """The cleanup after the recipe is recorded too; the player stops before it."""
+    present = {'recipes/generate-a-demo-from-an-empty-install.webm': 'g.webm'}
+    span = {'generate-a-demo-from-an-empty-install': (1.5, 21.25)}
+    out = recordings.with_recordings(PAGE, present.get, span)
+    assert 'src="g.webm#t=1.5,21.25"' in out
+    span = {'generate-a-demo-from-an-empty-install': (0, 9.0)}
+    assert 'src="g.webm#t=0,9"' in recordings.with_recordings(PAGE, present.get, span)
 
 
 def test_every_walkthrough_is_placed_once_by_a_page():
@@ -100,11 +110,12 @@ def test_the_slug_is_the_collector_s():
         assert recordings.slug_for(title) == expected
 
 
-def test_starts_reads_the_collector_s_manifest(tmp_path):
+def test_spans_reads_the_collector_s_manifest(tmp_path):
     manifest = tmp_path / 'recipe-videos.json'
-    manifest.write_text(json.dumps({'recipes': [{'slug': 'a', 'start': 2.5}]}))
-    assert recordings.starts(manifest) == {'a': 2.5}
-    assert recordings.starts(tmp_path / 'absent.json') == {}
+    listed = [{'slug': 'a', 'start': 2.5}, {'slug': 'b', 'start': 1, 'end': 20.5}]
+    manifest.write_text(json.dumps({'recipes': listed}))
+    assert recordings.spans(manifest) == {'a': (2.5, None), 'b': (1.0, 20.5)}
+    assert recordings.spans(tmp_path / 'absent.json') == {}
 
 
 def test_mkdocs_runs_the_hook():
