@@ -2,10 +2,9 @@ import m from 'mithril'
 import { success, error, message } from 'alertifyjs'
 import { AuthedImage } from './Preview'
 import { isSigned } from './Signed'
-import { Form, Text, TextBox, Button, Img, Selector} from './Components'
-import { User } from './User'
+import { Form, Text, Button, Selector } from './Components'
 import { auth } from './Login'
-import { Fields, MagnussensFields } from './Form'
+import { Fields } from './Form'
 import './timerange.css'
 import 'regenerator-runtime/runtime'
 import "../node_modules/mithril-range/index.css"
@@ -21,13 +20,11 @@ const QUALITIES = ['standard', 'high', 'draft']
 /**
  * The frame `POST /preview/` made, shown.
  *
- * The route answers with where the frame is. That was a path under the public
- * `/data` mount (`data/<uuid>.jpg`), which any `<img>` can show and so can
- * anyone else who learns the name; it is now a signed URL for the private
+ * The route answers with where the frame is: a signed URL for the private
  * frames route (contract M1), which an `<img>` can show for a few minutes and
- * nobody can guess. Both are handed to the image as they are. A private path
- * that arrives unsigned is fetched with the session instead, since the image
- * alone would be refused.
+ * nobody can guess, or a path under the public `/data` mount. Both are handed
+ * to the image as they are. A private path that arrives unsigned is fetched
+ * with the session instead, since the image alone would be refused.
  */
 const FramePreview = {
   view: ({ attrs: { frame } }) => {
@@ -48,7 +45,14 @@ function formData() {
   return { ...data, width, height }
 }
 
-export function Magnussens() {
+/**
+ * A project's form, and the video its logic makes from it.
+ *
+ * The project's `fields` draw the form; its `logic`, json-logic, turns the
+ * values into clips (docs/about/project.md). Resolution, quality and a
+ * description follow the project's own fields on every form.
+ */
+export function ProjectForm() {
   let project
   let fields = []
   let logic
@@ -58,12 +62,11 @@ export function Magnussens() {
   let t = 1
   engine.addMethod('floor', Math.floor)
   engine.addMethod('sqrt', Math.sqrt)
-  
+
   return {
     oninit: vnode => {
       if (m.route.param('project')) {
         auth('/project/' + m.route.param('project')).then(res => {
-          console.log('project', res)
           project = res
           fields = res['fields']
           logic = engine.build(res['logic'])
@@ -78,13 +81,10 @@ export function Magnussens() {
           m(Selector, { name: 'resolution', text: 'Resolution'}, [
             '1920x1080', '1600x900', '1280x720',
           ]),
-          // The server's quality presets. This offered "web" and "TV" and
-          // sent ffmpeg flags of its own for each -- the server now chooses
-          // the encoding from a named preset and refuses client-supplied
-          // ffmpeg parameters, so a render from this form would have been
-          // turned away.
+          // The server picks the encoding from a named preset, and refuses
+          // ffmpeg parameters a client sends.
           m(Selector, { name: 'quality', text: 'Quality'}, QUALITIES),
-          m(Text, { name: 'description', text: 'Desciption (optional)'}, ''),
+          m(Text, { name: 'description', text: 'Description (optional)'}, ''),
           m(Button, { name: 'preview', value: 'preview', onclick: e => {
             e.preventDefault()
             if (!logic) return error('This project has no logic to build a video from', 4)
@@ -127,17 +127,13 @@ export function Magnussens() {
               description: data.description || undefined,
               width: data.width,
               height: data.height,
-              fps: 29.97,
               quality: data.quality,
               duration,
             }).then(() => {
               success('Rendering!')
-              // Into the flow, with the project, where the render is
-              // followed until it finishes. This went to the retired
-              // `/renders` route, which dropped the project.
+              // Deliver follows the render until it finishes.
               m.route.set('/', { stage: 'deliver', project: m.route.param('project') })
             }).catch(err => {
-              // It failed silently: the reason went to the console.
               const why = requestProblem(err)
               error(
                 why ? `Could not queue the render: ${escapeHtml(why)}` : 'Could not queue the render',
@@ -146,7 +142,6 @@ export function Magnussens() {
             })
           },
         },),
-        // m(Progress),
         m(range, {
           min: 0,
           max: 30,

@@ -45,7 +45,7 @@ it loops over.
 | `editor-access.spec.js` | The editor from the keyboard, and read as text. | 5 |
 | `editor-draft.spec.js` | An unsaved timeline outlives the page that made it. | 6 |
 | `editor-media.spec.js` | Media in the editor: how long it runs, and how the browser fetches it. | 9 |
-| `editor-render.spec.js` | What the editor sends when it asks for a render. | 8 |
+| `editor-render.spec.js` | What the editor sends when it asks for a render. | 9 |
 | `editor.spec.js` | The timeline editor, with a project open. | 9 |
 | `examples.spec.js` | Each docs example (docs/examples/edl/*.json) previews on the demo media alone. | 2 |
 | `flow.spec.js` | The four-stage flow, end to end, against real data. | 16 |
