@@ -244,8 +244,10 @@ container.
 - **The default sessions check and change nothing:** `formatting`
   (`black --check`), `lint` and `coverage`. `blacken`, which formats in place,
   runs only by name: `./al nox -s blacken`.
-- **The tools' ranges are pinned** (black below 26, ruff below 1), so the gate
-  fails when the code changes, not when a tool ships.
+- **The tools' ranges are pinned** (black 26, ruff below 1), so the gate
+  fails when the code changes, not when a tool ships. CI's shared format and
+  lint jobs install the newest black and ruff, so black's range is its newest
+  major.
 - **Every session runs from the repository root**, as CI does. From `tests/`,
   black and ruff covered only the tests. ruff finds `pyproject.toml` there and
   matches `extend-exclude` against the root it reports from; `..` with
