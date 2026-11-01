@@ -1,6 +1,6 @@
 import m from 'mithril'
 import { Edl } from './Video'
-import { Flow, current } from './Stages'
+import { Flow, current, madeFromForm } from './Stages'
 import { renderState } from './RenderStatus'
 
 /**
@@ -27,6 +27,16 @@ export function nextStep() {
       : { text: 'Start here: choose a project on Source.', go: toSource, anchor: 'first-video' }
   }
   const name = (project && project.name) || 'This project'
+
+  if (madeFromForm(project) && stage !== 'deliver') {
+    return stage === 'render'
+      ? { text: 'Fill in the form, preview a frame, then render.', anchor: 'from-a-form' }
+      : {
+          text: `${name} is made from its form.`,
+          go: { stage: 'render', label: 'Go to Render' },
+          anchor: 'from-a-form',
+        }
+  }
 
   if (stage === 'source') {
     return clips

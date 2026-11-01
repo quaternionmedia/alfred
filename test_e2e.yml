@@ -39,6 +39,8 @@ services:
       - /e2e/node_modules
       # For examples.spec.js: ../../docs from e2e/.
       - ./docs/examples/edl/:/docs/examples/edl/:ro
+      # For global-setup.js: the server's own form project.
+      - ./alfred/examples/:/alfred/examples/:ro
       # The guide's screenshots, which need the stub engine: kept on the host.
       - ./docs/assets/screens/guide/:/docs/assets/screens/guide/
     working_dir: /e2e/

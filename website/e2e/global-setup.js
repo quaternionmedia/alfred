@@ -1,3 +1,5 @@
+const fs = require('fs')
+const path = require('path')
 const { request } = require('@playwright/test')
 const { CREDENTIALS } = require('./credentials')
 const { MEDIA_PROJECT } = require('./fixtures')
@@ -83,6 +85,7 @@ module.exports = async () => {
   // early when its own project already exists, so on every run after the
   // first this never executed and the four tests depending on it skipped.
   await ensureTimelineDemo(api, { Authorization: token })
+  await ensureAnnouncement(api, { Authorization: token })
 
   await api.dispose()
 }
@@ -229,6 +232,29 @@ async function ensureTimelineDemo(api, headers) {
   if (created.status() !== 200) {
     throw new Error(
       `E2E setup: could not create ${TIMELINE_DEMO} (${created.status()})`
+    )
+  }
+}
+
+/**
+ * The server's own form project, as an account other than the seed's owner
+ * gets it: POSTed from `alfred/examples/announcement.json`, which
+ * `test_e2e.yml` mounts beside this folder. The seed reads the same file.
+ */
+async function ensureAnnouncement(api, headers) {
+  const file = path.join(__dirname, '..', '..', 'alfred', 'examples', 'announcement.json')
+  const announcement = JSON.parse(fs.readFileSync(file, 'utf-8'))
+  const projects = await (await api.get('/project', { headers })).json()
+  const existing = projects.filter(p => p.name === announcement.name)
+  for (const extra of existing.slice(1)) {
+    await api.delete(`/project/${extra._id}`, { headers })
+  }
+  if (existing.length) return
+
+  const created = await api.post('/project', { headers, data: announcement })
+  if (created.status() !== 200) {
+    throw new Error(
+      `E2E setup: could not create ${announcement.name} (${created.status()})`
     )
   }
 }

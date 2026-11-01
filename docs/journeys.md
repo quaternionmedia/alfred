@@ -17,6 +17,7 @@ the journey it walks.
 | Make a video from your own footage | [Your own footage](#your-own-footage) | your files in the server's library |
 | Arrange the clips, trim them, and put a title on | [Arrange and title](#arrange-and-title) | a project with clips |
 | Get the finished file | [Render and deliver](#render-and-deliver) | a render worker, which the dev stack runs |
+| Make the same kind of video again, with new words | [From a form](#from-a-form) | a project with a form, such as **Announcement** |
 | Caption it, or cut it by deleting words | [Captions and cutting by words](#captions-and-cutting-by-words) | an audio engine, such as joe |
 | Edit on a phone | [On a phone](#on-a-phone) | |
 | Pick up where you left off | [Coming back](#coming-back) | |
@@ -156,6 +157,28 @@ how sharp it is drawn; a project's first render starts at that size.
 It worked when the render's row says `rendered` and the download plays.
 
 *Checked by `editor-render.spec.js`, `deliver.spec.js` and `render-pipeline.spec.js`.*
+
+## From a form { #from-a-form }
+
+A project with a form makes its video from what is typed into the form.
+**Announcement** is one: a headline, its details and the fine print over a
+background. A new install seeds it for the dev user, and any other account
+can add it ([Project](about/project.md#announcement)).
+
+1. Under **Projects**, choose **Announcement**, and press **Render** on the
+   stage rail. The Render stage shows the project's form.
+2. Type a **Headline**, the **Details** and the **Fine print**. Choose how the
+   details align, how many **Seconds** it runs, and the **Background** and
+   **Text** colours.
+3. Drag the slider under the form to a moment, and press **preview** for the
+   frame the server draws there.
+4. Press **render**. The editor moves on to Deliver, as for any render.
+
+It worked when the preview shows the words typed, and the video runs the
+seconds chosen. [Project](about/project.md) says how to write a form of your
+own.
+
+*Checked by `editor-render.spec.js`.*
 
 ## Captions and cutting by words { #captions-and-cutting-by-words }
 
