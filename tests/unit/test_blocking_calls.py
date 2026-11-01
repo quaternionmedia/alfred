@@ -340,26 +340,22 @@ class TestTheScan:
     """What it catches and what it lets be, in modules made up for it."""
 
     def test_a_coroutine_that_starts_a_process(self):
-        found = scan(
-            '''
+        found = scan('''
             import subprocess
             async def route():
                 subprocess.run(['ffmpeg'])
-            '''
-        )
+            ''')
         assert found == [
             'alfred.made_up:4 route() calls subprocess.run '
             '(starts a process and waits for it)'
         ]
 
     def test_through_an_alias(self):
-        found = scan(
-            '''
+        found = scan('''
             from subprocess import run as bash
             async def hook():
                 bash(['fc-list'])
-            '''
-        )
+            ''')
         assert found == [
             'alfred.made_up:4 hook() calls subprocess.run '
             '(starts a process and waits for it)'
@@ -369,23 +365,19 @@ class TestTheScan:
         package = Module('alfred.utils', 'from .email import send\n', package=True)
         helper = Module(
             'alfred.utils.email',
-            dedent(
-                '''
+            dedent('''
                 from smtplib import SMTP
                 def send(to):
                     SMTP('mail').send_message(to)
-                '''
-            ),
+                '''),
         )
         route = Module(
             'alfred.routes.issue',
-            dedent(
-                '''
+            dedent('''
                 from ..utils import send
                 async def report():
                     send('support')
-                '''
-            ),
+                '''),
         )
         assert Scan([package, helper, route]).violations() == [
             'alfred.routes.issue:4 report() calls alfred.utils.email.send -> '
@@ -393,19 +385,16 @@ class TestTheScan:
         ]
 
     def test_a_method_known_to_block(self):
-        found = scan(
-            '''
+        found = scan('''
             async def route(video):
                 video.save_frame('frame.jpg')
-            '''
-        )
+            ''')
         assert found == [
             'alfred.made_up:3 route() calls .save_frame() (draws and encodes a frame)'
         ]
 
     def test_handing_it_to_the_thread_pool_is_not_calling_it(self):
-        found = scan(
-            '''
+        found = scan('''
             import subprocess
             from starlette.concurrency import run_in_threadpool
             def make(path):
@@ -413,16 +402,13 @@ class TestTheScan:
             async def route():
                 await run_in_threadpool(make, 'a')
                 await run_in_threadpool(lambda: make('b'))
-            '''
-        )
+            ''')
         assert found == []
 
     def test_a_plain_function_route_may_block(self):
-        found = scan(
-            '''
+        found = scan('''
             import subprocess
             def route():
                 subprocess.run(['ffmpeg'])
-            '''
-        )
+            ''')
         assert found == []
