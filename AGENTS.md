@@ -161,10 +161,10 @@ between the markers), so it is kept here only.
 
   The general rule, worth more than the fix: **a test result is only as good
   as your knowledge of what served it.** Before trusting a number, confirm the
-  server's identity; `curl 127.0.0.1:$PORT/openapi.json` names it. During
-  0.3.0, when alfred's port was 8000, it answered `Apothecary API`, another
-  QM service on 8000, for a whole session while Alfred served correctly on its
-  own network; see [the verification retrospective](https://github.com/quaternionmedia/alfred/blob/main/docs/retrospective-verification-discipline.md).
+  server's identity; `curl 127.0.0.1:$PORT/openapi.json` names it, and alfred
+  answers `Alfred API`. Another QM service holding the port answers with its
+  own title while alfred serves correctly on its own network, and every
+  number taken through that port is about the other service.
 - **Port 27017.** `dev.yml` publishes MongoDB on the host's loopback, for
   attaching a GUI; nothing in the app needs it there. It is the most contended
   port: a standalone `mongod` or another project's database takes it. `./al

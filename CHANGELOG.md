@@ -2,24 +2,8 @@
 
 ## Unreleased — review fixes
 
-Fixes from a review of alfred and otto, landed in thirteen rounds of parallel
-branches:
-
-| Round | Integrated on | What it carried |
-|---|---|---|
-| 1 | `integrate/review-fixes` | the render pipeline, auth and ownership, the editor, CI and operations, and the engine (otto `fix/engine-contract`) |
-| 2 | `integrate/wave-2` | media access and storage, the editor again, accounts and the timeline API, dependencies, and the engine (otto pinned at e050396, `fix/engine-wave2`) |
-| 3 | `integrate/wave-3` | captions through an audio engine (vox vendored at `alfred/vox` beside otto, driving joe), and a Golden Layout workspace for the editor |
-| 4 | `integrate/wave-4` | the review's fix round: every setting reaching the services that read it, CI installing what the image installs, the workspace's tab race and the suite's timing races, docs that describe the API as it answers, the timeline's sound written by otto (pinned at f3ceca3, `fix/engine-sound`), an api whose one event loop no longer waits on a preview, and a phone layout that keeps the whole picture on the screen |
-| 5 | `integrate/wave-5` | the decisions round 4 stopped at: password hashing off the event loop behind loud safeguards, the media work moved into otto (pinned at 7ddbf10, `feat/engine-media-ops`), a code beside every refusal of the routes qmcp calls, a cap on concurrent previews, support mail sent by the worker, the render extra and the docs build tightened, and `./al family`, which runs alfred with the repositories it works with |
-| 6 | `integrate/wave-6` | the docs: every page this effort touched said in fewer words, across the repositories, and the main pages opening with screenshots that `./al recipes` takes from demo data, its GIFs kept out of git (otto f106775 and vox e630cb0, for their docs); then the docs checked against the code, the font list's parse tested, and the project filter test making the projects it filters |
-| 7 | `feat/journeys-and-onboarding` | the editor's journeys and the way in: the phone flow fitting a phone, templates named in words, the empty viewer saying where to start, and a Get started page with the docs in the order a newcomer reads them |
-| 8 | `feat/close-gaps` | the gaps left open: the Render stage's form and the zoom row on every screen, the tests the review asked for (the recipes' pipeline, `./al`'s dev key, `./al family`, `GET /fonts`) and the three bugs they found, the docs tooling pinned, the dev-server notes on the docs site, the API examples sent to the local stack, and the walkthroughs' recordings played only in docs served locally |
-| 9 | `feat/edit-by-text-and-loop` | edit-by-text on top of the joe and vox loop; `./al loop`, the suites side by side as named runs, and images named per checkout; screenshots of every tool and docs example taken by the suite, the examples on demo media; commands on each system; the docs tools locked on their own; the phone's notices letting taps through; the template preview carrying structured data |
-| 10 | `feat/pydantic-2` | pydantic 2 in alfred and the engine (otto pinned at c82efbd, `feat/pydantic-2`); fastapi-users 15.0.5, with passwords hashed by Argon2 in a pool of their own; passlib and setuptools gone |
-| 11 | `feat/family-onboarding` | making a video in the QM family, walked step by step (`docs/guide.md`, `./al family up`); editing by text completed (undo, the timeline tools carrying the words, a cut rewriting a caption's text); comments cut to a line or two, their reasons moved into the docs; the seed's workflows, with `governance/qm` at the propagation; the dev stack on 1732 and joe on 1059, qm's port allocation |
-| 12 | `feat/ui-journeys` | the editor made for the person using it: a line under the rail saying what to do next, the timeline saving itself, New project, and the user journeys (`docs/journeys.md`) that the editor's How? links open; `governance/qm` at project/alfred's propagation of 2026-10-31 |
-| 13 | `docs/one-pass` | the docs in six sections, as qm's own site lays out its: the cookbook cut to the browser suite's index, each walkthrough played on the journey it walks; Get started a journey to the running editor; Configuration by purpose; the questions a new developer asks; otto's timeline format in otto (pinned at 51a1b0e, `docs/timeline`), and vox's and joe's rules left to their own docs |
+Fixes from a review of alfred and otto. [alfred's timeline](https://quaternionmedia.github.io/qm/projects/alfred/timeline/), on qm's
+site, dates each round of them, with its pull request and what it measured.
 
 Read **Security** and **Changed** before deploying: several requests that were
 accepted are now refused, and a production stack needs its own signing key.
@@ -244,8 +228,8 @@ accepted are now refused, and a production stack needs its own signing key.
 - **The docs are six sections**: Home, Journeys, Reference, Develop, API and
   History, where there were fourteen tabs.
   - The cookbook is the browser suite's index, one line per spec from the
-    comment it opens with, where it printed every test's title and note (2574
-    lines, now under 80). Each user journey names the specs that walk it, and
+    comment it opens with, where it printed every test's title and note. Each
+    user journey names the specs that walk it, and
     in docs served locally each walkthrough's recording plays on the journey it
     walks, placed by `<!-- recipe: <title> -->`.
   - Get started ends at the editor answering, and says what to do when it
@@ -558,22 +542,6 @@ accepted are now refused, and a production stack needs its own signing key.
   deploy, which runs from pushes only; mkdocs.yml's `validation:` warns on
   every page, link and anchor check, and MkDocs is held below 2 there
   (`./al prod`'s docs image is not pinned yet).
-
-### Measured
-
-| Round | On | `./al pytest` | `./al test` | Also |
-|---|---|---|---|---|
-| 1 | f0e8cb3 | 699 passed, 2 skipped, 8 xfailed | 212 passed, 1 skipped | |
-| 2 | `integrate/wave-2` | 1118 passed, 2 skipped, 8 xfailed | 281 passed, 1 skipped | |
-| 3 | `integrate/wave-3` | 1464 passed, 2 skipped, 8 xfailed | 381 passed, 1 skipped, across `chromium` and `phone`, including the `@slow` specs that encode on otto and transcribe through vox and the stub engine | Live, against joe on the host: a synthesised spoken line was transcribed into three timed captions and rendered with them drawn in |
-| 4 | `integrate/wave-4` | 1567 passed, 2 skipped, 8 xfailed, from a fresh clone | 389 passed, 1 skipped on the final commit; none passed only on retry in any of three full runs from a fresh clone | CI's install, emulated in a clean container: 1378 passed, 191 skipped (the database tier and the text-drawing tests), none failed. `mkdocs build --strict` without a warning. Live, against joe on the host: the 28 checks of the API pass, and qmcp's tools queued a render with the project's captions and were handed its signed download |
-| 5 | `integrate/wave-5` | 1810 passed, 2 skipped, 8 xfailed, from a fresh clone | 391 passed, 1 skipped; none passed only on retry | CI's install, emulated: 1619 passed, 193 skipped, none failed. `mkdocs build --strict` without a warning. `./al family loop` against the round's branches of joe, qmcp and vox: every repository's quick suite green, and the live check's nine checks passing against a joe with nothing but its media API turned on |
-| 6 | `integrate/wave-6` | 1831 passed, 2 skipped, 8 xfailed | 392 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning. `./al family loop` against joe#35's branch, with the auth bypass: every repository's quick suite green, and the live check's eight checks passing, the ninth skipped for want of a library file with sound. `./al recipes` against the same joe: all six recipes recorded, and every screenshot unchanged. Against a joe without the media API, the loop warns and captions refuse |
-| 7 | `feat/journeys-and-onboarding` | 1833 passed, 2 skipped, 8 xfailed | 399 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning. The `@screens` retaken against `./al family up` with joe#35's branch: all seven changed, for the phone's header, rail and transport and the templates' labels, the captions still shown with joe connected. The phone flow measured at 375x812 and 390x844: one screen on every stage, nothing scrolling sideways |
-| 8 | `feat/close-gaps` | 1892 passed, 8 skipped, 8 xfailed; black checked, not applied | 402 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning, with the recordings and without them. The `@screens` retaken against `./al family up` with joe#35's branch: seven changed, for the Render stage's form and the zoom row. The Render stage measured at 360x740, 375x812, 390x844 and 812x375: the whole form on the screen upright, and the whole picture held sideways |
-| 9 | `feat/edit-by-text-and-loop` | 1970 passed, 8 skipped, 8 xfailed; black and ruff checked | 442 passed, 1 passed only on retry (the zoom row's measure, since loosened) | Run side by side by `./al loop`, beside a running stack. `mkdocs build --strict` clean; the quick host suite 150 passed. Every screenshot retaken against joe#35's branch, the tools and examples among them |
-| 10 | `feat/pydantic-2` | 1979 passed, 10 skipped, 8 xfailed, from a git worktree, whose `.git` the container cannot follow, so two tests that ask git skip; black and ruff checked; 489 warnings, 429 more than round 9, from beanie and lazy-model reading `model_fields` as pydantic 2.11 deprecates | 443 passed, none passing only on retry | Run by `./al loop`, beside a running stack. `mkdocs build --strict` clean; the quick host suite 150 passed. otto's own suite 361 passed, its model tests on pydantic 2.5.3 too. Live: register, login, refresh, a change and a reset of password, and a 10.4.2 bcrypt account logging in and becoming Argon2 |
-| 11 and 12 | `feat/ui-journeys` | 1991 passed, 8 skipped, 8 xfailed; black and ruff checked; 493 warnings | 477 passed, none passing only on retry | Run by `./al loop` beside a demo stack with joe on 1059. `mkdocs build --strict` clean; the quick host suite 154 passed, the port allocation's test running against `governance/qm` at `d324759`. Every screenshot retaken and looked at: the editor's by `./al recipes` against the dev stack with joe (37 recipes recorded), the guide's eight in the suite's stack with the stub engine. The family's live check: 8 passed, 1 skipped for want of a library file with sound. The phone flow measured at 390x844: one screen on every stage, and two whole projects on Source |
 
 ## 0.3.0 — breaking
 
