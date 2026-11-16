@@ -4,7 +4,9 @@ Each journey here starts from something you came to do, and walks the editor
 to it: where to press, and what you see when it worked. In the editor, the
 line under the stage rail says the next step as you go, and its **How?** opens
 the journey that step belongs to, on this page. **Help**, at the top of the
-editor on a phone, opens this page too.
+editor on a phone, opens this page too. **Tour**, beside **How?**, takes the
+editor through these journeys a stage at a time, and keeps your word on each
+([The tour](tour.md)).
 
 The browser suite walks every journey, and each one names the specs that go
 red when it stops working ([The browser suite](cookbook.md)). In docs served

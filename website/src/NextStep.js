@@ -2,11 +2,12 @@ import m from 'mithril'
 import { Edl } from './Video'
 import { Flow, current, madeFromForm } from './Stages'
 import { renderState } from './RenderStatus'
+import { TourButton } from './Tour'
 
 /**
  * One line under the rail: where you are, and the next thing to do, with a
- * button to its stage and a link to the journey it is part of
- * (docs/journeys.md).
+ * button to its stage, a link to the journey it is part of
+ * (docs/journeys.md), and the tour of every journey (Tour.js).
  */
 
 // docs/journeys.md, where each stage's part of the walk is told.
@@ -116,6 +117,7 @@ export const NextStep = {
         },
         'How?'
       ),
+      m(TourButton),
     ])
   },
 }

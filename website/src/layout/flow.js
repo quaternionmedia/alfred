@@ -7,6 +7,7 @@ import { DraftOffer } from '../Draft'
 import { Menu } from '../Menu'
 import { HeaderLinks } from '../Footer'
 import { NextStep } from '../NextStep'
+import { TourBox } from '../Tour'
 
 /**
  * What each stage puts above the viewer in the phone flow.
@@ -90,6 +91,8 @@ export const StackedFlow = {
     m(Menu, { links: HeaderLinks }),
     m(StageRail),
     m(NextStep),
+    // Shown in the top layer, over the stage, when it is open.
+    m(TourBox),
     // An unsaved timeline kept from before a reload or a new login, offered
     // back -- under the rail, so it is seen whichever stage is open.
     m(DraftOffer),

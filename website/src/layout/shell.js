@@ -10,6 +10,7 @@ import { DraftOffer } from '../Draft'
 import { Menu } from '../Menu'
 import { Footer } from '../Footer'
 import { NextStep } from '../NextStep'
+import { TourBox } from '../Tour'
 
 /**
  * Where the workspace starts: 1024 CSS pixels wide.
@@ -44,6 +45,8 @@ const WorkspacePage = {
       onremove: () => Workspace.destroy(),
     }),
     m(Footer),
+    // Shown in the top layer, over every panel, when it is open.
+    m(TourBox),
   ],
 }
 

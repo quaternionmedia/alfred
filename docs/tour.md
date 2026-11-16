@@ -18,6 +18,41 @@ and what there is to try on it is the journey's own steps on that stage, each a
 link to the journey on User journeys (`alfred/tour.py` reads them from
 `docs/journeys.md`, so they are the page's words).
 
+## Opening it
+
+**Tour**, on the line under the rail beside **How?**. The box opens above the
+panels, in the browser's top layer, so a stage brought forward moves them and not
+it. Its head names the journey and the stage, and how many stages have a word on
+this build. It is dragged by its head, folded to its head by a double-click there,
+and closed by its ✕ or by Tour again. Where it stands, whether it is open and the
+stage it shows are this browser's (`alfred.tour` in its local storage), so a
+reload opens it where it was. Opened in a browser that has not taken it before, it
+starts at the first stage with no word on the build the server runs.
+
+## A stage, and the editor taken there
+
+Going to a stage -- a journey chosen in the drop-down, a stage's button, ›, ‹, or
+a word said on the one before -- takes the editor there, and ↻ beside the stage's
+words takes it there again. **its journey**, beside ↻, opens the journey on User
+journeys in a tab. The editor does what a person would do to get there, each thing
+only where it is not so already (a stage's `puts`, in `alfred/tour.py`, done by
+`website/src/tourStage.js`):
+
+| Put | What the editor does | As |
+|---|---|---|
+| `project` | the first of the projects named that Projects lists, opened | its row in Projects |
+| `stage` | the stage chosen | its button on the rail |
+| `panel` | a panel brought to the front of its stack, on a wide screen | its tab |
+
+A stage of A first video, Arrange and title, Render and deliver, or Captions and
+cutting by words opens Timeline demo, or Demo where that is the one Projects
+lists; From a form opens Announcement. Where Projects lists none of them, the
+editor goes to Source, where a project is made, and the box says so: Generate a
+demo project makes Demo.
+
+The box keeps what the editor did, folded under one line with what there is to
+try. The stage is there to explore.
+
 ## Saying how a stage is
 
 - **✓ Works**: the stage does what it says.

@@ -683,4 +683,14 @@
   .nextstephow {
     color: #9ec5ff;
   }
+
+  .nextsteptour {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #9ec5ff;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+  }
 }

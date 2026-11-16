@@ -1,0 +1,182 @@
+// The tour's box (Tour.js): over the editor, in the top layer, kept small,
+// and as plain as the rail it sits above.
+
+.tourbox {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: min(22rem, calc(100vw - 8px));
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  padding: 0;
+  border: 1px solid #3a3a3a;
+  border-radius: 0.5rem;
+  background: #1b1b1b;
+  color: #e6e6e6;
+  font-size: 0.85rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.5);
+
+  &.folded .tourbody {
+    display: none;
+  }
+
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
+}
+
+.tourhead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #2e2e2e;
+  cursor: move;
+  user-select: none;
+
+  .tourtitle {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .tourcount {
+    color: #9a9a9a;
+  }
+
+  .tourclose {
+    border: 0;
+    background: transparent;
+    color: #9a9a9a;
+  }
+}
+
+.tourbody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem 0.6rem;
+
+  select,
+  input {
+    font: inherit;
+    background: #101010;
+    color: #e6e6e6;
+    border: 1px solid #3a3a3a;
+    border-radius: 0.25rem;
+    padding: 0.15rem 0.3rem;
+  }
+}
+
+.tourstages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  button {
+    padding: 0.15rem 0.5rem;
+    border: 1px solid #3a3a3a;
+    border-radius: 999px;
+    background: transparent;
+    color: #9a9a9a;
+
+    &[aria-current='step'] {
+      color: #101820;
+      background: #f2aa4c;
+      border-color: #f2aa4c;
+    }
+
+    &.works {
+      border-color: #5fb36b;
+    }
+
+    &.off {
+      border-color: #e06c5f;
+    }
+
+    &.earlier {
+      opacity: 0.6;
+      border-style: dashed;
+    }
+  }
+}
+
+.tourwords {
+  margin: 0;
+
+  .tourput {
+    margin: 0 0.4rem;
+    border: 0;
+    background: transparent;
+    color: #9ec5ff;
+  }
+
+  .tourpage {
+    color: #9ec5ff;
+  }
+}
+
+.tourmore {
+  summary {
+    color: #9a9a9a;
+    cursor: pointer;
+  }
+
+  ul {
+    margin: 0.25rem 0;
+    padding-left: 1.1rem;
+  }
+
+  a {
+    color: #9ec5ff;
+  }
+
+  .tourneeds {
+    margin: 0.25rem 0;
+    color: #f2aa4c;
+  }
+}
+
+.tourfeedback,
+.tournowords {
+  margin: 0;
+  color: #9a9a9a;
+}
+
+.tourrow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  .tournote {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  button {
+    padding: 0.15rem 0.5rem;
+    border: 1px solid #3a3a3a;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: #e6e6e6;
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+
+  .tourworks {
+    border-color: #5fb36b;
+  }
+
+  .touroff {
+    border-color: #e06c5f;
+  }
+}
