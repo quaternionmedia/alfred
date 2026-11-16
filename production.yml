@@ -1,8 +1,9 @@
 # Over docker-compose.yml, behind a running traefik on the external `web`
 # network. `./al prod` builds the docs, then starts it. See docs/build.md.
 
-# As dev.yml's list, minus ALFRED_DEV_SKIP_AUTH (no bypass here) and
-# ALFRED_SECRET_KEY (the api's own, below).
+# As dev.yml's list, minus ALFRED_DEV_SKIP_AUTH (no bypass here),
+# ALFRED_TOUR_WORDS (no words kept here) and ALFRED_SECRET_KEY (the api's own,
+# below).
 x-alfred-settings: &alfred-settings
   # Production is this file's, not the shell's.
   ALFRED_PRODUCTION: 'true'

@@ -12,6 +12,7 @@ nav:
   - Journeys:
       - Get started: start.md
       - User journeys: journeys.md
+      - The tour: tour.md
       - Make a video: guide.md
   - Reference:
       - Captions: captions.md

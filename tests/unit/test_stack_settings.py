@@ -56,6 +56,10 @@ WITHHELD = {
         'the auth bypass has no way into a production stack'
     ),
     ('production', 'renderer', 'ALFRED_DEV_SKIP_AUTH'): 'as for the api',
+    ('production', 'api', 'ALFRED_TOUR_WORDS'): (
+        'the tour keeps words only on a server that answers its own machine'
+    ),
+    ('production', 'renderer', 'ALFRED_TOUR_WORDS'): 'as for the api',
     ('production', 'renderer', 'ALFRED_SECRET_KEY'): 'the worker signs nothing',
 }
 

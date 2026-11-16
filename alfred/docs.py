@@ -55,6 +55,13 @@ A project's captions -- text, and the stretch of the timeline it is shown for
 JSON, or transcribed from the timeline's own sound by the audio engine.""",
     },
     {
+        'name': 'tour',
+        'description': """# Tour
+The editor's user journeys, a stage at a time, and a person's word on each
+stage: `works`, or `off` with what is off. The words are kept only by a server
+started with `ALFRED_TOUR_WORDS`.""",
+    },
+    {
         'name': 'video',
         'description': """# Video
 Serve videos directly from this instance.

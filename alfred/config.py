@@ -139,6 +139,28 @@ def resolve_dev_skip_auth(env):
 # Every caller served as the dev user; off unless asked for.
 DEV_SKIP_AUTH = resolve_dev_skip_auth(environ)
 
+
+def resolve_tour_words(env):
+    """Whether this server keeps a person's words on the tour's stages.
+
+    Off unless asked for, read as `_truthy`. A word is given under a typed name
+    that nothing checks, so it is kept only by a server that answers its own
+    machine. Raises with ALFRED_PRODUCTION: a production stack answers more than
+    that, and fails to boot rather than take words (docs/tour.md).
+    """
+    requested = _truthy(env.get('ALFRED_TOUR_WORDS', ''))
+    if requested and env.get('ALFRED_PRODUCTION'):
+        raise RuntimeError(
+            'ALFRED_TOUR_WORDS is set together with ALFRED_PRODUCTION. The '
+            "tour keeps a word under a name nobody checks, so only a server "
+            'that answers its own machine keeps them. Refusing to start.'
+        )
+    return requested
+
+
+# The tour keeps a person's words on its stages; off unless asked for.
+TOUR_WORDS = resolve_tour_words(environ)
+
 # The account the bypass acts as. Reserved, and valid to EmailStr, which few
 # reserved addresses are: see docs/dev-auth.md#the-dev-accounts-address.
 DEFAULT_DEV_USER_EMAIL = 'dev@example.com'

@@ -4,6 +4,8 @@
 x-alfred-settings: &alfred-settings
   # Development only; production.yml has no passthrough for it.
   ALFRED_DEV_SKIP_AUTH:
+  # Development only, as the bypass is: the tour's words (docs/tour.md).
+  ALFRED_TOUR_WORDS:
   ALFRED_DEV_USER_EMAIL:
   ALFRED_ALLOW_REGISTRATION:
   ALFRED_SEED_OWNER:

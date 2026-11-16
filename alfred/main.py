@@ -35,6 +35,7 @@ from alfred.core.routes import (
     previewFrameAPI,
     renderFileAPI,
     templateAPI,
+    tourAPI,
     videoAPI,
     videoFileAPI,
 )
@@ -250,6 +251,10 @@ app.include_router(
 app.include_router(
     adminAPI, dependencies=[Depends(current_active_superuser)], tags=['admin']
 )
+
+# The tour: the editor's journeys, which answer without a session as the docs
+# do, and the words kept on them where ALFRED_TOUR_WORDS is set (docs/tour.md).
+app.include_router(tourAPI, tags=['tour'])
 
 # Files a browser fetches by itself (`<video src>`, `<img src>`), with no
 # Authorization header: a session, or a signed URL for that path (contract M1).

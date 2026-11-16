@@ -11,6 +11,7 @@ from .preview import previewAPI, previewFrameAPI
 from .project import ProjectAPI
 from .render import RenderAPI, renderFileAPI
 from .templates import templateAPI
+from .tour import tourAPI
 from .video import videoAPI, videoFileAPI
 
 __all__ = [
@@ -30,5 +31,6 @@ __all__ = [
     previewAPI,
     previewFrameAPI,
     templateAPI,
+    tourAPI,
     demoAPI,
 ]
