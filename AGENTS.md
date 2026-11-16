@@ -59,6 +59,17 @@ no other briefing, read this file fully before your first commit or edit.
    versioned with the code, cannot be reviewed as a diff, and goes stale
    unseen. The recipes' recordings stay out of git and play only in docs
    served locally.
+10. **The application carries its tour, and the harness reviews it** — record
+    `governance/qm/records/DRAFT-the-application-carries-its-tour-and-the-harness-reviews-it.md`,
+    with `governance/qm/handbook/the-tour.md` as the thing to do. The editor
+    carries a tour of its journeys in a box over its page (`docs/tour.md`): its
+    help, and where a person says `works` or `off` on a stage under a name. What
+    alfred plans and what was found of it are not in this repository: its
+    roadmap, plans, open work, checklists and dated records are in
+    `governance/qm/project/`, on alfred's branch of the corpus, and a change to
+    them is a pull request there. The review is the harness's, `qmcp tour`. The
+    tour makes, renders, sends and deletes nothing, stands in for nothing a
+    person brings, and has no words of its own.
 
 ## One-time setup on a fresh clone (Windows)
 

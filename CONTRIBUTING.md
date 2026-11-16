@@ -66,7 +66,8 @@ the dev stack up with joe as its audio engine, checks the whole path live, and
 takes it down. `./al family` alone says where each repository is, and whether
 alfred's pins match the checkouts beside it ([docs/family.md](docs/family.md)).
 
-The backend suite's tally is kept in [tests/README.md](tests/README.md), not
+The backend suite's tally is kept in its plan,
+[governance/qm/project/plans/core-tests.md](governance/qm/project/plans/core-tests.md), not
 here, where it would go stale with the next test; Playwright prints the
 browser suite's after every run.
 

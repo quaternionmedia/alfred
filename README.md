@@ -114,8 +114,9 @@ and prints a banner on every boot; see [docs/dev-auth.md](docs/dev-auth.md).
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md#running-the-tests) covers running either on
-the host. Strategy and known gaps: [tests/README.md](tests/README.md) for the
-backend, [website/e2e/README.md](website/e2e/README.md) for the browser suite.
+the host. Strategy and known gaps: the backend test plan,
+[governance/qm/project/plans/core-tests.md](governance/qm/project/plans/core-tests.md),
+and [website/e2e/README.md](website/e2e/README.md) for the browser suite.
 Both deliberately list what is *not* covered.
 
 The end-to-end suite indexes itself: `./al cookbook` generates

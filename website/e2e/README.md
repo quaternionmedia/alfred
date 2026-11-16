@@ -109,7 +109,7 @@ data.
 The three image breaks found when this suite replaced Cypress (`FROM python`
 reaching 3.14, the ImageMagick 6 policy path on an ImageMagick 7 base, and
 `parcel` drifting with no lockfile) are fixed; Phase 0 in
-[tests/README.md](../../tests/README.md) says how. The run installs its npm
+[the backend test plan](../../governance/qm/project/plans/core-tests.md) says how. The run installs its npm
 dependencies outside the checkout, so it does not rewrite `website/yarn.lock`.
 
 ## Defects this conversion surfaced
