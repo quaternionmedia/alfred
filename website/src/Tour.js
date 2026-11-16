@@ -124,7 +124,6 @@ export const Tour = {
     Tour.at = was >= 0 ? was : Math.max(0, first)
     Tour.box.showPopover()
     keep({ open: true })
-    place()
     m.redraw()
   },
 
@@ -214,6 +213,9 @@ export const TourBox = {
     Tour.box = dom
     if (kept().open) Tour.open().catch(() => {})
   },
+  // Placed once a stage is drawn, and again whenever it changes: measured
+  // before, the box is as tall as its border and stands past the window's foot.
+  onupdate: () => Tour.isOpen() && place(),
   onremove: () => {
     Tour.box = null
   },
@@ -225,8 +227,9 @@ export const TourBox = {
       { popover: 'manual', role: 'dialog', 'aria-label': 'Tour', class: kept().folded ? 'folded' : '' },
       at
         ? [
+            // A div: the editor's rules for its header are not the box's.
             m(
-              'header.tourhead',
+              '.tourhead',
               {
                 title: 'Drag to move; double-click to fold to this bar, or unfold',
                 onpointerdown: drag,

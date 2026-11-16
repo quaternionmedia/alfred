@@ -71,6 +71,7 @@ it loops over.
 | `templates.spec.js` | Template clips: adding them, and changing what they say. | 13 |
 | `timeline-tools.spec.js` | The timeline tools, by mouse and by touch. | 23 |
 | `tools.spec.js` | The timeline tools, and the media they act on. | 17 |
+| `tour.spec.js` | The tour's box stands wholly inside the window. | 2 |
 | `transcript.spec.js` | Editing by text: words deleted from the Transcript panel cut the timeline. | 9 |
 | `views.spec.js` | The remaining top-level views. | 8 |
 | `workspace.spec.js` | The desktop workspace: the editor's panels docked with Golden Layout. | 21 |
