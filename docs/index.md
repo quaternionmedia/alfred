@@ -45,7 +45,7 @@ each with docs of its own:
 | **otto** | draws every preview frame and render, and mixes the timeline's sound | [otto's docs](https://github.com/quaternionmedia/otto/tree/main/docs) |
 | **vox** | drives an audio engine over HTTP, by a contract | [vox's README](https://github.com/quaternionmedia/vox#readme) |
 | **joe** | the audio engine: hears the sound and times each word | [joe's docs](https://github.com/quaternionmedia/joe/tree/main/docs) |
-| **qmcp** | QM's tool server: an assistant drives alfred through its `alfred_*` tools | [qmcp](https://github.com/quaternionmedia/qmcp) |
+| **qmcp** | QM's tool server: an assistant drives alfred through its `alfred_*` tools, and its flows put each render, each transcript and each excerpt of a long recording to a person | [qmcp](https://github.com/quaternionmedia/qmcp) |
 
 Where a page here says what an engine does, the engine's own docs decide.
 [The family dev loop](family.md) runs them together.

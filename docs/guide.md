@@ -194,12 +194,13 @@ started it.
 
 ## Let an assistant drive it
 
-qmcp is QM's tool server. Pointed at alfred, it publishes nine tools an
+qmcp is QM's tool server. Pointed at alfred, it publishes ten tools an
 assistant can call:
 
 | Tool | What it does in alfred |
 |---|---|
 | `alfred_projects`, `alfred_templates` | lists the projects the account can see, and the templates a clip can be made from |
+| `alfred_project` | reads a project's saved timeline and render settings, which a timeline cut from it is cut from |
 | `alfred_captions_transcribe` | has joe transcribe a project's saved timeline, as step 5 does |
 | `alfred_captions`, `alfred_captions_set` | reads a project's captions, style and last transcription; stores corrected captions or a new style, as step 7 does |
 | `alfred_render_enqueue`, `alfred_render_status` | queues a render of a project's saved timeline, with its captions when their style is on, and follows it to a download link |
@@ -207,7 +208,11 @@ assistant can call:
 | `alfred_health` | alfred's report on itself: its database, render workers, queue and audio engine |
 
 Bringing media, arranging the timeline and editing by text are the editor's
-alone: no tool does them. To connect an assistant, in qmcp's checkout set
+alone: no tool does them. The `alfred-excerpts` flow reads the transcript
+alfred holds, cuts it into chapters at long pauses and spans at pauses and
+sentence ends, asks you about each span on qmcp's queue, renders each approved
+span as an excerpt of its own with its captions burned in, and asks you again
+with its link; qmcp's `docs/integrations/alfred.md` is the reference. To connect an assistant, in qmcp's checkout set
 `QMCP_ALFRED_URL` to the address `./al family up` printed, start the server
 with `uv run qmcp serve`, and point an MCP client such as Claude Code at
 `qmcp_mcp.py`, which lists and invokes the running server's tools. A stack

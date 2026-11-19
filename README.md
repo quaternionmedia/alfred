@@ -26,7 +26,9 @@ makes a first video, from Source to Deliver.
 
 **Make a video:** [docs/guide.md](docs/guide.md) takes one from nothing to a
 delivered file with the QM family: joe transcribes its sound, you cut it by
-deleting words, and otto renders it with its captions.
+deleting words, and otto renders it with its captions. Or have qmcp offer the
+stretches of a long recording that stand alone, and render the ones you choose
+as excerpts of their own.
 
 ## Shape
 
