@@ -29,7 +29,7 @@ import './lanes.scss'
  * The timeline's lanes: one time axis, several rows under it, all at the
  * editor's scale (`state.scale()`, pixels a second) in one box that scrolls
  * sideways, so what is at a second in one lane is above and below what is at
- * that second in the others. docs/timeline.md says what each lane shows.
+ * that second in the others. docs/lanes.md says what each lane shows.
  *
  *   Time    the ruler, labelled every so many seconds for the zoom
  *   Clips   the clips, as they always were: `#timeline`, the tools' subject

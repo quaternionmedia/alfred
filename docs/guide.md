@@ -108,7 +108,7 @@ what a clip plays, where it sits and where a cut falls; [Editing
 tools](tools.md) shows each one.
 Choose **Time** again, and a press on a clip puts the playhead there. Under
 the clips, the timeline's lanes show the words, the sound, the fades and the
-cues at the same seconds ([The timeline](timeline.md)); a press on any of
+cues at the same seconds ([The timeline's lanes](lanes.md)); a press on any of
 them seeks there too.
 
 There is no Save to press: the timeline saves itself a second after each

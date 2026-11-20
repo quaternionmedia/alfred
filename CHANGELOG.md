@@ -386,7 +386,7 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Added
 
-- **The timeline's lanes** (`docs/timeline.md`): the clips are one lane of
+- **The timeline's lanes** (`docs/lanes.md`): the clips are one lane of
   several on one time axis, at one scale, in one box that scrolls sideways.
   A ruler above them; under them the transcript's words and the captions
   where they are said and shown, the loudness of each file's sound from the

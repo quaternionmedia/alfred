@@ -1,4 +1,4 @@
-# The timeline
+# The timeline's lanes
 
 ![The Timeline panel: the ruler, the clips, the words and captions, the sound's loudness, a fade, and the excerpts the harness proposed, in lanes under one another](assets/screens/timeline-lanes.png)
 
