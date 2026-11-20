@@ -32,6 +32,8 @@ class Code(StrEnum):
     TIMELINE_SILENT = 'timeline_silent'
     TRANSCRIPTION_RUNNING = 'transcription_running'
     TRANSCRIPTION_NOT_QUEUED = 'transcription_not_queued'
+    # Cues.
+    TOO_MANY_CUES = 'too_many_cues'
     # Renders: queueing one, and getting it back.
     ENCODER_OPTIONS_REFUSED = 'encoder_options_refused'
     FRAME_SIZE_OUT_OF_RANGE = 'frame_size_out_of_range'
@@ -74,6 +76,7 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.TIMELINE_SILENT: Meaning(422, 'nothing in the timeline can make a sound'),
     Code.TRANSCRIPTION_RUNNING: Meaning(409, 'a transcription is under way'),
     Code.TRANSCRIPTION_NOT_QUEUED: Meaning(503, 'the broker would not take the job'),
+    Code.TOO_MANY_CUES: Meaning(422, 'more cues than a project carries'),
     Code.ENCODER_OPTIONS_REFUSED: Meaning(422, 'encoder options, not a quality'),
     Code.FRAME_SIZE_OUT_OF_RANGE: Meaning(422, 'a width or height out of range'),
     Code.FPS_OUT_OF_RANGE: Meaning(422, 'a frame rate out of range'),

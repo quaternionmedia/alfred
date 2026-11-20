@@ -21,8 +21,10 @@ from otto.models import Edl
 
 from alfred import config
 from alfred.core.errors import REFUSALS, Code, Refusal
+from alfred.core.models.cues import MAX_CUES
 from alfred.core.models.render import Render
 from alfred.core.routes import captions as caption_routes
+from alfred.core.routes import cues as cue_routes
 from alfred.core.routes import render as render_routes
 from alfred.core.routes.templates import TEMPLATE_NAMES
 from alfred.core.utils import audio_engine, bucket, concurrency, support_mail
@@ -54,6 +56,7 @@ COVERED = [
     'alfred/core/routes/admin.py',
     'alfred/core/routes/audio.py',
     'alfred/core/routes/captions.py',
+    'alfred/core/routes/cues.py',
     'alfred/core/routes/issue.py',
     'alfred/core/routes/project.py',
     'alfred/core/routes/render.py',
@@ -176,9 +179,11 @@ class World:
         app.dependency_overrides[caption_routes.get_captions_queue] = (
             lambda: self.transcriptions
         )
+        app.dependency_overrides[cue_routes.get_cues_store] = lambda: self.projects
         self.overrides += [
             caption_routes.get_captions_store,
             caption_routes.get_captions_queue,
+            cue_routes.get_cues_store,
         ]
         self.client = TestClient(app)
 
@@ -275,6 +280,13 @@ def too_many_captions(world):
         res,
         f'{MAX_CAPTIONS + 1} captions is more than the {MAX_CAPTIONS} a project may carry',
     )
+
+
+def too_many_cues(world):
+    project = world.projects.add()
+    many = [{'start': n, 'label': 'here'} for n in range(MAX_CUES + 1)]
+    res = world.client.put(f'/project/{project}/cues', json={'cues': many})
+    return res, f'{MAX_CUES + 1} cues is more than the {MAX_CUES} a project may carry'
 
 
 def caption_file_unreadable(world):
@@ -485,6 +497,7 @@ REQUESTS = {
     Code.TIMELINE_SILENT: timeline_silent,
     Code.TRANSCRIPTION_RUNNING: transcription_running,
     Code.TRANSCRIPTION_NOT_QUEUED: transcription_not_queued,
+    Code.TOO_MANY_CUES: too_many_cues,
     Code.ENCODER_OPTIONS_REFUSED: encoder_options_refused,
     Code.FRAME_SIZE_OUT_OF_RANGE: frame_size_out_of_range,
     Code.FPS_OUT_OF_RANGE: fps_out_of_range,

@@ -162,6 +162,8 @@ class ProjectAPI(MotorCRUDRouter):
             # Captions held to their own route's rules; drawn only if the
             # style sent says so.
             model.captions_job = None
+            # Cues too have their own route.
+            model.cues = None
             try:
                 model.captions = (
                     checked_captions(model.captions) if model.captions else None
@@ -191,6 +193,7 @@ class ProjectAPI(MotorCRUDRouter):
             model.captions = project.captions
             model.caption_style = project.caption_style
             model.captions_job = project.captions_job
+            model.cues = project.cues
             del model.id
             await project.update(Set(model))
             return await self._as_stored(project)

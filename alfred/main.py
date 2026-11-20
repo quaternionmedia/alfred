@@ -26,6 +26,7 @@ from alfred.core.routes import (
     audioAPI,
     authAPI,
     captionsAPI,
+    cuesAPI,
     demoAPI,
     fontAPI,
     healthAPI,
@@ -218,6 +219,8 @@ app.include_router(
 app.include_router(
     captionsAPI, dependencies=[Depends(current_active_user)], tags=['captions']
 )
+# A project's cues, drawn on the editor's timeline, scoped the same way.
+app.include_router(cuesAPI, dependencies=[Depends(current_active_user)], tags=['cues'])
 
 app.include_router(fontAPI, dependencies=[Depends(current_active_user)], tags=['font'])
 app.include_router(

@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, field_serializer
 from pymongo import ASCENDING, IndexModel
 
 from .captions import Caption, CaptionsJob, CaptionStyle
+from .cues import Cue
 
 # One generated demo per account, held by MongoDB: two racing
 # `POST /demo/project`s cannot both insert. Partial: only `demo: true` counts.
@@ -59,6 +60,9 @@ class Project(Document):
     caption_style: Optional[CaptionStyle] = None
     # The last transcription. Server-owned.
     captions_job: Optional[CaptionsJob] = None
+    # In timeline seconds. Written by `PUT /project/{id}/cues`; a
+    # whole-project update keeps them.
+    cues: Optional[List[Cue]] = None
 
     model_config = ConfigDict(title='Alfred Project')
 
