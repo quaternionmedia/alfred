@@ -108,6 +108,8 @@ These are read by compose and `./al`, not by alfred.
 | `COMPOSE_PROJECT_NAME` | the checkout's directory, in lower case | The compose project this checkout's stacks run as; `./al test`, `./al pytest` and `./al nox` run theirs beside it as `<project>-e2e` and `<project>-pytest`. Two checkouts in directories of the same name need it. |
 | `ALFRED_IMAGES` | the checkout's directory, in lower case | The images' prefix, `<prefix>_api`, `_site`, `_worker`, `_test` and `_audio_stub`, so two worktrees never swap each other's dependencies. `./al` sets it. |
 | `ALFRED_DB_DIR` | `./database` | Where the stack's database keeps its files. [`./al loop`](loop.md) gives each named run one under `.loop/<name>/`. |
+| `ALFRED_HOST_DB` | `mongodb://127.0.0.1:27018` | The MongoDB [`./al host`](host-run.md) points the api and the worker at, on a port the dev stack does not publish. |
+| `ALFRED_HOST_STATE` | `./.host` | Where `./al host` keeps its logs and the record of what it started. |
 | `E2E_PROJECTS`, `E2E_ARGS`, `E2E_OUTPUT` | `--project=chromium --project=phone`; none; `website/` | The browser suite's Playwright projects, more arguments (`--grep @slow`), and where its results go. `./al loop` sets them per run. |
 | `UID`, `GID` | unset: compose warns | The user and group the dev database runs as. Harmless unset on Docker Desktop; export both if it fails to start on a Linux host. |
 

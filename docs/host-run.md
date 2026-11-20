@@ -38,11 +38,35 @@ python -c "import secrets; print('ALFRED_SECRET_KEY=' + secrets.token_hex(32))" 
 
 ## Run
 
-Four processes, each in a terminal of its own, from the root of the
-checkout.
+```sh
+ALFRED_DEV_SKIP_AUTH=1 ./al host up
+```
 
-**The database.** Any MongoDB, on a port the dev stack does not publish, so
-the two can be started without moving either:
+`up` starts joe as `./al family up` does, then the api, a render worker and
+the site's watcher from this checkout's own environment, and says where
+each answers. `./al host` says what answers on each port and what `up`
+started; `./al host down` stops what it started, and leaves alone a joe or
+a database it found running. Each process logs to `.host/logs/<name>.log`,
+which git ignores.
+
+Before it starts anything, `up` refuses and says why: the api's port already
+answering, the site's port in use, no environment of the checkout's own
+(`pdm install` above), no `website/node_modules`, or nothing answering
+where `ALFRED_HOST_DB` points.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `ALFRED_HOST_DB` | `mongodb://127.0.0.1:27018` | The MongoDB the api and the worker use; `up` checks that something answers there. On a port the dev stack does not publish, so both can be started without moving either. |
+| `ALFRED_PORT`, `ALFRED_HMR_PORT` | `1732`, `1733` | The api's port and the site's reload port, as for the stack. |
+| `ALFRED_JOE_HOST`, `ALFRED_JOE_PORT` | `127.0.0.1`, `1059` | Where joe listens, as for [the family](family.md). |
+| `ALFRED_HOST_STATE` | `.host` | Where the logs and the record of what `up` started are kept. |
+| `ALFRED_DEV_SKIP_AUTH`, and every setting alfred reads | | Pass through to the api and the worker, as the stack's lists pass them ([Configuration](configuration.md)). |
+
+### What `up` runs
+
+Each as a process, for running one by hand from the root of the checkout.
+**The database** `up` does not start: any MongoDB, on a port the dev stack
+does not publish, so the two can be started without moving either:
 
 ```sh
 mongod --dbpath <a folder of its own> --port 27018 --bind_ip 127.0.0.1

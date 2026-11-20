@@ -7,9 +7,9 @@ you run. From there, [the user journeys](journeys.md) make the first video.
 ## What you need
 
 - **Docker**, with Compose (`docker compose`). The api, the render worker, the
-  database and the site's build all run in containers. Without Docker, the
-  same code runs as processes on this machine against a MongoDB of its own:
-  [Running on the host](host-run.md).
+  database and the site's build all run in containers. Without Docker,
+  `./al host up` runs the same code as processes on this machine against a
+  MongoDB of its own: [Running on the host](host-run.md).
 - **git**, to clone with submodules. The two engines, otto and vox, are
   submodules, and the images do not build without them.
 - **A POSIX shell** for `./al`, the repository's task runner, which is a `sh`

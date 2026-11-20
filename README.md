@@ -86,6 +86,7 @@ Everything routes through `./al`. Run it with no arguments for the full list.
 | `./al recipes` | Against a running stack: take the screenshots into `docs/assets/screens/`, record the recipes as GIFs into `docs/recipes/` (kept out of git; `./al docs` then plays each recording on the page it walks), and regenerate the cookbook |
 | `./al install <pkg>` | Add a website dependency |
 | `./al family` | alfred with otto, vox, joe, qmcp and the rest: status, quick suites, the stack wired to joe, a live check ([docs/family.md](docs/family.md)) |
+| `./al host` | alfred as processes on this machine, without Docker: status, up, down ([docs/host-run.md](docs/host-run.md)) |
 
 `./al dev` publishes on 1732, 1733 and 27017, on `127.0.0.1` only. It refuses
 to start on an occupied port and names what holds it; move the port rather

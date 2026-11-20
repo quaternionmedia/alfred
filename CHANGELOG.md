@@ -391,10 +391,11 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Added
 
-- **Running on the host** (`docs/host-run.md`): the api, a render worker
-  and the site's watcher as processes on this machine, against a MongoDB
-  and joe, with what that run lacks beside the stack. Linked from Get
-  started, the new developer's questions and Commands.
+- **Running on the host** (`./al host up`, `docs/host-run.md`): the api, a
+  render worker and the site's watcher as processes on this machine, against
+  a MongoDB and joe, with what that run lacks beside the stack. `./al host`
+  says what answers and `./al host down` stops what it started. Linked from
+  Get started, the new developer's questions and Commands.
 - **Media and Templates are two panels**, and the timeline's tools a third.
   The **Media** panel lists the library with each file's kind, filters a
   long list, adds files from this device by a picker or a drop (`POST
