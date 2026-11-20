@@ -52,6 +52,8 @@ it loops over.
 | `follow-clips.spec.js` | `followClips` (src/ClipWindow.js): captions and words follow an edit made with the timeline tools. | 12 |
 | `health.spec.js` | Whether the stack can do its work. | 4 |
 | `journeys.spec.js` | The editor says what to do next. | 6 |
+| `lanes-arith.spec.js` | The lanes' arithmetic (src/lanes/arith.js): ticks, the view, the clips laid out, a sound's envelope over them, and a clip's effects. | 14 |
+| `lanes.spec.js` | The timeline's lanes (src/lanes/Lanes.js): the ruler above the clips, and the words, the sound, the effects and the cues under them, at one scale. | 6 |
 | `login.spec.js` | Logging in, registering, and the links the server mails. | 14 |
 | `media.spec.js` | Media the browser fetches by itself. | 10 |
 | `navigation.spec.js` | Navigation and routing. | 8 |

@@ -42,6 +42,34 @@ Every frame is drawn by the server
 
 const CAPTION_AT_FIVE = 'Every frame is drawn by the server'
 
+/** `text`'s words spread evenly from `start` to `end`, as a transcript times them. */
+function spread(start, end, text, segment) {
+  const words = text.split(' ')
+  const each = (end - start) / words.length
+  return words.map((word, i) => ({
+    start: Math.round((start + i * each) * 1000) / 1000,
+    end: Math.round((start + (i + 0.85) * each) * 1000) / 1000,
+    text: word,
+    segment,
+  }))
+}
+
+// What the lanes screen draws under the clips (screen: the timeline's lanes).
+const LANE_WORDS = [
+  ...spread(0.5, 2.8, 'A video editor in the browser', 0),
+  ...spread(3.2, 5.8, CAPTION_AT_FIVE, 1),
+  ...spread(6.2, 8.8, 'Captions from a subtitle file', 2),
+]
+const LANE_CUES = [
+  { start: 0, end: 9, label: 'The reel', kind: 'chapter', state: null },
+  { start: 3.2, end: 8.8, label: 'Excerpt 1: announcement', kind: 'excerpt', state: 'waiting' },
+  { start: 5, end: null, label: 'A mark', kind: 'mark', state: null },
+]
+const LANE_PEAKS = {
+  rate: 4,
+  values: Array.from({ length: 12 }, (_, i) => 0.25 + 0.6 * Math.abs(Math.sin(i * 1.1))),
+}
+
 // The demo media the project uses, of what `POST /demo/media` makes.
 const DEMO_MEDIA = ['demo-bars.mp4', 'demo-colour.mp4', 'demo-testcard.mp4']
 
@@ -257,6 +285,43 @@ test.describe('@screens', () => {
     await open(page, 'edit')
     await onTheTitle(page)
     await save(page, 'edit')
+  })
+
+  test("screen: the timeline's lanes", async ({ page }) => {
+    // The words, the cues and the sound are served to the page, as
+    // lanes.spec.js serves them: the stack the screens run on need not run an
+    // audio engine, and the picture is of the lanes, not of what joe heard.
+    // The words are the project's own captions, spread over their time.
+    clear('timeline-lanes')
+    const id = project._id
+    await page.route(
+      url => url.pathname === `/project/${id}/captions/words`,
+      route => route.fulfill({ json: { words: LANE_WORDS } })
+    )
+    await page.route(
+      url => url.pathname === `/project/${id}/cues`,
+      route => route.fulfill({ json: { cues: LANE_CUES } })
+    )
+    await page.route(
+      url => /^\/media\/.+\/audio$/.test(url.pathname),
+      route => route.fulfill({ json: { duration: 3, peaks: LANE_PEAKS, silences: [] } })
+    )
+    await page.route(
+      url => url.pathname === `/project/${id}`,
+      async route => {
+        if (route.request().method() !== 'GET') return route.fallback()
+        const response = await route.fetch()
+        const json = await response.json()
+        json.edl.clips[1].fadeIn = 1.5
+        await route.fulfill({ response, json })
+      }
+    )
+    await open(page, 'edit')
+    await expect(page.locator('.lane.text .laneword')).toHaveCount(LANE_WORDS.length)
+    await expect(page.locator('.lane.cues .cue')).toHaveCount(LANE_CUES.length)
+    await expect(page.locator('.lane.audio polygon')).toHaveCount(2)
+    await onTheBars(page)
+    await save(page, 'timeline-lanes')
   })
 
   test('screen: captions over the picture', async ({ page }) => {

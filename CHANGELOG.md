@@ -386,6 +386,20 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Added
 
+- **The timeline's lanes** (`docs/timeline.md`): the clips are one lane of
+  several on one time axis, at one scale, in one box that scrolls sideways.
+  A ruler above them; under them the transcript's words and the captions
+  where they are said and shown, the loudness of each file's sound from the
+  audio engine's analysis, each clip's fades and opacity as otto renders
+  them, and the project's cues. A press on a lane seeks there; a word, a
+  caption or a cue seeks to its start; zoomed out, the words become marks
+  and then make way for the captions. The words, the captions and the cues
+  load when the session is confirmed, not only when the project opens.
+- **Cues on a project** (`GET`/`PUT /project/{id}/cues`): moments and
+  stretches of the timeline with a label, a kind, a state, a source, a
+  reference and a note, which the Cues lane draws. A writer replaces its
+  own cues and leaves another's; the whole-project update keeps them. qmcp's
+  excerpt flow writes the excerpts it proposes and where each stands.
 - **The user journeys** (`docs/journeys.md`): a first video, your own
   footage, titles, rendering, captions, a phone, coming back, an account, an
   assistant, and what to do when something goes wrong. A line under the

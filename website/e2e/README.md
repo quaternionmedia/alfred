@@ -161,6 +161,8 @@ in and logout; `views.spec.js`, that a reload keeps the session.
 | Trim, cut, slip, slide and roll, by mouse and touch (both layouts) | `timeline-tools.spec.js` | UI |
 | Editing by text: words deleted from the Transcript panel cut the timeline (both layouts) | `transcript.spec.js` | UI + API, one test `@slow` |
 | The cut behind editing by text, at its edges | `cut-ranges.spec.js` | Node, no browser |
+| The timeline's lanes: words, sound, fades and cues at the clips' scale, a press seeking, the words making way as the zoom goes out | `lanes.spec.js` | UI |
+| The lanes' arithmetic: the ruler's ticks, the view, the envelope over a clip's window, a clip's fades | `lanes-arith.spec.js` | Node, no browser |
 | Adding and editing template clips, fonts and placement; the viewer waiting as long as a busy server's `Retry-After` asks | `templates.spec.js` | UI |
 | The timeline tools from the keyboard, the footer | `editor-access.spec.js` | UI |
 | Media lengths and kinds, signed media and download URLs, the `/videos` fallback | `editor-media.spec.js` | UI |

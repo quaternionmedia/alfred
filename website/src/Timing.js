@@ -27,7 +27,9 @@ import { SHORTEST, clipSeconds, inOf, isStill, place, toMs } from './ClipWindow'
 
 // Pure window arithmetic and the text cut live in ClipWindow.js; exported here too.
 export {
+  MODEL_FADE,
   SHORTEST,
+  chosenFade,
   clipSeconds,
   cutRanges,
   cutSpans,

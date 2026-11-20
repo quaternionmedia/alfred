@@ -11,8 +11,8 @@ library works.
   render, trim, combine, fade and animate, each a request you can send to the
   dev stack, checked by the browser suite.
 - **Routes**: [auth](auth.md), [otto's previews and templates](otto.md),
-  [fonts](fonts.md), [renders](render.md), and the [refusals](errors.md), each
-  with the `code` a program can switch on.
+  [fonts](fonts.md), [renders](render.md), [cues](../timeline.md#through-the-api),
+  and the [refusals](errors.md), each with the `code` a program can switch on.
 
 !!! note
     Every route, with an interactive request generator, is at `/api` on any
