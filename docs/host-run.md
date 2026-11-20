@@ -49,12 +49,13 @@ mongod --dbpath <a folder of its own> --port 27018 --bind_ip 127.0.0.1
 ```
 
 **The site.** parcel's own watcher builds `website/dist` and reloads the
-browser as sources change. It sees edits on a host; in the container the
+browser as sources change, over a port it binds to loopback only when
+told the host, as the stack publishes it. It sees edits on a host; in the container the
 bind mount hides them, so the stack polls with `yarn run dev` instead, and
 that poller spawns `npx` without a shell, which Windows refuses.
 
 ```sh
-cd website && npx parcel watch src/index.html --hmr-port 1733
+cd website && npx parcel watch src/index.html --hmr-host 127.0.0.1 --hmr-port 1733
 ```
 
 **The api.** The settings the stacks wire ([Plumbing](configuration.md#plumbing))
