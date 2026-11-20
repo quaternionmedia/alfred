@@ -25,6 +25,7 @@ from alfred.core.models.cues import MAX_CUES
 from alfred.core.models.render import Render
 from alfred.core.routes import captions as caption_routes
 from alfred.core.routes import cues as cue_routes
+from alfred.core.routes import media as media_routes
 from alfred.core.routes import render as render_routes
 from alfred.core.routes.templates import TEMPLATE_NAMES
 from alfred.core.utils import audio_engine, bucket, concurrency, support_mail
@@ -289,6 +290,30 @@ def too_many_cues(world):
     return res, f'{MAX_CUES + 1} cues is more than the {MAX_CUES} a project may carry'
 
 
+def media_name_refused(world):
+    res = world.client.post('/media', files={'file': ('notes.txt', b'hello')})
+    from alfred.core.utils.media import MEDIA_EXTENSIONS
+
+    return res, (
+        "'notes.txt' is not a name the library can hold: one file name, not "
+        f'hidden, ending in one of {", ".join(sorted(MEDIA_EXTENSIONS))}'
+    )
+
+
+def media_exists(world):
+    res = world.client.post('/media', files={'file': ('talk.wav', b'RIFF again')})
+    return (
+        res,
+        'videos/talk.wav is in the library already; send replace=true to replace it',
+    )
+
+
+def media_too_large(world):
+    world.monkeypatch.setattr(media_routes, 'UPLOAD_LIMIT', 8)
+    res = world.client.post('/media', files={'file': ('big.wav', b'0123456789')})
+    return res, 'big.wav is larger than an upload may be, 8 bytes'
+
+
 def caption_file_unreadable(world):
     project = world.projects.add()
     text = '1\n00:00:61,000 --> 00:01:02,000\nSixty-one seconds\n'
@@ -510,6 +535,9 @@ REQUESTS = {
     Code.DELIVERED_WITHOUT_LINK: delivered_without_link,
     Code.CLOUD_LINK_UNAVAILABLE: cloud_link_unavailable,
     Code.UNKNOWN_FEATURE: unknown_feature,
+    Code.MEDIA_NAME_REFUSED: media_name_refused,
+    Code.MEDIA_EXISTS: media_exists,
+    Code.MEDIA_TOO_LARGE: media_too_large,
     Code.MEDIA_SILENT: media_silent,
     Code.AUDIO_ENGINE_REFUSED: audio_engine_refused,
     Code.AUDIO_ENGINE_FAILED: audio_engine_failed,
