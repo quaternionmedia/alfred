@@ -265,6 +265,11 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Fixed
 
+- **The api starts on a host without fontconfig.** `checkFonts` asks
+  `fc-list` for the fonts a text template can be drawn in; where there is
+  no `fc-list` the start-up log says so and the font list is left as it
+  was, rather than the start failing on the probe. The integration tier no
+  longer drops the hook to get past it.
 - **On a phone, a tap goes through a notice.** "Logged in!" sat over the
   timeline for ten seconds and took the tap meant for a clip: the host-only
   failure of "a tap on a clip moves the playhead".
@@ -386,6 +391,10 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Added
 
+- **Running on the host** (`docs/host-run.md`): the api, a render worker
+  and the site's watcher as processes on this machine, against a MongoDB
+  and joe, with what that run lacks beside the stack. Linked from Get
+  started, the new developer's questions and Commands.
 - **Media and Templates are two panels**, and the timeline's tools a third.
   The **Media** panel lists the library with each file's kind, filters a
   long list, adds files from this device by a picker or a drop (`POST

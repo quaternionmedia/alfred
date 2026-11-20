@@ -39,7 +39,7 @@ nothing to download.
 ./al pytest                       # API suite, plus black --check and ruff, in Docker
 ./al test                         # browser suite, in Docker, on a stack it builds
 
-pdm install -G test               # or on the host: Python deps and test extras
+pdm install -G dev -G test -G render   # or on the host, with pdm 2.29 or newer
 pdm run pytest                    # unit + pipeline suite
 pdm run pytest -m "not needs_ffmpeg and not needs_db"   # no external tools
 
@@ -48,8 +48,10 @@ npx playwright install chromium
 yarn e2e                          # end-to-end, against a running ./al dev
 ```
 
-On the host, `pdm install` takes `al-otto` from `alfred/otto` as a copy rather
-than editable, and has no vox at all. `pip install -e alfred/otto --no-deps`
+On the host, name the groups: `pdm.lock` keeps the `docs` group in a lock of
+its own, so an install that selects every dev group is refused, and pdm before
+2.29 selects them all whenever one is named. `pdm install` takes `al-otto`
+from `alfred/otto` as a copy rather than editable, and has no vox at all. `pip install -e alfred/otto --no-deps`
 and `pip install -e alfred/vox --no-deps` in that environment make the suite
 test the vendored engines the image runs, which
 `tests/unit/test_stack_config.py` checks. `pdm install -G render` adds the

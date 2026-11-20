@@ -61,7 +61,7 @@ Docker.
 
 | What | Why |
 |---|---|
-| Docker with `docker compose` | the api, the render worker, the database, the site's build and both test suites run in containers |
+| Docker with `docker compose` | the api, the render worker, the database, the site's build and both test suites run in containers; [Running on the host](host-run.md) runs the first four as processes instead |
 | git | the engines, otto and vox, are submodules; the images do not build without them |
 | Python 3.8 or newer | `./al family` and `./al loop` run on the host with its standard library |
 | uv | joe, the docs build and the host's quick tests (`uv`, `uvx`) |
