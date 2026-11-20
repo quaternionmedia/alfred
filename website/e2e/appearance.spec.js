@@ -277,7 +277,7 @@ test.describe('the rail works as navigation', () => {
      */
     await authedPage.setViewportSize(PHONE)
     await authedPage.goto('/')
-    const stagePanels = '#panel-source, #panel-media, #panel-render, #panel-deliver'
+    const stagePanels = '#panel-source, #panel-media, #panel-templates, #panel-render, #panel-deliver'
     for (const stage of ['source', 'render', 'deliver']) {
       await authedPage.locator(`#stage-${stage}`).click()
       await expect(authedPage.locator(`#panel-${stage}`)).toBeVisible()

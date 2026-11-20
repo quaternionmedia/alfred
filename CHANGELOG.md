@@ -386,6 +386,15 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Added
 
+- **Media and Templates are two panels**, and the timeline's tools a third.
+  The **Media** panel lists the library with each file's kind, filters a
+  long list, adds files from this device by a picker or a drop (`POST
+  /media`, one at a time with how far each has got, a name the library
+  holds asked about before it is replaced) and takes a file out of the
+  library, asked twice (`DELETE /media/{name}`). The **Templates** panel
+  is the templates alone. The **Timeline tools** panel holds the tools, the
+  zoom, the render button and the save state beside the timeline, which
+  takes its own panel's whole width; on a phone the tools are a row over it.
 - **The timeline's lanes** (`docs/lanes.md`): the clips are one lane of
   several on one time axis, at one scale, in one box that scrolls sideways.
   A ruler above them; under them the transcript's words and the captions

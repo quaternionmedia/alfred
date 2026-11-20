@@ -165,21 +165,24 @@ async function expectSaved(page, { since = 0, id = 'save-state' } = {}) {
 }
 
 /**
- * Put the template `name` on the end of the timeline: from the Media &
- * templates panel where it shows, from the bin under the timeline where not.
+ * Put the template `name` on the end of the timeline: from the Templates
+ * panel where it shows, from the bin under the timeline where not.
  */
 async function addTemplate(page, name) {
-  const listed = page.locator(`#panel-media button.templatechoice[data-template="${name}"]`)
+  const listed = page.locator(`#panel-templates button.templatechoice[data-template="${name}"]`)
   const binned = page.locator(`#bin .binclip[data-bin-name="${name}"] .binadd`)
   await expect(listed.or(binned).first()).toBeVisible()
   return (await listed.isVisible()) ? listed.click() : binned.click()
 }
 
-/** Close Media & templates where it is open, so the bin under the timeline shows. */
+/** Close Media and Templates where they are open, so the bin under the timeline shows. */
 async function showTheBin(page) {
-  const media = page.locator('#paneltab-media')
-  await expect(page.locator('#bin').or(media).first()).toBeVisible()
-  if (await media.isVisible()) await media.locator('.lm_close_tab').click()
+  const listed = page.locator('#paneltab-media, #paneltab-templates')
+  await expect(page.locator('#bin').or(listed.first()).first()).toBeVisible()
+  for (const id of ['media', 'templates']) {
+    const tab = page.locator(`#paneltab-${id}`)
+    if (await tab.isVisible()) await tab.locator('.lm_close_tab').click()
+  }
   await expect(page.locator('#bin')).toBeVisible()
 }
 
@@ -223,8 +226,10 @@ module.exports.templateQuery = url => {
 module.exports.PANEL_IDS = [
   'projects',
   'media',
+  'templates',
   'viewer',
   'timeline',
+  'tools',
   'template',
   'render',
   'deliver',

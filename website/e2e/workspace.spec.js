@@ -467,6 +467,8 @@ test.describe('the arrangement is kept', () => {
         type: 'row',
         content: [
           { type: 'component', componentType: 'timeline', id: 'timeline', title: 'Timeline' },
+          // The tools, which an arrangement cannot do without either.
+          { type: 'component', componentType: 'tools', id: 'tools', title: 'Timeline tools' },
           {
             type: 'stack',
             content: [

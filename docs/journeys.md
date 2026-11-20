@@ -37,10 +37,10 @@ The rail along the top names the four stages a video goes through:
 4. **Deliver**: follow the render, then download it or send it on.
 
 On a screen 1024 pixels wide or more, every panel is open at once, and
-choosing a stage brings its panels forward: the projects and the material on
-the left, the viewer over the timeline in the middle, and on the right the
-selected clip's settings, the Transcript, and the Render, Deliver and
-Captions tabs. A panel closed by its ✕ comes back from the **Panels** menu.
+choosing a stage brings its panels forward: the projects, the media and the
+templates on the left, the viewer over the timeline and its tools in the
+middle, and on the right the selected clip's settings, the Transcript, and
+the Render, Deliver and Captions tabs. A panel closed by its ✕ comes back from the **Panels** menu.
 On a phone the editor shows one stage at a time above the viewer and the
 timeline.
 
@@ -82,10 +82,11 @@ render stays `queued`, see [When something goes wrong](#when-something-goes-wron
 ## Your own footage { #your-own-footage }
 
 1. Put your files in the server's library. On a server you run, that is the
-   `videos/` directory of alfred's checkout. Reload the editor, and
-   **Material**, in the Media & templates panel, lists each file with how
-   long it runs. To practise first, **Generate demo media** on an empty
-   library makes three short clips.
+   `videos/` directory of alfred's checkout, or add them from this device
+   in the **Media** panel, by **Add files from this device** or by dropping
+   them on it. The panel lists each file with how long it runs. To practise
+   first, **Generate demo media** on an empty library makes three short
+   clips.
 2. On **Source**, press **New project** (on a phone, the **+** beside the
    filter), type a name, and press **Create**. The project opens, empty.
 
@@ -93,7 +94,7 @@ render stays `queued`, see [When something goes wrong](#when-something-goes-wron
 
    *New project, named and ready to create.*
 
-3. Under **Material**, choose a file to put it on the end of the timeline. A
+3. Under **Media**, choose a file to put it on the end of the timeline. A
    line under the list says where it landed. Choose the next, in the order
    they should play.
 4. Press **Next: Edit**, and go on to [Arrange and title](#arrange-and-title).
@@ -110,12 +111,12 @@ There is nothing to save: the timeline saves itself ([Saving](#saving)).
 
 <!-- recipe: choose a project and edit its timeline -->
 
-1. Under **Templates**, in the Media & templates panel, choose **Title** to
+1. In the **Templates** panel, choose **Title** to
    put a title card on the end of the timeline. Its settings open on the
    right, **Template settings**: type its text, and its length as
    **Duration**. The viewer shows the frame the server draws of it. **Text
    box** and **Colour** work the same way.
-2. The column of tools beside the timeline changes the clips. Choose
+2. The **Timeline tools** panel beside the timeline changes the clips. Choose
    **Move** (the two arrows), and drag the title to the front. **Trim**
    drags a clip's end, **Cut** splits one in two (**S** splits at the
    playhead), and **Slip**, **Slide** and **Dual roller** shift what a clip
@@ -289,7 +290,7 @@ says how to connect one.
 | The render says `failed` | Its row says why. Change the timeline on Edit, and render again. |
 | **Not saved** beside the timeline | The save did not reach the server; point at it for why. The edit is kept in this tab, and it tries again; **Retry** tries at once. A caption marked in the Captions panel holds a save back until it is fixed. |
 | **Transcribe timeline** is greyed out | It says why when you point at it: no audio engine is configured or answering, or no render worker is running to mix the sound. |
-| **Material** is empty | The library has no files. Put some in `videos/`, or press **Generate demo media**. |
+| **Media** is empty | The library has no files. Add some from this device, put some in `videos/`, or press **Generate demo media**. |
 | The page shows the login screen again | The session ran out. Log in; the editor goes back to the project, and offers back anything not saved. |
 
 *Checked by `health.spec.js`, `deliver.spec.js` and `editor-draft.spec.js`.*

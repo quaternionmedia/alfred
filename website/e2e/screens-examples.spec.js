@@ -20,7 +20,7 @@ const {
 } = require('./screens-kit')
 
 // Left panels closed: room for each clip's label.
-const ASIDE = ['projects', 'media']
+const ASIDE = ['projects', 'media', 'templates']
 
 // Zoom-in presses at most, each kept only if the timeline still fits.
 const ZOOMS = 2

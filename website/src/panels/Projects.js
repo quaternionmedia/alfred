@@ -8,7 +8,8 @@ import { requestProblem } from '../Problem'
  * Projects: the Source stage's project picker, as a panel.
  *
  * The first half of what the Source stage showed; the material it listed
- * beside the projects is the Media & templates panel (Media.js). What this
+ * beside the projects is the Media panel (Media.js) and the Templates panel
+ * (Templates.js). What this
  * says about itself is as the stage said it:
  *
  * Stage 1 -- pick the project, see what material is available to it.

@@ -190,3 +190,123 @@ test.describe('nothing is served from /data', () => {
     expect((await request.get('/data/')).status()).toBe(404)
   })
 })
+
+/**
+ * # Recipe: adding your own files
+ *
+ * The **Media** panel takes files from this device: press **Add files from
+ * this device**, or drop them on the panel, and each is listed as it arrives.
+ * A file of a name the library holds already asks before it replaces the old
+ * one; the bin beside a file takes it out of the library, asked twice. The
+ * files here are a few bytes with a media extension: what the lane lists and
+ * deletes is the question, not what otto can play.
+ */
+test.describe('the Media panel', () => {
+  const NAME = () => `e2e-upload-${test.info().workerIndex}-${Date.now()}.wav`
+  const bytes = Buffer.from('RIFF not really a wave')
+
+  /** Remove `name` from the library, whether or not the test got that far. */
+  const tidy = async (request, token, name) =>
+    request.delete(`/media/videos/${name}`, { headers: { Authorization: token } })
+
+  const media = page => page.locator('#panel-media')
+  const file = (page, name) => page.locator(`.mediachoice[data-media="videos/${name}"]`)
+
+  test('a file added from this device is listed, and taken out again', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const name = NAME()
+    try {
+      await authedPage.goto('/#!/?stage=source')
+      await expect(media(authedPage)).toBeVisible()
+      await authedPage
+        .locator('#media-upload')
+        .setInputFiles({ name, mimeType: 'audio/wav', buffer: bytes })
+      await expect(authedPage.locator('#media-told')).toContainText(`${name} added to the library`)
+      await expect(file(authedPage, name)).toBeVisible()
+      // It is the server's: the listing has it.
+      const listed = await (
+        await request.get('/videos', { headers: { Authorization: token } })
+      ).json()
+      expect(listed).toContain(`videos/${name}`)
+
+      // Deleting asks first, and Keep keeps it.
+      await authedPage.locator(`.mediadelete[data-media="videos/${name}"]`).click()
+      await authedPage.locator('.mediadeleteno').click()
+      await expect(file(authedPage, name)).toBeVisible()
+      await authedPage.locator(`.mediadelete[data-media="videos/${name}"]`).click()
+      await authedPage.locator('.mediadeleteyes').click()
+      await expect(authedPage.locator('#media-told')).toContainText(`${name} removed from the library`)
+      await expect(file(authedPage, name)).toHaveCount(0)
+      const after = await (
+        await request.get('/videos', { headers: { Authorization: token } })
+      ).json()
+      expect(after).not.toContain(`videos/${name}`)
+    } finally {
+      await tidy(request, token, name)
+    }
+  })
+
+  test('a file of a name the library holds asks before it is replaced', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const name = NAME()
+    try {
+      const sent = await request.post('/media', {
+        headers: { Authorization: token },
+        multipart: { file: { name, mimeType: 'audio/wav', buffer: Buffer.from('the old bytes') } },
+      })
+      expect(sent.status(), await sent.text()).toBe(201)
+
+      // The library was read when the page logged in, before the file went up.
+      await authedPage.goto('/#!/?stage=source')
+      await authedPage.reload()
+      await expect(file(authedPage, name)).toBeVisible()
+      const picker = authedPage.locator('#media-upload')
+      await picker.setInputFiles({ name, mimeType: 'audio/wav', buffer: bytes })
+      await expect(authedPage.locator('#media-replace')).toContainText('is in the library already')
+      // Keep it: the old bytes stay.
+      await authedPage.locator('#media-replace-no').click()
+      await expect(authedPage.locator('#media-told')).toContainText(`${name} kept as it was`)
+      const kept = await (
+        await request.get('/media', { headers: { Authorization: token } })
+      ).json()
+      expect(kept.find(item => item.name === `videos/${name}`).size).toBe('the old bytes'.length)
+
+      // Replace it: the new bytes take the name.
+      await picker.setInputFiles({ name, mimeType: 'audio/wav', buffer: bytes })
+      await authedPage.locator('#media-replace-yes').click()
+      await expect(authedPage.locator('#media-told')).toContainText(`${name} replaced in the library`)
+      const replaced = await (
+        await request.get('/media', { headers: { Authorization: token } })
+      ).json()
+      expect(replaced.find(item => item.name === `videos/${name}`).size).toBe(bytes.length)
+    } finally {
+      await tidy(request, token, name)
+    }
+  })
+
+  test('a file the library cannot hold is refused in the panel, in the server\'s words', async ({
+    authedPage,
+  }) => {
+    await authedPage.goto('/#!/?stage=source')
+    await expect(media(authedPage)).toBeVisible()
+    await authedPage
+      .locator('#media-upload')
+      .setInputFiles({ name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('hello') })
+    await expect(authedPage.locator('#media-error')).toContainText('not a name the library can hold')
+  })
+
+  test('the Templates panel and the Timeline tools panel are their own', async ({ authedPage }) => {
+    await authedPage.goto('/#!/?stage=source')
+    await expect(authedPage.locator('#panel-templates .templatechoice').first()).toBeVisible()
+    await expect(authedPage.locator('#panel-media .templatechoice')).toHaveCount(0)
+    await expect(authedPage.locator('#panel-tools #TTools .tool')).toHaveCount(7)
+    await expect(authedPage.locator('#panel-timeline #TTools')).toHaveCount(0)
+    await expect(authedPage.locator('#panel-tools .editoractions')).toHaveCount(1)
+  })
+})

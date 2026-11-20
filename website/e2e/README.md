@@ -166,6 +166,7 @@ in and logout; `views.spec.js`, that a reload keeps the session.
 | Adding and editing template clips, fonts and placement; the viewer waiting as long as a busy server's `Retry-After` asks | `templates.spec.js` | UI |
 | The timeline tools from the keyboard, the footer | `editor-access.spec.js` | UI |
 | Media lengths and kinds, signed media and download URLs, the `/videos` fallback | `editor-media.spec.js` | UI |
+| The Media panel: a file added from this device and listed, one of a name the library holds refused until replaced, one deleted, the filter; and the Templates and Timeline tools panels in their places | `media.spec.js`, `workspace.spec.js` | UI + API |
 | Unsaved timelines kept across a reload or a new login | `editor-draft.spec.js` | UI |
 | The render request: clip starts, fades, toolbar, form | `editor-render.spec.js` | UI |
 | Render checks before queueing, status, another user | `render-api.spec.js` | API |

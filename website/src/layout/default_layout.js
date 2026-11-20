@@ -5,14 +5,15 @@ import { PanelRegistry } from './registry'
  *
  *   +------------+------------------------+-------------------+
  *   | Projects   | Viewer                 | Template settings |
- *   |            |                        |  | Transcript     |
- *   +------------+                        +-------------------+
- *   | Media &    +------------------------+ Render | Deliver  |
- *   | templates  | Timeline               |  | Captions       |
- *   +------------+------------------------+-------------------+
+ *   +------------+                        |  | Transcript     |
+ *   | Media      |                        +-------------------+
+ *   +------------+-------+----------------+ Render | Deliver  |
+ *   | Templates  | Tools | Timeline       |  | Captions       |
+ *   +------------+-------+----------------+-------------------+
  *
- * The material on the left, the work in the middle -- the picture above the
- * timeline that makes it -- and on the right what is done to the work: the
+ * The material on the left, the files above the templates; the work in the
+ * middle -- the picture above the timeline that makes it, with the tools
+ * that act on the timeline beside it -- and on the right what is done to the work: the
  * selected clip's settings with the transcript, and the render, delivery
  * and captions as tabs, Render in front. (A fourth tab below would overflow
  * into its menu at 1200 px.)
@@ -44,6 +45,9 @@ const stack = (size, ids, active = 0) => ({
   activeItemIndex: active,
   content: ids.map(panelConfig),
 })
+
+/** Stacks side by side, each with its share of the row. */
+const row = (size, stacks) => ({ type: 'row', size, content: stacks })
 
 /** Settings every layout loads with, saved or default. */
 export const LAYOUT_SETTINGS = Object.freeze({
@@ -82,12 +86,16 @@ export const DEFAULT_LAYOUT = Object.freeze({
       {
         type: 'column',
         size: '22%',
-        content: [stack('42%', ['projects']), stack('58%', ['media'])],
+        content: [stack('34%', ['projects']), stack('36%', ['media']), stack('30%', ['templates'])],
       },
       {
         type: 'column',
         size: '50%',
-        content: [stack('56%', ['viewer']), stack('44%', ['timeline'])],
+        content: [
+          stack('56%', ['viewer']),
+          // The tools' column is two buttons wide; the timeline takes the rest.
+          row('44%', [stack('18%', ['tools']), stack('82%', ['timeline'])]),
+        ],
       },
       {
         type: 'column',
@@ -105,10 +113,12 @@ export const DEFAULT_LAYOUT = Object.freeze({
  * them open, Golden Layout chooses.
  */
 export const REOPEN = Object.freeze({
-  projects: { tabs: [], beside: ['media'], at: 'before' },
-  media: { tabs: [], beside: ['projects'], at: 'after' },
-  viewer: { tabs: [], beside: ['timeline'], at: 'before' },
+  projects: { tabs: [], beside: ['media', 'templates'], at: 'before' },
+  media: { tabs: [], beside: ['projects', 'templates'], at: 'after' },
+  templates: { tabs: [], beside: ['media', 'projects'], at: 'after' },
+  viewer: { tabs: [], beside: ['timeline', 'tools'], at: 'before' },
   timeline: { tabs: [], beside: ['viewer'], at: 'after' },
+  tools: { tabs: [], beside: ['timeline', 'viewer'], at: 'after' },
   template: { tabs: ['transcript'], beside: ['render', 'deliver', 'captions'], at: 'before' },
   render: { tabs: ['deliver', 'captions'], beside: ['template', 'transcript'], at: 'after' },
   deliver: { tabs: ['render', 'captions'], beside: ['template', 'transcript'], at: 'after' },
