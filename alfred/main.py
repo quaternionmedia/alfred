@@ -30,6 +30,7 @@ from alfred.core.routes import (
     captionsAPI,
     cuesAPI,
     demoAPI,
+    draftsAPI,
     fontAPI,
     healthAPI,
     issueAPI,
@@ -239,6 +240,10 @@ app.include_router(
 )
 # A project's cues, drawn on the editor's timeline, scoped the same way.
 app.include_router(cuesAPI, dependencies=[Depends(current_active_user)], tags=['cues'])
+# A source's drafts: the run that makes them, the list, the drop.
+app.include_router(
+    draftsAPI, dependencies=[Depends(current_active_user)], tags=['drafts']
+)
 # Recipes, the chains of algorithms that cut a long source into drafts.
 app.include_router(
     recipesAPI, dependencies=[Depends(current_active_user)], tags=['recipes']

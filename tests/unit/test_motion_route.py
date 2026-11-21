@@ -14,8 +14,8 @@ from fastapi.testclient import TestClient
 from otto.exceptions import FFmpegException
 
 from alfred import config
-from alfred.core.routes import motion as routes
 from alfred.core.routes import sound as sound_routes
+from alfred.core.utils import measures
 from alfred.core.utils.probe import ProbeCache
 from alfred.main import app
 from tests.unit.render_harness import OWNER, STRANGER, anonymous, as_user
@@ -45,8 +45,8 @@ def measured(monkeypatch, library):
         asked.append(os.path.basename(path))
         return copy.deepcopy(MEASURED[os.path.basename(path)])
 
-    monkeypatch.setattr(routes, 'measure', measure)
-    monkeypatch.setattr(routes, '_cache', ProbeCache(size=8))
+    monkeypatch.setattr(measures, 'measure', measure)
+    monkeypatch.setattr(measures, '_motion_cache', ProbeCache(size=8))
     return asked
 
 
@@ -111,7 +111,7 @@ class TestAFile:
         self, api, measured, library
     ):
         api(OWNER).get('/media/videos/talk.mp4/motion')
-        routes._cache = ProbeCache(size=8)
+        measures._motion_cache = ProbeCache(size=8)
         api(OWNER).get('/media/videos/talk.mp4/motion')
         assert measured == ['talk.mp4']
         assert any((library / '.analyses').iterdir())
@@ -134,11 +134,11 @@ class TestAFile:
         def fail(path):
             raise FFmpegException('ffmpeg could not read the picture of talk.mp4: nope')
 
-        monkeypatch.setattr(routes, 'measure', fail)
+        monkeypatch.setattr(measures, 'measure', fail)
         res = api(OWNER).get('/media/videos/talk.mp4/motion')
         assert res.status_code == 422
         assert res.json()['code'] == 'picture_unreadable'
-        assert len(routes._cache) == 0
+        assert len(measures._motion_cache) == 0
 
     def test_what_the_library_does_not_hold_is_404(self, api, measured):
         res = api(OWNER).get('/media/videos/gone.mp4/motion')

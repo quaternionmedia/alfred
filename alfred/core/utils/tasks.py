@@ -12,11 +12,13 @@ from otto.render import renderMultitrack
 
 from alfred import config
 
+from ..models.recipes import RecipeError
 from ..models.render import is_output_filename
 from . import audio_engine
 from .bucket import upload
 from .captions import style_to_store
 from .db import get_sync_db
+from .drafts import RECIPES, UnknownRecipe, make_drafts
 from .email import mail_failure, send_mail, transient
 from .encoding import preset_for
 from .logger import DbLogger, failure_reason, mark_failed
@@ -250,6 +252,86 @@ def transcribeCaptions(self, projectId: str, **kwargs):
         style=style_to_store(None, project.get('caption_style')),
         words=[word.model_dump() for word in words],
     )
+
+
+# --- drafts -----------------------------------------------------------------
+
+# Failures whose messages are already written for the person waiting.
+_SAID_PLAINLY_OF_DRAFTS = (UnknownRecipe, RecipeError, RefusedEdl)
+
+
+def drafts_failure(exc) -> str:
+    """Why a run of recipes failed, as one line its owner can read."""
+    if isinstance(exc, _SAID_PLAINLY_OF_DRAFTS):
+        return failure_reason(RefusedEdl(str(exc)))
+    return failure_reason(exc)
+
+
+def drafts_job(state, recipes=(), error=None, made=None, notes=()) -> dict:
+    """A source's `drafts_job` as the worker records it."""
+    return {
+        'state': state,
+        'error': error,
+        'recipes': list(recipes),
+        'made': made,
+        'notes': list(notes),
+        'updated_at': datetime.now(timezone.utc),
+    }
+
+
+def record_drafts_job(project_id, job) -> None:
+    get_sync_db()[PROJECTS].update_one(
+        {'_id': ObjectId(str(project_id))}, {'$set': {'drafts_job': job}}
+    )
+
+
+class Sculptor(Task):
+    def on_failure(self, exc, task_id, args, kwargs, einfo):
+        """Anything that escaped the task: the job failed, and says why."""
+        print('failed task', task_id, exc)
+        project_id = (kwargs or {}).get('projectId')
+        if project_id is None:
+            return
+        try:
+            record_drafts_job(
+                project_id,
+                drafts_job(
+                    'failed',
+                    (kwargs or {}).get('recipes') or (),
+                    error=drafts_failure(exc),
+                ),
+            )
+        except Exception as e:  # noqa: BLE001 - nothing else is left to tell
+            print('could not record the failure of a run of recipes', project_id, e)
+
+
+@renderer.task(bind=True, base=Sculptor)
+def sculptDrafts(self, projectId: str, recipes: list, **kwargs):
+    """Cut a source project into drafts by `recipes`, each `{recipe, values}`.
+
+    The source's timeline is measured (`utils.measures`), each recipe runs
+    over its words, its sound and its motion (`utils.sculpt`), and each draft
+    is inserted as a project of the source's owner carrying `source`, with a
+    cue on the source per span it took (`utils.drafts.make_drafts`). The
+    source's `drafts_job` says where that has got to and, when it fails, why.
+    The project id arrives as a string (contract C7). A source deleted while
+    the job waited is left deleted.
+    """
+    db = get_sync_db()
+    projects = db[PROJECTS]
+    source = projects.find_one({'_id': ObjectId(projectId)})
+    if source is None:
+        return
+    names = [str(r.get('recipe')) for r in recipes]
+    record_drafts_job(projectId, drafts_job('running', names))
+    try:
+        made, notes = make_drafts(source, recipes, projects, db[RECIPES])
+    except Exception as exc:  # noqa: BLE001 - every failure is the job's to report
+        reason = drafts_failure(exc)
+        print('could not make drafts of project', projectId, reason, flush=True)
+        record_drafts_job(projectId, drafts_job('failed', names, error=reason))
+        return
+    record_drafts_job(projectId, drafts_job('done', names, made=made, notes=notes))
 
 
 # --- mail -------------------------------------------------------------------

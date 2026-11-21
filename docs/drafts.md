@@ -74,6 +74,42 @@ The first values are a collaborator's advice for an evening's recording:
 clips of eight to twelve seconds, about twenty-five of them. They hold until
 they are measured.
 
+## Drafts
+
+`POST /project/{id}/drafts` with `{recipes: [{recipe, values}]}` queues a run
+the render worker makes, as a transcription is made: the source's timeline
+is measured, each recipe runs over its words, its sound and its motion, and
+each draft it leaves is a project of the source's owner, named
+`<source> – <recipe> <n>`, numbered in timeline order, with where it came
+from as its `description`, its captions and its words moved into it, the
+source's render settings, and `source`:
+
+``` json title="A draft's source"
+{
+  "project": "66f1a0…",
+  "recipe": "highlights",
+  "values": {"shortest": "8", "longest": "12", "count": "25"},
+  "spans": [[1832.4, 1841.9]],
+  "scores": {"dialogue": 0.84, "spikes": 1.0},
+  "made_at": "2026-11-21T15:02:11Z"
+}
+```
+
+The source keeps the run as its `drafts_job`, `queued`, `running`, then
+`done` with how many were `made` and the run's `notes` (a step skipped, a
+file not measured), or `failed` with the reason; and a cue per span each
+draft took, under the source `alfred-drafts`, kind `draft`, its `ref` the
+draft's id, which the Cues lane draws. `GET /project` carries `source` and
+`description`, so a list groups drafts under their source.
+
+A run refuses, by code, a source with no words (`no_words`: transcribe it
+first), a recipe that is neither built in nor yours (`unknown_recipe`), a
+source whose run is under way (`drafts_running`) and a broker that will not
+take the job (`drafts_not_queued`). `DELETE /project/{id}/drafts` with
+`{drafts: [id]}` drops the drafts named, with their cues; it drops nothing
+unless every id is one of this source's drafts of yours (`not_a_draft`), and
+a project that is not a draft keeps having no delete here.
+
 ## Through the API
 
 | Route | |
@@ -82,6 +118,9 @@ they are measured.
 | `POST /recipes` | `{name, label, description, fields, steps}`, owned by the caller; answers it with its `id` |
 | `GET /recipes/{id}` | a built-in recipe by its name, or one of the caller's by its id; 404 `unknown_recipe` otherwise |
 | `PUT /recipes/{id}` | replaces one of the caller's whole; a built-in cannot be replaced |
+| `POST /project/{id}/drafts` | `{recipes: [{recipe, values}]}` → `202 {job}`; the worker makes the drafts |
+| `GET /project/{id}/drafts` | `{job, drafts}`, each draft `{id, name, description, duration, source}` |
+| `DELETE /project/{id}/drafts` | `{drafts: [id]}` → `{dropped}`: those drafts and their cues |
 
 A recipe is scoped to its owner as a project is: another account's answers
 404, exactly as one that does not exist.

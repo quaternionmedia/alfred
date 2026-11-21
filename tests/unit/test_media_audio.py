@@ -14,8 +14,7 @@ from fastapi.testclient import TestClient
 from otto.media import MediaInfo
 
 from alfred import config
-from alfred.core.routes import audio as routes
-from alfred.core.utils import audio_engine, sound
+from alfred.core.utils import audio_engine, measures, sound
 from alfred.core.utils.probe import ProbeCache
 from alfred.main import app
 from tests.unit.render_harness import OWNER, anonymous, as_user
@@ -47,7 +46,7 @@ def extracted(monkeypatch):
 
     monkeypatch.setattr(sound, 'file_sound', file_sound)
     monkeypatch.setattr(
-        routes, 'probe_file', lambda path, kind, stat: MediaInfo(duration=7.5)
+        measures, 'probe_file', lambda path, kind, stat: MediaInfo(duration=7.5)
     )
     return asked
 
@@ -63,7 +62,7 @@ def analysed(monkeypatch, library, extracted):
 
     monkeypatch.setattr(audio_engine, 'problem', lambda: None)
     monkeypatch.setattr(audio_engine, 'analyze', analyze)
-    monkeypatch.setattr(routes, '_cache', ProbeCache(size=8))
+    monkeypatch.setattr(measures, '_sound_cache', ProbeCache(size=8))
     return calls
 
 
@@ -228,4 +227,4 @@ class TestTheCache:
 
         monkeypatch.setattr(audio_engine, 'analyze', fail)
         client.get('/media/videos/song.mp3/audio')
-        assert len(routes._cache) == 0
+        assert len(measures._sound_cache) == 0

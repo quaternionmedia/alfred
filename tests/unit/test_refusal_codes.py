@@ -27,12 +27,12 @@ from alfred.core.models.recipes import OPERATIONS
 from alfred.core.models.render import Render
 from alfred.core.routes import captions as caption_routes
 from alfred.core.routes import cues as cue_routes
+from alfred.core.routes import drafts as draft_routes
 from alfred.core.routes import media as media_routes
-from alfred.core.routes import motion as motion_routes
 from alfred.core.routes import recipes as recipe_routes
 from alfred.core.routes import render as render_routes
 from alfred.core.routes.templates import TEMPLATE_NAMES
-from alfred.core.utils import audio_engine, bucket, concurrency, support_mail
+from alfred.core.utils import audio_engine, bucket, concurrency, measures, support_mail
 from alfred.core.utils.captions import CaptionFormatError, parse
 from alfred.core.utils.concurrency import RETRY_AFTER
 from alfred.core.utils.encoding import QUALITIES
@@ -63,6 +63,7 @@ COVERED = [
     'alfred/core/routes/audio.py',
     'alfred/core/routes/captions.py',
     'alfred/core/routes/cues.py',
+    'alfred/core/routes/drafts.py',
     'alfred/core/routes/issue.py',
     'alfred/core/routes/motion.py',
     'alfred/core/routes/project.py',
@@ -174,6 +175,35 @@ class Recipes:
         pass
 
 
+class Drafts:
+    """The project collection as the drafts routes use it, over `Projects`."""
+
+    def __init__(self, projects):
+        self.projects = projects
+
+    async def find(self, query):
+        return self.projects.projects.get(query['_id'])
+
+    async def has_words(self, project_id):
+        return bool(self.projects.projects[project_id].get('words'))
+
+    async def claim(self, project_id, job, stale_before):
+        current = self.projects.projects[project_id].get('drafts_job') or {}
+        if current.get('state') in ('queued', 'running'):
+            return False
+        self.projects.projects[project_id]['drafts_job'] = job
+        return True
+
+    async def set(self, project_id, fields):
+        self.projects.projects[project_id].update(fields)
+
+    async def drafts_of(self, query):
+        return []
+
+    async def delete(self, query):
+        return 0
+
+
 class BrokerDown:
     def __call__(self, **kwargs):
         raise ConnectionError('[Errno 111] Connection refused')
@@ -207,11 +237,16 @@ class World:
         app.dependency_overrides[cue_routes.get_cues_store] = lambda: self.projects
         self.recipes = Recipes()
         app.dependency_overrides[recipe_routes.get_recipe_store] = lambda: self.recipes
+        self.drafts = Drafts(self.projects)
+        app.dependency_overrides[draft_routes.get_drafts_store] = lambda: self.drafts
+        app.dependency_overrides[draft_routes.get_drafts_queue] = lambda: FakeQueue()
         self.overrides += [
             caption_routes.get_captions_store,
             caption_routes.get_captions_queue,
             cue_routes.get_cues_store,
             recipe_routes.get_recipe_store,
+            draft_routes.get_drafts_store,
+            draft_routes.get_drafts_queue,
         ]
         self.client = TestClient(app)
 
@@ -513,6 +548,44 @@ def unknown_recipe(world):
     )
 
 
+def no_words(world):
+    project = world.projects.add(edl={'clips': []})
+    res = world.client.post(
+        f'/project/{project}/drafts', json={'recipes': [{'recipe': 'highlights'}]}
+    )
+    return res, 'The project has no words to cut by: transcribe its timeline first.'
+
+
+def drafts_running(world):
+    project = world.projects.add(
+        words=[{'start': 0, 'end': 1, 'text': 'hi'}], drafts_job={'state': 'running'}
+    )
+    res = world.client.post(
+        f'/project/{project}/drafts', json={'recipes': [{'recipe': 'highlights'}]}
+    )
+    return (
+        res,
+        'Recipes are already running over this project; wait for them to finish.',
+    )
+
+
+def drafts_not_queued(world):
+    project = world.projects.add(words=[{'start': 0, 'end': 1, 'text': 'hi'}])
+    app.dependency_overrides[draft_routes.get_drafts_queue] = lambda: BrokerDown()
+    res = world.client.post(
+        f'/project/{project}/drafts', json={'recipes': [{'recipe': 'highlights'}]}
+    )
+    return res, 'The run could not be queued: [Errno 111] Connection refused'
+
+
+def not_a_draft(world):
+    project = world.projects.add()
+    res = world.client.request(
+        'DELETE', f'/project/{project}/drafts', json={'drafts': ['not-an-id']}
+    )
+    return res, "'not-an-id' is not the id of a draft."
+
+
 def no_picture(world):
     (Path(config.VIDEO_DIR) / 'still.png').write_bytes(b'not really a picture')
     return world.client.get('/media/videos/still.png/motion'), (
@@ -526,7 +599,7 @@ def picture_unreadable(world):
     def fail(path):
         raise FFmpegException(why)
 
-    world.monkeypatch.setattr(motion_routes, 'measure', fail)
+    world.monkeypatch.setattr(measures, 'measure', fail)
     (Path(config.VIDEO_DIR) / 'talk.mp4').write_bytes(b'not really a video')
     return world.client.get('/media/videos/talk.mp4/motion'), why
 
@@ -602,6 +675,10 @@ REQUESTS = {
     Code.UNKNOWN_OPERATION: unknown_operation,
     Code.RECIPE_REFUSED: recipe_refused,
     Code.UNKNOWN_RECIPE: unknown_recipe,
+    Code.NO_WORDS: no_words,
+    Code.DRAFTS_RUNNING: drafts_running,
+    Code.DRAFTS_NOT_QUEUED: drafts_not_queued,
+    Code.NOT_A_DRAFT: not_a_draft,
     Code.NO_PICTURE: no_picture,
     Code.PICTURE_UNREADABLE: picture_unreadable,
     Code.AUDIO_ENGINE_REFUSED: audio_engine_refused,

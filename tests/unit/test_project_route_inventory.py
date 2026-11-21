@@ -42,6 +42,10 @@ INVENTORY = {
     ('GET', '/project/{item_id}/sound'),
     # The timeline's motion: routes/motion.py.
     ('GET', '/project/{item_id}/motion'),
+    # Drafts: routes/drafts.py.
+    ('GET', '/project/{item_id}/drafts'),
+    ('POST', '/project/{item_id}/drafts'),
+    ('DELETE', '/project/{item_id}/drafts'),
 }
 
 

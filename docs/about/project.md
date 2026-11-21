@@ -1,7 +1,9 @@
 # Project
 
 A project is a saved piece of work: its timeline, its captions, and the size
-it last rendered at. A project with `fields` and `logic` is made from a form
+it last rendered at, with a `description` under its `name` when it has one.
+A project cut from a long recording by a recipe carries `source`, where it
+came from ([Recipes and drafts](../drafts.md)). A project with `fields` and `logic` is made from a form
 instead. Its fields draw a form on the Render stage, and its logic turns what
 is typed there into clips, so one project makes the same kind of video again
 and again with new words. [From a form](../journeys.md#from-a-form) walks it

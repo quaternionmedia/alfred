@@ -96,6 +96,14 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **Drafts.** `POST /project/{id}/drafts` runs recipes over a long project in
+  the worker and leaves each draft as a project of its own carrying `source`,
+  with its captions and words moved into it and a cue on the source per span
+  it took; `GET /project/{id}/drafts` lists them with the job, and `DELETE
+  /project/{id}/drafts` drops the ones named. A project gains `description`,
+  `source` and `drafts_job`. The measures of a file move to
+  `alfred/core/utils/measures.py`, which the api's routes and the worker share.
+
 - **Recipes.** A recipe is a chain of algorithms over a long source's
   timeline, words and measures, configured by a few knobs: `GET /recipes`
   lists the built-in ones, `highlights` first, and an account's own, which
