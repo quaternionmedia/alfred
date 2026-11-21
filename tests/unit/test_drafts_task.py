@@ -4,14 +4,16 @@ engine: the collections are in memory, and the measures are given.
 """
 
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 from bson import ObjectId
 
+from alfred import config
 from alfred.core.models.drafts import CUE_SOURCE
-from alfred.core.utils import drafts, measures, tasks
+from alfred.core.utils import analyses, drafts, language_engine, measures, tasks
 from alfred.core.utils.measures import Measures
-from tests.unit.test_sculpt import make_captions, make_words, series
+from tests.unit.test_sculpt import TOPICS, make_captions, make_words, series
 
 
 class FakeCollection:
@@ -71,8 +73,11 @@ def source(**fields):
 
 
 @pytest.fixture
-def measured(monkeypatch):
-    """The timeline's measures, as the worker would read them: a spike at 40 s."""
+def measured(monkeypatch, tmp_path):
+    """The timeline's measures, as the worker would read them: a spike at 40 s;
+    no language engine, and a library of its own for what is kept beside it."""
+    monkeypatch.setattr(config, 'LANGUAGE_ENGINE_URL', None)
+    monkeypatch.setattr(config, 'VIDEO_DIR', str(tmp_path))
 
     def timeline_measures(clips):
         return Measures(
@@ -84,6 +89,107 @@ def measured(monkeypatch):
         )
 
     monkeypatch.setattr(measures, 'timeline_measures', timeline_measures)
+
+
+@pytest.fixture
+def engine(monkeypatch):
+    """A language engine that reads the test's topics, counting what it is asked."""
+    asked = []
+
+    def read(lines, title=None, transport=None):
+        asked.append((len(lines), title))
+        return language_engine.Reading(topics=TOPICS)
+
+    monkeypatch.setattr(config, 'LANGUAGE_ENGINE_URL', 'http://words.test:8000')
+    monkeypatch.setattr(language_engine, 'read', read)
+    return asked
+
+
+def untitled(recipe):
+    return f'{recipe}: label: nothing was titled: {language_engine.problem()}'
+
+
+class TestTitles:
+    def test_drafts_are_named_by_the_topic_live_over_them(self, measured, engine):
+        mine = source()
+        projects, recipes = FakeCollection(mine), FakeCollection()
+        made, notes = drafts.make_drafts(
+            mine, [{'recipe': 'chapters'}], projects, recipes
+        )
+        assert made == 2
+        assert [d['name'] for d in projects.inserted] == [
+            'the show – Rules 1',
+            'the show – Tower 2',
+        ]
+        ours = [
+            c
+            for c in projects.documents[mine['_id']]['cues']
+            if c['source'] == CUE_SOURCE
+        ]
+        assert [c['label'] for c in ours] == ['Rules 1', 'Tower 2']
+        assert not [n for n in notes if 'label' in n]
+        assert engine == [(len(make_captions()), str(mine['_id']))]
+
+    def test_the_reading_is_kept_beside_the_library(self, measured, engine):
+        mine = source()
+        projects, recipes = FakeCollection(mine), FakeCollection()
+        drafts.make_drafts(mine, [{'recipe': 'chapters'}], projects, recipes)
+        drafts.make_drafts(
+            projects.documents[mine['_id']], [{'recipe': 'excerpts'}], projects, recipes
+        )
+        assert len(engine) == 1
+        kept = list((Path(config.VIDEO_DIR) / analyses.FOLDER).iterdir())
+        assert [p.suffix for p in kept] == ['.json']
+        assert all(
+            'Rules' in d['name'] or 'Tower' in d['name'] for d in projects.inserted
+        )
+
+    def test_a_recipe_without_a_label_step_asks_the_engine_nothing(
+        self, measured, engine
+    ):
+        mine = source()
+        drafts.make_drafts(
+            mine, [{'recipe': 'tight-cut'}], FakeCollection(mine), FakeCollection()
+        )
+        assert engine == []
+
+    def test_without_an_engine_the_recipe_names_the_draft_and_the_job_says_why(
+        self, measured
+    ):
+        mine = source()
+        projects = FakeCollection(mine)
+        _, notes = drafts.make_drafts(
+            mine, [{'recipe': 'chapters'}], projects, FakeCollection()
+        )
+        assert [d['name'] for d in projects.inserted] == [
+            'the show – Chapters 1',
+            'the show – Chapters 2',
+        ]
+        assert untitled('chapters') in notes
+        assert 'ALFRED_LANGUAGE_ENGINE_URL' in untitled('chapters')
+
+    def test_an_engine_that_fails_is_a_note_and_not_the_run_s_failure(
+        self, measured, monkeypatch
+    ):
+        monkeypatch.setattr(config, 'LANGUAGE_ENGINE_URL', 'http://words.test:8000')
+
+        def read(lines, title=None, transport=None):
+            raise language_engine.LanguageEngineFailed(
+                'the language engine at words.test:8000: it answered 500'
+            )
+
+        monkeypatch.setattr(language_engine, 'read', read)
+        mine = source()
+        projects = FakeCollection(mine)
+        made, notes = drafts.make_drafts(
+            mine, [{'recipe': 'chapters'}], projects, FakeCollection()
+        )
+        assert made == 2
+        assert projects.inserted[0]['name'] == 'the show – Chapters 1'
+        assert (
+            'chapters: label: nothing was titled: the language engine at '
+            'words.test:8000: it answered 500'
+        ) in notes
 
 
 class TestMakingDrafts:
@@ -102,7 +208,10 @@ class TestMakingDrafts:
             recipes,
         )
         assert made == 2
-        assert notes == ['videos/other.mp4: its motion was not measured: gone']
+        assert notes == [
+            'videos/other.mp4: its motion was not measured: gone',
+            untitled('highlights'),
+        ]
         first, second = projects.inserted
         assert first['owner'] == 'owner@example.com'
         assert first['name'] == 'the show – Highlights 1'
@@ -225,7 +334,10 @@ class TestTheTask:
         job = projects.documents[mine['_id']]['drafts_job']
         assert job['made'] == 2
         assert job['recipes'] == ['chapters']
-        assert job['notes'] == ['videos/other.mp4: its motion was not measured: gone']
+        assert job['notes'] == [
+            'videos/other.mp4: its motion was not measured: gone',
+            untitled('chapters'),
+        ]
         assert job['error'] is None
         assert len(projects.inserted) == 2
 

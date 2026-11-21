@@ -15,8 +15,10 @@ out of whatever is kept, and how the *compose* steps make the drafts. The
 operations and their parameters are `models.recipes.OPERATIONS`; the
 arithmetic of each is here, in a function named for it.
 
-Nothing here reaches the database, an engine or a model: a labeller is a
-later step, and `label` leaves a note where there is none.
+Nothing here reaches the database, an engine or a model: what the language
+engine read over the source, its topics over time, arrives in the `Source`,
+and `label` titles each candidate by the topic live over it; a labeller, for
+a category, is a later step, and `label` leaves a note where there is none.
 """
 
 import math
@@ -47,6 +49,11 @@ class Source:
     motion: Optional[dict] = None
     # `[{start, end}]`, the timeline's silences.
     silences: list = field(default_factory=list)
+    # `[{name, points: [{time, intensity}]}]`, the topics the language engine
+    # read over the source's words, strongest first; empty where it read none.
+    topics: list = field(default_factory=list)
+    # Why the engine read nothing, where it did not; None where it did.
+    unread: Optional[str] = None
 
     @property
     def duration(self) -> float:
@@ -91,6 +98,8 @@ class Draft:
     scores: Dict[str, float]
     render_settings: Optional[dict] = None
     captions_drawn: bool = False
+    # What it is about, where a `label` step found a topic live over it.
+    title: str = ''
 
 
 @dataclass
@@ -482,6 +491,34 @@ def _complement(
     return out
 
 
+# The longest a title is: a topic is a word or a few.
+MAX_TITLE_CHARS = 60
+
+
+def live_topic(topics: Sequence[dict], start: float, end: float) -> str:
+    """The topic with the most intensity of points within `[start, end]`, the
+    first of two that tie; '' where no topic has a point there."""
+    best, most = '', 0.0
+    for topic in topics or []:
+        weight = 0.0
+        for point in topic.get('points') or []:
+            when = _time(point.get('time'))
+            if when is not None and start <= when <= end:
+                intensity = _time(point.get('intensity'))
+                weight += 1.0 if intensity is None else intensity
+        if weight > most:
+            best, most = ' '.join(str(topic.get('name') or '').split()), weight
+    return best[:MAX_TITLE_CHARS]
+
+
+def titles(candidates: Sequence[Candidate], topics: Sequence[dict]) -> None:
+    """Each candidate titled by the topic live over it, where one is."""
+    for c in candidates:
+        found = live_topic(topics, c.start, c.end)
+        if found:
+            c.title = found
+
+
 def _describe(candidate: Candidate, weights: Dict[str, float]) -> str:
     where = f'{timecode(candidate.start)}-{timecode(candidate.end)} of the source'
     parts = [where]
@@ -607,7 +644,18 @@ def apply(
         if note:
             state.notes.append(note)
     elif step_name == 'label':
-        state.notes.append('label: no labeller is configured, so nothing was titled')
+        if p['title']:
+            if source.topics:
+                titles(state.candidates, source.topics)
+            else:
+                state.notes.append(
+                    'label: nothing was titled: '
+                    + (source.unread or 'no topic was read over the source')
+                )
+        if p['categories']:
+            state.notes.append(
+                'label: no labeller is configured, so no category was given'
+            )
     elif step_name == 'top':
         count = p['count']
         if p['per_hour'] > 0:
@@ -677,6 +725,7 @@ def compose(state: State, source: Source) -> List[Draft]:
             c.scores,
         )
         if draft:
+            draft.title = c.title
             drafts.append(draft)
     return drafts
 

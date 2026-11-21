@@ -11,6 +11,8 @@ This module builds the request from the ALFRED_LANGUAGE_ENGINE_* settings
 and reads the answer into alfred's own words. What it offers alfred is what
 alfred needs:
 
+- `lines_of(words)` -- a transcript's words as the lines the engine reads;
+- `digest(lines)` -- what the lines say, in one string, to keep a reading by;
 - `read(lines)` -- the conversation's speakers, topics and tangents;
 - `status()` -- whether there is an engine, and whether it answers;
 - `problem()` -- why there is none to use, before anything is sent.
@@ -20,6 +22,8 @@ the engine: `NoLanguageEngine` (none configured) and `LanguageEngineFailed`
 (it could not be reached, broke, or answered nonsense).
 """
 
+import hashlib
+import json
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence
 from urllib.parse import urlsplit, urlunsplit
@@ -37,6 +41,9 @@ HEALTH = '/health'
 
 # Who a line is by when nobody has said: the engine's own word for it.
 NOBODY = 'Unknown'
+
+# Words with no stretch of speech of their own: a gap this long starts a line.
+LINE_GAP = 1.0
 
 
 class LanguageEngineError(Exception):
@@ -60,6 +67,57 @@ class Line:
     start: float
     speaker: Optional[str]
     text: str
+    # When the line ends, where that is known.
+    end: Optional[float] = None
+
+
+def lines_of(words: Sequence[dict]) -> List[Line]:
+    """A transcript's words as lines: one per stretch of speech (`segment`),
+    or, for words with none, per run of words less than LINE_GAP apart; each
+    from its first word's start to its last word's end, said by the speaker
+    its first word names, or by nobody."""
+    lines: List[Line] = []
+    last: Optional[dict] = None
+    for word in sorted(words or [], key=lambda w: (w.get('start', 0), w.get('end', 0))):
+        segment = word.get('segment')
+        same = last is not None and (
+            (segment is not None and segment == last.get('segment'))
+            or (
+                segment is None
+                and last.get('segment') is None
+                and float(word.get('start', 0)) - float(last.get('end', 0)) < LINE_GAP
+            )
+        )
+        if same and lines:
+            line = lines[-1]
+            lines[-1] = Line(
+                start=line.start,
+                speaker=line.speaker,
+                text=f'{line.text} {word.get("text", "")}',
+                end=max(line.end or 0.0, float(word.get('end', 0))),
+            )
+        else:
+            lines.append(
+                Line(
+                    start=float(word.get('start', 0)),
+                    speaker=word.get('speaker') or None,
+                    text=str(word.get('text', '')),
+                    end=float(word.get('end', 0)),
+                )
+            )
+        last = word
+    return lines
+
+
+def digest(lines: Sequence) -> str:
+    """What `lines` say, as one string: the same lines give the same digest,
+    so a reading can be kept by it. Each line is anything with a `start`, a
+    `speaker` and a `text`."""
+    return hashlib.sha256(
+        json.dumps(
+            [[line.start, line.speaker or NOBODY, line.text] for line in lines]
+        ).encode()
+    ).hexdigest()
 
 
 @dataclass

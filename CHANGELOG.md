@@ -102,6 +102,11 @@ accepted are now refused, and a production stack needs its own signing key.
   `GET` and `POST /project/{id}/conversation` answer who spoke, which
   topics were live and when, and where the talk went off, which the panel
   shows and refreshes as the words change; `GET /health` reports the engine.
+- **A draft is titled by what it is about.** A recipe's `label` step names
+  each draft by the topic the language engine has live over its span, the
+  source's words read once per run and the reading kept beside the library;
+  `highlights`, `chapters`, `excerpts` and `quotes` carry the step. Without
+  an engine a draft keeps its recipe's name and the job says why.
 
 - **The Sculpt stage.** A fifth stage on the rail, between Source and Edit:
   its Recipes panel runs the recipes over the open project with the knobs a

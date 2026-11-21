@@ -42,7 +42,7 @@ it is measured against what people keep and drop.
 | `silences` | segment | the stretches the audio engine heard as silence, longer than `longer_than` seconds | `longer_than` 2 |
 | `dialogue` | score | how much is said in a candidate, words a second over its whole length, so a stretch with a break in it scores by what is said around the break; scaled so the most talkative is 1 | `weight` 1 |
 | `spikes` | score | the share of a candidate's seconds in which the level rises above `level_above` times its usual and the picture moves above `motion_above` times its usual at once, each usual a baseline over the whole source; with `where_words`, only seconds in which a word is said; scaled so the spikiest is 1 | `weight` 1, `level_above` 1.5, `motion_above` 1.5, `where_words` true |
-| `label` | score | a title and a category from a labeller; skipped, with a note in the job, where there is none | `title` true, `categories` |
+| `label` | score | a title for each candidate: the topic the language engine has live over it, the strongest of those it read within the candidate ([Who spoke, and what about](editing-by-text.md#who-spoke-and-what-about)); and a category from a labeller; each skipped, with a note in the job, where there is none | `title` true, `categories` |
 | `top` | filter | the highest-scored candidates that do not overlap, by the weighted sum of their scores: `count` of them, or `per_hour` for each hour of the source when that is set | `count` 25, `per_hour` 0 |
 | `keep` | filter | the candidates between `shortest` and `longest` seconds | `shortest` 0, `longest` a day |
 | `fillers` | filter | cuts each of the `words`, separated by commas, out of what is kept | `words` um, uh, er, ah, erm, hmm |
@@ -63,12 +63,12 @@ stores a copy under a name of its own.
 
 | Recipe | Leaves | Knobs |
 |---|---|---|
-| `highlights` | the windows where the most is said, and where the talking gets loud while the picture moves, each a short of its own: `windows`, `dialogue`, `spikes`, `top`, `compose each` | shortest 8, longest 12, count 25 |
+| `highlights` | the windows where the most is said, and where the talking gets loud while the picture moves, each a short of its own: `windows`, `dialogue`, `spikes`, `top`, `label`, `compose each` | shortest 8, longest 12, count 25 |
 | `teaser` | the best windows, in order, as one piece of a chosen length: `compose together` | shortest 8, longest 12, target 60 |
-| `chapters` | one draft per stretch between long pauses | pause 4 |
-| `excerpts` | the excerpt flow's stretches, each a draft: `spans` | pause 1, shortest 10, longest 90 |
+| `chapters` | one draft per stretch between long pauses, titled: `chapters`, `label` | pause 4 |
+| `excerpts` | the excerpt flow's stretches, each a draft: `spans`, `label` | pause 1, shortest 10, longest 90 |
 | `tight-cut` | the whole source, its long pauses shortened and its filler words dropped: `fillers`, `tighten`, `compose whole` | longer_than 1.5, to 0.5, the fillers |
-| `quotes` | each sentence that stands alone, as a tall short with its words drawn in: `sentences`, `keep`, `dialogue`, `top`, `render` 1080 by 1920 with captions | shortest 3, longest 20, count 25 |
+| `quotes` | each sentence that stands alone, as a tall short with its words drawn in: `sentences`, `keep`, `dialogue`, `top`, `label`, `render` 1080 by 1920 with captions | shortest 3, longest 20, count 25 |
 
 The first values are a collaborator's advice for an evening's recording:
 clips of eight to twelve seconds, about twenty-five of them. They hold until
@@ -96,9 +96,11 @@ it.
 the render worker makes, as a transcription is made: the source's timeline
 is measured, each recipe runs over its words, its sound and its motion, and
 each draft it leaves is a project of the source's owner, named
-`<source> – <recipe> <n>`, numbered in timeline order, with where it came
-from as its `description`, its captions and its words moved into it, the
-source's render settings, and `source`:
+`<source> – <title> <n>`: the title the topic the language engine had live
+over it where the recipe's `label` step found one, the recipe's label where
+not; numbered in timeline order, with where it came from as its
+`description`, its captions and its words moved into it, the source's render
+settings, and `source`:
 
 ``` json title="A draft's source"
 {

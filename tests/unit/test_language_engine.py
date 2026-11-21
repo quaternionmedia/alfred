@@ -13,6 +13,8 @@ from alfred.core.utils import language_engine
 from alfred.core.utils.language_engine import (
     Line,
     Reading,
+    digest,
+    lines_of,
     read,
     status,
     transcript_text,
@@ -77,6 +79,46 @@ def engine(monkeypatch):
 
 def answering(handler):
     return httpx.MockTransport(handler)
+
+
+class TestLines:
+    WORDS = [
+        {'start': 0, 'end': 0.4, 'text': 'Here', 'segment': 0, 'speaker': 'Alice'},
+        {'start': 0.5, 'end': 0.9, 'text': 'are', 'segment': 0, 'speaker': 'Alice'},
+        {'start': 1.0, 'end': 1.4, 'text': 'the rules.', 'segment': 0},
+        {'start': 30, 'end': 30.4, 'text': 'But', 'segment': 1},
+        {'start': 30.5, 'end': 30.9, 'text': 'wait.', 'segment': 1},
+    ]
+
+    def test_a_line_per_stretch_of_speech_from_its_first_word(self):
+        assert lines_of(self.WORDS) == [
+            Line(start=0, speaker='Alice', text='Here are the rules.', end=1.4),
+            Line(start=30, speaker=None, text='But wait.', end=30.9),
+        ]
+
+    def test_words_without_a_stretch_break_at_a_gap(self):
+        words = [
+            {'start': 0, 'end': 0.4, 'text': 'one'},
+            {'start': 0.5, 'end': 0.9, 'text': 'two'},
+            {'start': 3, 'end': 3.4, 'text': 'three'},
+        ]
+        assert [line.text for line in lines_of(words)] == ['one two', 'three']
+
+    def test_the_words_are_read_in_time_order_whatever_order_they_are_sent(self):
+        assert lines_of(list(reversed(self.WORDS))) == lines_of(self.WORDS)
+
+    def test_no_words_is_no_lines(self):
+        assert lines_of([]) == [] and lines_of(None) == []
+
+    def test_the_digest_follows_what_the_lines_say(self):
+        lines = lines_of(self.WORDS)
+        assert digest(lines) == digest(lines_of(self.WORDS))
+        named = [{**w, 'speaker': 'Bob'} for w in self.WORDS]
+        assert digest(lines_of(named)) != digest(lines)
+        moved = [
+            {**w, 'start': w['start'] + 1, 'end': w['end'] + 1} for w in self.WORDS
+        ]
+        assert digest(lines_of(moved)) != digest(lines)
 
 
 class TestWhatIsSent:
