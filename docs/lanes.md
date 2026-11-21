@@ -54,7 +54,9 @@ its out-point, as a symmetrical envelope, 0 at the middle and full scale at
 the lane's edges. A stretch the engine heard as silence is darkened. The
 analysis is asked of the audio engine once per file while the page is open,
 and kept by the server for as long as the file is unchanged, so the lane
-costs a request per file, not per clip. A still picture and a template have
+costs a request per file, not per clip; a video's sound goes to the engine
+alone, as a WAV otto writes from it, so a long recording is analysed whatever
+its size. A still picture and a template have
 no sound and nothing drawn. The lane's label says when the engine is still
 being asked, when there is no engine to ask, and when a file could not be
 analysed; the editor works without the lane either way.

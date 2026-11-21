@@ -61,6 +61,7 @@ editor, saved or not, as it carries the timeline.
 | `POST /project/{id}/captions/import` | `{format: "srt"\|"vtt"\|"json", text}` → `{captions, skipped}`; stores nothing |
 | `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine (`audio_engine_missing`) or the job could not be queued (`transcription_not_queued`); `409` while one runs; `422` when the saved timeline has nothing to hear |
 | `GET /media/{name}/audio` | the engine's analysis of a library file |
+| `GET /project/{id}/sound` | `{duration, rate, levels, silences}`: the saved timeline's level over time and its silences, in timeline seconds, from the analyses of the files it plays |
 | `GET /health` | gains `audio_engine: {configured, ok, detail}` |
 
 Each route is scoped to the caller, like every project route: a project that
@@ -232,18 +233,42 @@ seconds, loading its speech model; after that, about as long as the speech.
 
 ### Analysing library media
 
-`GET /media/{name}/audio` hands a library file to the engine and answers its
-analysis, kept until the file changes. `name` is as `GET /media` lists it,
-`videos/<file>`, or the bare file name. `features` asks for some of `tempo`,
-`beats`, `onsets`, `loudness`, `silences` and `peaks`, all by default; each is
-a field of vox's `Analysis`, which says what it holds. Its refusals
+`GET /media/{name}/audio` hands the sound of a library file to the engine and
+answers its analysis, kept until the file changes. `name` is as `GET /media`
+lists it, `videos/<file>`, or the bare file name. `features` asks for some of
+`tempo`, `beats`, `onsets`, `loudness`, `silences` and `peaks`, all by
+default; each is a field of vox's `Analysis`, which says what it holds. An
+audio file is sent as it is. A video's sound is sent alone, as a mono WAV at
+16 kHz that otto writes from it, as a transcription sends the timeline's: the
+engine is asked about the sound, and a long recording's picture is most of
+its bytes, more than an engine takes in one upload. Its refusals
 ([Refusals](api/errors.md)):
 
 - 404 for a file the library does not hold (`not_found`);
-- 422 for an image (`media_silent`), a file the engine will not read
-  (`audio_engine_refused`) or a feature it does not know (`unknown_feature`);
+- 422 for an image or a video with no sound track (`media_silent`), a file
+  the engine will not read (`audio_engine_refused`) or a feature it does not
+  know (`unknown_feature`);
 - 502 when the engine fails (`audio_engine_failed`);
 - 503 when there is none (`audio_engine_missing`).
+
+An analysis is kept in the api's memory and beside the library, under
+`.analyses/` in the media directory, which is never listed or served, so the
+worker and an api that has restarted read what was measured rather than
+measuring again; a file that changes is measured again.
+
+### The sound of a timeline
+
+`GET /project/{id}/sound` answers a project's saved timeline as it sounds, in
+timeline seconds: `levels`, 0 to 1, `rate` a second from 0 to `duration`, and
+`silences` as `[{start, end}]`, in order. Each file the timeline plays is
+analysed as above, once, and mapped onto the timeline through its clips'
+windows, as the Audio lane maps it ([The timeline's lanes](lanes.md#audio));
+where clips sound at once, the loudest is heard. It refuses, by code, a
+timeline that is empty (`timeline_empty`) or has no video or audio clip
+(`timeline_silent`), a file the library does not hold (`not_found`), which a
+timeline playing remote media is, and what the file route refuses. A program
+that cuts a timeline by its sound reads this route rather than a file at a
+time.
 
 ## Testing
 

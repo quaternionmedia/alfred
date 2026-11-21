@@ -1,0 +1,87 @@
+{
+  "about": "the clips are laid end to end by duration, holes skipped, with their in-points",
+  "given": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "duration": 4,
+        "inpoint": 10
+      },
+      null,
+      {
+        "type": "template",
+        "name": "title",
+        "duration": 2
+      },
+      {
+        "type": "audio",
+        "name": "videos/song.mp3",
+        "duration": 3,
+        "inpoint": 1.5
+      },
+      {
+        "type": "image",
+        "name": "videos/still.png",
+        "duration": 1
+      }
+    ],
+    "silences": []
+  },
+  "expect": {
+    "placed": [
+      {
+        "clip": {
+          "type": "video",
+          "name": "videos/a.mp4",
+          "duration": 4,
+          "inpoint": 10
+        },
+        "index": 0,
+        "start": 0,
+        "length": 4,
+        "inpoint": 10
+      },
+      {
+        "clip": {
+          "type": "template",
+          "name": "title",
+          "duration": 2
+        },
+        "index": 2,
+        "start": 4,
+        "length": 2,
+        "inpoint": 0
+      },
+      {
+        "clip": {
+          "type": "audio",
+          "name": "videos/song.mp3",
+          "duration": 3,
+          "inpoint": 1.5
+        },
+        "index": 3,
+        "start": 6,
+        "length": 3,
+        "inpoint": 1.5
+      },
+      {
+        "clip": {
+          "type": "image",
+          "name": "videos/still.png",
+          "duration": 1
+        },
+        "index": 4,
+        "start": 9,
+        "length": 1,
+        "inpoint": 0
+      }
+    ],
+    "silences": [
+      [],
+      [],
+      [],
+      []
+    ]
+  }
+}

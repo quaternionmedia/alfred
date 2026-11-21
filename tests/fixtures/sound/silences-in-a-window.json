@@ -1,0 +1,67 @@
+{
+  "about": "the silences of a file that fall in a placed clip window, in timeline seconds",
+  "given": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "duration": 4,
+        "inpoint": 10
+      }
+    ],
+    "silences": [
+      {
+        "start": 9,
+        "end": 9.5
+      },
+      {
+        "start": 9.5,
+        "end": 10.5
+      },
+      {
+        "start": 11,
+        "end": 12.25
+      },
+      {
+        "start": 13.9,
+        "end": 15
+      },
+      {
+        "start": 15,
+        "end": 16
+      }
+    ]
+  },
+  "expect": {
+    "placed": [
+      {
+        "clip": {
+          "type": "video",
+          "name": "videos/a.mp4",
+          "duration": 4,
+          "inpoint": 10
+        },
+        "index": 0,
+        "start": 0,
+        "length": 4,
+        "inpoint": 10
+      }
+    ],
+    "silences": [
+      [
+        {
+          "start": 0,
+          "end": 0.5
+        },
+        {
+          "start": 1,
+          "end": 2.25
+        },
+        {
+          "start": 3.9,
+          "end": 4
+        }
+      ]
+    ]
+  }
+}

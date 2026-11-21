@@ -1,0 +1,73 @@
+{
+  "about": "a clip placed later puts its silences later by its start",
+  "given": {
+    "clips": [
+      {
+        "type": "template",
+        "name": "title",
+        "duration": 2.5
+      },
+      {
+        "type": "audio",
+        "name": "videos/song.mp3",
+        "duration": 3,
+        "inpoint": 1.5
+      }
+    ],
+    "silences": [
+      {
+        "start": 0,
+        "end": 2
+      },
+      {
+        "start": 2.75,
+        "end": 3.125
+      }
+    ]
+  },
+  "expect": {
+    "placed": [
+      {
+        "clip": {
+          "type": "template",
+          "name": "title",
+          "duration": 2.5
+        },
+        "index": 0,
+        "start": 0,
+        "length": 2.5,
+        "inpoint": 0
+      },
+      {
+        "clip": {
+          "type": "audio",
+          "name": "videos/song.mp3",
+          "duration": 3,
+          "inpoint": 1.5
+        },
+        "index": 1,
+        "start": 2.5,
+        "length": 3,
+        "inpoint": 1.5
+      }
+    ],
+    "silences": [
+      [
+        {
+          "start": 0,
+          "end": 2
+        }
+      ],
+      [
+        {
+          "start": 2.5,
+          "end": 3
+        },
+        {
+          "start": 3.75,
+          "end": 4.125
+        }
+      ]
+    ]
+  }
+}

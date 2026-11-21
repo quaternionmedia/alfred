@@ -96,6 +96,15 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **A timeline's sound, in its own seconds.** `GET /project/{id}/sound`
+  answers a saved timeline's level over time and its silences, from the
+  audio engine's analysis of each file it plays mapped onto the timeline
+  (`alfred/core/utils/sound.py`, the Audio lane's arithmetic, held equal to
+  it by the fixtures under `tests/fixtures/sound/`). A video's sound now goes
+  to the engine alone, as a WAV otto writes from it, so a recording larger
+  than an engine takes in one upload is analysed all the same; an analysis is
+  kept beside the library as well as in the api's memory.
+
 - **The cut's arithmetic has a server twin.** `alfred/core/utils/cut.py` cuts
   ranges out of a timeline, moves captions and words after the timeline
   tools and takes a span as a timeline of its own, as `website/src/ClipWindow.js`

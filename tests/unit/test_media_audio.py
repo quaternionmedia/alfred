@@ -7,13 +7,15 @@ unchanged file is analysed once.
 """
 
 import os
+from contextlib import contextmanager
 
 import pytest
 from fastapi.testclient import TestClient
+from otto.media import MediaInfo
 
 from alfred import config
 from alfred.core.routes import audio as routes
-from alfred.core.utils import audio_engine
+from alfred.core.utils import audio_engine, sound
 from alfred.core.utils.probe import ProbeCache
 from alfred.main import app
 from tests.unit.render_harness import OWNER, anonymous, as_user
@@ -30,7 +32,28 @@ def library(tmp_path, monkeypatch):
 
 
 @pytest.fixture
-def analysed(monkeypatch, library):
+def extracted(monkeypatch):
+    """otto's extraction of a video's sound, stood in for: returns what was
+    asked, `(file, kind, duration)`, and hands the engine a WAV."""
+    asked = []
+
+    @contextmanager
+    def file_sound(path, kind, duration, rate=sound.SOUND_RATE):
+        if kind != 'video':
+            yield path, None
+            return
+        asked.append((os.path.basename(path), kind, duration))
+        yield os.path.join(os.path.dirname(path), 'sound.wav'), 'audio/wav'
+
+    monkeypatch.setattr(sound, 'file_sound', file_sound)
+    monkeypatch.setattr(
+        routes, 'probe_file', lambda path, kind, stat: MediaInfo(duration=7.5)
+    )
+    return asked
+
+
+@pytest.fixture
+def analysed(monkeypatch, library, extracted):
     """The engine, answering; returns the calls it was asked."""
     calls = []
 
@@ -62,9 +85,27 @@ class TestAsking:
     def test_by_its_bare_name_too(self, client, analysed):
         assert client.get('/media/song.mp3/audio').status_code == 200
 
-    def test_a_video_is_sent_as_one(self, client, analysed):
-        client.get('/media/videos/talk.mp4/audio')
-        assert analysed[0][1] == 'video/mp4'
+    def test_a_video_s_sound_is_sent_alone_as_a_wav(self, client, analysed, extracted):
+        res = client.get('/media/videos/talk.mp4/audio')
+        assert res.status_code == 200, res.text
+        assert analysed[0][0] == 'sound.wav'
+        assert analysed[0][1] == 'audio/wav'
+        # otto wrote it from the library file, at its probed length.
+        assert extracted == [('talk.mp4', 'video', 7.5)]
+
+    def test_a_video_with_no_sound_track_is_422(self, client, analysed, monkeypatch):
+        from contextlib import contextmanager
+
+        @contextmanager
+        def no_sound(path, kind, duration):
+            raise sound.NoSoundTrack('talk.mp4 has no sound track')
+            yield
+
+        monkeypatch.setattr(sound, 'file_sound', no_sound)
+        res = client.get('/media/videos/talk.mp4/audio')
+        assert res.status_code == 422
+        assert res.json()['code'] == 'media_silent'
+        assert analysed == []
 
     def test_a_wav_is_sent_under_the_name_every_engine_takes(self, client, analysed):
         client.get('/media/videos/speech.wav/audio')

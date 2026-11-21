@@ -38,6 +38,8 @@ INVENTORY = {
     # Cues: routes/cues.py.
     ('GET', '/project/{item_id}/cues'),
     ('PUT', '/project/{item_id}/cues'),
+    # The timeline's sound: routes/sound.py.
+    ('GET', '/project/{item_id}/sound'),
 }
 
 
