@@ -123,6 +123,10 @@ class TestWhatRuns:
         assert api[api.index('--host') + 1] == '127.0.0.1'
         assert api[api.index('--port') + 1] == '1832'
         assert '--reload' in api and api[api.index('--reload-dir') + 1] == 'alfred'
+        # Bounded, or a video streaming from the api holds a reload open.
+        assert api[api.index('--timeout-graceful-shutdown') + 1] == str(
+            host.RELOAD_GRACE
+        )
         assert cwd == host.ROOT
 
         worker, cwd = named['worker']

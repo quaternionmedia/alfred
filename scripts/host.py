@@ -45,6 +45,8 @@ RECORD = STATE / 'processes.json'
 JOE_RECORD = STATE / 'joe.json'
 DEFAULT_DB = 'mongodb://127.0.0.1:27018'
 PARCEL = ROOT / 'website' / 'node_modules' / 'parcel' / 'lib' / 'bin.js'
+# Seconds the api's reloader gives open connections before it restarts.
+RELOAD_GRACE = 3
 KEY_FILE = ROOT / '.secret_key.local'
 # How long each process is given to say it is up, in seconds.
 API_WAIT = 120
@@ -140,6 +142,11 @@ def commands(python, node, chosen, broker):
                 '--reload',
                 '--reload-dir',
                 'alfred',
+                # A reload waits for open connections to close, and a
+                # browser streaming a video keeps one open for as long as
+                # it plays: bounded, so a code change reaches the api.
+                '--timeout-graceful-shutdown',
+                str(RELOAD_GRACE),
             ],
             ROOT,
         ),

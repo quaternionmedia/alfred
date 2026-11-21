@@ -95,8 +95,13 @@ export CELERY_BACKEND=mongodb://127.0.0.1:27018/celery
 export STATIC_DIR=website/dist
 export VIDEO_DIR=videos
 export ALFRED_AUDIO_ENGINE_URL=http://127.0.0.1:1059
-pdm run uvicorn alfred.main:app --host 127.0.0.1 --port 1732 --reload --reload-dir alfred
+pdm run uvicorn alfred.main:app --host 127.0.0.1 --port 1732 --reload --reload-dir alfred --timeout-graceful-shutdown 3
 ```
+
+The reloader restarts the api when a file under `alfred/` changes. It waits
+for open connections first, and a browser streaming a video from the api
+keeps one open for as long as it plays, so the wait is bounded to a few
+seconds: a code change reaches the api whether or not a tab is playing.
 
 **The render worker.** The same environment, celery's solo pool, which is
 the one Windows has, and the root of the checkout as its working directory,
