@@ -18,6 +18,7 @@ from alfred.config import (
     secret_key_problem,
 )
 from alfred.core import errors
+from alfred.core.models.recipes import Recipe
 from alfred.core.models.users import UserRead, UserUpdate
 from alfred.core.responses import MediaAwareGZipMiddleware
 from alfred.core.routes import (
@@ -36,6 +37,7 @@ from alfred.core.routes import (
     motionAPI,
     previewAPI,
     previewFrameAPI,
+    recipesAPI,
     renderFileAPI,
     soundAPI,
     templateAPI,
@@ -237,6 +239,10 @@ app.include_router(
 )
 # A project's cues, drawn on the editor's timeline, scoped the same way.
 app.include_router(cuesAPI, dependencies=[Depends(current_active_user)], tags=['cues'])
+# Recipes, the chains of algorithms that cut a long source into drafts.
+app.include_router(
+    recipesAPI, dependencies=[Depends(current_active_user)], tags=['recipes']
+)
 # The sound of a project's timeline, from the engine's analyses of its files.
 app.include_router(
     soundAPI, dependencies=[Depends(current_active_user)], tags=['project']
@@ -300,6 +306,7 @@ async def on_startup():
             projects.schema,
             projects.create_schema,
             projects.update_schema,
+            Recipe,
         ],
     )
 

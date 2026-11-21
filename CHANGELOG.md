@@ -96,6 +96,13 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **Recipes.** A recipe is a chain of algorithms over a long source's
+  timeline, words and measures, configured by a few knobs: `GET /recipes`
+  lists the built-in ones, `highlights` first, and an account's own, which
+  `POST /recipes` and `PUT /recipes/{id}` write, every step checked against
+  the operations in `alfred/core/models/recipes.py`. `alfred/core/utils/sculpt.py`
+  runs one; `docs/drafts.md` says what a recipe is and lists the operations.
+
 - **Motion in the picture.** otto measures how much a video's picture changes
   over time (`otto.media.motion`); `GET /media/{name}/motion` keeps it per
   file as the audio analyses are kept, and `GET /project/{id}/motion` maps

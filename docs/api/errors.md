@@ -38,6 +38,9 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `media_exists` | 409 | a file of that name is in the library already, and `replace=true` was not sent | `POST /media` |
 | `media_too_large` | 413 | the upload is larger than the limit, which `detail` names | `POST /media` |
 | `media_silent` | 422 | the file is an image, or a video with no sound track: nothing to analyse | `GET /media/{name}/audio`, `GET /project/{id}/sound` |
+| `unknown_operation` | 422 | a recipe's step names an operation the recipes do not have; `detail` names the step and lists the operations | `POST /recipes`, `PUT /recipes/{id}` |
+| `recipe_refused` | 422 | a recipe that cannot run: a parameter out of its range or of the wrong kind, a field read that is not declared, a name that is not a word; `detail` names the step and the rule | `POST /recipes`, `PUT /recipes/{id}` |
+| `unknown_recipe` | 404 | no recipe of that name or id, or not yours: the built-in recipes are read by name, and `detail` lists them | `GET /recipes/{id}`, `PUT /recipes/{id}` |
 | `no_picture` | 422 | the file is an image or an audio file, which has no moving picture to measure; or the saved timeline has no video clip | `GET /media/{name}/motion`, `GET /project/{id}/motion` |
 | `picture_unreadable` | 422 | ffmpeg could not read the file's picture; `detail` ends with what it said | `GET /media/{name}/motion`, `GET /project/{id}/motion` |
 | `audio_engine_refused` | 422 | the audio engine would not take the file -- no sound in it, a type it does not read, too large; `detail` is the engine's reason | `GET /media/{name}/audio` |
