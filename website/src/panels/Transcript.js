@@ -7,6 +7,7 @@ import { Health } from '../Health'
 import { User } from '../User'
 import { SaveState } from '../Autosave'
 import { JobLine, TranscribeButton, TranscribeConfirm, transcribeBlocker } from './Captions'
+import { Conversation } from '../captions/conversation'
 import '../captions/captions.scss'
 
 /**
@@ -67,11 +68,36 @@ function wordsIn(element, range) {
   return { from: Number(words[first].dataset.w), to: Number(words[last].dataset.w) }
 }
 
+/** Ask who said a paragraph, and name them on its words. */
+const nameSpeaker = run => {
+  const was = (Transcript.words[run.from] || {}).speaker || ''
+  const name = window.prompt('Who said this paragraph?', was)
+  if (name === null) return
+  Transcript.setSpeaker(run.from, run.to, name)
+}
+
 /** One paragraph; redrawn only when its signature changes (playback redraws every frame). */
 const Paragraph = {
   onbeforeupdate: (vnode, old) => vnode.attrs.signature !== old.attrs.signature,
   view: ({ attrs: { run, selection, going, current } }) => {
-    const children = []
+    const speaker = (Transcript.words[run.from] || {}).speaker || ''
+    const children = [
+      m(
+        'button.speakerlabel',
+        {
+          type: 'button',
+          'data-speaker': speaker,
+          style: { borderColor: Conversation.colorOf(speaker) },
+          title: speaker ? `Said by ${speaker}: press to change who` : 'Press to say who said this',
+          onclick: e => {
+            e.stopPropagation()
+            nameSpeaker(run)
+          },
+        },
+        speaker || Conversation.NOBODY
+      ),
+      ' ',
+    ]
     for (let i = run.from; i <= run.to; i++) {
       const word = Transcript.words[i]
       const selected = selection && i >= selection.from && i <= selection.to
@@ -186,6 +212,7 @@ const Words = () => {
             current,
             signature: [
               Transcript.version,
+              Conversation.version,
               selection ? within(selection.from, selection.to, run) : '',
               within(goingFrom, goingTo, run),
               current >= run.from && current <= run.to ? current : '',
@@ -195,6 +222,62 @@ const Words = () => {
       )
     },
   }
+}
+
+/** What the language engine reads in the words: the speakers, the topics, the tangents. */
+const Reading = {
+  view: () => {
+    const state = Conversation.state
+    if (state === 'idle') return null
+    if (state === 'no-engine') {
+      return m(
+        'p.captionsnote.reading#transcript-reading',
+        { 'data-state': state },
+        'No language engine to read who spoke and what about: set ALFRED_LANGUAGE_ENGINE_URL.'
+      )
+    }
+    if (state === 'failed') {
+      return m(
+        'p.captionsnote.reading#transcript-reading',
+        { 'data-state': state },
+        `The language engine did not answer: ${Conversation.why || 'no reason'}`
+      )
+    }
+    const speakers = Object.entries(Conversation.speakers)
+    const topics = Conversation.topics
+    const tangents = Conversation.tangents.length
+    return m('.reading#transcript-reading', { 'data-state': state }, [
+      m('p.captionsnote', [
+        state === 'asking' ? 'Reading who spoke and what about… ' : 'Read: ',
+        speakers.length
+          ? speakers
+              .map(([name, info]) => `${name} (${info.contributions})`)
+              .join(', ')
+          : 'nobody yet',
+        tangents ? `; ${plural(tangents, 'tangent')}` : '',
+        '.',
+      ]),
+      topics.length
+        ? m(
+            '.topics',
+            topics.map(topic =>
+              m(
+                'button.topicchip',
+                {
+                  type: 'button',
+                  style: { borderColor: topic.color || null },
+                  title: `${topic.name}: live at ${plural(topic.points.length, 'moment')}; press to play from the first`,
+                  onclick: () => {
+                    if (topic.points.length) Player.seek(topic.points[0].time)
+                  },
+                },
+                `${topic.name} ${topic.points.length}`
+              )
+            )
+          )
+        : null,
+    ])
+  },
 }
 
 /** Cut, Undo and Save. */
@@ -242,6 +325,7 @@ export const TranscriptPanel = {
     if (User.loggedIn) {
       Transcript.ensure(projectId())
       Captions.ensure(projectId())
+      Conversation.follow(projectId())
     }
   },
   onupdate: () => {
@@ -249,6 +333,7 @@ export const TranscriptPanel = {
     if (User.loggedIn) {
       Transcript.ensure(projectId())
       Captions.ensure(projectId())
+      Conversation.follow(projectId())
     }
   },
   onremove: () => Health.unwatch('transcript'),
@@ -298,6 +383,7 @@ export const TranscriptPanel = {
                 ? 'Press Delete or Backspace, or Cut, to take the struck-through words out of the timeline. Escape lets go.'
                 : 'Select words — drag across them, double-click one, or click one and shift-click another — to cut them. Click a word to play from it.'
             ),
+            m(Reading),
             last
               ? m(
                   'p.captionsnote#transcript-last',

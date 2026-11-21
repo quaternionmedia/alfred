@@ -61,8 +61,9 @@ editor, saved or not, as it carries the timeline.
 | `POST /project/{id}/captions/import` | `{format: "srt"\|"vtt"\|"json", text}` → `{captions, skipped}`; stores nothing |
 | `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine (`audio_engine_missing`) or the job could not be queued (`transcription_not_queued`); `409` while one runs; `422` when the saved timeline has nothing to hear |
 | `GET /media/{name}/audio` | the engine's analysis of a library file |
+| `GET /project/{id}/conversation` | `{speakers, topics, tangents, lines}`: the transcript as the language engine reads it ([Who spoke](editing-by-text.md#who-spoke-and-what-about)); `POST` reads the words sent instead |
 | `GET /project/{id}/sound` | `{duration, rate, levels, silences}`: the saved timeline's level over time and its silences, in timeline seconds, from the analyses of the files it plays |
-| `GET /health` | gains `audio_engine: {configured, ok, detail}` |
+| `GET /health` | gains `audio_engine: {configured, ok, detail}`, and `language_engine` the same |
 
 Each route is scoped to the caller, like every project route: a project that
 is not yours answers 404. `GET /project/{id}` carries `captions` and

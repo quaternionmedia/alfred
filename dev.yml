@@ -25,6 +25,9 @@ x-alfred-settings: &alfred-settings
   # See docs/configuration.md#docker-hosts-and-joe.
   ALFRED_AUDIO_ENGINE_URL:
   ALFRED_AUDIO_ENGINE_TIMEOUT:
+  # looksatwords beside the stack, for who spoke and what about.
+  ALFRED_LANGUAGE_ENGINE_URL:
+  ALFRED_LANGUAGE_ENGINE_TIMEOUT:
 
 # One per field of vox's EngineContract, in its order. Compose takes names,
 # not patterns; test_stack_settings.py holds the list to the contract.

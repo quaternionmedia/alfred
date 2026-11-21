@@ -41,10 +41,12 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `unknown_operation` | 422 | a recipe's step names an operation the recipes do not have; `detail` names the step and lists the operations | `POST /recipes`, `PUT /recipes/{id}` |
 | `recipe_refused` | 422 | a recipe that cannot run: a parameter out of its range or of the wrong kind, a field read that is not declared, a name that is not a word; `detail` names the step and the rule | `POST /recipes`, `PUT /recipes/{id}` |
 | `unknown_recipe` | 404 | no recipe of that name or id, or not yours: the built-in recipes are read by name, and `detail` lists them | `GET /recipes/{id}`, `PUT /recipes/{id}`, `POST /project/{id}/drafts` |
-| `no_words` | 422 | the project has no words to cut by: transcribe its timeline first | `POST /project/{id}/drafts` |
+| `no_words` | 422 | the project has no words to cut by, or to read: transcribe its timeline first | `POST /project/{id}/drafts`, `GET /project/{id}/conversation` |
 | `drafts_running` | 409 | recipes are running over this project; `GET /project/{id}/drafts` follows the job | `POST /project/{id}/drafts` |
 | `drafts_not_queued` | 503 | the broker would not take the run; the project's job is recorded `failed` with the reason | `POST /project/{id}/drafts` |
 | `not_a_draft` | 422 | an id named is not one of this project's drafts of yours, so nothing was dropped | `DELETE /project/{id}/drafts` |
+| `language_engine_missing` | 503 | no language engine alfred can ask: none is configured, or the address is not one; `detail` is the reason `GET /health` gives as `language_engine.detail` | `GET /project/{id}/conversation`, `POST /project/{id}/conversation` |
+| `language_engine_failed` | 502 | the language engine could not be reached, broke, or answered something that is not an answer; asking again may work | `GET /project/{id}/conversation`, `POST /project/{id}/conversation` |
 | `no_picture` | 422 | the file is an image or an audio file, which has no moving picture to measure; or the saved timeline has no video clip | `GET /media/{name}/motion`, `GET /project/{id}/motion` |
 | `picture_unreadable` | 422 | ffmpeg could not read the file's picture; `detail` ends with what it said | `GET /media/{name}/motion`, `GET /project/{id}/motion` |
 | `audio_engine_refused` | 422 | the audio engine would not take the file -- no sound in it, a type it does not read, too large; `detail` is the engine's reason | `GET /media/{name}/audio` |

@@ -96,6 +96,13 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **Who spoke, and what about.** A transcript's words carry a `speaker`, set
+  from the Transcript panel a paragraph at a time and saved with the words.
+  With a language engine, looksatwords, at `ALFRED_LANGUAGE_ENGINE_URL`,
+  `GET` and `POST /project/{id}/conversation` answer who spoke, which
+  topics were live and when, and where the talk went off, which the panel
+  shows and refreshes as the words change; `GET /health` reports the engine.
+
 - **The Sculpt stage.** A fifth stage on the rail, between Source and Edit:
   its Recipes panel runs the recipes over the open project with the knobs a
   person sets, and its Drafts panel lists what they left, each opening on

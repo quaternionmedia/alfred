@@ -21,7 +21,13 @@ import re
 from datetime import datetime
 from typing import Literal, Optional, Tuple, Union
 
-from pydantic import BaseModel, conint, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    conint,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 # The longest a caption's text may be. Two full subtitle lines are under a
 # hundred characters; this is generous, and still bounds what a render has to
@@ -99,16 +105,41 @@ class Caption(BaseModel):
 
 # Longest word text kept; punctuation is attached to words.
 MAX_WORD_CHARS = 100
+# The longest a speaker's name, as a word carries it.
+MAX_SPEAKER_CHARS = 60
 
 
 class Word(BaseModel):
     """One transcript word, in timeline seconds; `end` may equal `start`.
-    `segment` numbers its stretch of speech from 0 (a paragraph in the editor)."""
+    `segment` numbers its stretch of speech from 0 (a paragraph in the editor);
+    `speaker` names who said it, when someone has said who."""
 
     start: float
     end: float
     text: str
     segment: Optional[conint(ge=0)] = None
+    speaker: Optional[str] = None
+
+    @field_validator('speaker')
+    @classmethod
+    def who_said_it(cls, value):
+        if value is None:
+            return value
+        name = ' '.join(clean_caption_text(value).split())
+        if len(name) > MAX_SPEAKER_CHARS:
+            raise ValueError(
+                f'a speaker is at most {MAX_SPEAKER_CHARS} characters, not {len(name)}'
+            )
+        return name or None
+
+    @model_serializer(mode='wrap')
+    def _without_an_unnamed_speaker(self, handler):
+        """As stored and as answered: without `speaker` until one is named,
+        so a word nobody has spoken for is the shape it always was."""
+        data = handler(self)
+        if isinstance(data, dict) and data.get('speaker') is None:
+            data.pop('speaker', None)
+        return data
 
     @field_validator('start', 'end')
     @classmethod

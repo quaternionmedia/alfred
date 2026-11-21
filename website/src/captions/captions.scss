@@ -270,6 +270,61 @@ $problem: #e57373;
     margin: 0 0 0.6rem;
   }
 
+  // Who said the paragraph: a small label at its start, coloured by speaker.
+  .speakerlabel {
+    display: inline-block;
+    margin-right: 0.3rem;
+    padding: 0 0.4rem;
+    min-height: 1.3rem;
+    border: 1px solid #4a4a4a;
+    border-radius: 999px;
+    background: #202020;
+    color: $muted;
+    font: inherit;
+    font-size: 0.7rem;
+    line-height: 1.3rem;
+    vertical-align: 0.15em;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+
+    &:hover {
+      color: $text;
+    }
+
+    &[data-speaker=''] {
+      border-style: dashed;
+    }
+  }
+
+  // What the language engine read: a line, and the topics as chips.
+  .reading {
+    margin: 0 0 0.4rem;
+
+    p {
+      margin: 0 0 0.3rem;
+    }
+  }
+
+  .topics {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin: 0 0 0.5rem;
+  }
+
+  .topicchip {
+    padding: 0 0.5rem;
+    min-height: 1.4rem;
+    border: 1px solid #4a4a4a;
+    border-radius: 999px;
+    background: #202020;
+    color: $text;
+    font: inherit;
+    font-size: 0.72rem;
+    cursor: pointer;
+  }
+
   .word {
     border-radius: 2px;
 

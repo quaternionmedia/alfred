@@ -28,6 +28,7 @@ from alfred.core.routes import (
     audioAPI,
     authAPI,
     captionsAPI,
+    conversationAPI,
     cuesAPI,
     demoAPI,
     draftsAPI,
@@ -237,6 +238,10 @@ app.include_router(
 # A project's captions (contract K2), scoped to the caller like the project.
 app.include_router(
     captionsAPI, dependencies=[Depends(current_active_user)], tags=['captions']
+)
+# What was said in a project's transcript, as the language engine reads it.
+app.include_router(
+    conversationAPI, dependencies=[Depends(current_active_user)], tags=['captions']
 )
 # A project's cues, drawn on the editor's timeline, scoped the same way.
 app.include_router(cuesAPI, dependencies=[Depends(current_active_user)], tags=['cues'])

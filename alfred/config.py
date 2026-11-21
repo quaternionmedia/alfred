@@ -249,6 +249,16 @@ AUDIO_ENGINE_URL = (environ.get('ALFRED_AUDIO_ENGINE_URL') or '').strip() or Non
 # as long as the speech on a CPU: minutes for a long timeline.
 AUDIO_ENGINE_TIMEOUT = resolve_seconds(environ, 'ALFRED_AUDIO_ENGINE_TIMEOUT', 1800)
 
+# The language engine's base URL (looksatwords), reached only through
+# `utils.language_engine`. Unset: no engine, and the transcript's reading
+# says so. See docs/editing-by-text.md.
+LANGUAGE_ENGINE_URL = (environ.get('ALFRED_LANGUAGE_ENGINE_URL') or '').strip() or None
+
+# Seconds one engine request may take: a long transcript is read in seconds.
+LANGUAGE_ENGINE_TIMEOUT = resolve_seconds(
+    environ, 'ALFRED_LANGUAGE_ENGINE_TIMEOUT', 120
+)
+
 # A field of vox's EngineContract per variable. `none` is None (not offered),
 # empty is unset, and a name that is no field is reported by /health.
 AUDIO_ENGINE_CONTRACT_PREFIX = 'ALFRED_AUDIO_ENGINE_CONTRACT_'

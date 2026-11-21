@@ -46,6 +46,9 @@ INVENTORY = {
     ('GET', '/project/{item_id}/drafts'),
     ('POST', '/project/{item_id}/drafts'),
     ('DELETE', '/project/{item_id}/drafts'),
+    # What was said: routes/conversation.py.
+    ('GET', '/project/{item_id}/conversation'),
+    ('POST', '/project/{item_id}/conversation'),
 }
 
 
