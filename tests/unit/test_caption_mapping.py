@@ -17,10 +17,8 @@ from pydantic import ValidationError
 from alfred.core.models.captions import Caption, CaptionStyle, clean_caption_text
 from alfred.core.utils.captions import (
     DEFAULT_FONTSIZE,
-    MAX_CAPTIONS,
     MAX_WIDTH,
     MIN_PIXELS,
-    TooManyCaptions,
     box_width,
     caption_clips,
     caption_fontsize,
@@ -118,10 +116,8 @@ class TestAList:
         ordered = checked_captions([cap(5, 6), cap(1, 3), cap(1, 2)])
         assert [(c.start, c.end) for c in ordered] == [(1, 2), (1, 3), (5, 6)]
 
-    def test_at_most_max_captions(self):
-        checked_captions([cap(i, i + 1) for i in range(MAX_CAPTIONS)])
-        with pytest.raises(TooManyCaptions):
-            checked_captions([cap(i, i + 1) for i in range(MAX_CAPTIONS + 1)])
+    def test_however_many_are_kept(self):
+        assert len(checked_captions([cap(i, i + 1) for i in range(5000)])) == 5000
 
     def test_none_is_empty(self):
         assert checked_captions(None) == []

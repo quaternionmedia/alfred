@@ -24,7 +24,6 @@ class Code(StrEnum):
     INVALID_ID = 'invalid_id'
     NOT_FOUND = 'not_found'
     # Captions, and transcribing them.
-    TOO_MANY_CAPTIONS = 'too_many_captions'
     CAPTION_FILE_UNREADABLE = 'caption_file_unreadable'
     AUDIO_ENGINE_MISSING = 'audio_engine_missing'
     TIMELINE_EMPTY = 'timeline_empty'
@@ -72,7 +71,6 @@ class Meaning(NamedTuple):
 REFUSALS: Mapping[Code, Meaning] = {
     Code.INVALID_ID: Meaning(422, 'the id in the path is not an id'),
     Code.NOT_FOUND: Meaning(404, 'no such item, or not yours'),
-    Code.TOO_MANY_CAPTIONS: Meaning(422, 'more captions than a project carries'),
     Code.CAPTION_FILE_UNREADABLE: Meaning(422, 'the subtitle file cannot be read'),
     Code.AUDIO_ENGINE_MISSING: Meaning(503, 'no audio engine alfred can ask'),
     Code.TIMELINE_EMPTY: Meaning(422, 'no saved timeline to transcribe'),

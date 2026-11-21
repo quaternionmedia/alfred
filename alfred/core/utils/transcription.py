@@ -88,8 +88,7 @@ def transcribe_timeline(edl_data: dict) -> Heard:
     (otto's EdlException, naming the clip by its place in the timeline), a
     timeline with nothing to hear, or in which no speech was heard
     (NothingToHear), an engine that is missing, refuses the sound or fails
-    (AudioEngineError), or more captions or words than a project carries
-    (TooManyCaptions, TooManyWords).
+    (AudioEngineError).
     """
     edl = resolve_edl(Edl.model_validate(edl_data))
     until = timeline_end(edl)

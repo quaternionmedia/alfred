@@ -10,8 +10,8 @@ becomes on the way out (contract K2):
   all, cue identifiers or none, WebVTT cue settings and NOTE/STYLE/REGION
   blocks, markup inside a cue -- and say which line they could not read when
   it is not.
-- **Lists.** `checked_captions` holds a list to what a project or a render
-  stores: in order, and not too many.
+- **Lists.** `checked_captions` puts a list in the order a project or a render
+  stores it; no count bounds it.
 - **Drawing.** `caption_clips` turns captions into one textBox template clip
   each, appended after the timeline's clips so they are drawn on top, with
   explicit timing and no fades. The style's fields are the template's own;
@@ -49,46 +49,20 @@ def first_reason(exc: ValidationError) -> str:
 
 
 # --- lists ------------------------------------------------------------------
-
-# The most captions one project or render may carry. Each is a template clip
-# the renderer builds before it draws a frame, so this bounds a render's
-# memory as much as anything: a thousand is well over an hour of speech.
-MAX_CAPTIONS = 1000
-
-
-class TooManyCaptions(ValueError):
-    pass
-
-
-# Most words a project keeps: above what MAX_CAPTIONS transcript captions
-# can hold (1000 x 42), a few MB of the 16 MB document.
-MAX_WORDS = 50_000
-
-
-class TooManyWords(ValueError):
-    pass
+#
+# No count bounds a project's captions or its words: a long recording has
+# thousands of each. What bounds them is the project's document, which the
+# database refuses past its own size.
 
 
 def checked_words(words: Optional[Iterable[Word]]) -> List[Word]:
-    """`words` in the order given; TooManyWords past MAX_WORDS."""
-    kept = list(words or [])
-    if len(kept) > MAX_WORDS:
-        raise TooManyWords(
-            f'{len(kept)} words is more than the {MAX_WORDS} a project may keep'
-        )
-    return kept
+    """`words` in the order given."""
+    return list(words or [])
 
 
 def checked_captions(captions: Optional[Iterable[Caption]]) -> List[Caption]:
-    """`captions` in order of when they start (then end); TooManyCaptions
-    when there are more than MAX_CAPTIONS."""
-    ordered = sorted(captions or [], key=lambda c: (c.start, c.end))
-    if len(ordered) > MAX_CAPTIONS:
-        raise TooManyCaptions(
-            f'{len(ordered)} captions is more than the {MAX_CAPTIONS} a project '
-            'may carry'
-        )
-    return ordered
+    """`captions` in order of when they start (then end)."""
+    return sorted(captions or [], key=lambda c: (c.start, c.end))
 
 
 # --- a project's style --------------------------------------------------------
@@ -266,10 +240,7 @@ def _collect(cues) -> Parsed:
             captions.append(Caption(start=start, end=end, text=text))
         except ValidationError as exc:
             raise CaptionFormatError(f'{where}: {first_reason(exc)}') from None
-    try:
-        return Parsed(captions=checked_captions(captions), skipped=skipped)
-    except TooManyCaptions as exc:
-        raise CaptionFormatError(str(exc)) from None
+    return Parsed(captions=checked_captions(captions), skipped=skipped)
 
 
 def parse_srt(text) -> Parsed:

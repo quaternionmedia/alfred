@@ -15,7 +15,7 @@ from alfred import config
 from ..models.render import is_output_filename
 from . import audio_engine
 from .bucket import upload
-from .captions import TooManyCaptions, TooManyWords, style_to_store
+from .captions import style_to_store
 from .db import get_sync_db
 from .email import mail_failure, send_mail, transient
 from .encoding import preset_for
@@ -163,8 +163,6 @@ _SAID_PLAINLY = (
     audio_engine.AudioEngineError,
     NothingToHear,
     RefusedEdl,
-    TooManyCaptions,
-    TooManyWords,
     # otto's refusal of an unplayable clip (C8), which names the clip.
     EdlException,
 )

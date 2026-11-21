@@ -30,7 +30,6 @@ from ..utils.bucket import (
     signed_url,
 )
 from ..utils.captions import (
-    TooManyCaptions,
     checked_captions,
     timeline_end,
     with_captions,
@@ -139,12 +138,9 @@ def task_payload(render: Render) -> dict:
     )
 
 
-def refuse_bad_captions(render: Render) -> None:
-    """422 for more captions than a render may carry; otherwise put in order."""
-    try:
-        render.captions = checked_captions(render.captions) if render.captions else None
-    except TooManyCaptions as exc:
-        raise Refusal(Code.TOO_MANY_CAPTIONS, str(exc)) from exc
+def order_captions(render: Render) -> None:
+    """A render's captions in order of when they start."""
+    render.captions = checked_captions(render.captions) if render.captions else None
 
 
 # Fields only the server writes; a client's values are discarded.
@@ -382,7 +378,7 @@ class RenderAPI(MotorCRUDRouter):
         ):
             quality = refuse_bad_request(render)
             refuse_unrenderable(render.edl)
-            refuse_bad_captions(render)
+            order_captions(render)
             for name in SERVER_OWNED:
                 setattr(render, name, None)
             # Chosen here, so the filename that depends on it goes in the insert.

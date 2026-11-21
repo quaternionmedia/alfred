@@ -14,7 +14,6 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 |---|---|---|---|
 | `invalid_id` | 422 | the id in the path is not an id -- not an ObjectId's 24 hex digits -- refused before anything is looked up | every project, captions and render route that takes an id |
 | `not_found` | 404 | no such project or render, or not yours: alfred does not say which; or no such file in the media library | every project, captions and render route that takes an id; `GET /media/{name}/audio` |
-| `too_many_captions` | 422 | more captions than the 1000 a project carries | `PUT /project/{id}/captions`, `POST /project`, `POST /render` |
 | `too_many_cues` | 422 | more cues than the 2000 a project carries | `PUT /project/{id}/cues` |
 | `caption_file_unreadable` | 422 | the subtitle file cannot be read; `detail` names the line | `POST /project/{id}/captions/import` |
 | `audio_engine_missing` | 503 | no audio engine alfred can ask: none is configured, or a setting or this build cannot reach one; `detail` is the reason `GET /health` gives as `audio_engine.detail`. Asked for an analysis, also an engine whose contract offers none | `POST /project/{id}/captions/transcribe`, `GET /media/{name}/audio` |

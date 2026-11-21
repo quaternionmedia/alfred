@@ -17,7 +17,6 @@ from alfred import config
 from alfred.core.models.captions import RUNNING
 from alfred.core.routes import captions as routes
 from alfred.core.utils import audio_engine
-from alfred.core.utils.captions import MAX_CAPTIONS, MAX_WORDS
 from alfred.main import app
 from tests.unit.render_harness import ADMIN, OWNER, STRANGER, FakeQueue, as_user
 
@@ -275,16 +274,14 @@ class TestSaving:
         assert res.status_code == 422
         assert store.writes == []
 
-    def test_too_many_is_422(self, api):
+    def test_however_many_are_stored(self, api):
         mine = project()
         client, store, _ = api(OWNER, mine)
-        many = [
-            {'start': i, 'end': i + 1, 'text': 'x'} for i in range(MAX_CAPTIONS + 1)
-        ]
+        many = [{'start': i, 'end': i + 1, 'text': 'x'} for i in range(5000)]
         res = client.put(url(mine), json={'captions': many})
-        assert res.status_code == 422
-        assert str(MAX_CAPTIONS) in res.json()['detail']
-        assert store.writes == []
+        assert res.status_code == 200, res.text
+        assert len(res.json()['captions']) == 5000
+        assert len(store.writes[-1]['captions']) == 5000
 
     def test_other_fields_are_422(self, api):
         mine = project()
@@ -395,13 +392,13 @@ class TestTheWords:
         assert res.status_code == 422
         assert store.writes == []
 
-    def test_more_than_a_project_keeps_is_422(self, api):
+    def test_however_many_are_kept(self, api):
         mine = project()
         client, store, _ = api(OWNER, mine)
-        many = [{'start': 0, 'end': 0, 'text': 'x'}] * (MAX_WORDS + 1)
+        many = [{'start': 0, 'end': 0, 'text': 'x'}] * 60_000
         res = client.put(url(mine), json={'captions': [], 'words': many})
-        assert res.status_code == 422
-        assert store.writes == []
+        assert res.status_code == 200, res.text
+        assert len(store.writes[-1]['words']) == 60_000
 
 
 # What the editor sends after an edit: the clips placed, the first now shorter.

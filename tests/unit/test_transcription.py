@@ -17,11 +17,8 @@ from otto.models import Edl
 from alfred.core.utils import audio_engine, tasks
 from alfred.core.utils.audio_engine import Segment, Word
 from alfred.core.utils.captions import (
-    MAX_CAPTIONS,
     TRANSCRIPT_CHARS,
     TRANSCRIPT_SECONDS,
-    TooManyCaptions,
-    TooManyWords,
     captions_from_transcript,
     words_from_transcript,
 )
@@ -132,10 +129,9 @@ class TestFromATranscript:
         [caption] = captions_from_transcript([Segment(0, 1, text, ())])
         assert caption.text == text
 
-    def test_more_than_a_project_carries_says_so(self):
-        many = [Segment(i, i + 0.5, 'x', ()) for i in range(MAX_CAPTIONS + 1)]
-        with pytest.raises(TooManyCaptions):
-            captions_from_transcript(many)
+    def test_however_many_segments_are_captions(self):
+        many = [Segment(i, i + 0.5, 'x', ()) for i in range(5000)]
+        assert len(captions_from_transcript(many)) == 5000
 
 
 def kept(words):
@@ -208,12 +204,9 @@ class TestTheWordsKept:
         )
         assert [w.text for w in words_from_transcript([segment])] == ['a', 'b']
 
-    def test_more_than_a_project_keeps_says_so(self, monkeypatch):
-        from alfred.core.utils import captions
-
-        monkeypatch.setattr(captions, 'MAX_WORDS', 3)
-        with pytest.raises(TooManyWords, match='4 words is more than the 3'):
-            words_from_transcript([spoken(0, 'one two three four')])
+    def test_however_many_words_are_kept(self):
+        many = ' '.join(['word'] * 60_000)
+        assert len(words_from_transcript([spoken(0, many)])) == 60_000
 
 
 TIMELINE = {
