@@ -8,14 +8,16 @@ Alfred is a browser video editor for quick editing from anywhere, mobile
 devices included. The browser edits the timeline; every preview and render is
 made by an Alfred server you run yourself, with cloud storage optional.
 
-The editor is one page, worked in four stages named on the rail along its top:
+The editor is one page, worked in five stages named on the rail along its top:
 
 1. **Source**: choose a project, and the media and templates for its timeline.
-2. **Edit**: arrange, trim and cut the clips, title them, and cut the video by
+2. **Sculpt**: cut a long recording into drafts by recipe, each a project of
+   its own to refine ([Recipes and drafts](drafts.md)).
+3. **Edit**: arrange, trim and cut the clips, title them, and cut the video by
    deleting words from its transcript, on a timeline whose lanes show the
    words, the sound, the fades and what has been marked under the clips.
-3. **Render**: choose the output's size, and have the server make the video.
-4. **Deliver**: follow the render, then download it or send it on.
+4. **Render**: choose the output's size, and have the server make the video.
+5. **Deliver**: follow the render, then download it or send it on.
 
 ## Where to go
 
@@ -24,7 +26,8 @@ The editor is one page, worked in four stages named on the rail along its top:
   account, and [one video made with the whole family](guide.md). The editor's
   own **How?** links open them.
 - **[Reference](captions.md)**: [captions](captions.md), [editing by
-  text](editing-by-text.md), the [editing tools](tools.md), and every
+  text](editing-by-text.md), the [editing tools](tools.md), [what is
+  measured](measures.md), [recipes and drafts](drafts.md), and every
   [setting](configuration.md) the server reads.
 - **[Develop](develop.md)**: the questions a new developer asks, each settled
   by one command, then the test loop, the family loop and how the stacks are

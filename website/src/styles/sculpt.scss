@@ -1,0 +1,130 @@
+// The Sculpt stage's panels: the recipes with their knobs, and the drafts.
+// As plain as the other stage panels, with the recipe's knobs indented under
+// its name so the eye reads recipe, then settings.
+
+.sculptpanel {
+  .sculptnote {
+    margin: 0 0 0.5rem;
+    font-size: 0.8rem;
+    color: #d8a860;
+  }
+
+  .sculptjob {
+    margin: 0 0 0.5rem;
+    font-size: 0.8rem;
+    color: #8f8f8f;
+
+    &.done {
+      color: #7bbf7b;
+    }
+
+    &.failed {
+      color: #e07070;
+    }
+  }
+}
+
+.recipelist,
+.draftlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recipe {
+  padding: 0.35rem 0;
+  border-bottom: 1px solid #262626;
+
+  .recipehead {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .recipelabel {
+    font-weight: 600;
+    color: #e6e6e6;
+  }
+
+  .recipemine {
+    font-size: 0.7rem;
+    color: #f2aa4c;
+  }
+
+  .recipeabout {
+    margin: 0.15rem 0 0 1.6rem;
+    font-size: 0.78rem;
+    color: #9a9a9a;
+  }
+
+  .recipeknobs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    margin: 0.4rem 0 0.2rem 1.6rem;
+  }
+
+  .recipeknob {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin: 0;
+    font-size: 0.78rem;
+
+    input {
+      width: 7rem;
+    }
+  }
+
+  .recipeknobtext {
+    color: #9a9a9a;
+  }
+}
+
+.draft {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #262626;
+
+  .draftopen {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.1rem;
+    padding: 0.25rem 0.4rem;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    color: #e6e6e6;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      border-color: #3a3a3a;
+    }
+  }
+
+  .draftname {
+    font-size: 0.85rem;
+  }
+
+  .draftmeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    font-size: 0.72rem;
+    color: #8f8f8f;
+  }
+}
+
+.draftactions {
+  display: flex;
+  gap: 0.4rem;
+}

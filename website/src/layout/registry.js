@@ -13,6 +13,7 @@ import { Deliver } from '../panels/Deliver'
 // the build when the module has no such export, which the real panel does not.
 import Captions from '../panels/Captions'
 import Transcript from '../panels/Transcript'
+import { Drafts, Recipes } from '../panels/Sculpt'
 
 /**
  * Every panel the editor has, once.
@@ -44,7 +45,7 @@ import Transcript from '../panels/Transcript'
  * @typedef {object} PanelDefinition
  * @property {string} id
  * @property {string} title
- * @property {'source' | 'edit' | 'render' | 'deliver'} stage
+ * @property {'source' | 'sculpt' | 'edit' | 'render' | 'deliver'} stage
  * @property {import('mithril').Component} component
  * @property {boolean} [whileShown]
  * @property {boolean} [closable]
@@ -55,6 +56,9 @@ const PANELS = Object.freeze([
   { id: 'projects', title: 'Projects', stage: 'source', component: Projects, whileShown: true },
   { id: 'media', title: 'Media', stage: 'source', component: Media, whileShown: true },
   { id: 'templates', title: 'Templates', stage: 'source', component: Templates, whileShown: true },
+  // The recipes that cut a long recording into drafts, and the drafts (panels/Sculpt.js).
+  { id: 'recipes', title: 'Recipes', stage: 'sculpt', component: Recipes, whileShown: true },
+  { id: 'drafts', title: 'Drafts', stage: 'sculpt', component: Drafts, whileShown: true },
   { id: 'viewer', title: 'Viewer', stage: 'edit', component: Viewer },
   { id: 'timeline', title: 'Timeline', stage: 'edit', component: Timeline, closable: false },
   // The tools that act on the timeline, beside it (panels/Tools.js).
@@ -80,11 +84,12 @@ export const PanelRegistry = {
  * The panels a stage brings forward, the one it is about first.
  *
  * `?stage=source` shows the project list, the library and the templates,
- * `?stage=edit` the timeline, the viewer and the tools, and Render and
- * Deliver their own panels.
+ * `?stage=sculpt` the recipes and the drafts, `?stage=edit` the timeline,
+ * the viewer and the tools, and Render and Deliver their own panels.
  */
 export const STAGE_PANELS = Object.freeze({
   source: ['projects', 'media', 'templates'],
+  sculpt: ['recipes', 'drafts'],
   edit: ['timeline', 'viewer', 'tools'],
   render: ['render'],
   deliver: ['deliver'],

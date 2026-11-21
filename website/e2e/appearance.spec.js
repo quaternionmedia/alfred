@@ -24,7 +24,7 @@ const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
 ]
 
-const STAGES = ['source', 'edit', 'render', 'deliver']
+const STAGES = ['source', 'sculpt', 'edit', 'render', 'deliver']
 
 /** Rounded so sub-pixel layout differences do not read as misalignment. */
 async function boxes(locator) {

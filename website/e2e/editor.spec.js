@@ -114,7 +114,7 @@ test.describe('timeline editor', () => {
      */
     await authedPage.goto('/#!/editor')
     await expect(authedPage).toHaveURL(/stage=source/)
-    await expect(authedPage.locator('.stagerail .stage')).toHaveCount(4)
+    await expect(authedPage.locator('.stagerail .stage')).toHaveCount(5)
   })
 
   test('a selected project offers its template', async ({

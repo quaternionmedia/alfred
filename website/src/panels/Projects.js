@@ -62,7 +62,10 @@ const ProjectsPanel = {
         ? matches.length
           ? m(
               'ul.projectpicker',
-              matches.map(p => m(ProjectCard, { project: p, current }))
+              grouped(matches).map(({ project, drafts }) => [
+                m(ProjectCard, { project, current }),
+                drafts.length ? m(DraftGroup, { source: project, drafts, current }) : null,
+              ])
             )
           : Empty(`Nothing matches "${Flow.filter}".`)
         : Generate(
@@ -217,6 +220,57 @@ const ProjectTemplate = () => {
   }
 }
 
+/**
+ * The projects with their drafts under them: each `{project, drafts}`, a draft
+ * being a project carrying `source`, grouped under the project it came from
+ * when that one is in the list, and listed on its own when it is not.
+ */
+export function grouped(projects) {
+  const ids = new Set(projects.map(p => p._id))
+  const drafts = new Map()
+  const sources = []
+  for (const p of projects) {
+    const from = p.source && p.source.project
+    if (from && ids.has(from)) {
+      if (!drafts.has(from)) drafts.set(from, [])
+      drafts.get(from).push(p)
+    } else sources.push(p)
+  }
+  return sources.map(project => ({ project, drafts: drafts.get(project._id) || [] }))
+}
+
+/** A source's drafts, collapsed under it; open while one of them is the project open. */
+const DraftGroup = () => {
+  let open = null
+
+  return {
+    view: ({ attrs: { source, drafts, current } }) => {
+      const holds = drafts.some(d => d._id === current)
+      const shown = open === null ? holds : open
+      return m('li.draftgroup', { 'data-source': source._id }, [
+        m(
+          'button.disclosure.draftgrouptoggle',
+          {
+            onclick: () => (open = !shown),
+            'aria-expanded': shown ? 'true' : 'false',
+            title: 'The drafts cut from this project by a recipe, on the Sculpt stage',
+          },
+          [
+            m('i.material-icons', shown ? 'expand_more' : 'chevron_right'),
+            `${drafts.length} draft${drafts.length === 1 ? '' : 's'}`,
+          ]
+        ),
+        shown
+          ? m(
+              'ul.projectpicker.draftgroupitems',
+              drafts.map(d => m(ProjectCard, { project: d, current }))
+            )
+          : null,
+      ])
+    },
+  }
+}
+
 /** One project, with everything known about it and everything you can do. */
 const ProjectCard = () => ({
   view: vnode => {
@@ -240,6 +294,7 @@ const ProjectCard = () => ({
           // What the old table could not show: whether there is anything to
           // edit, how long it runs, and what it last rendered at.
           m('span.projectmeta', [
+            p.source ? m('span.projectdraft', 'draft') : null,
             m('span.projectclips', `${clips} clip${clips === 1 ? '' : 's'}`),
             duration ? m('span.projectduration', `${duration}s`) : null,
             size ? m('span.projectsize', size) : null,

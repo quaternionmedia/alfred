@@ -19,6 +19,7 @@ import { NextStep } from '../NextStep'
  */
 export const FLOW_STAGE_PANELS = Object.freeze({
   source: ['projects', 'media'],
+  sculpt: ['recipes', 'drafts'],
   edit: ['captions', 'transcript', 'templates'],
   render: ['render'],
   deliver: ['deliver'],
@@ -26,7 +27,7 @@ export const FLOW_STAGE_PANELS = Object.freeze({
 
 // Stages that show one of their panels at a time, chosen by a switch: two
 // stacked left each a sliver on a phone. The first is shown until another is chosen.
-export const ONE_AT_A_TIME = Object.freeze(new Set(['edit']))
+export const ONE_AT_A_TIME = Object.freeze(new Set(['sculpt', 'edit']))
 const chosen = {}
 
 /** Which of the stage's panels are drawn. */
@@ -79,7 +80,7 @@ const Slot = {
 /**
  * The stage flow: one stage at a time, over the viewer and the timeline.
  *
- * Source -> Edit -> Render -> Deliver, chosen on the rail, with the viewer and
+ * Source -> Sculpt -> Edit -> Render -> Deliver, chosen on the rail, with the viewer and
  * the timeline always below them -- the editor as it is on a phone, and on
  * anything too narrow for the workspace (shell.js). Built from the same panel
  * modules as the workspace: the stage's panels from FLOW_STAGE_PANELS, then

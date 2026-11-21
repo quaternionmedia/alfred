@@ -254,6 +254,11 @@ $accent: #f2aa4c;
       background: $accent;
     }
 
+    // A stretch a draft took, on the Sculpt stage.
+    &.draft {
+      background: #2f5a3a;
+    }
+
     // Where an excerpt stands on the harness's queue.
     &.waiting {
       background: #7a5a1e;

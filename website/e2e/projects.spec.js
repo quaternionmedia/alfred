@@ -42,16 +42,21 @@ test.describe('the project selector', () => {
     // Polled against a fresh count: other specs create projects while this
     // runs, so a count captured before the page loaded is stale by the time
     // the DOM is measured.
+    // A draft sits under the project it came from, collapsed (panels/Projects.js).
+    const shown = listed => {
+      const ids = new Set(listed.map(p => p._id))
+      return listed.filter(p => !(p.source && ids.has(p.source.project)))
+    }
     await expect
       .poll(async () => {
         const current = await request.get('/project', {
           headers: { Authorization: token },
         })
-        return (await current.json()).length === (await rows.count())
+        return shown(await current.json()).length === (await rows.count())
       })
       .toBe(true)
 
-    for (const project of projects) {
+    for (const project of shown(projects)) {
       await expect(
         authedPage
           .locator('.projectpicker')
@@ -112,7 +117,7 @@ test.describe('the project selector', () => {
 
     await expect(authedPage).toHaveURL(/project=[0-9a-f]{24}/)
     await expect(authedPage).toHaveURL(/stage=source/)
-    await expect(authedPage.locator('.stagerail .stage')).toHaveCount(4)
+    await expect(authedPage.locator('.stagerail .stage')).toHaveCount(5)
   })
 
   test('the create-video action stays inside the flow', async ({ authedPage }) => {
@@ -121,7 +126,7 @@ test.describe('the project selector', () => {
 
     await expect(authedPage).toHaveURL(/project=[0-9a-f]{24}/)
     await expect(authedPage).toHaveURL(/stage=render/)
-    await expect(authedPage.locator('.stagerail .stage')).toHaveCount(4)
+    await expect(authedPage.locator('.stagerail .stage')).toHaveCount(5)
   })
 
   test('a project id naming nothing says so and offers a way out', async ({

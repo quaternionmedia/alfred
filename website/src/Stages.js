@@ -9,9 +9,9 @@ import { Library } from './Library'
 import { expiresAt } from './Signed'
 
 /**
- * The four stages of the flow, as one view.
+ * The five stages of the flow, as one view.
  *
- * Source -> Edit -> Render -> Deliver. They are stages of a single timeline
+ * Source -> Sculpt -> Edit -> Render -> Deliver. They are stages of a single timeline
  * page rather than separate routes, because the timeline is the app: leaving
  * it to pick a project or to start a render is what made the previous
  * arrangement feel like four unrelated screens sharing a menu.
@@ -28,6 +28,8 @@ import { expiresAt } from './Signed'
 
 export const STAGES = [
   { id: 'source', label: 'Source', hint: 'Choose a project and its material' },
+  // A long recording is cut into drafts here, by recipe (panels/Sculpt.js).
+  { id: 'sculpt', label: 'Sculpt', hint: 'Cut a long recording into drafts by recipe' },
   { id: 'edit', label: 'Edit', hint: 'Arrange clips on the timeline' },
   { id: 'render', label: 'Render', hint: 'Turn the timeline into a video' },
   { id: 'deliver', label: 'Deliver', hint: 'Send the finished render onward' },
@@ -448,7 +450,7 @@ export const Generate = (message, label, action, busyKey) =>
 /**
  * A stage's panel, wrapped the way the stage panel wrapped each one.
  *
- * The four stages were one component that loaded the flow's lists when it
+ * The stages were one component that loaded the flow's lists when it
  * was drawn and again on later draws -- a restored session answers after the
  * first draw, and a panel that gave up then would stay empty for the visit.
  * The stages are panels now, placed by the layout (layout/), so each carries

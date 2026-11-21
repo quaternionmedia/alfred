@@ -5,13 +5,17 @@ import { PanelRegistry } from './registry'
  *
  *   +------------+------------------------+-------------------+
  *   | Projects   | Viewer                 | Template settings |
- *   +------------+                        |  | Transcript     |
- *   | Media      |                        +-------------------+
- *   +------------+-------+----------------+ Render | Deliver  |
- *   | Templates  | Tools | Timeline       |  | Captions       |
+ *   |  | Drafts  |                        |  | Transcript     |
+ *   +------------+                        +-------------------+
+ *   | Media      |-------+----------------+ Render | Deliver  |
+ *   +------------+ Tools | Timeline       |  | Captions       |
+ *   | Templates  |       |                |                   |
+ *   |  | Recipes |       |                |                   |
  *   +------------+-------+----------------+-------------------+
  *
- * The material on the left, the files above the templates; the work in the
+ * The material on the left, the files above the templates, with the drafts
+ * a recipe left as a tab beside the projects they are and the recipes as a
+ * tab beside the templates; the work in the
  * middle -- the picture above the timeline that makes it, with the tools
  * that act on the timeline beside it -- and on the right what is done to the work: the
  * selected clip's settings with the transcript, and the render, delivery
@@ -86,7 +90,11 @@ export const DEFAULT_LAYOUT = Object.freeze({
       {
         type: 'column',
         size: '22%',
-        content: [stack('34%', ['projects']), stack('36%', ['media']), stack('30%', ['templates'])],
+        content: [
+          stack('34%', ['projects', 'drafts']),
+          stack('36%', ['media']),
+          stack('30%', ['templates', 'recipes']),
+        ],
       },
       {
         type: 'column',
@@ -113,9 +121,11 @@ export const DEFAULT_LAYOUT = Object.freeze({
  * them open, Golden Layout chooses.
  */
 export const REOPEN = Object.freeze({
-  projects: { tabs: [], beside: ['media', 'templates'], at: 'before' },
+  projects: { tabs: ['drafts'], beside: ['media', 'templates'], at: 'before' },
+  drafts: { tabs: ['projects'], beside: ['media', 'templates'], at: 'before' },
   media: { tabs: [], beside: ['projects', 'templates'], at: 'after' },
-  templates: { tabs: [], beside: ['media', 'projects'], at: 'after' },
+  templates: { tabs: ['recipes'], beside: ['media', 'projects'], at: 'after' },
+  recipes: { tabs: ['templates'], beside: ['media', 'projects'], at: 'after' },
   viewer: { tabs: [], beside: ['timeline', 'tools'], at: 'before' },
   timeline: { tabs: [], beside: ['viewer'], at: 'after' },
   tools: { tabs: [], beside: ['timeline', 'viewer'], at: 'after' },

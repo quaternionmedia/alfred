@@ -19,6 +19,7 @@ the journey it walks.
 | Get the finished file | [Render and deliver](#render-and-deliver) | a render worker, which the dev stack runs |
 | Make the same kind of video again, with new words | [From a form](#from-a-form) | a project with a form, such as **Announcement** |
 | Caption it, or cut it by deleting words | [Captions and cutting by words](#captions-and-cutting-by-words) | an audio engine, such as joe |
+| Cut a long recording into drafts to refine | [From a long recording](#from-a-long-recording) | a transcribed recording; an audio engine, for the sound |
 | Edit on a phone | [On a phone](#on-a-phone) | |
 | Pick up where you left off | [Coming back](#coming-back) | |
 | Make an account and log in | [An account](#an-account) | a server that takes registrations |
@@ -29,16 +30,19 @@ not running yet.
 
 ## The editor in one look
 
-The rail along the top names the four stages a video goes through:
+The rail along the top names the five stages a video goes through:
 
 1. **Source**: choose a project, and the material that goes on its timeline.
-2. **Edit**: arrange the clips, trim and cut them, and set a title's text.
-3. **Render**: choose the output's size, and have the server make the video.
-4. **Deliver**: follow the render, then download it or send it on.
+2. **Sculpt**: cut a long recording into drafts by recipe, each a project to
+   refine.
+3. **Edit**: arrange the clips, trim and cut them, and set a title's text.
+4. **Render**: choose the output's size, and have the server make the video.
+5. **Deliver**: follow the render, then download it or send it on.
 
 On a screen 1024 pixels wide or more, every panel is open at once, and
 choosing a stage brings its panels forward: the projects, the media and the
-templates on the left, the viewer over the timeline and its tools in the
+templates on the left, with the drafts beside the projects and the recipes
+beside the templates, the viewer over the timeline and its tools in the
 middle, and on the right the selected clip's settings, the Transcript, and
 the Render, Deliver and Captions tabs. A panel closed by its ✕ comes back from the **Panels** menu.
 On a phone the editor shows one stage at a time above the viewer and the
@@ -213,6 +217,31 @@ pictures.
 
 *Checked by `captions.spec.js` and `transcript.spec.js`.*
 
+## From a long recording { #from-a-long-recording }
+
+A recording of a show, a talk or a session is too long to cut by hand from
+the start. A recipe cuts it into drafts, each a project of its own, and the
+hand work begins from those. It needs the recording transcribed
+([Captions and cutting by words](#captions-and-cutting-by-words)); the
+`highlights` recipe also reads the sound and the motion, which the server
+measures once ([What is measured](measures.md)).
+
+1. On **Source**, open the recording. Once it is transcribed, the line under
+   the rail offers **Next: Sculpt**.
+2. On **Sculpt**, under **Recipes**, tick a recipe, **Highlights** to start,
+   and set its knobs: how short and how long a clip, and how many. Press
+   **Sculpt**. The line under the recipes follows the run, which takes
+   seconds once the recording has been measured and minutes the first time.
+3. Under **Drafts**, each draft the run left is listed with its length, its
+   recipe and the scores it was chosen by. The Cues lane under the timeline
+   shows the stretch each one took. Open a draft: it is a project on
+   **Edit**, with its words and its captions, to trim, title and cut as any
+   other, then render and deliver.
+4. Tick the drafts you do not want and press **Drop**: they go, with their
+   cues. On **Source**, the drafts sit under the recording they came from.
+
+*Checked by `sculpt.spec.js`.*
+
 ## On a phone { #on-a-phone }
 
 ![The editor on a phone at Edit: the rail, the line under it, Captions above the viewer, and the timeline below](assets/screens/phone-edit.png)
@@ -221,8 +250,8 @@ pictures.
 
 The same journeys, one stage at a time. The rail is at the top, the line
 under it says what comes next, and the stage's own panels sit above the
-viewer and the timeline. At Edit, a switch chooses **Captions** or
-**Transcript**. The selected title's settings are beside the viewer. **Help**
+viewer and the timeline. At Sculpt, a switch chooses **Recipes** or
+**Drafts**; at Edit, **Captions** or **Transcript**. The selected title's settings are beside the viewer. **Help**
 and **Logout** are at the top right, beside the logo. To try it from a phone
 on the same network as a dev stack, see the [dev-server notes](dev-server.md).
 

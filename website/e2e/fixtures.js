@@ -26,7 +26,7 @@ const { CREDENTIALS } = require('./credentials')
 const SELECTORS = {
   login: 'a.loginLink',
   // The stage rail is the navigation. The header carried PROJECTS and
-  // RENDERS, which pointed at two of the four stages the rail already lists.
+  // RENDERS, which pointed at two of the stages the rail already lists.
   stages: '.stagerail .stage',
 }
 
@@ -227,6 +227,8 @@ module.exports.PANEL_IDS = [
   'projects',
   'media',
   'templates',
+  'recipes',
+  'drafts',
   'viewer',
   'timeline',
   'tools',
