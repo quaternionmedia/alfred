@@ -1,0 +1,172 @@
+{
+  "about": "a span across a clip boundary keeps both parts, re-timed from 0, with the words and captions in it",
+  "given": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0,
+        "duration": 4,
+        "inpoint": 10,
+        "outpoint": 14
+      },
+      {
+        "type": "video",
+        "name": "videos/b.mp4",
+        "start": 4,
+        "duration": 4,
+        "inpoint": 0,
+        "outpoint": 4
+      },
+      {
+        "type": "template",
+        "name": "title",
+        "start": 8,
+        "duration": 2,
+        "data": {
+          "text": "End"
+        }
+      }
+    ],
+    "captions": [
+      {
+        "start": 0.5,
+        "end": 1.5,
+        "text": "Before"
+      },
+      {
+        "start": 2.5,
+        "end": 3.5,
+        "text": "Across the cut"
+      },
+      {
+        "start": 3.2,
+        "end": 4.8,
+        "text": "Inside it"
+      },
+      {
+        "start": 6,
+        "end": 7,
+        "text": "After"
+      }
+    ],
+    "words": [
+      {
+        "start": 0.5,
+        "end": 1,
+        "text": "Hello",
+        "segment": 0
+      },
+      {
+        "start": 1.2,
+        "end": 1.8,
+        "text": "there",
+        "segment": 0
+      },
+      {
+        "start": 2.6,
+        "end": 3,
+        "text": "Across",
+        "segment": 0
+      },
+      {
+        "start": 3.1,
+        "end": 3.4,
+        "text": "the",
+        "segment": 0
+      },
+      {
+        "start": 3.4,
+        "end": 3.5,
+        "text": "cut",
+        "segment": 0
+      },
+      {
+        "start": 4,
+        "end": 4,
+        "text": "(moment)",
+        "segment": 0
+      },
+      {
+        "start": 6,
+        "end": 6.5,
+        "text": "After",
+        "segment": 1
+      }
+    ]
+  },
+  "start": 2,
+  "end": 7,
+  "expect": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0,
+        "duration": 2,
+        "inpoint": 12,
+        "outpoint": 14,
+        "fadeIn": 0
+      },
+      {
+        "type": "video",
+        "name": "videos/b.mp4",
+        "start": 2,
+        "duration": 3,
+        "inpoint": 0,
+        "outpoint": 3,
+        "fadeOut": 0
+      }
+    ],
+    "duration": 5,
+    "captions": [
+      {
+        "start": 0.5,
+        "end": 1.5,
+        "text": "Across the cut"
+      },
+      {
+        "start": 1.2,
+        "end": 2.8,
+        "text": "Inside it"
+      },
+      {
+        "start": 4,
+        "end": 5,
+        "text": "After"
+      }
+    ],
+    "words": [
+      {
+        "start": 0.6,
+        "end": 1,
+        "text": "Across",
+        "segment": 0
+      },
+      {
+        "start": 1.1,
+        "end": 1.4,
+        "text": "the",
+        "segment": 0
+      },
+      {
+        "start": 1.4,
+        "end": 1.5,
+        "text": "cut",
+        "segment": 0
+      },
+      {
+        "start": 2,
+        "end": 2,
+        "text": "(moment)",
+        "segment": 0
+      },
+      {
+        "start": 4,
+        "end": 4.5,
+        "text": "After",
+        "segment": 1
+      }
+    ]
+  }
+}

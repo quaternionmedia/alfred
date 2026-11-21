@@ -1,0 +1,87 @@
+{
+  "about": "several tracks are cut at once, audio-only clips with them; one wholly inside a range goes",
+  "given": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0,
+        "duration": 10,
+        "inpoint": 0,
+        "outpoint": 10
+      },
+      {
+        "type": "audio",
+        "name": "videos/music.mp3",
+        "start": 2,
+        "duration": 6,
+        "inpoint": 0,
+        "outpoint": 6
+      },
+      {
+        "type": "template",
+        "name": "title",
+        "start": 3.5,
+        "duration": 1,
+        "data": {}
+      }
+    ],
+    "captions": [],
+    "words": []
+  },
+  "ranges": [
+    [
+      3,
+      5
+    ]
+  ],
+  "expect": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0,
+        "duration": 3,
+        "inpoint": 0,
+        "outpoint": 3,
+        "fadeOut": 0
+      },
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 3,
+        "duration": 5,
+        "inpoint": 5,
+        "outpoint": 10,
+        "fadeIn": 0
+      },
+      {
+        "type": "audio",
+        "name": "videos/music.mp3",
+        "start": 2,
+        "duration": 1,
+        "inpoint": 0,
+        "outpoint": 1,
+        "fadeOut": 0
+      },
+      {
+        "type": "audio",
+        "name": "videos/music.mp3",
+        "start": 3,
+        "duration": 3,
+        "inpoint": 3,
+        "outpoint": 6,
+        "fadeIn": 0
+      }
+    ],
+    "captions": [],
+    "words": [],
+    "removed": 2,
+    "spans": [
+      [
+        3,
+        5
+      ]
+    ]
+  }
+}

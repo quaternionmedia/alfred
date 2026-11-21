@@ -76,6 +76,8 @@ alfred.egg*
 !.vscode/settings.json
 !.vscode/extensions.json
 !.vscode/launch.json
+# The fixtures both suites read (tests/unit/test_cut.py, website/e2e/cut-fixtures.spec.js).
+!tests/fixtures/**/*.json
 
 .email
 .secret_key

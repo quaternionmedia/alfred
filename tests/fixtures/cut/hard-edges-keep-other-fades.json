@@ -1,0 +1,56 @@
+{
+  "about": "the parts either side of a cut meet with hard edges, and keep their other fades",
+  "given": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0,
+        "duration": 6,
+        "inpoint": 0,
+        "outpoint": 6,
+        "fadeIn": 0.5,
+        "fadeOut": 0.5
+      }
+    ]
+  },
+  "ranges": [
+    [
+      2,
+      3
+    ]
+  ],
+  "expect": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0,
+        "duration": 2,
+        "inpoint": 0,
+        "outpoint": 2,
+        "fadeIn": 0.5,
+        "fadeOut": 0
+      },
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 2,
+        "duration": 3,
+        "inpoint": 3,
+        "outpoint": 6,
+        "fadeIn": 0,
+        "fadeOut": 0.5
+      }
+    ],
+    "captions": [],
+    "words": [],
+    "removed": 1,
+    "spans": [
+      [
+        2,
+        3
+      ]
+    ]
+  }
+}

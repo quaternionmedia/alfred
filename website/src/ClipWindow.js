@@ -2,6 +2,8 @@
  * A clip's window arithmetic; `cutRanges` for editing by text; `followClips` for the
  * timeline tools.
  * Imports nothing, so its tests run in Node (e2e/cut-ranges.spec.js, e2e/follow-clips.spec.js).
+ * The server holds the same arithmetic in Python (alfred/core/utils/cut.py); the fixtures
+ * under tests/fixtures/ hold the two equal (e2e/cut-fixtures.spec.js, tests/unit/test_cut.py).
  * Timing.js re-exports it.
  */
 

@@ -1,0 +1,191 @@
+{
+  "about": "a longer clip pushes what follows on; what spans the edit stays whole",
+  "given": {
+    "before": [
+      {
+        "key": "a",
+        "type": "video",
+        "start": 0,
+        "duration": 4,
+        "inpoint": 10
+      },
+      {
+        "key": "b",
+        "type": "video",
+        "start": 4,
+        "duration": 4,
+        "inpoint": 0
+      },
+      {
+        "key": "t",
+        "type": "template",
+        "start": 8,
+        "duration": 2
+      }
+    ],
+    "after": [
+      {
+        "key": "a",
+        "type": "video",
+        "start": 0,
+        "duration": 6,
+        "inpoint": 10
+      },
+      {
+        "key": "b",
+        "type": "video",
+        "start": 6,
+        "duration": 4,
+        "inpoint": 0
+      },
+      {
+        "key": "t",
+        "type": "template",
+        "start": 10,
+        "duration": 2
+      }
+    ],
+    "captions": [
+      {
+        "start": 0.5,
+        "end": 1.8,
+        "text": "Hello there"
+      },
+      {
+        "start": 3.6,
+        "end": 5.5,
+        "text": "across bee"
+      },
+      {
+        "start": 7,
+        "end": 7.5,
+        "text": "end"
+      },
+      {
+        "start": 8.5,
+        "end": 9.5,
+        "text": "Over the title"
+      },
+      {
+        "start": 11,
+        "end": 12,
+        "text": "Past the end"
+      },
+      {
+        "start": "",
+        "end": 3,
+        "text": "being typed"
+      }
+    ],
+    "words": [
+      {
+        "start": 0.5,
+        "end": 1,
+        "text": "Hello",
+        "segment": 0
+      },
+      {
+        "start": 1.2,
+        "end": 1.8,
+        "text": "there",
+        "segment": 0
+      },
+      {
+        "start": 3.6,
+        "end": 4.4,
+        "text": "across",
+        "segment": 0
+      },
+      {
+        "start": 5,
+        "end": 5.5,
+        "text": "bee",
+        "segment": 1
+      },
+      {
+        "start": 7,
+        "end": 7.5,
+        "text": "end",
+        "segment": 1
+      },
+      {
+        "start": 4,
+        "end": 4,
+        "text": "(moment)",
+        "segment": 1
+      }
+    ]
+  },
+  "expect": {
+    "captions": [
+      {
+        "start": 0.5,
+        "end": 1.8,
+        "text": "Hello there"
+      },
+      {
+        "start": 3.6,
+        "end": 7.5,
+        "text": "across bee"
+      },
+      {
+        "start": 9,
+        "end": 9.5,
+        "text": "end"
+      },
+      {
+        "start": 10.5,
+        "end": 11.5,
+        "text": "Over the title"
+      },
+      {
+        "start": 11,
+        "end": 12,
+        "text": "Past the end"
+      },
+      {
+        "start": "",
+        "end": 3,
+        "text": "being typed"
+      }
+    ],
+    "words": [
+      {
+        "start": 0.5,
+        "end": 1,
+        "text": "Hello",
+        "segment": 0
+      },
+      {
+        "start": 1.2,
+        "end": 1.8,
+        "text": "there",
+        "segment": 0
+      },
+      {
+        "start": 3.6,
+        "end": 6.4,
+        "text": "across",
+        "segment": 0
+      },
+      {
+        "start": 6,
+        "end": 6,
+        "text": "(moment)",
+        "segment": 1
+      },
+      {
+        "start": 7,
+        "end": 7.5,
+        "text": "bee",
+        "segment": 1
+      },
+      {
+        "start": 9,
+        "end": 9.5,
+        "text": "end",
+        "segment": 1
+      }
+    ]
+  }
+}

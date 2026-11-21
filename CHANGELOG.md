@@ -96,6 +96,12 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **The cut's arithmetic has a server twin.** `alfred/core/utils/cut.py` cuts
+  ranges out of a timeline, moves captions and words after the timeline
+  tools and takes a span as a timeline of its own, as `website/src/ClipWindow.js`
+  does in the browser; the fixtures under `tests/fixtures/` are read by both
+  suites, so the two stay equal.
+
 - **A project's captions and words are not counted.** A transcription of a
   long recording, a subtitle file of thousands of cues and a render carrying
   them are all taken, and the refusal `too_many_captions` is gone. What
