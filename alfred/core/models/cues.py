@@ -23,10 +23,6 @@ from pydantic import BaseModel, field_validator, model_validator
 
 from .captions import clean_caption_text, timeline_seconds
 
-# The most cues one project carries. A long recording cut into excerpts
-# proposes one a minute or so; this is a day of them.
-MAX_CUES = 2000
-
 # The longest a cue's label, source, reference and note may be.
 MAX_LABEL_CHARS = 200
 MAX_SOURCE_CHARS = 100
@@ -131,16 +127,7 @@ class Cue(BaseModel):
         return self.start if self.end is None else self.end
 
 
-class TooManyCues(ValueError):
-    pass
-
-
 def checked_cues(cues: Optional[Iterable[Cue]]) -> List[Cue]:
     """`cues` in order of when they start, the earlier-ending first of two that
-    start together; TooManyCues past MAX_CUES."""
-    kept = sorted(cues or [], key=lambda cue: (cue.start, cue.stop))
-    if len(kept) > MAX_CUES:
-        raise TooManyCues(
-            f'{len(kept)} cues is more than the {MAX_CUES} a project may carry'
-        )
-    return kept
+    start together, however many: what bounds them is the project's document."""
+    return sorted(cues or [], key=lambda cue: (cue.start, cue.stop))

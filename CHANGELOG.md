@@ -151,6 +151,11 @@ accepted are now refused, and a production stack needs its own signing key.
   them are all taken, and the refusal `too_many_captions` is gone. What
   bounds a project is its document, which the database refuses past its own
   size.
+- **Nor are its cues.** A source many runs of recipes have marked keeps every
+  cue, and the refusal `too_many_cues` is gone with its count. A write of
+  captions, words or cues the database would not take for the document's
+  size is refused `project_too_large`, the sentence naming the size in the
+  database's words.
 - **The timeline saves itself**, a second after it stops changing, with the
   captions and words a cut moved. There is no Save for the timeline, and the
   Transcript panel's is gone too. An indicator says Saving…, Saved, or Not

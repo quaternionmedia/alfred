@@ -10,11 +10,13 @@ lists every code, and what answers without one; tests/unit/test_refusal_codes.py
 holds that table to `REFUSALS`.
 """
 
+from contextlib import asynccontextmanager
 from enum import StrEnum
 from typing import Mapping, NamedTuple, Optional
 
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
+from pymongo.errors import DocumentTooLarge, WriteError
 
 
 class Code(StrEnum):
@@ -23,6 +25,8 @@ class Code(StrEnum):
     # Any route that takes an id.
     INVALID_ID = 'invalid_id'
     NOT_FOUND = 'not_found'
+    # A write to a project's document that the database would not take.
+    PROJECT_TOO_LARGE = 'project_too_large'
     # Captions, and transcribing them.
     CAPTION_FILE_UNREADABLE = 'caption_file_unreadable'
     AUDIO_ENGINE_MISSING = 'audio_engine_missing'
@@ -31,8 +35,6 @@ class Code(StrEnum):
     TIMELINE_SILENT = 'timeline_silent'
     TRANSCRIPTION_RUNNING = 'transcription_running'
     TRANSCRIPTION_NOT_QUEUED = 'transcription_not_queued'
-    # Cues.
-    TOO_MANY_CUES = 'too_many_cues'
     # Renders: queueing one, and getting it back.
     ENCODER_OPTIONS_REFUSED = 'encoder_options_refused'
     FRAME_SIZE_OUT_OF_RANGE = 'frame_size_out_of_range'
@@ -85,6 +87,7 @@ class Meaning(NamedTuple):
 REFUSALS: Mapping[Code, Meaning] = {
     Code.INVALID_ID: Meaning(422, 'the id in the path is not an id'),
     Code.NOT_FOUND: Meaning(404, 'no such item, or not yours'),
+    Code.PROJECT_TOO_LARGE: Meaning(413, "the project's document would be too large"),
     Code.CAPTION_FILE_UNREADABLE: Meaning(422, 'the subtitle file cannot be read'),
     Code.AUDIO_ENGINE_MISSING: Meaning(503, 'no audio engine alfred can ask'),
     Code.TIMELINE_EMPTY: Meaning(422, 'no saved timeline to transcribe'),
@@ -92,7 +95,6 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.TIMELINE_SILENT: Meaning(422, 'nothing in the timeline can make a sound'),
     Code.TRANSCRIPTION_RUNNING: Meaning(409, 'a transcription is under way'),
     Code.TRANSCRIPTION_NOT_QUEUED: Meaning(503, 'the broker would not take the job'),
-    Code.TOO_MANY_CUES: Meaning(422, 'more cues than a project carries'),
     Code.ENCODER_OPTIONS_REFUSED: Meaning(422, 'encoder options, not a quality'),
     Code.FRAME_SIZE_OUT_OF_RANGE: Meaning(422, 'a width or height out of range'),
     Code.FPS_OUT_OF_RANGE: Meaning(422, 'a frame rate out of range'),
@@ -159,3 +161,34 @@ async def answer_refusal(request, exc: Refusal) -> JSONResponse:
 def install(app) -> None:
     """Answer every `Refusal` `app` raises with its code beside its detail."""
     app.add_exception_handler(Refusal, answer_refusal)
+
+
+# The server's own code for an update that would grow a document past its size.
+BSON_OBJECT_TOO_LARGE = 10334
+
+
+def document_too_large(exc: BaseException) -> bool:
+    """Whether `exc` is the database refusing a document for its size: before
+    it is sent (`DocumentTooLarge`), or by the server, for an update that
+    would grow the stored document past it (`WriteError` BSON_OBJECT_TOO_LARGE)."""
+    return isinstance(exc, DocumentTooLarge) or (
+        isinstance(exc, WriteError) and exc.code == BSON_OBJECT_TOO_LARGE
+    )
+
+
+@asynccontextmanager
+async def written(what: str):
+    """Around a write to a project's document. One the database would not
+    take for its size is refused `project_too_large`, the sentence naming
+    `what` was being written and the size, in the database's words. Nothing
+    counts what a project carries; its document is what bounds it."""
+    try:
+        yield
+    except (DocumentTooLarge, WriteError) as exc:
+        if not document_too_large(exc):
+            raise
+        raise Refusal(
+            Code.PROJECT_TOO_LARGE,
+            f"The project's document with these {what} would be larger than "
+            f'the database holds: {exc}',
+        ) from exc

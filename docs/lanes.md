@@ -125,9 +125,11 @@ the project holds, each keeping the `source` it carries. Each cue starts at 0
 or later, ends no earlier than it starts when it ends at all, and has a label
 of at most 200 characters; `kind` and `state` are words of letters, digits,
 hyphens and underscores, in lower case; `source`, `ref` and `note` are short
-text. The answer is the cues as stored. A project may carry 2000; more is
-refused with the code `too_many_cues` ([Refusals](api/errors.md)). A project
-that is not yours answers 404, as every project route does.
+text. The answer is the cues as stored. Nothing counts them: what bounds
+them is the project's document, and a write the database would not take for
+its size is refused with the code `project_too_large`
+([Refusals](api/errors.md)). A project that is not yours answers 404, as
+every project route does.
 
 The lane colours the states `proposed`, `waiting`, `approved`, `rejected`,
 `queued`, `rendering`, `rendered`, `delivered` and `failed`; any other word is

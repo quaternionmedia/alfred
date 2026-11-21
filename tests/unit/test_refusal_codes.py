@@ -19,10 +19,10 @@ from bson import ObjectId
 from fastapi.testclient import TestClient
 from otto.exceptions import FFmpegException
 from otto.models import Edl
+from pymongo.errors import DocumentTooLarge
 
 from alfred import config
 from alfred.core.errors import REFUSALS, Code, Refusal
-from alfred.core.models.cues import MAX_CUES
 from alfred.core.models.recipes import OPERATIONS
 from alfred.core.models.render import Render
 from alfred.core.routes import captions as caption_routes
@@ -151,6 +151,8 @@ class Projects:
     def __init__(self):
         self.projects = {}
         self.claims = True
+        # What the database says to the next write, when it refuses one.
+        self.refuses = None
 
     def add(self, **fields):
         document = {'_id': ObjectId(), 'owner': OWNER.email, **fields}
@@ -164,6 +166,8 @@ class Projects:
         return self.projects.get(query['_id'])
 
     async def set(self, project_id, fields):
+        if self.refuses is not None:
+            raise self.refuses
         self.projects[project_id].update(fields)
 
     async def claim(self, project_id, job, stale_before):
@@ -346,11 +350,21 @@ def not_found(world):
     return world.client.get(f'/project/{ObjectId()}/captions'), 'Item not found'
 
 
-def too_many_cues(world):
+def project_too_large(world):
     project = world.projects.add()
-    many = [{'start': n, 'label': 'here'} for n in range(MAX_CUES + 1)]
-    res = world.client.put(f'/project/{project}/cues', json={'cues': many})
-    return res, f'{MAX_CUES + 1} cues is more than the {MAX_CUES} a project may carry'
+    said = (
+        'BSON document too large (17000000 bytes) - the connected server supports '
+        'BSON document sizes up to 16793598 bytes.'
+    )
+    world.projects.refuses = DocumentTooLarge(said)
+    res = world.client.put(
+        f'/project/{project}/cues', json={'cues': [{'start': 1, 'label': 'here'}]}
+    )
+    world.projects.refuses = None
+    return res, (
+        "The project's document with these cues would be larger than the database "
+        f'holds: {said}'
+    )
 
 
 def media_name_refused(world):
@@ -687,7 +701,7 @@ REQUESTS = {
     Code.TIMELINE_SILENT: timeline_silent,
     Code.TRANSCRIPTION_RUNNING: transcription_running,
     Code.TRANSCRIPTION_NOT_QUEUED: transcription_not_queued,
-    Code.TOO_MANY_CUES: too_many_cues,
+    Code.PROJECT_TOO_LARGE: project_too_large,
     Code.ENCODER_OPTIONS_REFUSED: encoder_options_refused,
     Code.FRAME_SIZE_OUT_OF_RANGE: frame_size_out_of_range,
     Code.FPS_OUT_OF_RANGE: fps_out_of_range,

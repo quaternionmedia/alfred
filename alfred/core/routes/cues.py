@@ -15,8 +15,8 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from ..errors import Code, Refusal
-from ..models.cues import MAX_SOURCE_CHARS, Cue, TooManyCues, checked_cues, one_line
+from ..errors import written
+from ..models.cues import MAX_SOURCE_CHARS, Cue, checked_cues, one_line
 from ..models.project import Project
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
 from ..utils.db import User
@@ -126,7 +126,9 @@ async def saveProjectCues(
     after 0, ends no earlier than it starts when it ends at all, and has a
     label of at most 200 characters; `kind` and `state` are words of letters,
     digits, hyphens and underscores. They are stored in order of when they
-    start, at most 2000 to a project. Answers `{cues}` as stored.
+    start, however many: what bounds them is the project's document, and a
+    write the database would not take for its size is refused
+    `project_too_large`. Answers `{cues}` as stored.
     """
     project = await owned(store, item_id, user)
     source = (
@@ -139,9 +141,7 @@ async def saveProjectCues(
         kept = [cue for cue in kept if cue.source != source]
     else:
         kept = []
-    try:
-        cues = checked_cues(kept + sent)
-    except TooManyCues as exc:
-        raise Refusal(Code.TOO_MANY_CUES, str(exc)) from exc
-    await store.set(project['_id'], {'cues': [cue.model_dump() for cue in cues]})
+    cues = checked_cues(kept + sent)
+    async with written('cues'):
+        await store.set(project['_id'], {'cues': [cue.model_dump() for cue in cues]})
     return CuesView(cues=cues)

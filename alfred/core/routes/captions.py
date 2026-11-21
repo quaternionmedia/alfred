@@ -21,7 +21,7 @@ from starlette.concurrency import run_in_threadpool
 
 from alfred import config
 
-from ..errors import Code, Refusal
+from ..errors import Code, Refusal, written
 from ..models.captions import RUNNING, Caption, CaptionsJob, CaptionStyle, Word
 from ..models.project import Project, as_sent
 from ..utils import audio_engine
@@ -239,7 +239,10 @@ async def saveProjectCaptions(
 
     The style's `enabled` is always stored: as sent, else as it was, else
     false -- a project's captions are not drawn into its renders until
-    someone says they should be. Answers `{captions, style, job}` as stored.
+    someone says they should be. Nothing counts the captions or the words:
+    what bounds them is the project's document, and a write the database
+    would not take for its size is refused `project_too_large`. Answers
+    `{captions, style, job}` as stored.
     """
     project = await owned(store, item_id, user)
     captions = checked_captions(update.captions)
@@ -251,7 +254,8 @@ async def saveProjectCaptions(
         fields['words'] = [word.model_dump() for word in update.words]
     if update.timeline is not None:
         fields['edl'] = as_sent(update.timeline)
-    await store.set(project['_id'], fields)
+    async with written('captions' if update.words is None else 'captions and words'):
+        await store.set(project['_id'], fields)
     return view_of({**project, **fields})
 
 

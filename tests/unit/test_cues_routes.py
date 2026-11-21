@@ -10,8 +10,9 @@ import copy
 import pytest
 from bson import ObjectId
 from fastapi.testclient import TestClient
+from pymongo.errors import DocumentTooLarge, WriteError
 
-from alfred.core.models.cues import MAX_CUES, MAX_LABEL_CHARS, Cue, checked_cues
+from alfred.core.models.cues import MAX_LABEL_CHARS, Cue, checked_cues
 from alfred.core.routes import cues as routes
 from alfred.main import app
 from tests.unit.render_harness import ADMIN, OWNER, STRANGER, as_user
@@ -23,6 +24,8 @@ class FakeCuesStore:
     def __init__(self, *projects):
         self.projects = {p['_id']: copy.deepcopy(p) for p in projects}
         self.writes = []
+        # What the database says to the next write, when it refuses one.
+        self.refuses = None
 
     async def find(self, query):
         project = self.projects.get(query['_id'])
@@ -35,6 +38,8 @@ class FakeCuesStore:
         )
 
     async def set(self, project_id, fields):
+        if self.refuses is not None:
+            raise self.refuses
         self.writes.append(copy.deepcopy(fields))
         self.projects[project_id].update(copy.deepcopy(fields))
 
@@ -228,18 +233,52 @@ class TestWriting:
         assert res.status_code == 404
         assert store.writes == []
 
-    def test_too_many_cues_is_a_refusal_with_its_code(self, api):
+    def test_however_many_are_stored(self, api):
         mine = project(cues=[stored(start=0.5, label='kept', source='editor')])
         client, store = api(OWNER, mine)
-        many = [{'start': n, 'label': 'x'} for n in range(MAX_CUES)]
-        # One over, counting the one another source already holds.
+        many = [{'start': n, 'label': 'x'} for n in range(2500)]
         res = client.put(url(mine), json={'cues': many, 'source': 'flow'})
-        assert res.status_code == 422, res.text
+        assert res.status_code == 200, res.text
+        assert len(res.json()['cues']) == 2501
+        assert len(store.writes[-1]['cues']) == 2501
+
+    @pytest.mark.parametrize(
+        'refused',
+        [
+            DocumentTooLarge(
+                'BSON document too large (17000000 bytes) - the connected server '
+                'supports BSON document sizes up to 16793598 bytes.'
+            ),
+            WriteError(
+                'BSONObj size: 16800000 (0x1004B00) is invalid. '
+                'Size must be between 0 and 16793600(16MB)',
+                code=10334,
+            ),
+        ],
+        ids=['before it is sent', 'by the server'],
+    )
+    def test_a_write_the_database_would_not_take_is_refused_naming_the_size(
+        self, api, refused
+    ):
+        mine = project()
+        client, store = api(OWNER, mine)
+        store.refuses = refused
+        res = client.put(url(mine), json={'cues': [MARK]})
+        assert res.status_code == 413, res.text
         assert res.json() == {
-            'detail': f'{MAX_CUES + 1} cues is more than the {MAX_CUES} a project may carry',
-            'code': 'too_many_cues',
+            'detail': "The project's document with these cues would be larger than "
+            f'the database holds: {refused}',
+            'code': 'project_too_large',
         }
         assert store.writes == []
+
+    def test_another_write_error_is_not_this_refusal(self, api):
+        """Mutation: refuse every WriteError as too large -- red."""
+        mine = project()
+        client, store = api(OWNER, mine)
+        store.refuses = WriteError('E11000 duplicate key', code=11000)
+        with pytest.raises(WriteError):
+            client.put(url(mine), json={'cues': [MARK]})
 
     @pytest.mark.parametrize(
         'cue,why',
