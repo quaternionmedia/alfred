@@ -55,6 +55,9 @@ class Code(StrEnum):
     MEDIA_SILENT = 'media_silent'
     AUDIO_ENGINE_REFUSED = 'audio_engine_refused'
     AUDIO_ENGINE_FAILED = 'audio_engine_failed'
+    # Motion in the picture (`GET /media/{name}/motion`, `GET /project/{id}/motion`).
+    NO_PICTURE = 'no_picture'
+    PICTURE_UNREADABLE = 'picture_unreadable'
     # Previews.
     PREVIEWS_BUSY = 'previews_busy'
     # Mail to support: issue reports and invoices.
@@ -97,6 +100,8 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.MEDIA_SILENT: Meaning(422, 'an image, which has no sound'),
     Code.AUDIO_ENGINE_REFUSED: Meaning(422, 'the audio engine would not take it'),
     Code.AUDIO_ENGINE_FAILED: Meaning(502, 'the audio engine failed'),
+    Code.NO_PICTURE: Meaning(422, 'an image or a sound: no moving picture'),
+    Code.PICTURE_UNREADABLE: Meaning(422, 'the picture could not be read'),
     Code.PREVIEWS_BUSY: Meaning(503, 'no preview slot came free in time'),
     Code.MAIL_NOT_CONFIGURED: Meaning(503, 'no mail is set up on this server'),
     Code.MAIL_NOT_QUEUED: Meaning(503, 'the broker would not take the mail'),

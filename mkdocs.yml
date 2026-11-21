@@ -18,6 +18,7 @@ nav:
       - Editing by text: editing-by-text.md
       - Editing tools: tools.md
       - The timeline's lanes: lanes.md
+      - What is measured: measures.md
       - Configuration: configuration.md
   - Develop:
       - Questions a new developer asks: develop.md

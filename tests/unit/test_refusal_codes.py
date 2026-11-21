@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 from bson import ObjectId
 from fastapi.testclient import TestClient
+from otto.exceptions import FFmpegException
 from otto.models import Edl
 
 from alfred import config
@@ -26,6 +27,7 @@ from alfred.core.models.render import Render
 from alfred.core.routes import captions as caption_routes
 from alfred.core.routes import cues as cue_routes
 from alfred.core.routes import media as media_routes
+from alfred.core.routes import motion as motion_routes
 from alfred.core.routes import render as render_routes
 from alfred.core.routes.templates import TEMPLATE_NAMES
 from alfred.core.utils import audio_engine, bucket, concurrency, support_mail
@@ -59,8 +61,10 @@ COVERED = [
     'alfred/core/routes/captions.py',
     'alfred/core/routes/cues.py',
     'alfred/core/routes/issue.py',
+    'alfred/core/routes/motion.py',
     'alfred/core/routes/project.py',
     'alfred/core/routes/render.py',
+    'alfred/core/routes/sound.py',
     'alfred/core/utils/bucket.py',
     'alfred/core/utils/concurrency.py',
     'alfred/core/utils/support_mail.py',
@@ -460,6 +464,24 @@ def media_silent(world):
     return world.sound_of('still.png'), 'videos/still.png is an image: it has no sound'
 
 
+def no_picture(world):
+    (Path(config.VIDEO_DIR) / 'still.png').write_bytes(b'not really a picture')
+    return world.client.get('/media/videos/still.png/motion'), (
+        'videos/still.png is an image: it has no moving picture'
+    )
+
+
+def picture_unreadable(world):
+    why = 'ffmpeg could not read the picture of talk.mp4: moov atom not found'
+
+    def fail(path):
+        raise FFmpegException(why)
+
+    world.monkeypatch.setattr(motion_routes, 'measure', fail)
+    (Path(config.VIDEO_DIR) / 'talk.mp4').write_bytes(b'not really a video')
+    return world.client.get('/media/videos/talk.mp4/motion'), why
+
+
 def audio_engine_refused(world):
     why = 'the audio engine at http://engine.test:1059: it refused this (415): no'
     world.engine_says(audio_engine.AudioEngineRefused(why))
@@ -528,6 +550,8 @@ REQUESTS = {
     Code.MEDIA_EXISTS: media_exists,
     Code.MEDIA_TOO_LARGE: media_too_large,
     Code.MEDIA_SILENT: media_silent,
+    Code.NO_PICTURE: no_picture,
+    Code.PICTURE_UNREADABLE: picture_unreadable,
     Code.AUDIO_ENGINE_REFUSED: audio_engine_refused,
     Code.AUDIO_ENGINE_FAILED: audio_engine_failed,
     Code.PREVIEWS_BUSY: previews_busy,

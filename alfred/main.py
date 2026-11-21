@@ -33,6 +33,7 @@ from alfred.core.routes import (
     healthAPI,
     issueAPI,
     mediaAPI,
+    motionAPI,
     previewAPI,
     previewFrameAPI,
     renderFileAPI,
@@ -256,6 +257,10 @@ app.include_router(
 # library.
 app.include_router(
     audioAPI, dependencies=[Depends(current_active_user)], tags=['media']
+)
+# How a library file's picture moves, from otto, and a timeline's.
+app.include_router(
+    motionAPI, dependencies=[Depends(current_active_user)], tags=['media']
 )
 app.include_router(
     previewAPI,

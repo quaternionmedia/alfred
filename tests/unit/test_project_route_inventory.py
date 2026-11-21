@@ -40,6 +40,8 @@ INVENTORY = {
     ('PUT', '/project/{item_id}/cues'),
     # The timeline's sound: routes/sound.py.
     ('GET', '/project/{item_id}/sound'),
+    # The timeline's motion: routes/motion.py.
+    ('GET', '/project/{item_id}/motion'),
 }
 
 

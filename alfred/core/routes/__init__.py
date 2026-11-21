@@ -8,6 +8,7 @@ from .fonts import fontAPI
 from .health import healthAPI
 from .issue import issueAPI
 from .media import mediaAPI
+from .motion import motionAPI
 from .preview import previewAPI, previewFrameAPI
 from .project import ProjectAPI
 from .render import RenderAPI, renderFileAPI
@@ -25,6 +26,7 @@ __all__ = [
     fontAPI,
     healthAPI,
     mediaAPI,
+    motionAPI,
     videoAPI,
     videoFileAPI,
     ProjectAPI,
