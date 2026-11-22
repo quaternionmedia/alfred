@@ -35,6 +35,7 @@ test.describe('health', () => {
       'api',
       'audio_engine',
       'db',
+      'language_engine',
       'previews',
       'queue',
       'renderer',
@@ -48,6 +49,7 @@ test.describe('health', () => {
     expect(Object.keys(health.previews).sort()).toEqual(['limit', 'running', 'waiting'])
     expect(health.previews.limit).toBeGreaterThanOrEqual(1)
     expect(Object.keys(health.audio_engine).sort()).toEqual(['configured', 'detail', 'ok'])
+    expect(Object.keys(health.language_engine).sort()).toEqual(['configured', 'detail', 'ok'])
   })
 
   test('the running worker answers, so the renderer is ok', async ({
