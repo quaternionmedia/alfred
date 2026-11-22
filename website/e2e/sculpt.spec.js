@@ -79,18 +79,32 @@ async function giveWords(request, token, project) {
 
 const phone = () => test.info().project.name === 'phone'
 
-/** The copies the editor tests leave are deleted, whatever the test did. */
-async function withoutCopies(request, token, use) {
+/**
+ * The copies a test saves from `page` are deleted, whatever the test did, and
+ * no others: the chromium and phone runs share an account and run at once, and
+ * a cleanup that deleted every copy took the other run's from under it.
+ */
+async function withoutCopies(page, request, token, use) {
+  const made = new Set()
+  const saved = async response => {
+    const sent = response.request()
+    if (sent.method() !== 'POST' || new URL(response.url()).pathname !== '/recipes' || !response.ok()) return
+    const recipe = await response.json().catch(() => null)
+    if (recipe && recipe.id) made.add(recipe.id)
+  }
+  page.on('response', saved)
   try {
     await use()
   } finally {
-    const listed = await request.get('/recipes', auth(token))
-    for (const recipe of await listed.json()) {
-      if (!recipe.builtin && recipe.name.endsWith('-copy')) {
-        await request.delete(`/recipes/${recipe.id}`, auth(token))
-      }
-    }
+    page.off('response', saved)
+    for (const id of made) await request.delete(`/recipes/${id}`, auth(token))
   }
+}
+
+/** A copy's name and label for this run, so the other run's is not found. */
+const ofThisRun = (name, label) => {
+  const run = test.info().project.name
+  return { name: `${name}-${run}`, label: `${label}, ${run}` }
 }
 
 /** The Sculpt stage open on `project`, its Recipes panel showing. */
@@ -162,7 +176,7 @@ test.describe('the Sculpt stage', () => {
     request,
     token,
   }) => {
-    await withoutCopies(request, token, async () => {
+    await withoutCopies(authedPage, request, token, async () => {
       await withProject(request, token, COLOUR, async project => {
         await openSculpt(authedPage, project)
         await authedPage.locator('#recipe-highlights-copy').click()
@@ -181,14 +195,18 @@ test.describe('the Sculpt stage', () => {
         await expect(first).toHaveClass(/refused/)
         await expect(editor.locator('.step[data-step="2"] .stepproblem')).toHaveCount(0)
 
-        // Put right, it checks, and saves as mine, listed and ticked.
+        // Put right and named for this run, it checks, and saves as mine,
+        // listed and ticked.
+        const copy = ofThisRun('highlights-copy', 'Highlights (copy')
+        await authedPage.locator('#recipe-editor-name').fill(copy.name)
+        await authedPage.locator('#recipe-editor-label').fill(`${copy.label})`)
         await authedPage.locator('#recipe-editor-step-1-every').fill('3')
         await authedPage.locator('#recipe-editor-check').click()
         await expect(authedPage.locator('#recipe-editor-ok')).toBeVisible()
         await expect(first).not.toHaveClass(/refused/)
         await authedPage.locator('#recipe-editor-save').click()
         await expect(editor).toBeHidden()
-        const mine = authedPage.locator('.recipe', { hasText: 'Highlights (copy)' })
+        const mine = authedPage.locator('.recipe', { hasText: `${copy.label})` })
         await expect(mine).toHaveCount(1)
         await expect(mine.locator('.recipemine')).toBeVisible()
         await expect(mine.locator('.recipetick')).toBeChecked()
@@ -196,7 +214,7 @@ test.describe('the Sculpt stage', () => {
 
         // The server holds the copy with the changed step, as a number.
         const listed = await request.get('/recipes', auth(token))
-        const saved = (await listed.json()).find(r => r.name === 'highlights-copy')
+        const saved = (await listed.json()).find(r => r.name === copy.name)
         expect(saved.builtin).toBe(false)
         expect(saved.steps[0]).toEqual({
           op: 'windows',
@@ -224,15 +242,18 @@ test.describe('the Sculpt stage', () => {
      * speech become two drafts named for the copy.
      */
     test.setTimeout(120_000)
-    await withoutCopies(request, token, async () => {
+    await withoutCopies(authedPage, request, token, async () => {
       await withProject(request, token, COLOUR, async project => {
         await giveWords(request, token, project)
         await openSculpt(authedPage, project)
         await authedPage.locator('#recipe-chapters-copy').click()
+        const copy = ofThisRun('chapters-copy', 'Chapters (copy')
+        await authedPage.locator('#recipe-editor-name').fill(copy.name)
+        await authedPage.locator('#recipe-editor-label').fill(`${copy.label})`)
         await authedPage.locator('#recipe-editor-step-1-pause').fill('1')
         await authedPage.locator('#recipe-editor-save').click()
         await expect(authedPage.locator('#recipe-editor')).toBeHidden()
-        const mine = authedPage.locator('.recipe', { hasText: 'Chapters (copy)' })
+        const mine = authedPage.locator('.recipe', { hasText: `${copy.label})` })
         await expect(mine.locator('.recipetick')).toBeChecked()
         await authedPage.locator('#sculpt-run').click()
         await expect(authedPage.locator('#sculpt-job')).toHaveAttribute('data-state', 'done', {
@@ -242,7 +263,7 @@ test.describe('the Sculpt stage', () => {
         await showDrafts(authedPage)
         const drafts = authedPage.locator('#panel-drafts .draft')
         await expect(drafts).toHaveCount(2)
-        await expect(drafts.first()).toContainText('Chapters (copy) 1')
+        await expect(drafts.first()).toContainText(`${copy.label}) 1`)
       })
     })
   })
