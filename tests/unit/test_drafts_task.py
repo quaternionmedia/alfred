@@ -80,6 +80,7 @@ def measured(monkeypatch):
             levels=series(1, {10, 40, 41}),
             motion=series(1, {40, 41, 50}),
             silences=[{'start': 25, 'end': 34}],
+            scenes=[0, 10.3, 34.2, 60],
             notes=['videos/other.mp4: its motion was not measured: gone'],
         )
 
@@ -87,6 +88,35 @@ def measured(monkeypatch):
 
 
 class TestMakingDrafts:
+    def test_the_picture_s_cuts_reach_a_recipe_s_scenes_step(self, measured):
+        """Mutation: leave the cuts out of the recipe's source -- red, the step
+        says none was measured."""
+        mine = source()
+        projects, recipes = FakeCollection(mine), FakeCollection(
+            {
+                '_id': ObjectId(),
+                'owner': 'owner@example.com',
+                'name': 'cut',
+                'label': 'Cut',
+                'fields': [],
+                'steps': [
+                    {'op': 'chapters', 'pause': 4},
+                    {'op': 'scenes', 'within': 1.5},
+                    {'op': 'compose', 'how': 'each'},
+                ],
+            }
+        )
+        recipe_id = next(iter(recipes.documents))
+        made, notes = drafts.make_drafts(
+            mine, [{'recipe': str(recipe_id)}], projects, recipes
+        )
+        assert made == 2
+        assert not [n for n in notes if 'scenes' in n]
+        assert [d['source']['spans'] for d in projects.inserted] == [
+            [[1, 24.4]],
+            [[34.2, 51.9]],
+        ]
+
     def test_each_draft_is_a_project_of_the_owner_carrying_its_source(self, measured):
         mine = source()
         projects, recipes = FakeCollection(mine), FakeCollection()
