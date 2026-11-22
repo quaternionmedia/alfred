@@ -15,5 +15,5 @@ help, and the [examples](../examples/index.md) send each of them.
 - **[Render](render.md)**: every field a render request takes.
 
 The fields of a clip and a timeline are otto's: [otto's timeline
-page](https://github.com/quaternionmedia/otto/blob/eac657d1a80721cab340df9277762b510c5d7c9a/docs/timeline.md),
+page](https://github.com/quaternionmedia/otto/blob/0b0f5584efe88bf269670afe1fb54792dc160611/docs/timeline.md),
 at the commit alfred runs.

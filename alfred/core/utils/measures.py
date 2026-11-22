@@ -1,9 +1,10 @@
 """What the engines measure of a library file, kept, and of a timeline.
 
-Two measures: how a file sounds, from the audio engine through vox
+Three measures: how a file sounds, from the audio engine through vox
 (`audio_engine.analyze`, the file's sound extracted first for a video,
-`sound.file_sound`), and how its picture moves, from otto
-(`otto.media.motion`). Each is kept by the file's path, modification time
+`sound.file_sound`), how its picture moves, from otto (`otto.media.motion`),
+and where its picture cuts from one shot to another, from otto too
+(`otto.media.scenes`). Each is kept by the file's path, modification time
 and size, with what was asked of it, in this process (`probe.ProbeCache`)
 and beside the library (`analyses`), so the api's routes and the worker's
 jobs read one measure of one file between them.
@@ -30,6 +31,7 @@ from typing import List, Optional, Sequence
 
 from otto.exceptions import FFmpegException
 from otto.media import motion as measure_motion
+from otto.media import scenes as measure_scenes
 
 from alfred import config
 
@@ -50,6 +52,7 @@ SOUND_FEATURES = ('peaks', 'silences')
 
 _sound_cache = ProbeCache(size=CACHE_SIZE)
 _motion_cache = ProbeCache(size=CACHE_SIZE)
+_scenes_cache = ProbeCache(size=CACHE_SIZE)
 
 NOT_IN_LIBRARY = 'No such file in the media library'
 
@@ -169,9 +172,58 @@ def motion_of(name: str) -> dict:
     return _kept(_motion_cache, key, make)
 
 
+def scene_changes(path) -> dict:
+    """otto's measure of where the picture at `path` cuts, as it is kept and answered."""
+    found = measure_scenes(path)
+    return {'threshold': found.threshold, 'seconds': list(found.seconds)}
+
+
+def scenes_of(name: str) -> dict:
+    """Where library file `name`'s picture cuts from one shot to another, from
+    what is kept when the file is unchanged."""
+    path, filename, kind = located(name)
+    if kind != 'video':
+        what = 'an image' if kind == 'image' else 'an audio file'
+        raise NoPicture(
+            f'{LIBRARY_PREFIX}{filename} is {what}: it has no moving picture'
+        )
+    stat = _stat(path)
+    key = (path, stat.st_mtime_ns, stat.st_size, 'scenes')
+
+    def make():
+        try:
+            return scene_changes(path)
+        except (FFmpegException, OSError) as exc:
+            raise PictureUnreadable(str(exc)) from exc
+
+    return _kept(_scenes_cache, key, make)
+
+
 def has_picture(clip) -> bool:
     """Whether a clip plays a file whose picture moves: a video."""
     return bool(clip) and clip.get('type') == 'video'
+
+
+def timeline_scenes(at: Sequence[dict], cuts_of) -> List[float]:
+    """Where a timeline's picture cuts, in timeline seconds: each video clip's
+    own edges, which begin and end a shot, and each scene change of its file
+    that falls in its window, moved to where the clip plays it. `at` is the
+    timeline as `sound.placed` lays it; `cuts_of(name)` is a file's measure
+    as `scenes_of` answers it, or None for a file not measured."""
+    found = set()
+    for a in at:
+        clip = a['clip']
+        if not has_picture(clip):
+            continue
+        start, length, inpoint = a['start'], a['length'], a['inpoint']
+        found.add(round(start, 3))
+        found.add(round(start + length, 3))
+        measured = cuts_of(clip.get('name'))
+        for second in (measured or {}).get('seconds') or []:
+            offset = float(second) - inpoint
+            if 0 < offset < length:
+                found.add(round(start + offset, 3))
+    return sorted(found)
 
 
 @dataclass
@@ -184,17 +236,20 @@ class Measures:
     # `{rate, values}`; None when no file's picture was measured.
     motion: Optional[dict] = None
     silences: List[dict] = field(default_factory=list)
+    # Where the picture cuts from one shot to another, in timeline seconds,
+    # each video clip's own edges among them; empty where no picture was measured.
+    scenes: List[float] = field(default_factory=list)
     # Each file that could not be measured, and why.
     notes: List[str] = field(default_factory=list)
 
 
 def timeline_measures(clips: Sequence[Optional[dict]]) -> Measures:
-    """The sound and the motion of a saved timeline, each file measured once
-    and mapped through its clips' windows; a file that cannot be measured is
-    a note, and the rest is measured all the same."""
+    """The sound, the motion and the scene changes of a saved timeline, each
+    file measured once and mapped through its clips' windows; a file that
+    cannot be measured is a note, and the rest is measured all the same."""
     at = sound.placed(clips)
     measures = Measures(duration=sound.timeline_end(at))
-    sounds, pictures = {}, {}
+    sounds, pictures, cuts = {}, {}, {}
     for a in at:
         name = a['clip'].get('name')
         if sound.sounding(a['clip']) and name not in sounds:
@@ -209,6 +264,14 @@ def timeline_measures(clips: Sequence[Optional[dict]]) -> Measures:
             except (NotInLibrary, NoPicture, PictureUnreadable) as exc:
                 pictures[name] = None
                 measures.notes.append(f'{name}: its motion was not measured: {exc}')
+        if has_picture(a['clip']) and name not in cuts:
+            try:
+                cuts[name] = scenes_of(str(name))
+            except (NotInLibrary, NoPicture, PictureUnreadable) as exc:
+                cuts[name] = None
+                measures.notes.append(
+                    f'{name}: its scene changes were not measured: {exc}'
+                )
     heard = {name: analysis for name, analysis in sounds.items() if analysis}
     if heard:
         timeline = sound.timeline_sound(clips, heard)
@@ -218,4 +281,6 @@ def timeline_measures(clips: Sequence[Optional[dict]]) -> Measures:
     if seen:
         level = sound.levels(at, seen.get, plays=has_picture)
         measures.motion = {'rate': level['rate'], 'values': level['values']}
+    if any(cuts.values()):
+        measures.scenes = timeline_scenes(at, cuts.get)
     return measures

@@ -13,11 +13,11 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | Code | Status | Means | Answered by |
 |---|---|---|---|
 | `invalid_id` | 422 | the id in the path is not an id -- not an ObjectId's 24 hex digits -- refused before anything is looked up | every project, captions and render route that takes an id |
-| `not_found` | 404 | no such project or render, or not yours: alfred does not say which; or no such file in the media library, which a timeline playing remote media names | every project, captions and render route that takes an id; `GET /media/{name}/audio`, `GET /media/{name}/motion`, `GET /project/{id}/sound`, `GET /project/{id}/motion` |
+| `not_found` | 404 | no such project or render, or not yours: alfred does not say which; or no such file in the media library, which a timeline playing remote media names | every project, captions and render route that takes an id; `GET /media/{name}/audio`, `GET /media/{name}/motion`, `GET /project/{id}/sound`, `GET /project/{id}/motion`, `GET /media/{name}/scenes`, `GET /project/{id}/scenes` |
 | `too_many_cues` | 422 | more cues than the 2000 a project carries | `PUT /project/{id}/cues` |
 | `caption_file_unreadable` | 422 | the subtitle file cannot be read; `detail` names the line | `POST /project/{id}/captions/import` |
 | `audio_engine_missing` | 503 | no audio engine alfred can ask: none is configured, or a setting or this build cannot reach one; `detail` is the reason `GET /health` gives as `audio_engine.detail`. Asked for an analysis, also an engine whose contract offers none | `POST /project/{id}/captions/transcribe`, `GET /media/{name}/audio` |
-| `timeline_empty` | 422 | the project has no saved timeline to transcribe, hear or measure | `POST /project/{id}/captions/transcribe`, `GET /project/{id}/sound`, `GET /project/{id}/motion` |
+| `timeline_empty` | 422 | the project has no saved timeline to transcribe, hear or measure | `POST /project/{id}/captions/transcribe`, `GET /project/{id}/sound`, `GET /project/{id}/motion`, `GET /project/{id}/scenes` |
 | `timeline_unplayable` | 422 | the saved timeline cannot be played; `detail` names the clip | `POST /project/{id}/captions/transcribe` |
 | `timeline_silent` | 422 | nothing in the timeline can make a sound: no video or audio clips | `POST /project/{id}/captions/transcribe`, `GET /project/{id}/sound` |
 | `transcription_running` | 409 | a transcription of this project is under way; `GET /project/{id}/captions` follows it | `POST /project/{id}/captions/transcribe` |
@@ -47,8 +47,8 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `not_a_draft` | 422 | an id named is not one of this project's drafts of yours, so nothing was dropped | `DELETE /project/{id}/drafts` |
 | `language_engine_missing` | 503 | no language engine alfred can ask: none is configured, or the address is not one; `detail` is the reason `GET /health` gives as `language_engine.detail` | `GET /project/{id}/conversation`, `POST /project/{id}/conversation` |
 | `language_engine_failed` | 502 | the language engine could not be reached, broke, or answered something that is not an answer; asking again may work | `GET /project/{id}/conversation`, `POST /project/{id}/conversation` |
-| `no_picture` | 422 | the file is an image or an audio file, which has no moving picture to measure; or the saved timeline has no video clip | `GET /media/{name}/motion`, `GET /project/{id}/motion` |
-| `picture_unreadable` | 422 | ffmpeg could not read the file's picture; `detail` ends with what it said | `GET /media/{name}/motion`, `GET /project/{id}/motion` |
+| `no_picture` | 422 | the file is an image or an audio file, which has no moving picture to measure; or the saved timeline has no video clip | `GET /media/{name}/motion`, `GET /project/{id}/motion`, `GET /media/{name}/scenes`, `GET /project/{id}/scenes` |
+| `picture_unreadable` | 422 | ffmpeg could not read the file's picture; `detail` ends with what it said | `GET /media/{name}/motion`, `GET /project/{id}/motion`, `GET /media/{name}/scenes`, `GET /project/{id}/scenes` |
 | `audio_engine_refused` | 422 | the audio engine would not take the file -- no sound in it, a type it does not read, too large; `detail` is the engine's reason | `GET /media/{name}/audio` |
 | `audio_engine_failed` | 502 | the audio engine could not be reached, broke, or answered something that is not an answer; asking again may work | `GET /media/{name}/audio` |
 | `previews_busy` | 503 | the server is drawing as many previews as it will (`ALFRED_PREVIEW_CONCURRENCY`), and none came free within `ALFRED_PREVIEW_WAIT` seconds; ask again after the seconds the `Retry-After` header gives | `POST /preview/`, `GET /preview/template/{name}` |

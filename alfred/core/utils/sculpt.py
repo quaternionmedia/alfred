@@ -2,8 +2,8 @@
 
 A `Source` is what a long project gives the recipe: its clips, its captions,
 its words, and what the engines measured of its timeline, the level over
-time and the motion over time (`routes.sound`, `routes.motion`), all in
-timeline seconds. `run` takes the recipe's steps, the values a person set
+time, the motion over time and where the picture cuts (`routes.sound`,
+`routes.motion`, `routes.scenes`), all in timeline seconds. `run` takes the recipe's steps, the values a person set
 for its fields, and the source, and leaves `Draft`s: each a timeline cut
 from the source by `utils.cut`, with its captions and its words moved into
 it, the spans of the source it took, and the scores it was chosen by.
@@ -47,6 +47,8 @@ class Source:
     motion: Optional[dict] = None
     # `[{start, end}]`, the timeline's silences.
     silences: list = field(default_factory=list)
+    # Where the picture cuts from one shot to another, in timeline seconds.
+    scenes: list = field(default_factory=list)
 
     @property
     def duration(self) -> float:
@@ -297,6 +299,49 @@ def spans(
     return found
 
 
+# Who a word is by when nobody has said (`utils.language_engine.NOBODY`).
+UNNAMED = 'Unknown'
+
+
+def speakers(
+    words: Sequence[dict], who: str, shortest: float, longest: float
+) -> List[Candidate]:
+    """Each turn a speaker takes: a run of words carrying one speaker, from
+    the first word's start to the last word's end, titled by the speaker.
+    `who` keeps one speaker's turns alone, matched whatever the case; blank
+    keeps every speaker's, the unnamed words' turns among them. A turn
+    shorter than `shortest` seconds is left out, and one longer than
+    `longest` is cut at word ends into turns of at most that."""
+    if shortest > longest:
+        raise RecipeError(
+            f'speakers: shortest ({shortest:g}) is longer than longest ({longest:g})'
+        )
+    wanted = ' '.join(who.split()).lower()
+    runs: List[List[dict]] = []
+    for word in words:
+        name = ' '.join(str(word.get('speaker') or UNNAMED).split())
+        if runs and runs[-1][0]['_speaker'] == name:
+            runs[-1].append({**word, '_speaker': name})
+        else:
+            runs.append([{**word, '_speaker': name}])
+    found: List[Candidate] = []
+    for run in runs:
+        name = run[0]['_speaker']
+        if wanted and name.lower() != wanted:
+            continue
+        i = 0
+        while i < len(run):
+            start = run[i]['start']
+            j = i
+            while j + 1 < len(run) and run[j + 1]['end'] - start <= longest:
+                j += 1
+            end = run[j]['end']
+            if end - start >= shortest:
+                found.append(Candidate(start=to_ms(start), end=to_ms(end), title=name))
+            i = j + 1
+    return found
+
+
 def silences(quiet: Sequence[dict], longer_than: float) -> List[Candidate]:
     """The silences longer than `longer_than` seconds."""
     found = []
@@ -305,6 +350,36 @@ def silences(quiet: Sequence[dict], longer_than: float) -> List[Candidate]:
         if start is not None and end is not None and end - start > longer_than:
             found.append(Candidate(start=to_ms(start), end=to_ms(end)))
     return found
+
+
+# --- the picture's cuts ----------------------------------------------------------
+
+
+def snap_to_scenes(
+    candidates: Sequence[Candidate], cuts: Sequence[float], within: float
+) -> List[Candidate]:
+    """Each candidate's edges moved to the nearest scene change within
+    `within` seconds of them, so a cut does not land inside a shot; a
+    candidate left with no length, or the same as another, goes."""
+    moments = sorted(float(c) for c in cuts or [])
+    if not moments:
+        return list(candidates)
+
+    def nearest(t: float) -> float:
+        i = bisect_left(moments, t)
+        close = [m for m in moments[max(0, i - 1) : i + 1] if abs(m - t) <= within]
+        return min(close, key=lambda m: abs(m - t)) if close else t
+
+    kept: List[Candidate] = []
+    seen = set()
+    for c in candidates:
+        start, end = to_ms(nearest(c.start)), to_ms(nearest(c.end))
+        if end <= start or (start, end) in seen:
+            continue
+        seen.add((start, end))
+        c.start, c.end = start, end
+        kept.append(c)
+    return kept
 
 
 # --- score ---------------------------------------------------------------------
@@ -592,6 +667,17 @@ def apply(
         )
     elif step_name == 'silences':
         state.candidates = silences(source.silences, p['longer_than'])
+    elif step_name == 'speakers':
+        state.candidates = speakers(words, p['who'], p['shortest'], p['longest'])
+    elif step_name == 'scenes':
+        if source.scenes:
+            state.candidates = snap_to_scenes(
+                state.candidates, source.scenes, p['within']
+            )
+        else:
+            state.notes.append(
+                'scenes: no scene change was measured, so no edge was moved'
+            )
     elif step_name == 'dialogue':
         dialogue(state.candidates, words)
         state.weights['dialogue'] = p['weight']

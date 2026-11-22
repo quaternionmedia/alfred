@@ -15,6 +15,7 @@ from .preview import previewAPI, previewFrameAPI
 from .project import ProjectAPI
 from .recipes import recipesAPI
 from .render import RenderAPI, renderFileAPI
+from .scenes import scenesAPI
 from .sound import soundAPI
 from .templates import templateAPI
 from .video import videoAPI, videoFileAPI
@@ -32,6 +33,7 @@ __all__ = [
     healthAPI,
     mediaAPI,
     motionAPI,
+    scenesAPI,
     videoAPI,
     videoFileAPI,
     ProjectAPI,

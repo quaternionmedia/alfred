@@ -136,6 +136,7 @@ def make_drafts(
         levels=measured.levels,
         motion=measured.motion,
         silences=measured.silences,
+        scenes=measured.scenes,
     )
     made_at = datetime.now(timezone.utc)
     documents = []
