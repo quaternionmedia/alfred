@@ -117,14 +117,18 @@ def timeline_end(at: Iterable[dict]) -> float:
 
 
 def levels(
-    at: Sequence[dict], peaks_of: Callable[[str], Optional[dict]], rate=None
+    at: Sequence[dict],
+    peaks_of: Callable[[str], Optional[dict]],
+    rate=None,
+    plays: Callable[[Optional[dict]], bool] = sounding,
 ) -> dict:
     """The timeline's level over time, `{rate, values}`, each value 0 to 1 at
-    `rate` a second: at each moment, the loudest value any clip sounding
-    there plays from its file's `peaks` (`{rate, values}`, by `peaks_of` from
-    the clip's name). `rate` is the files' highest when not given. Nothing
-    sounding is 0."""
-    placed_clips = [a for a in at if sounding(a['clip'])]
+    `rate` a second: at each moment, the highest value any clip playing
+    there plays from its file's series (`{rate, values}`, by `peaks_of` from
+    the clip's name). `plays` says which clips play a file with the series,
+    those that sound unless told otherwise; `rate` is the files' highest when
+    not given. Nothing playing is 0."""
+    placed_clips = [a for a in at if plays(a['clip'])]
     files = {}
     for a in placed_clips:
         name = a['clip'].get('name')

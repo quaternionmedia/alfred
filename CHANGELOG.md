@@ -96,6 +96,12 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **Motion in the picture.** otto measures how much a video's picture changes
+  over time (`otto.media.motion`); `GET /media/{name}/motion` keeps it per
+  file as the audio analyses are kept, and `GET /project/{id}/motion` maps
+  it onto a saved timeline in its own seconds. Two refusals join the table,
+  `no_picture` and `picture_unreadable`; `docs/measures.md` is the page.
+
 - **A timeline's sound, in its own seconds.** `GET /project/{id}/sound`
   answers a saved timeline's level over time and its silences, from the
   audio engine's analysis of each file it plays mapped onto the timeline
