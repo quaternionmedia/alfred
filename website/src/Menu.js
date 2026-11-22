@@ -54,7 +54,7 @@ export const Link = () => ({
 // The links in the menu bar.
 //
 // Empty, and deliberately so. It carried PROJECTS and RENDERS, which pointed
-// at `?stage=source` and `?stage=deliver` -- two of the four stages the rail
+// at `?stage=source` and `?stage=deliver` -- two of the stages the rail
 // already lists, directly below, with the other two beside them. A second
 // control for the same destination is not redundancy, it is a second thing to
 // keep in step and a second place to look.

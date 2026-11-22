@@ -70,6 +70,7 @@ it loops over.
 | `screens-guide.spec.js` | Each step of making a video, from the editor opening to the render delivered, saved as `docs/assets/screens/guide/<step>.png` for docs/guide.md. | 1 |
 | `screens-tools.spec.js` | Each timeline tool chosen and its edit made, saved as `docs/assets/screens/tools/<tool>.png` for docs/tools.md. | 8 |
 | `screens.spec.js` | The screenshots the docs open with, taken from the running app. | 10 |
+| `sculpt.spec.js` | The Sculpt stage: the recipes on offer with their knobs, the run that cuts a project into drafts, and the drafts it leaves, each a project on Edit. | 4 |
 | `session.spec.js` | The session lifecycle: renewal, expiry, logout, and what a token is worth. | 16 |
 | `stacked.spec.js` | The phone flow: the editor's panels stacked one stage at a time. | 15 |
 | `templates.spec.js` | Template clips: adding them, and changing what they say. | 13 |

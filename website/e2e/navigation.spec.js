@@ -17,7 +17,7 @@ const { test, expect, SELECTORS } = require('./fixtures')
  * URL instead.
  *
  * The header no longer carries links at all. PROJECTS and RENDERS pointed at
- * `?stage=source` and `?stage=deliver` -- two of the four stages the rail
+ * `?stage=source` and `?stage=deliver` -- two of the stages the rail
  * lists directly below, with the other two beside them. A second control for
  * the same destination is not redundancy; it is a second thing to keep in
  * step and a second place to look. The rail is the navigation, and these
@@ -26,8 +26,8 @@ const { test, expect, SELECTORS } = require('./fixtures')
 test.describe('navigation', () => {
   test('the rail exposes every stage', async ({ authedPage }) => {
     await authedPage.goto('/')
-    await expect(authedPage.locator(SELECTORS.stages)).toHaveCount(4)
-    for (const stage of ['source', 'edit', 'render', 'deliver']) {
+    await expect(authedPage.locator(SELECTORS.stages)).toHaveCount(5)
+    for (const stage of ['source', 'sculpt', 'edit', 'render', 'deliver']) {
       await expect(
         authedPage.locator(`.stagerail #stage-${stage}`),
         `missing stage: ${stage}`

@@ -74,6 +74,22 @@ The first values are a collaborator's advice for an evening's recording:
 clips of eight to twelve seconds, about twenty-five of them. They hold until
 they are measured.
 
+## In the editor
+
+The **Sculpt** stage, between Source and Edit, has two panels. **Recipes**
+lists the built-in recipes and yours, each with a tick and, once ticked, its
+knobs drawn as a form project's fields are; **Sculpt** starts the run over
+the open project, and a line under the button follows it to done or failed,
+with the run's notes. The button waits, and says why, while the project has
+no transcript. **Drafts** lists what the runs left, each with its length, its
+recipe and the scores it was chosen by; opening one takes it to Edit as any
+project, and ticking several then **Drop** lets go of them with their cues.
+On a phone the stage shows one panel at a time, chosen by a switch. The line
+under the rail offers **Next: Sculpt** from Source once a project is
+transcribed, and the Projects panel lists a source's drafts under it,
+collapsed. [From a long recording](journeys.md#from-a-long-recording) walks
+it.
+
 ## Drafts
 
 `POST /project/{id}/drafts` with `{recipes: [{recipe, values}]}` queues a run

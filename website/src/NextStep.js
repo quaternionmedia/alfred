@@ -2,6 +2,7 @@ import m from 'mithril'
 import { Edl } from './Video'
 import { Flow, current, madeFromForm } from './Stages'
 import { renderState } from './RenderStatus'
+import { Transcript } from './captions/transcript'
 
 /**
  * One line under the rail: where you are, and the next thing to do, with a
@@ -27,6 +28,10 @@ export function nextStep() {
       : { text: 'Start here: choose a project on Source.', go: toSource, anchor: 'first-video' }
   }
   const name = (project && project.name) || 'This project'
+  // A transcript, loaded: what the recipes read. A draft came from one.
+  const transcribed =
+    Transcript.projectId === m.route.param('project') && Transcript.loaded && Transcript.words.length > 0
+  const draft = Boolean(project && project.source)
 
   if (madeFromForm(project) && stage !== 'deliver') {
     return stage === 'render'
@@ -39,6 +44,13 @@ export function nextStep() {
   }
 
   if (stage === 'source') {
+    if (clips && transcribed && !draft) {
+      return {
+        text: `${name}: ${plural(clips, 'clip')}, transcribed. Sculpt it into drafts, or arrange it by hand.`,
+        go: { stage: 'sculpt', label: 'Next: Sculpt' },
+        anchor: 'from-a-long-recording',
+      }
+    }
     return clips
       ? {
           text: `${name}: ${plural(clips, 'clip')}. Add more, or arrange them.`,
@@ -49,6 +61,29 @@ export function nextStep() {
           text: `${name} is open. Add material or a template.`,
           anchor: 'your-own-footage',
         }
+  }
+  if (stage === 'sculpt') {
+    if (draft) {
+      return {
+        text: `${name} is a draft: refine it on Edit.`,
+        go: { stage: 'edit', label: 'Go to Edit' },
+        anchor: 'from-a-long-recording',
+      }
+    }
+    if (transcribed) {
+      return {
+        text: 'Tick a recipe, set its knobs, then Sculpt. Each draft opens on Edit.',
+        go: { stage: 'edit', label: 'Next: Edit' },
+        anchor: 'from-a-long-recording',
+      }
+    }
+    return clips
+      ? {
+          text: 'Transcribe the timeline first, on Edit: the recipes read its words.',
+          go: { stage: 'edit', label: 'Go to Edit' },
+          anchor: 'from-a-long-recording',
+        }
+      : { text: 'Nothing to sculpt: add clips on Source.', go: toSource, anchor: 'your-own-footage' }
   }
   if (stage === 'edit') {
     return clips

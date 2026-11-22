@@ -16,6 +16,7 @@ const top = async locator => (await locator.boundingBox()).y
 /** Each stage, and a panel of its own that says it is open (layout/flow.js). */
 const STAGE_PANELS = {
   source: '#panel-source',
+  sculpt: '#panel-recipes',
   edit: '#panel-captions',
   render: '#panel-render',
   deliver: '#panel-deliver',
@@ -54,7 +55,7 @@ const columnEnd = () => document.querySelector('section.editor').getBoundingClie
  * Every stage in turn, chosen on the rail: the whole picture is on the screen
  * as the stage opens, and the rest of the column can be reached below it --
  * scrolled as far as a wheel over the header (which scrolls nothing of its
- * own) takes the page, the timeline's region ends in the window. All four stages are
+ * own) takes the page, the timeline's region ends in the window. Every stage is
  * asked, so a failure says which of them hide the picture, and by how much.
  *
  * `oneScreen`: and the page does not scroll at all, every region fitting the
@@ -244,11 +245,12 @@ const sideways = page =>
   )
 
 test.describe('the phone flow fits the width of the phone', () => {
-  test('all four stages sit across the rail', async ({ authedPage }) => {
+  test('every stage sits across the rail', async ({ authedPage }) => {
     /**
-     * At the rail's desktop spacing the four stages came to 459 pixels, so on
-     * a 375-pixel phone Deliver was cut off at its number and the rail
-     * scrolled sideways: the last stage of the flow, out of sight.
+     * At the rail's desktop spacing four stages came to 459 pixels, so on a
+     * 375-pixel phone the last was cut off at its number and the rail
+     * scrolled sideways: the last stage of the flow, out of sight. Five fit
+     * only without their numbers.
      *
      * Mutation: drop the rail's narrow-screen spacing (stages.scss) and this
      * fails.
@@ -257,7 +259,7 @@ test.describe('the phone flow fits the width of the phone', () => {
     const rail = authedPage.locator('.stagerail')
     const width = authedPage.viewportSize().width
     expect(await rail.evaluate(r => r.scrollWidth - r.clientWidth)).toBeLessThanOrEqual(1)
-    for (const stage of ['source', 'edit', 'render', 'deliver']) {
+    for (const stage of ['source', 'sculpt', 'edit', 'render', 'deliver']) {
       const b = await authedPage.locator(`#stage-${stage}`).boundingBox()
       expect(b.x + b.width, `${stage} runs past the screen`).toBeLessThanOrEqual(width)
     }
@@ -287,7 +289,7 @@ test.describe('the phone flow fits the width of the phone', () => {
       }
     )
     await authedPage.goto('/')
-    for (const stage of ['source', 'edit', 'render', 'deliver']) {
+    for (const stage of ['source', 'sculpt', 'edit', 'render', 'deliver']) {
       await authedPage.locator(`#stage-${stage}`).click()
       await expect(authedPage.locator(STAGE_PANELS[stage])).toBeVisible()
       expect(await sideways(authedPage), `${stage} scrolls sideways`).toEqual([])
@@ -301,7 +303,7 @@ test.describe('the phone flow fits the width of the phone', () => {
       await authedPage.goto('/')
       const rail = authedPage.locator('.stagerail')
       expect(await rail.evaluate(r => r.scrollWidth - r.clientWidth)).toBeLessThanOrEqual(1)
-      for (const stage of ['source', 'edit', 'render', 'deliver']) {
+      for (const stage of ['source', 'sculpt', 'edit', 'render', 'deliver']) {
         await authedPage.locator(`#stage-${stage}`).click()
         await expect(authedPage.locator(STAGE_PANELS[stage])).toBeVisible()
         expect(await sideways(authedPage), `${stage} scrolls sideways`).toEqual([])

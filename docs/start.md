@@ -56,8 +56,8 @@ Browse to <http://127.0.0.1:1732>.
 
 *What a first visit shows: Source outlined, and the line under the rail saying where to start.*
 
-It worked when the editor opens with the four stages on the rail, Source,
-Edit, Render and Deliver, and the line under it says **Start here**. On a
+It worked when the editor opens with the five stages on the rail, Source,
+Sculpt, Edit, Render and Deliver, and the line under it says **Start here**. On a
 screen 1024 pixels wide or more every panel is open at once; on a phone, one
 stage at a time ([The editor in one look](journeys.md#the-editor-in-one-look)).
 

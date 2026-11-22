@@ -1,4 +1,4 @@
-// The four-stage rail and its panels.
+// The stage rail and its panels.
 //
 // Deliberately plain: this sits above a video timeline, and anything with
 // strong colour of its own competes with the thing being edited. Sizes are in
@@ -59,10 +59,12 @@
   }
 }
 
-// On a phone all four stages fit across the screen. At the rail's own spacing
-// they came to 459 pixels, so on a 375-pixel screen Deliver was cut off at its
-// number, and the rail scrolled sideways under a scrollbar of its own -- the
-// last stage of the flow, out of sight until someone thought to look for it.
+// On a phone every stage fits across the screen. At the rail's own spacing
+// four of them came to 459 pixels, so on a 375-pixel screen the last was cut
+// off at its number and the rail scrolled sideways under a scrollbar of its
+// own -- the last stage of the flow, out of sight until someone thought to
+// look for it. Five stages fit only without their numbers: the labels name
+// the stages, and the active one's fill says where you are.
 @media only screen and (max-width: 480px) {
   .stagerail {
     gap: 0.15rem;
@@ -74,9 +76,7 @@
       font-size: 0.85rem;
 
       .stagenum {
-        width: 1.05rem;
-        height: 1.05rem;
-        font-size: 0.7rem;
+        display: none;
       }
     }
   }
@@ -274,6 +274,23 @@
   gap: 0.5rem;
   font-size: 0.75rem;
   color: #8f8f8f;
+
+  .projectdraft {
+    color: #7bbf7b;
+  }
+}
+
+// A source's drafts, under it and indented, behind a disclosure.
+.draftgroup {
+  margin: 0 0 0.25rem 0.75rem;
+
+  .draftgrouptoggle {
+    font-size: 0.78rem;
+  }
+
+  .draftgroupitems {
+    margin-top: 0.25rem;
+  }
 }
 
 .renderitem {

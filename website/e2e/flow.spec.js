@@ -43,10 +43,10 @@ test.describe('the four-stage flow', () => {
     await expect(authedPage.locator('.stagerail')).toBeVisible()
   })
 
-  test('the rail names all four stages in order', async ({ authedPage }) => {
+  test('the rail names every stage in order', async ({ authedPage }) => {
     await authedPage.goto('/')
     const labels = await authedPage.locator('.stagerail .stage .stagelabel').allInnerTexts()
-    expect(labels).toEqual(['Source', 'Edit', 'Render', 'Deliver'])
+    expect(labels).toEqual(['Source', 'Sculpt', 'Edit', 'Render', 'Deliver'])
   })
 
   test('edit is the stage you land on', async ({ authedPage }) => {
@@ -75,15 +75,26 @@ test.describe('the four-stage flow', () => {
     const projects = await res.json()
     test.skip(projects.length === 0, 'no projects seeded in this environment')
 
+    // A draft sits under the project it came from, collapsed (panels/Projects.js).
+    const ids = new Set(projects.map(p => p._id))
+    const isDraft = p => Boolean(p.source && ids.has(p.source.project))
+    const shown = projects.filter(p => !isDraft(p))
+
     await authedPage.goto('/#!/?stage=source')
-    await expect(authedPage.locator('.projectchoice')).toHaveCount(projects.length)
-    for (const project of projects) {
+    await expect(authedPage.locator('.projectchoice')).toHaveCount(shown.length)
+    for (const project of shown) {
       await expect(
         authedPage
           .locator('.projectpicker')
           .getByRole('button', { name: new RegExp(project.name, 'i') })
           .first()
       ).toBeVisible()
+      const drafts = projects.filter(p => isDraft(p) && p.source.project === project._id)
+      if (drafts.length) {
+        await expect(authedPage.locator(`.draftgroup[data-source="${project._id}"]`)).toContainText(
+          `${drafts.length} draft`
+        )
+      }
     }
   })
 
@@ -167,7 +178,7 @@ test.describe('the four-stage flow', () => {
     const demo = await demoProject(request, token)
     test.skip(!demo, 'demo project not seeded')
 
-    for (const stage of ['source', 'edit', 'render', 'deliver']) {
+    for (const stage of ['source', 'sculpt', 'edit', 'render', 'deliver']) {
       await authedPage.goto(`/#!/?project=${demo._id}&stage=${stage}`)
       await expect(authedPage.locator('#timeline .clip')).toHaveCount(
         demo.edl.clips.length
@@ -249,7 +260,7 @@ test.describe('the four-stage flow', () => {
       }
     })
 
-    for (const stage of ['source', 'edit', 'render', 'deliver']) {
+    for (const stage of ['source', 'sculpt', 'edit', 'render', 'deliver']) {
       await authedPage.goto(`/#!/?project=${demo._id}&stage=${stage}`)
       await authedPage.waitForTimeout(900)
     }

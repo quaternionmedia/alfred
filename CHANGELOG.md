@@ -96,6 +96,13 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **The Sculpt stage.** A fifth stage on the rail, between Source and Edit:
+  its Recipes panel runs the recipes over the open project with the knobs a
+  person sets, and its Drafts panel lists what they left, each opening on
+  Edit, with a Drop for the ones not wanted. The Projects panel groups a
+  source's drafts under it, the Cues lane draws what each took, and on a
+  phone the rail's five stages fit without their numbers.
+
 - **Drafts.** `POST /project/{id}/drafts` runs recipes over a long project in
   the worker and leaves each draft as a project of its own carrying `source`,
   with its captions and words moved into it and a cue on the source per span
