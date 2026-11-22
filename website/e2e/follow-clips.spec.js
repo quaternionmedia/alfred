@@ -1,10 +1,12 @@
 /**
  * `followClips` (src/ClipWindow.js): captions and words follow an edit made
- * with the timeline tools. Plain arithmetic, run in Node: no browser, no server.
+ * with the timeline tools; and `revealed` and `saidOnto`, what an edit shows
+ * that the timeline held no words for, and what was said there put onto it.
+ * Plain arithmetic, run in Node: no browser, no server.
  */
 
 const { test, expect } = require('@playwright/test')
-const { followClips } = require('../src/ClipWindow')
+const { followClips, revealed, saidOnto } = require('../src/ClipWindow')
 
 /** Clips end to end, as the editor lays them: `[key, type, duration, inpoint]`. */
 const track = (...clips) => {
@@ -229,5 +231,91 @@ test.describe('at the edges', () => {
     const same = followClips({ before: BEFORE, after, captions: CAPTIONS, words: WORDS })
     same.words.forEach((word, j) => expect(word).toBe(WORDS[j]))
     same.captions.forEach((caption, i) => expect(caption).toBe(CAPTIONS[i]))
+  })
+})
+
+test.describe('what an edit shows', () => {
+  /** A clip of `name` placed at `start`, `duration` long from `inpoint` in its file. */
+  const clip = (key, start, duration, inpoint, name = 'a.mp4', type = 'video') => ({
+    key,
+    name,
+    type,
+    start,
+    duration,
+    inpoint,
+  })
+
+  test('a longer clip shows its file past where it ended; a shorter one shows nothing', () => {
+    const before = [clip('a', 0, 4, 10)]
+    expect(revealed(before, [clip('a', 0, 6, 10)])).toEqual([
+      { key: 'a', name: 'a.mp4', start: 14, end: 16 },
+    ])
+    expect(revealed(before, [clip('a', 0, 3, 10)])).toEqual([])
+  })
+
+  test('a slip shows what came in at one side; a roll what came in at the start', () => {
+    const before = [clip('a', 0, 4, 10)]
+    expect(revealed(before, [clip('a', 0, 4, 11.5)])).toEqual([
+      { key: 'a', name: 'a.mp4', start: 14, end: 15.5 },
+    ])
+    expect(revealed(before, [clip('a', 0, 5, 9)])).toEqual([
+      { key: 'a', name: 'a.mp4', start: 9, end: 10 },
+    ])
+  })
+
+  test('a new clip shows all of its window; a template and a picture show no file', () => {
+    expect(revealed([], [clip('b', 0, 3, 20, 'b.wav', 'audio')])).toEqual([
+      { key: 'b', name: 'b.wav', start: 20, end: 23 },
+    ])
+    expect(revealed([], [clip('t', 0, 3, 0, 'makeTitle', 'template')])).toEqual([])
+    expect(revealed([], [clip('p', 0, 3, 0, 'still.png', 'image')])).toEqual([])
+  })
+
+  test('a slip past its whole window shows all of the window it has now', () => {
+    expect(revealed([clip('a', 0, 2, 0)], [clip('a', 0, 2, 5)])).toEqual([
+      { key: 'a', name: 'a.mp4', start: 5, end: 7 },
+    ])
+  })
+
+  // What the server answered over 14 to 16 s of a.mp4, in its seconds.
+  const STRETCH = {
+    start: 14,
+    end: 16,
+    words: [
+      { start: 13.6, end: 14.2, text: 'edge', segment: 7 },
+      { start: 14.3, end: 14.7, text: 'three', segment: 7, speaker: 'Ann' },
+      { start: 15.1, end: 15.4, text: 'four', segment: 8 },
+      { start: 15.8, end: 16.4, text: 'past', segment: 8 },
+    ],
+    captions: [{ start: 14.3, end: 15.4, text: 'three four' }],
+  }
+
+  test('what was said lands where the clip plays it now, its stretches numbered on', () => {
+    // The clip at 2 s on the timeline, its file from 10 s: 14 s of the file is at 6 s.
+    const added = saidOnto(STRETCH, { start: 2, duration: 6, inpoint: 10 }, {}, 3)
+    expect(added.words).toEqual([
+      { start: 6.3, end: 6.7, text: 'three', segment: 3, speaker: 'Ann' },
+      { start: 7.1, end: 7.4, text: 'four', segment: 4 },
+      // Its middle, 16.1 s, is past the stretch; and "edge" is before it.
+    ])
+    expect(added.captions).toEqual([{ start: 6.3, end: 7.4, text: 'three four' }])
+  })
+
+  test('what the clip no longer plays, and what is already held, is not put on', () => {
+    // Trimmed back to 15 s of the file since: "four" is past it.
+    const shorter = saidOnto(STRETCH, { start: 0, duration: 5, inpoint: 10 }, {}, 0)
+    expect(shorter.words.map(w => w.text)).toEqual(['three'])
+    // The caption's middle, 14.85 s, is still played; it is cut to the clip.
+    expect(shorter.captions).toEqual([{ start: 4.3, end: 5, text: 'three four' }])
+    const held = { words: [{ start: 4.3, end: 4.7, text: 'three' }], captions: [] }
+    const again = saidOnto(STRETCH, { start: 0, duration: 6, inpoint: 10 }, held, 0)
+    expect(again.words.map(w => w.text)).toEqual(['four'])
+  })
+
+  test('nothing lands on a clip that no longer plays the stretch', () => {
+    expect(saidOnto(STRETCH, { start: 0, duration: 2, inpoint: 0 }, {}, 0)).toEqual({
+      words: [],
+      captions: [],
+    })
   })
 })

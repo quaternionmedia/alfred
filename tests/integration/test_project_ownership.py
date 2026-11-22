@@ -49,6 +49,11 @@ SINGLE_PROJECT_ROUTES = [
     ),
     ('GET', '/project/{id}/captions/words', None),
     ('POST', '/project/{id}/captions/import', {'format': 'srt', 'text': CUE}),
+    (
+        'POST',
+        '/project/{id}/captions/said',
+        {'windows': [{'name': 'videos/a.mp4', 'start': 0, 'end': 1}]},
+    ),
     ('GET', '/project/{id}/cues', None),
     ('GET', '/project/{id}/drafts', None),
     ('PUT', '/project/{id}/cues', {'cues': [{'start': 1, 'label': 'here'}]}),

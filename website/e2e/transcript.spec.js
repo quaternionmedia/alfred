@@ -467,6 +467,98 @@ test.describe('words follow the picture', () => {
   })
 })
 
+test.describe('what an edit shows', () => {
+  test('a longer clip says what was said over what it shows, and saves it', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * The first two seconds of the speech, then colour. Trimmed longer, the
+     * clip shows its file past two seconds, which the project holds no words
+     * for: the editor asks what was said there, puts it where the clip plays
+     * it, and saves it with the trim. The answer is served here, in the
+     * file's seconds, so this holds the editor to its half; the server's half
+     * is `tests/unit/test_said.py` and the said route's tests.
+     *
+     * Mutation: drop the ask from `Transcript.apply` -- "three" never
+     * arrives, and this fails.
+     */
+    const short = {
+      clips: [
+        { ...SPOKEN.clips[0], duration: 2, outpoint: 2 },
+        { ...SPOKEN.clips[1], start: 2 },
+      ],
+      duration: 4,
+    }
+    await withProject(request, token, short, async project => {
+      await transcribed(
+        request,
+        token,
+        project,
+        [
+          { start: 0.5, end: 0.9, text: 'One', segment: 0 },
+          { start: 1.1, end: 1.5, text: 'two', segment: 0 },
+        ],
+        [{ start: 0.5, end: 1.5, text: 'One two' }]
+      )
+      const asked = []
+      await authedPage.route(
+        url => url.pathname === `/project/${project._id}/captions/said`,
+        async route => {
+          const body = route.request().postDataJSON()
+          asked.push(body)
+          await route.fulfill({
+            json: {
+              said: body.windows.map(window => ({
+                ...window,
+                words: [
+                  { start: 2.2, end: 2.6, text: 'three', segment: 4 },
+                  { start: 2.8, end: 3.0, text: 'four', segment: 4 },
+                  { start: 3.7, end: 3.9, text: 'beyond', segment: 5 },
+                ],
+                captions: [{ start: 2.2, end: 3.0, text: 'three four' }],
+              })),
+            },
+          })
+        }
+      )
+      await openTranscript(authedPage, project)
+      await expect(words(authedPage)).toHaveCount(2)
+
+      await authedPage.locator('#TTools [data-tool="trim"]').click()
+      const clip = authedPage.locator('#timeline .clip').first()
+      await clip.scrollIntoViewIfNeeded()
+      const box = await clip.boundingBox()
+      const scale = box.width / 2
+      const y = box.y + box.height / 2
+      await authedPage.mouse.move(box.x + box.width - 4, y)
+      await authedPage.mouse.down()
+      // About 1.3 s longer: to 3.3 s of the file, short of "beyond".
+      await authedPage.mouse.move(box.x + box.width - 4 + Math.round(1.3 * scale), y, { steps: 8 })
+      await authedPage.mouse.up()
+
+      await expect(words(authedPage)).toHaveText(['One', 'two', 'three', 'four'])
+      expect(asked).toHaveLength(1)
+      const [window] = asked[0].windows
+      expect(window.name).toBe(FIXTURE)
+      expect(window.start).toBeCloseTo(2, 3)
+      expect(window.end).toBeCloseTo(3.3, 1)
+
+      // Saved with the trim, in timeline seconds: the clip starts at 0, so as said.
+      await expect
+        .poll(async () => (await wordsOf(request, token, project)).map(w => w.text))
+        .toEqual(['One', 'two', 'three', 'four'])
+      const kept = await wordsOf(request, token, project)
+      expect(kept[2].start).toBeCloseTo(2.2, 3)
+      // A stretch of speech of its own, numbered on from the project's.
+      expect(kept[2].segment).toBe(1)
+      const captions = await captionsOf(request, token, project)
+      expect(captions.map(c => c.text)).toEqual(['One two', 'three four'])
+    })
+  })
+})
+
 test.describe('a draft', () => {
   // Kept, not saved, until the test lets saves through.
   test.use({ saves: 'refused' })

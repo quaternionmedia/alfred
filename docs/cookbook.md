@@ -51,7 +51,7 @@ it loops over.
 | `editor.spec.js` | The timeline editor, with a project open. | 9 |
 | `examples.spec.js` | Each docs example (docs/examples/edl/*.json) previews on the demo media alone. | 2 |
 | `flow.spec.js` | The four-stage flow, end to end, against real data. | 16 |
-| `follow-clips.spec.js` | `followClips` (src/ClipWindow.js): captions and words follow an edit made with the timeline tools. | 12 |
+| `follow-clips.spec.js` | `followClips` (src/ClipWindow.js): captions and words follow an edit made with the timeline tools; and `revealed` and `saidOnto`, what an edit shows that the timeline held no words for, and what was said there put onto it. | 19 |
 | `health.spec.js` | Whether the stack can do its work. | 4 |
 | `journeys.spec.js` | The editor says what to do next. | 6 |
 | `lanes-arith.spec.js` | The lanes' arithmetic (src/lanes/arith.js): ticks, the view, the clips laid out, a sound's envelope over them, and a clip's effects. | 14 |
@@ -77,6 +77,6 @@ it loops over.
 | `templates.spec.js` | Template clips: adding them, and changing what they say. | 13 |
 | `timeline-tools.spec.js` | The timeline tools, by mouse and by touch. | 23 |
 | `tools.spec.js` | The timeline tools, and the media they act on. | 17 |
-| `transcript.spec.js` | Editing by text: words deleted from the Transcript panel cut the timeline. | 9 |
+| `transcript.spec.js` | Editing by text: words deleted from the Transcript panel cut the timeline. | 10 |
 | `views.spec.js` | The remaining top-level views. | 8 |
 | `workspace.spec.js` | The desktop workspace: the editor's panels docked with Golden Layout. | 21 |

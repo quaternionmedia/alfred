@@ -1,4 +1,5 @@
 import m from 'mithril'
+import { message } from 'alertifyjs'
 import { auth } from '../Login'
 import { requestProblem } from '../Problem'
 import { Edl } from '../Video'
@@ -10,18 +11,24 @@ import {
   cutSpans,
   followClips,
   inOf,
+  revealed,
+  saidOnto,
   timelineEnd,
 } from '../ClipWindow'
 import { Captions, captionProblem } from './store'
 
 /**
  * The transcript's words, the selection, the cut (`cutRanges`) and its undo; and the
- * words and captions following the timeline tools (`followClips`).
+ * words and captions following the timeline tools (`followClips`), with what was said
+ * over the material an edit shows asked of the server (`revealed`, `saidOnto`).
  * Rules: docs/captions.md, "Editing by text".
  */
 
 // How many cuts can be undone.
 export const UNDO_DEPTH = 10
+
+// How long what was said waits for a save already away, in milliseconds.
+const SAID_RETRY_MS = 300
 
 /** A word as the server keeps it. */
 const plain = ({ start, end, text, segment, speaker }) => ({
@@ -41,7 +48,14 @@ const marked = () => {
   let start = 0
   return Edl.edl.filter(Boolean).map(clip => {
     const duration = clipSeconds(clip)
-    const mark = { key: clip, type: clip.type, start, duration, inpoint: inOf(clip) }
+    const mark = {
+      key: clip,
+      type: clip.type,
+      name: clip.name,
+      start,
+      duration,
+      inpoint: inOf(clip),
+    }
     start += duration
     return mark
   })
@@ -328,6 +342,81 @@ export const Transcript = {
       Captions.sort()
     }
     if (wordsMoved || captionsMoved) Transcript.changed = true
+    const shown = revealed(before, after)
+    if (shown.length && Transcript.projectId) Transcript.askSaid(Transcript.projectId, shown)
+  },
+
+  /**
+   * Ask the server what was said over the stretches of files an edit showed
+   * (`POST /project/{id}/captions/said`), and put it onto the timeline.
+   */
+  askSaid: (project, shown) => {
+    const windows = shown.map(({ name, start, end }) => ({ name, start, end }))
+    return auth(`/project/${project}/captions/said`, { method: 'POST', body: { windows } })
+      .then(answer => Transcript.landSaid(project, shown, (answer && answer.said) || []))
+      .catch(err => {
+        message(
+          `What was said over the material this edit showed could not be read: ${
+            requestProblem(err) || 'no answer'
+          }`,
+          6
+        )
+      })
+  },
+
+  /**
+   * What was said over `shown`, onto the timeline where each clip plays it
+   * now (`saidOnto`): unsaved, so it saves with the timeline as a tool's edit
+   * does. A clip gone since is passed over; a save already away is waited for,
+   * so what it carries does not count these as saved.
+   */
+  landSaid: (project, shown, said) => {
+    if (Transcript.projectId !== project || Captions.projectId !== project) return
+    if (Captions.busy) {
+      setTimeout(() => Transcript.landSaid(project, shown, said), SAID_RETRY_MS)
+      return
+    }
+    const held = {
+      words: [...Transcript.words],
+      captions: Captions.list.filter(c => !captionProblem(c)),
+    }
+    let segment =
+      held.words.reduce(
+        (top, w) => Math.max(top, Number.isInteger(w.segment) ? w.segment : -1),
+        -1
+      ) + 1
+    const words = []
+    const captions = []
+    shown.forEach((window, i) => {
+      const at = Edl.edl.indexOf(window.key)
+      if (at < 0 || !said[i]) return
+      const clip = { ...window.key, start: Edl.startOf(at) }
+      const stretch = { ...said[i], start: window.start, end: window.end }
+      const added = saidOnto(stretch, clip, held, segment)
+      added.words.forEach(word => {
+        segment = Math.max(segment, word.segment + 1)
+        words.push(word)
+        held.words.push(word)
+      })
+      added.captions.forEach(caption => {
+        captions.push(caption)
+        held.captions.push(caption)
+      })
+    })
+    if (!words.length && !captions.length) return
+    if (words.length) {
+      Transcript.words = [...Transcript.words, ...words].sort(
+        (a, b) => Number(a.start) - Number(b.start) || Number(a.end) - Number(b.end)
+      )
+      Transcript.selection = null
+      Transcript.version++
+    }
+    if (captions.length) {
+      Captions.replace([...Captions.list, ...captions])
+      Captions.sort()
+    }
+    Transcript.changed = true
+    m.redraw()
   },
 
   /** A kept draft's captions and words come back with its timeline (Draft.js). */

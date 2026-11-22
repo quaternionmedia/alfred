@@ -460,6 +460,12 @@ accepted are now refused, and a production stack needs its own signing key.
   is the templates alone. The **Timeline tools** panel holds the tools, the
   zoom, the render button and the save state beside the timeline, which
   takes its own panel's whole width; on a phone the tools are a row over it.
+- **What an edit shows is said as its sources said it.** A clip trimmed
+  longer, slipped, rolled, slid or added shows material its project holds
+  no words for; the editor asks `POST /project/{id}/captions/said` what the
+  draft's sources, nearest first, and the owner's other projects that play
+  the file say there, and puts the words and captions where the clip plays
+  them, saved with the timeline.
 - **The timeline's lanes** (`docs/lanes.md`): the clips are one lane of
   several on one time axis, at one scale, in one box that scrolls sideways.
   A ruler above them; under them the transcript's words and the captions
