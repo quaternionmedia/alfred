@@ -58,6 +58,7 @@ editor, saved or not, as it carries the timeline.
 | `GET /project/{id}/captions` | `{captions, style, job}` |
 | `PUT /project/{id}/captions` | `{captions, style?, words?, timeline?}`: stores those and nothing else, in one write; answers as `GET` does |
 | `GET /project/{id}/captions/words` | `{words}`: the transcript, word by word |
+| `POST /project/{id}/captions/speakers` | `{named, speakers, words}`: the words nobody has named given the letter of the voice the audio engine hears over them ([Who spoke, and what about](editing-by-text.md#who-spoke-and-what-about)) |
 | `POST /project/{id}/captions/import` | `{format: "srt"\|"vtt"\|"json", text}` → `{captions, skipped}`; stores nothing |
 | `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine (`audio_engine_missing`) or the job could not be queued (`transcription_not_queued`); `409` while one runs; `422` when the saved timeline has nothing to hear |
 | `GET /media/{name}/audio` | the engine's analysis of a library file |
@@ -197,8 +198,8 @@ alfred asks the engine two things: a transcript of the timeline's sound, with
 each word timed, and an analysis of a library file. It asks through vox, whose
 `EngineContract` names the paths, parameters and keys an engine answers with,
 joe's by default, and whose `MediaEngine` uploads the sound and reads the
-answer. vox's README owns both: [the contract](https://github.com/quaternionmedia/vox/blob/e630cb007b63e5e67f95cf62a72528bdef39a4ac/README.md#pointing-vox-at-something-else)
-and [the media client](https://github.com/quaternionmedia/vox/blob/e630cb007b63e5e67f95cf62a72528bdef39a4ac/README.md#media-a-transcript-with-times-and-what-the-sound-measures).
+answer. vox's README owns both: [the contract](https://github.com/quaternionmedia/vox/blob/588c09be500e650d51919934f0546a1b14e26010/README.md#pointing-vox-at-something-else)
+and [the media client](https://github.com/quaternionmedia/vox/blob/588c09be500e650d51919934f0546a1b14e26010/README.md#media-a-transcript-with-times-and-what-the-sound-measures).
 In alfred, only `alfred/core/utils/audio_engine.py` imports vox, and nothing
 else spells an engine's path or key.
 

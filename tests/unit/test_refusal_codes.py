@@ -524,7 +524,7 @@ def cloud_link_unavailable(world):
 
 def unknown_feature(world):
     return world.sound_of('talk.wav', features='tempo,key'), (
-        f'key: not a feature; ask for any of {", ".join(audio_engine.FEATURES)}'
+        f'key: not a feature; ask for any of {", ".join(audio_engine.KNOWN_FEATURES)}'
     )
 
 

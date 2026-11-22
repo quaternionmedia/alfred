@@ -146,6 +146,21 @@ stand: a cut, an undo or a speaker named sends them again a moment later,
 unsaved, and the chips update. Without an engine the panel says so in a
 line, and the labels work all the same.
 
+The words nobody has named can be named by the sound: **Name speakers by
+the sound**, under the transcription's line, asks the audio engine who is
+speaking when (joe's `speakers` feature, through vox), and each word with
+no speaker takes the letter of the voice heard over it, A, B and on in the
+order the engine first heard them; the engine knows whose none of them is,
+so a person renames a paragraph's letter to a name as before, and a word
+a person has named keeps the name. The engine hears each file once per
+version and the answer is kept, so the first naming of a long recording
+takes the engine's time and a second is quick; a timeline of several files
+prefixes a letter with the file's number, since each file's voices are
+lettered on their own. The button waits while the transcript has unsaved
+changes, since the naming writes the stored words. Through the API it is
+`POST /project/{id}/captions/speakers`, answering how many words were
+named, how many each speaker now has, and the words.
+
 Through the API, `GET /project/{id}/conversation` reads the stored words and
 `POST /project/{id}/conversation` the words sent, each as lines, one per
 stretch of speech, `[m:ss] Speaker: words`, which is the shape the engine

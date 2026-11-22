@@ -225,6 +225,40 @@ const Words = () => {
 }
 
 /** What the language engine reads in the words: the speakers, the topics, the tangents. */
+/** The speakers named by the voices the audio engine hears, and what the last naming did. */
+const NameSpeakers = {
+  view: () => {
+    const blocker = Transcript.cannotName()
+    const last = Transcript.namedLast
+    const said = last
+      ? last.error
+        ? `Could not name the speakers: ${last.error}`
+        : `Named ${plural(last.named, 'word')} by the sound` +
+          (Object.keys(last.speakers).length
+            ? `: ${Object.entries(last.speakers)
+                .map(([who, n]) => `${who} ${n}`)
+                .join(', ')}.`
+            : '.')
+      : null
+    return m('p.captionsnote.naming#transcript-naming', [
+      m(
+        'button#transcript-name-speakers',
+        {
+          type: 'button',
+          disabled: Boolean(blocker),
+          title:
+            blocker ||
+            'Ask the audio engine who is speaking when, and letter the words nobody has named by the voice heard over them',
+          'aria-busy': Transcript.naming ? 'true' : 'false',
+          onclick: () => Transcript.nameSpeakers(),
+        },
+        Transcript.naming ? 'Naming the speakers…' : 'Name speakers by the sound'
+      ),
+      said ? m('span#transcript-named', { role: 'status' }, ` ${said}`) : null,
+    ])
+  },
+}
+
 const Reading = {
   view: () => {
     const state = Conversation.state
@@ -377,6 +411,7 @@ export const TranscriptPanel = {
 
       count
         ? [
+            m(NameSpeakers),
             m(
               'p.captionsnote#transcript-hint',
               Transcript.selection

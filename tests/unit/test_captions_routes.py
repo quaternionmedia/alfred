@@ -58,6 +58,112 @@ class FakeCaptionsStore:
         return True
 
 
+class TestNamingSpeakers:
+    """`POST /project/{id}/captions/speakers`: the engine's turns stood in for
+    at `measures.sound_of`."""
+
+    WORDS = [
+        {'start': 0.5, 'end': 0.9, 'text': 'Hello', 'segment': 0},
+        {'start': 1.0, 'end': 1.4, 'text': 'there.', 'segment': 0},
+        {'start': 2.5, 'end': 2.9, 'text': 'Hi.', 'segment': 1},
+        {'start': 3.5, 'end': 3.9, 'text': 'Mine', 'segment': 1, 'speaker': 'Alice'},
+    ]
+    TURNS = [
+        {'start': 0.0, 'end': 2.0, 'speaker': 'A'},
+        {'start': 2.0, 'end': 4.0, 'speaker': 'B'},
+    ]
+
+    @pytest.fixture
+    def hearing(self, monkeypatch, engine):
+        asked = []
+
+        def sound_of(name, features):
+            asked.append((name, tuple(features)))
+            return {'speakers': copy.deepcopy(self.TURNS)}
+
+        monkeypatch.setattr(routes.measures, 'sound_of', sound_of)
+        return asked
+
+    def test_the_unnamed_words_take_the_voices_heard_over_them(self, api, hearing):
+        """Mutation: name the words a person named too -- red."""
+        mine = project(words=copy.deepcopy(self.WORDS))
+        client, store, _ = api(OWNER, mine)
+        res = client.post(f'/project/{mine["_id"]}/captions/speakers')
+        assert res.status_code == 200, res.text
+        body = res.json()
+        assert body['named'] == 3
+        assert body['speakers'] == {'A': 2, 'B': 1, 'Alice': 1}
+        assert [w.get('speaker') for w in body['words']] == ['A', 'A', 'B', 'Alice']
+        assert [w.get('speaker') for w in store.writes[-1]['words']] == [
+            'A',
+            'A',
+            'B',
+            'Alice',
+        ]
+        # The engine is asked for speakers alone, once per file that sounds.
+        assert hearing == [('videos/talk.mp4', ('speakers',))]
+
+    def test_a_project_with_no_words_is_422(self, api, hearing):
+        mine = project(words=[])
+        client, store, _ = api(OWNER, mine)
+        res = client.post(f'/project/{mine["_id"]}/captions/speakers')
+        assert res.status_code == 422
+        assert res.json()['code'] == 'no_words'
+        assert store.writes == [] and hearing == []
+
+    def test_without_an_engine_it_is_503(self, api, monkeypatch):
+        monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', None)
+        mine = project(words=copy.deepcopy(self.WORDS))
+        client, store, _ = api(OWNER, mine)
+        res = client.post(f'/project/{mine["_id"]}/captions/speakers')
+        assert res.status_code == 503
+        assert res.json()['code'] == 'audio_engine_missing'
+        assert store.writes == []
+
+    def test_an_engine_without_the_feature_is_its_refusal(
+        self, api, monkeypatch, engine
+    ):
+        def refuses(name, features):
+            raise audio_engine.AudioEngineRefused('the audio engine would not take it')
+
+        monkeypatch.setattr(routes.measures, 'sound_of', refuses)
+        mine = project(words=copy.deepcopy(self.WORDS))
+        client, store, _ = api(OWNER, mine)
+        res = client.post(f'/project/{mine["_id"]}/captions/speakers')
+        assert res.status_code == 422
+        assert res.json()['code'] == 'audio_engine_refused'
+        assert store.writes == []
+
+    def test_a_timeline_with_nothing_that_sounds_is_422(self, api, hearing):
+        mine = project(
+            words=copy.deepcopy(self.WORDS),
+            edl={
+                'clips': [
+                    {
+                        'type': 'template',
+                        'name': 'makeColor',
+                        'duration': 2,
+                        'data': {'color': '#000000'},
+                    }
+                ]
+            },
+        )
+        client, store, _ = api(OWNER, mine)
+        res = client.post(f'/project/{mine["_id"]}/captions/speakers')
+        assert res.status_code == 422
+        assert res.json()['code'] == 'timeline_silent'
+        assert hearing == []
+
+    def test_somebody_else_s_project_is_404(self, api, hearing):
+        theirs = project(words=copy.deepcopy(self.WORDS))
+        client, store, _ = api(STRANGER, theirs)
+        assert (
+            client.post(f'/project/{theirs["_id"]}/captions/speakers').status_code
+            == 404
+        )
+        assert hearing == []
+
+
 class RefusingQueue:
     def __call__(self, **kwargs):
         raise ConnectionError('the broker is not answering')

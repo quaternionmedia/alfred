@@ -116,7 +116,7 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.UNKNOWN_OPERATION: Meaning(422, 'a step names no operation'),
     Code.RECIPE_REFUSED: Meaning(422, 'a recipe that cannot run'),
     Code.UNKNOWN_RECIPE: Meaning(404, 'no recipe of that name or id, or not yours'),
-    Code.NO_WORDS: Meaning(422, 'the project has no words to cut by'),
+    Code.NO_WORDS: Meaning(422, 'the project has no words'),
     Code.DRAFTS_RUNNING: Meaning(409, 'a run of recipes is under way'),
     Code.DRAFTS_NOT_QUEUED: Meaning(503, 'the broker would not take the run'),
     Code.NOT_A_DRAFT: Meaning(422, 'not one of this project\'s drafts'),

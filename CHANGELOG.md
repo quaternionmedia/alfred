@@ -96,6 +96,13 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **The speakers are named by the sound.** Name speakers by the sound, in
+  the Transcript panel, asks the audio engine who is speaking when and
+  gives each word nobody has named the letter of the voice heard over it;
+  a person renames a letter to a name as before. `POST
+  /project/{id}/captions/speakers` is the route, and `GET
+  /media/{name}/audio` takes `speakers` among its features. vox is pinned
+  at the commit whose contract carries the feature.
 - **Who spoke, and what about.** A transcript's words carry a `speaker`, set
   from the Transcript panel a paragraph at a time and saved with the words.
   With a language engine, looksatwords, at `ALFRED_LANGUAGE_ENGINE_URL`,
