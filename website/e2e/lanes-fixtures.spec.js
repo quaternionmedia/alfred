@@ -17,6 +17,16 @@ const fixtures = () => {
   return files.map(f => [f.replace(/\.json$/, ''), JSON.parse(fs.readFileSync(path.join(FIXTURES, f), 'utf8'))])
 }
 
+test('every fixture says what it is for, what is given and what comes out', () => {
+  for (const folder of ['sound']) {
+    for (const [name, fixture] of fixtures()) {
+      expect(typeof fixture.about, `${folder}/${name} has no about`).toBe('string')
+      expect(fixture.given, `${folder}/${name} has nothing given`).toBeTruthy()
+      expect(fixture.expect, `${folder}/${name} expects nothing`).toBeTruthy()
+    }
+  }
+})
+
 test.describe('the lane over the shared fixtures', () => {
   for (const [name, fixture] of fixtures()) {
     test(name, () => {
