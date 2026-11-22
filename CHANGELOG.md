@@ -460,6 +460,11 @@ accepted are now refused, and a production stack needs its own signing key.
   is the templates alone. The **Timeline tools** panel holds the tools, the
   zoom, the render button and the save state beside the timeline, which
   takes its own panel's whole width; on a phone the tools are a row over it.
+- **The timeline tools flow to fill their panel.** As many tools to a row
+  as the Timeline tools panel holds, rather than two: in the workspace's
+  column they wrap at its width, and docked as a strip over or under the
+  timeline the tools, the zoom with its bar and the render button lie in
+  one row.
 - **The timeline's lanes** (`docs/lanes.md`): the clips are one lane of
   several on one time axis, at one scale, in one box that scrolls sideways.
   A ruler above them; under them the transcript's words and the captions

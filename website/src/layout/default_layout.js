@@ -101,7 +101,7 @@ export const DEFAULT_LAYOUT = Object.freeze({
         size: '50%',
         content: [
           stack('56%', ['viewer']),
-          // The tools' column is two buttons wide; the timeline takes the rest.
+          // The tools' column wraps them at its width; the timeline takes the rest.
           row('44%', [stack('18%', ['tools']), stack('82%', ['timeline'])]),
         ],
       },

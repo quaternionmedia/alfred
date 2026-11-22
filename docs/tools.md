@@ -1,6 +1,6 @@
 # Editing tools
 
-The tools sit in a column beside the timeline on the Edit stage, with zoom below them. Choose one, then press or drag a clip. The tool chosen is drawn lit, and decides what a press on a clip does: move the playhead, split the clip, or begin a drag that changes it.
+The tools sit beside the timeline on the Edit stage, with zoom and the render button after them. They flow to fill their panel, as many to a row as it holds: in the workspace's column they wrap, and dragged by its tab to dock over or under the timeline as a strip, the panel lays the tools, the zoom and the render button in one row and gives the timeline the width. Choose one, then press or drag a clip. The tool chosen is drawn lit, and decides what a press on a clip does: move the playhead, split the clip, or begin a drag that changes it.
 
 Each works by mouse and by touch. The four drags that change a clip -- trim, slip, slide and dual roller -- keep following the pointer after it leaves the clip, and a drag the browser takes back (to scroll, say) leaves the clips as they were. A tool that cannot act where it was pressed says why, rather than doing nothing.
 
@@ -116,7 +116,7 @@ It moves a cut: the clip before the cut ends where the clip after it now starts.
 
 ## Zoom
 
-The magnifiers below the tools. Each press draws a second of the timeline narrower or wider; the edits are the same at any zoom, and the timeline scrolls once it is wider than its panel. In the workspace the two buttons zoom alone; in the phone layout, a bar between them can be dragged as well.
+The magnifiers below the tools. Each press draws a second of the timeline narrower or wider; the edits are the same at any zoom, and the timeline scrolls once it is wider than its panel. Where the panel is wide enough, as a strip in the workspace or in the phone layout, a bar between them can be dragged as well; in the workspace's column the two buttons zoom alone.
 
 - **Mouse:** click zoom out or zoom in.
 - **Touch:** tap them, or drag the bar on a phone.
