@@ -16,10 +16,10 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `not_found` | 404 | no such project or render, or not yours: alfred does not say which; or no such file in the media library, which a timeline playing remote media names | every project, captions and render route that takes an id; `GET /media/{name}/audio`, `GET /media/{name}/motion`, `GET /project/{id}/sound`, `GET /project/{id}/motion` |
 | `too_many_cues` | 422 | more cues than the 2000 a project carries | `PUT /project/{id}/cues` |
 | `caption_file_unreadable` | 422 | the subtitle file cannot be read; `detail` names the line | `POST /project/{id}/captions/import` |
-| `audio_engine_missing` | 503 | no audio engine alfred can ask: none is configured, or a setting or this build cannot reach one; `detail` is the reason `GET /health` gives as `audio_engine.detail`. Asked for an analysis, also an engine whose contract offers none | `POST /project/{id}/captions/transcribe`, `GET /media/{name}/audio` |
-| `timeline_empty` | 422 | the project has no saved timeline to transcribe, hear or measure | `POST /project/{id}/captions/transcribe`, `GET /project/{id}/sound`, `GET /project/{id}/motion` |
-| `timeline_unplayable` | 422 | the saved timeline cannot be played; `detail` names the clip | `POST /project/{id}/captions/transcribe` |
-| `timeline_silent` | 422 | nothing in the timeline can make a sound: no video or audio clips | `POST /project/{id}/captions/transcribe`, `GET /project/{id}/sound` |
+| `audio_engine_missing` | 503 | no audio engine alfred can ask: none is configured, or a setting or this build cannot reach one; `detail` is the reason `GET /health` gives as `audio_engine.detail`. Asked for an analysis, also an engine whose contract offers none | `POST /project/{id}/captions/transcribe`, `GET /media/{name}/audio`, `POST /project/{id}/captions/speakers` |
+| `timeline_empty` | 422 | the project has no saved timeline to transcribe, hear or measure | `POST /project/{id}/captions/transcribe`, `GET /project/{id}/sound`, `GET /project/{id}/motion`, `POST /project/{id}/captions/speakers` |
+| `timeline_unplayable` | 422 | the saved timeline cannot be played; `detail` names the clip | `POST /project/{id}/captions/transcribe`, `POST /project/{id}/captions/speakers` |
+| `timeline_silent` | 422 | nothing in the timeline can make a sound: no video or audio clips | `POST /project/{id}/captions/transcribe`, `GET /project/{id}/sound`, `POST /project/{id}/captions/speakers` |
 | `transcription_running` | 409 | a transcription of this project is under way; `GET /project/{id}/captions` follows it | `POST /project/{id}/captions/transcribe` |
 | `transcription_not_queued` | 503 | the broker would not take the job; the project's job is recorded `failed` with the reason | `POST /project/{id}/captions/transcribe` |
 | `encoder_options_refused` | 422 | `ffmpeg_params` or `bitrate` was sent: a render chooses a `quality` instead | `POST /render` |
@@ -41,7 +41,7 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `unknown_operation` | 422 | a recipe's step names an operation the recipes do not have; `detail` names the step and lists the operations | `POST /recipes`, `PUT /recipes/{id}` |
 | `recipe_refused` | 422 | a recipe that cannot run: a parameter out of its range or of the wrong kind, a field read that is not declared, a name that is not a word; `detail` names the step and the rule | `POST /recipes`, `PUT /recipes/{id}` |
 | `unknown_recipe` | 404 | no recipe of that name or id, or not yours: the built-in recipes are read by name, and `detail` lists them | `GET /recipes/{id}`, `PUT /recipes/{id}`, `POST /project/{id}/drafts` |
-| `no_words` | 422 | the project has no words to cut by, or to read: transcribe its timeline first | `POST /project/{id}/drafts`, `GET /project/{id}/conversation` |
+| `no_words` | 422 | the project has no words to cut by, to read, or to name: transcribe its timeline first | `POST /project/{id}/drafts`, `GET /project/{id}/conversation`, `POST /project/{id}/captions/speakers` |
 | `drafts_running` | 409 | recipes are running over this project; `GET /project/{id}/drafts` follows the job | `POST /project/{id}/drafts` |
 | `drafts_not_queued` | 503 | the broker would not take the run; the project's job is recorded `failed` with the reason | `POST /project/{id}/drafts` |
 | `not_a_draft` | 422 | an id named is not one of this project's drafts of yours, so nothing was dropped | `DELETE /project/{id}/drafts` |
@@ -49,8 +49,8 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `language_engine_failed` | 502 | the language engine could not be reached, broke, or answered something that is not an answer; asking again may work | `GET /project/{id}/conversation`, `POST /project/{id}/conversation` |
 | `no_picture` | 422 | the file is an image or an audio file, which has no moving picture to measure; or the saved timeline has no video clip | `GET /media/{name}/motion`, `GET /project/{id}/motion` |
 | `picture_unreadable` | 422 | ffmpeg could not read the file's picture; `detail` ends with what it said | `GET /media/{name}/motion`, `GET /project/{id}/motion` |
-| `audio_engine_refused` | 422 | the audio engine would not take the file -- no sound in it, a type it does not read, too large; `detail` is the engine's reason | `GET /media/{name}/audio` |
-| `audio_engine_failed` | 502 | the audio engine could not be reached, broke, or answered something that is not an answer; asking again may work | `GET /media/{name}/audio` |
+| `audio_engine_refused` | 422 | the audio engine would not take the file -- no sound in it, a type it does not read, too large; `detail` is the engine's reason | `GET /media/{name}/audio`, `POST /project/{id}/captions/speakers` |
+| `audio_engine_failed` | 502 | the audio engine could not be reached, broke, or answered something that is not an answer; asking again may work | `GET /media/{name}/audio`, `POST /project/{id}/captions/speakers` |
 | `previews_busy` | 503 | the server is drawing as many previews as it will (`ALFRED_PREVIEW_CONCURRENCY`), and none came free within `ALFRED_PREVIEW_WAIT` seconds; ask again after the seconds the `Retry-After` header gives | `POST /preview/`, `GET /preview/template/{name}` |
 | `mail_not_configured` | 503 | the server has no mail set up (`EMAIL_SERVER`, `EMAIL_USERNAME` and `EMAIL_SENDTO`), so nothing was made or queued | `POST /render/{id}/report`, `POST /invoice` |
 | `mail_not_queued` | 503 | the broker would not take the mail; nothing will be sent, and asking again later may queue it | `POST /render/{id}/report`, `POST /invoice` |

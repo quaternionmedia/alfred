@@ -37,6 +37,10 @@ from alfred import config
 # default: vox's names for them (its `vox.media.FEATURES`, the fields of its
 # `Analysis`), which its contract spells as the engine does.
 FEATURES = ('tempo', 'beats', 'onsets', 'loudness', 'silences', 'peaks')
+# Who is speaking when, told apart by the sound: asked for by name, never by
+# default, since it costs the engine a pass over the whole sound.
+SPEAKERS = 'speakers'
+KNOWN_FEATURES = FEATURES + (SPEAKERS,)
 
 # A failure's line, at most.
 REASON_LIMIT = 300

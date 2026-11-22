@@ -33,12 +33,12 @@ def wanted_features(features: Optional[str]):
     if not features:
         return audio_engine.FEATURES
     names = tuple(dict.fromkeys(f.strip() for f in features.split(',') if f.strip()))
-    unknown = [name for name in names if name not in audio_engine.FEATURES]
+    unknown = [name for name in names if name not in audio_engine.KNOWN_FEATURES]
     if unknown or not names:
         raise Refusal(
             Code.UNKNOWN_FEATURE,
             f'{", ".join(unknown) or "nothing"}: not a feature; ask for any of '
-            f'{", ".join(audio_engine.FEATURES)}',
+            f'{", ".join(audio_engine.KNOWN_FEATURES)}',
         )
     return names
 

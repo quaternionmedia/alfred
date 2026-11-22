@@ -1,6 +1,7 @@
 import m from 'mithril'
 import { auth } from '../Login'
 import { requestProblem } from '../Problem'
+import { Health } from '../Health'
 import { Edl } from '../Video'
 import { Player } from '../Player'
 import {
@@ -81,6 +82,9 @@ export const Transcript = {
   // What the last cut took, or gave back: `{words, seconds, undone?}`.
   last: null,
   busy: null,
+  // What the last naming by the sound did: `{named, speakers}`, or an error.
+  naming: false,
+  namedLast: null,
   // Bumped when the words change; paragraphs redraw on it.
   version: 0,
   // Cuts that can be undone, the last one last.
@@ -355,6 +359,43 @@ export const Transcript = {
   plainWords: () => Transcript.words.map(plain),
 
   /** Name who said the words from `from` to `to`, inclusive: every one carries it. Unsaved. */
+  /** Why the speakers cannot be named by the sound now, or '' when they can. */
+  cannotName: () => {
+    if (!Transcript.projectId || !Transcript.loaded) return 'Choose a project with a transcript first.'
+    if (!Transcript.words.length) return 'Transcribe the timeline first: the sound is matched to its words.'
+    if (Transcript.changed) return 'Save the transcript first: the naming writes the stored words.'
+    if (Transcript.naming) return 'Naming the speakers…'
+    const engine = Health.state && Health.state.audio_engine
+    if (engine && !engine.configured) return 'No audio engine is configured on the server (ALFRED_AUDIO_ENGINE_URL).'
+    return ''
+  },
+
+  /**
+   * Ask the server to name the words nobody has named by the voices the
+   * audio engine hears (`POST /project/{id}/captions/speakers`), then read
+   * the words back.
+   */
+  nameSpeakers: () => {
+    const projectId = Transcript.projectId
+    if (Transcript.cannotName()) return Promise.resolve()
+    Transcript.naming = true
+    Transcript.namedLast = null
+    return auth(`/project/${projectId}/captions/speakers`, { method: 'POST' })
+      .then(answer => {
+        if (Transcript.projectId !== projectId) return
+        Transcript.namedLast = { named: answer.named, speakers: answer.speakers || {} }
+        return Transcript.load(projectId)
+      })
+      .catch(err => {
+        if (Transcript.projectId !== projectId) return
+        Transcript.namedLast = { error: requestProblem(err) || 'no answer' }
+      })
+      .then(() => {
+        if (Transcript.projectId === projectId) Transcript.naming = false
+        m.redraw()
+      })
+  },
+
   setSpeaker: (from, to, name) => {
     const speaker = String(name || '').trim().slice(0, 60)
     const words = Transcript.words.map((word, i) => {

@@ -11,7 +11,7 @@ either.
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends
@@ -24,7 +24,7 @@ from alfred import config
 from ..errors import Code, Refusal
 from ..models.captions import RUNNING, Caption, CaptionsJob, CaptionStyle, Word
 from ..models.project import Project, as_sent
-from ..utils import audio_engine
+from ..utils import audio_engine, measures, sound, speakers
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
 from ..utils.captions import (
     CaptionFormatError,
@@ -105,6 +105,16 @@ class Transcribing(BaseModel):
 class WordsView(BaseModel):
     """`GET /project/{id}/captions/words`."""
 
+    words: List[Word]
+
+
+class Named(BaseModel):
+    """`POST /project/{id}/captions/speakers`."""
+
+    # How many words were given a speaker by this call.
+    named: int
+    # How many words each speaker now has, by name.
+    speakers: Dict[str, int]
     words: List[Word]
 
 
@@ -320,6 +330,84 @@ def timeline_to_transcribe(project: dict) -> Edl:
             'to transcribe.',
         )
     return edl
+
+
+@captionsAPI.post(
+    '/project/{item_id}/captions/speakers',
+    response_model=Named,
+    responses={
+        422: {'description': 'no words, or nothing in the saved timeline to hear'},
+        502: {'description': 'the audio engine failed, and why'},
+        503: {'description': 'no audio engine to ask, and why'},
+    },
+)
+async def nameSpeakers(
+    item_id: str,
+    user: User = Depends(current_active_user),
+    store: CaptionsStore = Depends(get_captions_store),
+):
+    """# Name the speakers by the sound
+
+    Asks the audio engine who is speaking when in the saved timeline's sound
+    (its `speakers` feature, through vox) and gives each word that carries
+    no speaker the letter of the voice heard over it, A, B and on, as the
+    engine letters the voices it tells apart; a word a person has named
+    keeps the name, and a word heard in no turn stays unnamed. Each file's
+    voices are lettered on their own, so a timeline of several files
+    prefixes a letter with the file's number. Answers how many words this
+    call named, how many words each speaker now has, and the words as
+    stored. The engine hears each file once per version and the answer is
+    kept, so the first call over a long recording takes the engine's time
+    and the next is quick.
+
+    422 for a project with no words (`no_words`), an empty or unplayable
+    timeline, or one with nothing that sounds (`timeline_empty`,
+    `timeline_unplayable`, `timeline_silent`); 503 without an engine
+    (`audio_engine_missing`); 422 when the engine will not take the sound or
+    has no `speakers` feature (`audio_engine_refused`); 502 when it fails
+    (`audio_engine_failed`); 404 for a file the library does not hold.
+    """
+    project = await owned(store, item_id, user)
+    held = await owned(store, item_id, user, words=True)
+    words = [word.model_dump() for word in words_of(held).words]
+    if not words:
+        raise Refusal(
+            Code.NO_WORDS,
+            'The project has no words to name: transcribe its timeline first.',
+        )
+    timeline_to_transcribe(project)
+    reason = audio_engine.problem()
+    if reason:
+        raise Refusal(Code.AUDIO_ENGINE_MISSING, reason)
+    at = sound.placed(project['edl']['clips'])
+    heard: dict = {}
+    for name in dict.fromkeys(
+        str(a['clip'].get('name')) for a in at if sound.sounding(a['clip'])
+    ):
+        try:
+            analysis = await run_in_threadpool(
+                measures.sound_of, name, (audio_engine.SPEAKERS,)
+            )
+        except measures.NotInLibrary as exc:
+            raise Refusal(Code.NOT_FOUND, str(exc)) from exc
+        except measures.NoSound:
+            heard[name] = None
+            continue
+        except audio_engine.NoAudioEngine as exc:
+            raise Refusal(Code.AUDIO_ENGINE_MISSING, str(exc)) from exc
+        except audio_engine.AudioEngineRefused as exc:
+            raise Refusal(Code.AUDIO_ENGINE_REFUSED, str(exc)) from exc
+        except audio_engine.AudioEngineError as exc:
+            raise Refusal(Code.AUDIO_ENGINE_FAILED, str(exc)) from exc
+        heard[name] = analysis.get(audio_engine.SPEAKERS) or []
+    turns = speakers.turns_on(at, heard.get)
+    renamed, count = speakers.named(words, turns)
+    await store.set(project['_id'], {'words': renamed})
+    return Named(
+        named=count,
+        speakers=speakers.counted(renamed),
+        words=[Word.model_validate(word) for word in renamed],
+    )
 
 
 @captionsAPI.post(
