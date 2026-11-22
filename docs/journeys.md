@@ -274,8 +274,9 @@ them, and says so when it does not.
 ## With an assistant { #with-an-assistant }
 
 qmcp, QM's tool server, lets an assistant list projects, transcribe and
-correct captions, render and deliver. Arranging the timeline is the
-editor's alone. [Let an assistant drive it](guide.md#let-an-assistant-drive-it)
+correct captions, render and deliver, and offer the stretches of a long
+recording that stand alone as excerpts, each rendered once you choose it.
+Arranging the timeline is the editor's alone. [Let an assistant drive it](guide.md#let-an-assistant-drive-it)
 says how to connect one.
 
 *Checked in qmcp, whose tests drive its tools against a stand-in alfred.*
