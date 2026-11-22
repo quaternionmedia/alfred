@@ -140,6 +140,12 @@ accepted are now refused, and a production stack needs its own signing key.
   than an engine takes in one upload is analysed all the same; an analysis is
   kept beside the library as well as in the api's memory.
 
+- **The recipes are measured.** A source remembers each draft dropped
+  from it as `drafts_dropped`, with what the draft carried and how long it
+  was, and `./al measured` reads every project and render and prints, per
+  source and recipe, what was made, held, dropped, edited and rendered with
+  the mean lengths, so a recipe's first values are held against what people
+  keep.
 - **The cut's arithmetic has a server twin.** `alfred/core/utils/cut.py` cuts
   ranges out of a timeline, moves captions and words after the timeline
   tools and takes a span as a timeline of its own, as `website/src/ClipWindow.js`
