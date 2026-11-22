@@ -145,10 +145,15 @@ OPERATIONS: Dict[str, Dict[str, Any]] = {
     'label': {
         'kind': 'score',
         'about': (
-            'a title from the topic the language engine has live over the candidate, '
-            'and a category from a labeller; each skipped where there is none'
+            'a title from the topic the language engine has live over the candidate; '
+            'a category among `categories` and, with `score`, how well it stands '
+            'alone, each from a labeller; each skipped where there is none'
         ),
-        'parameters': {'title': boolean(True), 'categories': text('')},
+        'parameters': {
+            'title': boolean(True),
+            'categories': text(''),
+            'score': boolean(False),
+        },
     },
     # --- filter ---
     'top': {

@@ -11,7 +11,14 @@ from bson import ObjectId
 
 from alfred import config
 from alfred.core.models.drafts import CUE_SOURCE
-from alfred.core.utils import analyses, drafts, language_engine, measures, tasks
+from alfred.core.utils import (
+    analyses,
+    drafts,
+    labeller,
+    language_engine,
+    measures,
+    tasks,
+)
 from alfred.core.utils.measures import Measures
 from tests.unit.test_sculpt import TOPICS, make_captions, make_words, series
 
@@ -77,6 +84,7 @@ def measured(monkeypatch, tmp_path):
     """The timeline's measures, as the worker would read them: a spike at 40 s;
     no language engine, and a library of its own for what is kept beside it."""
     monkeypatch.setattr(config, 'LANGUAGE_ENGINE_URL', None)
+    monkeypatch.setattr(config, 'LABELLER_URL', None)
     monkeypatch.setattr(config, 'VIDEO_DIR', str(tmp_path))
 
     def timeline_measures(clips):
@@ -103,6 +111,44 @@ def engine(monkeypatch):
     monkeypatch.setattr(config, 'LANGUAGE_ENGINE_URL', 'http://words.test:8000')
     monkeypatch.setattr(language_engine, 'read', read)
     return asked
+
+
+@pytest.fixture
+def sorter(monkeypatch):
+    """A labeller that sorts everything as the last category and scores it
+    0.7, counting what it is asked."""
+    asked = []
+
+    class Sorting:
+        def category(self, text, categories):
+            asked.append(('category', tuple(categories)))
+            return categories[-1]
+
+        def alone(self, text):
+            asked.append(('alone',))
+            return 0.7
+
+    monkeypatch.setattr(config, 'LABELLER_URL', 'http://labels.test:11434/v1')
+    monkeypatch.setattr(config, 'LABELLER_MODEL', 'small-model')
+    monkeypatch.setattr(labeller, 'Labeller', Sorting)
+    return asked
+
+
+def sorting_recipe(owner='owner@example.com'):
+    """A stored recipe whose `label` step asks a category and a score."""
+    return {
+        '_id': ObjectId(),
+        'owner': owner,
+        'name': 'sorted',
+        'label': 'Sorted',
+        'description': '',
+        'fields': [],
+        'steps': [
+            {'op': 'chapters', 'pause': 4},
+            {'op': 'label', 'categories': 'rules, play', 'score': True},
+            {'op': 'compose', 'how': 'each'},
+        ],
+    }
 
 
 def untitled(recipe):
@@ -190,6 +236,43 @@ class TestTitles:
             'chapters: label: nothing was titled: the language engine at '
             'words.test:8000: it answered 500'
         ) in notes
+
+
+class TestLabels:
+    def test_drafts_carry_the_category_and_the_score_the_labeller_gave(
+        self, measured, sorter
+    ):
+        mine, recipe = source(), sorting_recipe()
+        projects, recipes = FakeCollection(mine), FakeCollection(recipe)
+        made, notes = drafts.make_drafts(
+            mine, [{'recipe': str(recipe['_id'])}], projects, recipes
+        )
+        assert made == 2
+        assert [d['source']['category'] for d in projects.inserted] == ['play', 'play']
+        assert [d['source']['scores']['label'] for d in projects.inserted] == [0.7, 0.7]
+        assert sorter == [('category', ('rules', 'play')), ('alone',)] * 2
+        assert [n for n in notes if 'categorised' in n] == []
+
+    def test_without_a_labeller_the_job_says_why(self, measured):
+        mine, recipe = source(), sorting_recipe()
+        projects, recipes = FakeCollection(mine), FakeCollection(recipe)
+        made, notes = drafts.make_drafts(
+            mine, [{'recipe': str(recipe['_id'])}], projects, recipes
+        )
+        assert made == 2
+        assert [d['source']['category'] for d in projects.inserted] == ['', '']
+        [note] = [n for n in notes if 'categorised' in n]
+        assert note.startswith('sorted: label: nothing was categorised or scored: ')
+        assert 'ALFRED_LABELLER_URL' in note
+
+    def test_a_recipe_asking_no_category_asks_the_labeller_nothing(
+        self, measured, sorter
+    ):
+        mine = source()
+        drafts.make_drafts(
+            mine, [{'recipe': 'chapters'}], FakeCollection(mine), FakeCollection()
+        )
+        assert sorter == []
 
 
 class TestMakingDrafts:

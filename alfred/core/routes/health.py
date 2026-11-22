@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
-from ..utils import audio_engine, language_engine, tasks
+from ..utils import audio_engine, labeller, language_engine, tasks
 from ..utils.concurrency import previews
 from ..utils.db import get_db
 from .users import current_active_user
@@ -67,6 +67,14 @@ class LanguageEngineHealth(BaseModel):
     detail: Optional[str] = None
 
 
+class LabellerHealth(BaseModel):
+    # Whether ALFRED_LABELLER_URL names a labeller at all.
+    configured: bool
+    # Whether it answered and serves the model named: there is one to label with.
+    ok: bool
+    detail: Optional[str] = None
+
+
 class Health(BaseModel):
     """`GET /health` (contracts M3 and K2)."""
 
@@ -77,6 +85,7 @@ class Health(BaseModel):
     previews: PreviewHealth
     audio_engine: AudioEngineHealth
     language_engine: LanguageEngineHealth
+    labeller: LabellerHealth
 
 
 @dataclass(frozen=True)
@@ -235,6 +244,42 @@ def get_language_engine_state() -> CachedRenderer:
     return _language_engine
 
 
+def check_labeller() -> labeller.LabellerStatus:
+    """Ask the labeller. Blocking: one request, bounded by its own timeout."""
+    try:
+        return labeller.status()
+    except Exception as exc:  # noqa: BLE001 - a labeller that breaks is "not ok"
+        return labeller.LabellerStatus(
+            configured=bool(labeller.labeller_url()), ok=False, detail=str(exc)
+        )
+
+
+def labeller_unanswered() -> labeller.LabellerStatus:
+    return labeller.LabellerStatus(
+        configured=bool(labeller.labeller_url()),
+        ok=False,
+        detail=f'the labeller at {labeller.describe()} did not answer',
+    )
+
+
+def cached_labeller(check=check_labeller, ttl=AUDIO_ENGINE_CACHE_SECONDS):
+    """The labeller's status, kept as the engines' are."""
+    return CachedRenderer(
+        check=check,
+        ttl=ttl,
+        timeout=AUDIO_ENGINE_TIMEOUT,
+        unanswered=labeller_unanswered,
+    )
+
+
+_labeller = cached_labeller()
+
+
+def get_labeller_state() -> CachedRenderer:
+    """A dependency, so a test can answer for the labeller."""
+    return _labeller
+
+
 async def ping_database() -> bool:
     try:
         await asyncio.wait_for(get_db().command('ping'), DB_TIMEOUT)
@@ -271,6 +316,7 @@ async def health(
     database=Depends(get_database_check),
     sound: CachedRenderer = Depends(get_audio_engine_state),
     words: CachedRenderer = Depends(get_language_engine_state),
+    labels: CachedRenderer = Depends(get_labeller_state),
 ):
     """# Health
 
@@ -285,7 +331,10 @@ async def health(
     the reason in `detail` when it is not. Transcribing captions needs both,
     and a renderer to do the mixing. `language_engine` says the same of the
     engine that reads a transcript (ALFRED_LANGUAGE_ENGINE_URL): who spoke,
-    and which topics were live.
+    and which topics were live. `labeller` says the same of the chat model a
+    recipe's `label` step asks for a category and a score
+    (ALFRED_LABELLER_URL), `ok` only when it also serves the model
+    ALFRED_LABELLER_MODEL names.
 
     `previews` says how many previews are being drawn (`running`), how many
     are waiting for one of those to finish (`waiting`), and how many may be
@@ -297,8 +346,8 @@ async def health(
     the answer between is the last one. A ping takes about a second, so the
     first request after that pays for it.
     """
-    db_ok, state, engine, reader = await asyncio.gather(
-        database(), renderer.get(), sound.get(), words.get()
+    db_ok, state, engine, reader, sorter = await asyncio.gather(
+        database(), renderer.get(), sound.get(), words.get(), labels.get()
     )
     return Health(
         api='ok',
@@ -311,5 +360,8 @@ async def health(
         ),
         language_engine=LanguageEngineHealth(
             configured=reader.configured, ok=reader.ok, detail=reader.detail
+        ),
+        labeller=LabellerHealth(
+            configured=sorter.configured, ok=sorter.ok, detail=sorter.detail
         ),
     )

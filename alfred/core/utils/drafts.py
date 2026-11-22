@@ -14,7 +14,9 @@ over it; a file that cannot be measured is a note, and the recipes run over
 what there is. Where a recipe has a `label` step, the language engine reads
 the source's words once per run (`utils.language_engine`), kept the same way
 by what was read, and each draft is named by the topic live over it; without
-an engine the draft keeps its recipe's name and the job says why.
+an engine the draft keeps its recipe's name and the job says why. Where the
+step asks a category or a score, the labeller (`utils.labeller`) is handed to
+the run and asked a candidate at a time; without one the job says why.
 """
 
 from datetime import datetime, timezone
@@ -25,7 +27,7 @@ from bson import ObjectId
 from ..models.cues import Cue, checked_cues
 from ..models.drafts import CUE_KIND, CUE_SOURCE
 from ..models.recipes import RecipeError
-from . import analyses, language_engine, measures, sculpt
+from . import analyses, labeller, language_engine, measures, sculpt
 from .recipes_builtin import BY_NAME
 
 # Where recipes are kept: beanie names the collection after the class.
@@ -86,6 +88,7 @@ def draft_document(
             'values': dict(values or {}),
             'spans': draft.spans,
             'scores': draft.scores,
+            'category': draft.category,
             'made_at': made_at,
         },
     }
@@ -148,6 +151,27 @@ def wants_titles(recipes: Sequence[dict]) -> bool:
     )
 
 
+def wants_labels(recipes: Sequence[dict]) -> bool:
+    """Whether a `label` step asks a labeller anything: categories, or a score."""
+    return any(
+        step.get('op') == 'label'
+        and bool(str(step.get('categories') or '').strip() or step.get('score'))
+        for recipe in recipes
+        for step in recipe.get('steps') or []
+    )
+
+
+def labeller_for(recipes: Sequence[dict]):
+    """The labeller the recipes' `label` steps ask, where one asks a category
+    or a score and one is configured; else None, and why none."""
+    if not wants_labels(recipes):
+        return None, None
+    reason = labeller.problem()
+    if reason:
+        return None, reason
+    return labeller.Labeller(), None
+
+
 def make_drafts(
     source: dict, requests: Sequence[dict], projects, recipes
 ) -> Tuple[int, List[str]]:
@@ -169,6 +193,7 @@ def make_drafts(
         if wants_titles([recipe for recipe, _ in chosen])
         else ([], None)
     )
+    asked, unlabelled = labeller_for([recipe for recipe, _ in chosen])
     reading = sculpt.Source(
         clips=clips,
         captions=source.get('captions') or [],
@@ -178,13 +203,18 @@ def make_drafts(
         silences=measured.silences,
         topics=topics,
         unread=unread,
+        unlabelled=unlabelled,
     )
     made_at = datetime.now(timezone.utc)
     documents = []
     for recipe, values in chosen:
         try:
             run = sculpt.run(
-                recipe['steps'], values, recipe.get('fields') or [], reading
+                recipe['steps'],
+                values,
+                recipe.get('fields') or [],
+                reading,
+                labeller=asked,
             )
         except RecipeError as exc:
             raise RecipeError(f'{recipe["name"]}: {exc}') from exc

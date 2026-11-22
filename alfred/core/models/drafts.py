@@ -29,6 +29,8 @@ class DraftSource(BaseModel):
     # The spans of the source the draft took, each `[start, end]`.
     spans: List[List[float]] = []
     scores: dict = {}
+    # The category a labeller sorted it into, where asked; empty where not.
+    category: str = ''
     made_at: Optional[datetime] = None
 
 

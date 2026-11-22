@@ -104,6 +104,16 @@ vox's README the contract itself.
 [Editing by text](editing-by-text.md#who-spoke-and-what-about) says what
 alfred asks the engine.
 
+### The labeller
+
+| Setting | Default | What it does |
+|---|---|---|
+| `ALFRED_LABELLER_URL` | unset: no labeller | The base of an OpenAI-style chat route (`POST <url>/chat/completions`, `GET <url>/models`) that a recipe's `label` step asks which of its categories a draft belongs to, and how well it stands alone: any server speaking that route, a local model server among them. Unset, a draft has no category and no such score, and the run's notes say why. |
+| `ALFRED_LABELLER_MODEL` | unset: no labeller | The model the route serves, as its `/models` lists it. alfred names no model; without one there is no labeller. |
+| `ALFRED_LABELLER_TIMEOUT` | `120` | Seconds one question to the labeller may take: a few tokens, from a model that may still be loading. |
+
+[Drafts](drafts.md#the-labeller) says what is asked.
+
 ### The dev stack, on the host
 
 These are read by compose and `./al`, not by alfred.

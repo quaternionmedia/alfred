@@ -259,6 +259,17 @@ LANGUAGE_ENGINE_TIMEOUT = resolve_seconds(
     environ, 'ALFRED_LANGUAGE_ENGINE_TIMEOUT', 120
 )
 
+# The labeller: the base of an OpenAI-style chat route a recipe's `label` step
+# asks for a category and a score, reached only through `utils.labeller`, and
+# the model it serves. alfred names no model. Unset, the step gives neither
+# and the job says why. See docs/drafts.md.
+LABELLER_URL = (environ.get('ALFRED_LABELLER_URL') or '').strip() or None
+LABELLER_MODEL = (environ.get('ALFRED_LABELLER_MODEL') or '').strip() or None
+
+# Seconds one question to the labeller may take: a few tokens, from a model
+# that may still be loading.
+LABELLER_TIMEOUT = resolve_seconds(environ, 'ALFRED_LABELLER_TIMEOUT', 120)
+
 # A field of vox's EngineContract per variable. `none` is None (not offered),
 # empty is unset, and a name that is no field is reported by /health.
 AUDIO_ENGINE_CONTRACT_PREFIX = 'ALFRED_AUDIO_ENGINE_CONTRACT_'

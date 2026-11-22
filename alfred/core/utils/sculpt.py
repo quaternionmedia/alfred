@@ -17,15 +17,17 @@ arithmetic of each is here, in a function named for it.
 
 Nothing here reaches the database, an engine or a model: what the language
 engine read over the source, its topics over time, arrives in the `Source`,
-and `label` titles each candidate by the topic live over it; a labeller, for
-a category, is a later step, and `label` leaves a note where there is none.
+and `label` titles each candidate by the topic live over it; a labeller,
+which sorts a candidate into a recipe's categories and scores how well it
+stands alone, is handed to `run` as an object with `category` and `alone`
+(`utils.labeller`), and `label` leaves a note where there is none.
 """
 
 import math
 import re
 from bisect import bisect_left
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Protocol, Sequence
 
 from ..models.recipes import OPERATIONS, RecipeError, coerce, is_reference
 from .cut import cut_ranges, timeline_end, to_ms
@@ -54,6 +56,8 @@ class Source:
     topics: list = field(default_factory=list)
     # Why the engine read nothing, where it did not; None where it did.
     unread: Optional[str] = None
+    # Why no labeller can be asked, where none can; None where one can.
+    unlabelled: Optional[str] = None
 
     @property
     def duration(self) -> float:
@@ -73,6 +77,8 @@ class Candidate:
     scores: Dict[str, float] = field(default_factory=dict)
     chapter: Optional[int] = None
     title: str = ''
+    # The one of a recipe's categories a labeller sorted it into.
+    category: str = ''
 
     @property
     def length(self) -> float:
@@ -100,6 +106,8 @@ class Draft:
     captions_drawn: bool = False
     # What it is about, where a `label` step found a topic live over it.
     title: str = ''
+    # The category a labeller sorted it into, where a `label` step asked one.
+    category: str = ''
 
 
 @dataclass
@@ -109,6 +117,14 @@ class Run:
     notes: List[str]
     # How many candidates the steps left.
     candidates: int
+
+
+class Labeller(Protocol):
+    """What a `label` step asks of a labeller, one request a question."""
+
+    def category(self, text: str, categories: Sequence[str]) -> str: ...
+
+    def alone(self, text: str) -> Optional[float]: ...
 
 
 # --- reading the words -----------------------------------------------------------
@@ -147,6 +163,11 @@ def timecode(seconds: float) -> str:
 def words_in(words: Sequence[dict], start: float, end: float) -> List[dict]:
     """The words whose middle lies in `[start, end]`; `words` are `spoken`."""
     return [w for w in words if start <= (w['start'] + w['end']) / 2 <= end]
+
+
+def said(words: Sequence[dict], start: float, end: float) -> str:
+    """What is said in `[start, end]`: the words' text, in order."""
+    return ' '.join(w['text'] for w in words_in(words, start, end))
 
 
 # --- segment -------------------------------------------------------------------
@@ -519,6 +540,34 @@ def titles(candidates: Sequence[Candidate], topics: Sequence[dict]) -> None:
             c.title = found
 
 
+def label_with(
+    labeller: Labeller,
+    candidates: Sequence[Candidate],
+    words: Sequence[dict],
+    categories: Sequence[str],
+    score: bool,
+) -> Optional[str]:
+    """Each candidate in which something is said sorted into one of
+    `categories`, where any are named, and scored under `label` for how well
+    it stands alone, where `score`: a question a candidate at a time. The
+    first failure ends the asking and is the note returned, so a labeller
+    that is away is asked once; None where every question was answered."""
+    for c in candidates:
+        text = said(words, c.start, c.end)
+        if not text:
+            continue
+        try:
+            if categories:
+                c.category = labeller.category(text, categories)
+            if score:
+                found = labeller.alone(text)
+                if found is not None:
+                    c.scores['label'] = found
+        except Exception as exc:  # noqa: BLE001 - whatever a model's client raises
+            return f'label: the labeller failed, so not every candidate was labelled: {exc}'
+    return None
+
+
 def _describe(candidate: Candidate, weights: Dict[str, float]) -> str:
     where = f'{timecode(candidate.start)}-{timecode(candidate.end)} of the source'
     parts = [where]
@@ -526,6 +575,8 @@ def _describe(candidate: Candidate, weights: Dict[str, float]) -> str:
         parts.append(f'chapter {candidate.chapter}')
     if candidate.title:
         parts.append(candidate.title)
+    if candidate.category:
+        parts.append(f'category {candidate.category}')
     if candidate.scores:
         parts.append(
             'scored '
@@ -614,9 +665,15 @@ def resolve(step: dict, values: dict, fields: Sequence[dict]) -> dict:
 
 
 def apply(
-    step_name: str, p: dict, state: State, source: Source, words: list, captions: list
+    step_name: str,
+    p: dict,
+    state: State,
+    source: Source,
+    words: list,
+    captions: list,
+    labeller: Optional[Labeller] = None,
 ):
-    """One step over the state."""
+    """One step over the state; `labeller` is what a `label` step asks."""
     if step_name == 'windows':
         state.candidates = windows(words, p['shortest'], p['longest'], p['every'])
     elif step_name == 'chapters':
@@ -652,10 +709,24 @@ def apply(
                     'label: nothing was titled: '
                     + (source.unread or 'no topic was read over the source')
                 )
-        if p['categories']:
-            state.notes.append(
-                'label: no labeller is configured, so no category was given'
+        categories = [c.strip() for c in str(p['categories']).split(',') if c.strip()]
+        if categories or p['score']:
+            what = (
+                'categorised or scored'
+                if categories and p['score']
+                else 'categorised' if categories else 'scored'
             )
+            if labeller is None:
+                state.notes.append(
+                    f'label: nothing was {what}: '
+                    + (source.unlabelled or 'no labeller is configured')
+                )
+            else:
+                note = label_with(
+                    labeller, state.candidates, words, categories, p['score']
+                )
+                if note:
+                    state.notes.append(note)
     elif step_name == 'top':
         count = p['count']
         if p['per_hour'] > 0:
@@ -726,6 +797,7 @@ def compose(state: State, source: Source) -> List[Draft]:
         )
         if draft:
             draft.title = c.title
+            draft.category = c.category
             drafts.append(draft)
     return drafts
 
@@ -735,14 +807,16 @@ def run(
     values: Optional[dict],
     fields: Sequence[dict],
     source: Source,
+    labeller: Optional[Labeller] = None,
 ) -> Run:
-    """The recipe's `steps`, with `values` for its `fields`, over `source`."""
+    """The recipe's `steps`, with `values` for its `fields`, over `source`;
+    `labeller`, where one is configured, for what a `label` step asks."""
     state = State()
     words = spoken(source.words)
     captions = spoken(source.captions)
     for step in steps:
         p = resolve(step, values or {}, fields)
-        apply(step['op'], p, state, source, words, captions)
+        apply(step['op'], p, state, source, words, captions, labeller)
     if not state.candidates and state.how != 'whole':
         state.notes.append('no stretch of the source was found to keep')
     drafts = compose(state, source)

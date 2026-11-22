@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from alfred import config
 from alfred.core.routes import health
-from alfred.core.utils import audio_engine, language_engine, tasks
+from alfred.core.utils import audio_engine, labeller, language_engine, tasks
 from alfred.main import app
 from tests.unit.render_harness import OWNER, anonymous, as_user
 
@@ -45,6 +45,14 @@ class FixedLanguageEngine:
         return self.state
 
 
+class FixedLabeller:
+    def __init__(self, configured=False, ok=False, detail='none configured'):
+        self.state = labeller.LabellerStatus(configured, ok, detail)
+
+    async def get(self):
+        return self.state
+
+
 def database(up):
     async def check():
         return up
@@ -61,6 +69,7 @@ def client():
         health.get_database_check,
         health.get_audio_engine_state,
         health.get_language_engine_state,
+        health.get_labeller_state,
     ]:
         app.dependency_overrides.pop(dependency, None)
 
@@ -76,6 +85,7 @@ def answer(renderer=None, db_up=True, engine=None):
     app.dependency_overrides[health.get_language_engine_state] = lambda: (
         FixedLanguageEngine()
     )
+    app.dependency_overrides[health.get_labeller_state] = lambda: FixedLabeller()
 
 
 class TestHealthz:
@@ -105,6 +115,11 @@ class TestHealth:
                 'detail': 'none configured',
             },
             'language_engine': {
+                'configured': False,
+                'ok': False,
+                'detail': 'none configured',
+            },
+            'labeller': {
                 'configured': False,
                 'ok': False,
                 'detail': 'none configured',
