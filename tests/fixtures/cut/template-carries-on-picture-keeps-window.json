@@ -1,0 +1,85 @@
+{
+  "about": "a template after a cut carries on its animation; a picture keeps its window",
+  "given": {
+    "clips": [
+      {
+        "type": "template",
+        "name": "title",
+        "start": 0,
+        "duration": 4,
+        "data": {
+          "text": "Hi"
+        }
+      },
+      {
+        "type": "image",
+        "name": "videos/still.png",
+        "start": 4,
+        "duration": 4
+      }
+    ]
+  },
+  "ranges": [
+    [
+      1,
+      2
+    ],
+    [
+      5,
+      6
+    ]
+  ],
+  "expect": {
+    "clips": [
+      {
+        "type": "template",
+        "name": "title",
+        "start": 0,
+        "duration": 1,
+        "data": {
+          "text": "Hi"
+        },
+        "fadeOut": 0
+      },
+      {
+        "type": "template",
+        "name": "title",
+        "start": 1,
+        "duration": 2,
+        "data": {
+          "text": "Hi"
+        },
+        "inpoint": 2,
+        "outpoint": 4,
+        "fadeIn": 0
+      },
+      {
+        "type": "image",
+        "name": "videos/still.png",
+        "start": 3,
+        "duration": 1,
+        "fadeOut": 0
+      },
+      {
+        "type": "image",
+        "name": "videos/still.png",
+        "start": 4,
+        "duration": 2,
+        "fadeIn": 0
+      }
+    ],
+    "captions": [],
+    "words": [],
+    "removed": 2,
+    "spans": [
+      [
+        1,
+        2
+      ],
+      [
+        5,
+        6
+      ]
+    ]
+  }
+}

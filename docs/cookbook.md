@@ -39,6 +39,7 @@ it loops over.
 | `auth.spec.js` | API-level auth. | 8 |
 | `autosave.spec.js` | The timeline saves itself. | 3 |
 | `captions.spec.js` | Captions: typed, imported, transcribed, and drawn into renders. | 15 |
+| `cut-fixtures.spec.js` | `cutRanges`, `followClips` and an excerpt (src/ClipWindow.js) over the fixtures the server's twin reads too (tests/fixtures/, tests/unit/test_cut.py). | 1 |
 | `cut-ranges.spec.js` | `cutRanges` (src/ClipWindow.js), the cut behind editing by text, at its edges. | 20 |
 | `deliver.spec.js` | Following a render from queued to delivered. | 12 |
 | `demo.spec.js` | Getting started from nothing. | 12 |

@@ -59,7 +59,11 @@ and those that overlap or meet are merged.
 
 The cut itself is one function, `cutRanges` in `website/src/ClipWindow.js`:
 arithmetic on the timeline, which is the project's own state. It does no
-media work; otto renders the result as it renders any timeline.
+media work; otto renders the result as it renders any timeline. The server
+holds the same arithmetic in Python, `alfred/core/utils/cut.py`, for what
+it cuts without a browser; the fixtures under `tests/fixtures/` are cases
+both implementations run, so a change to either that moves an answer fails
+its own suite.
 
 ## Undo
 

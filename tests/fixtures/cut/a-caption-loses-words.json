@@ -1,0 +1,184 @@
+{
+  "about": "a caption that loses words says the ones left; one that loses every word goes; one whose words all stay keeps its corrections",
+  "given": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0,
+        "duration": 10,
+        "inpoint": 0,
+        "outpoint": 10
+      }
+    ],
+    "captions": [
+      {
+        "start": 0,
+        "end": 3,
+        "text": "one two three, corrected"
+      },
+      {
+        "start": 3,
+        "end": 5,
+        "text": "four five"
+      },
+      {
+        "start": 5,
+        "end": 8,
+        "text": "six seven eight"
+      }
+    ],
+    "words": [
+      {
+        "start": 0.2,
+        "end": 0.8,
+        "text": "one"
+      },
+      {
+        "start": 1,
+        "end": 1.8,
+        "text": "two"
+      },
+      {
+        "start": 2,
+        "end": 2.8,
+        "text": "three"
+      },
+      {
+        "start": 3.2,
+        "end": 3.8,
+        "text": "four"
+      },
+      {
+        "start": 4,
+        "end": 4.8,
+        "text": "five"
+      },
+      {
+        "start": 5.2,
+        "end": 5.8,
+        "text": "six"
+      },
+      {
+        "start": 6,
+        "end": 6.8,
+        "text": "seven"
+      },
+      {
+        "start": 7,
+        "end": 7.8,
+        "text": "eight"
+      }
+    ]
+  },
+  "ranges": [
+    [
+      0.9,
+      1.9
+    ],
+    [
+      3,
+      5
+    ],
+    [
+      7.5,
+      8
+    ]
+  ],
+  "expect": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0,
+        "duration": 0.9,
+        "inpoint": 0,
+        "outpoint": 0.9,
+        "fadeOut": 0
+      },
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0.9,
+        "duration": 1.1,
+        "inpoint": 1.9,
+        "outpoint": 3,
+        "fadeIn": 0,
+        "fadeOut": 0
+      },
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 2,
+        "duration": 2.5,
+        "inpoint": 5,
+        "outpoint": 7.5,
+        "fadeIn": 0,
+        "fadeOut": 0
+      },
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 4.5,
+        "duration": 2,
+        "inpoint": 8,
+        "outpoint": 10,
+        "fadeIn": 0
+      }
+    ],
+    "captions": [
+      {
+        "start": 0,
+        "end": 2,
+        "text": "one three"
+      },
+      {
+        "start": 2,
+        "end": 4.5,
+        "text": "six seven eight"
+      }
+    ],
+    "words": [
+      {
+        "start": 0.2,
+        "end": 0.8,
+        "text": "one"
+      },
+      {
+        "start": 1,
+        "end": 1.8,
+        "text": "three"
+      },
+      {
+        "start": 2.2,
+        "end": 2.8,
+        "text": "six"
+      },
+      {
+        "start": 3,
+        "end": 3.8,
+        "text": "seven"
+      },
+      {
+        "start": 4,
+        "end": 4.5,
+        "text": "eight"
+      }
+    ],
+    "removed": 3.5,
+    "spans": [
+      [
+        0.9,
+        1.9
+      ],
+      [
+        3,
+        5
+      ],
+      [
+        7.5,
+        8
+      ]
+    ]
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "about": "an empty timeline has nothing to cut",
+  "given": {
+    "clips": [],
+    "captions": [
+      {
+        "start": 0.5,
+        "end": 1.5,
+        "text": "Before"
+      },
+      {
+        "start": 2.5,
+        "end": 3.5,
+        "text": "Across the cut"
+      },
+      {
+        "start": 3.2,
+        "end": 4.8,
+        "text": "Inside it"
+      },
+      {
+        "start": 6,
+        "end": 7,
+        "text": "After"
+      }
+    ],
+    "words": [
+      {
+        "start": 0.5,
+        "end": 1,
+        "text": "Hello",
+        "segment": 0
+      },
+      {
+        "start": 1.2,
+        "end": 1.8,
+        "text": "there",
+        "segment": 0
+      },
+      {
+        "start": 2.6,
+        "end": 3,
+        "text": "Across",
+        "segment": 0
+      },
+      {
+        "start": 3.1,
+        "end": 3.4,
+        "text": "the",
+        "segment": 0
+      },
+      {
+        "start": 3.4,
+        "end": 3.5,
+        "text": "cut",
+        "segment": 0
+      },
+      {
+        "start": 4,
+        "end": 4,
+        "text": "(moment)",
+        "segment": 0
+      },
+      {
+        "start": 6,
+        "end": 6.5,
+        "text": "After",
+        "segment": 1
+      }
+    ]
+  },
+  "ranges": [
+    [
+      1,
+      2
+    ]
+  ],
+  "expect": {
+    "clips": [],
+    "captions": [
+      {
+        "start": 0.5,
+        "end": 1.5,
+        "text": "Before"
+      },
+      {
+        "start": 2.5,
+        "end": 3.5,
+        "text": "Across the cut"
+      },
+      {
+        "start": 3.2,
+        "end": 4.8,
+        "text": "Inside it"
+      },
+      {
+        "start": 6,
+        "end": 7,
+        "text": "After"
+      }
+    ],
+    "words": [
+      {
+        "start": 0.5,
+        "end": 1,
+        "text": "Hello",
+        "segment": 0
+      },
+      {
+        "start": 1.2,
+        "end": 1.8,
+        "text": "there",
+        "segment": 0
+      },
+      {
+        "start": 2.6,
+        "end": 3,
+        "text": "Across",
+        "segment": 0
+      },
+      {
+        "start": 3.1,
+        "end": 3.4,
+        "text": "the",
+        "segment": 0
+      },
+      {
+        "start": 3.4,
+        "end": 3.5,
+        "text": "cut",
+        "segment": 0
+      },
+      {
+        "start": 4,
+        "end": 4,
+        "text": "(moment)",
+        "segment": 0
+      },
+      {
+        "start": 6,
+        "end": 6.5,
+        "text": "After",
+        "segment": 1
+      }
+    ],
+    "removed": 0,
+    "spans": []
+  }
+}

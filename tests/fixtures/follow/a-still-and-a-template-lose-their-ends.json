@@ -1,0 +1,93 @@
+{
+  "about": "a still loses its end, and a template its animation, as a file does",
+  "given": {
+    "before": [
+      {
+        "key": "s",
+        "type": "image",
+        "start": 0,
+        "duration": 4
+      },
+      {
+        "key": "t",
+        "type": "template",
+        "start": 4,
+        "duration": 4
+      }
+    ],
+    "after": [
+      {
+        "key": "s",
+        "type": "image",
+        "start": 0,
+        "duration": 2
+      },
+      {
+        "key": "t",
+        "type": "template",
+        "start": 2,
+        "duration": 2
+      }
+    ],
+    "captions": [
+      {
+        "start": 1,
+        "end": 3,
+        "text": "still"
+      },
+      {
+        "start": 5,
+        "end": 7,
+        "text": "title"
+      }
+    ],
+    "words": [
+      {
+        "start": 1,
+        "end": 1.5,
+        "text": "still"
+      },
+      {
+        "start": 2.5,
+        "end": 3,
+        "text": "late"
+      },
+      {
+        "start": 5,
+        "end": 5.5,
+        "text": "title"
+      },
+      {
+        "start": 6.5,
+        "end": 7,
+        "text": "gone"
+      }
+    ]
+  },
+  "expect": {
+    "captions": [
+      {
+        "start": 1,
+        "end": 2,
+        "text": "still"
+      },
+      {
+        "start": 3,
+        "end": 4,
+        "text": "title"
+      }
+    ],
+    "words": [
+      {
+        "start": 1,
+        "end": 1.5,
+        "text": "still"
+      },
+      {
+        "start": 3,
+        "end": 3.5,
+        "text": "title"
+      }
+    ]
+  }
+}

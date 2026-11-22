@@ -1,0 +1,190 @@
+{
+  "about": "a caption being typed, its times not yet numbers, is left as it is",
+  "given": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0,
+        "duration": 4,
+        "inpoint": 10,
+        "outpoint": 14
+      },
+      {
+        "type": "video",
+        "name": "videos/b.mp4",
+        "start": 4,
+        "duration": 4,
+        "inpoint": 0,
+        "outpoint": 4
+      },
+      {
+        "type": "template",
+        "name": "title",
+        "start": 8,
+        "duration": 2,
+        "data": {
+          "text": "End"
+        }
+      }
+    ],
+    "captions": [
+      {
+        "start": "",
+        "end": 2,
+        "text": "typing"
+      },
+      {
+        "start": 6,
+        "end": 7,
+        "text": "After"
+      }
+    ],
+    "words": [
+      {
+        "start": 0.5,
+        "end": 1,
+        "text": "Hello",
+        "segment": 0
+      },
+      {
+        "start": 1.2,
+        "end": 1.8,
+        "text": "there",
+        "segment": 0
+      },
+      {
+        "start": 2.6,
+        "end": 3,
+        "text": "Across",
+        "segment": 0
+      },
+      {
+        "start": 3.1,
+        "end": 3.4,
+        "text": "the",
+        "segment": 0
+      },
+      {
+        "start": 3.4,
+        "end": 3.5,
+        "text": "cut",
+        "segment": 0
+      },
+      {
+        "start": 4,
+        "end": 4,
+        "text": "(moment)",
+        "segment": 0
+      },
+      {
+        "start": 6,
+        "end": 6.5,
+        "text": "After",
+        "segment": 1
+      }
+    ]
+  },
+  "ranges": [
+    [
+      1,
+      2
+    ]
+  ],
+  "expect": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 0,
+        "duration": 1,
+        "inpoint": 10,
+        "outpoint": 11,
+        "fadeOut": 0
+      },
+      {
+        "type": "video",
+        "name": "videos/a.mp4",
+        "start": 1,
+        "duration": 2,
+        "inpoint": 12,
+        "outpoint": 14,
+        "fadeIn": 0
+      },
+      {
+        "type": "video",
+        "name": "videos/b.mp4",
+        "start": 3,
+        "duration": 4,
+        "inpoint": 0,
+        "outpoint": 4
+      },
+      {
+        "type": "template",
+        "name": "title",
+        "start": 7,
+        "duration": 2,
+        "data": {
+          "text": "End"
+        }
+      }
+    ],
+    "captions": [
+      {
+        "start": "",
+        "end": 2,
+        "text": "typing"
+      },
+      {
+        "start": 5,
+        "end": 6,
+        "text": "After"
+      }
+    ],
+    "words": [
+      {
+        "start": 0.5,
+        "end": 1,
+        "text": "Hello",
+        "segment": 0
+      },
+      {
+        "start": 1.6,
+        "end": 2,
+        "text": "Across",
+        "segment": 0
+      },
+      {
+        "start": 2.1,
+        "end": 2.4,
+        "text": "the",
+        "segment": 0
+      },
+      {
+        "start": 2.4,
+        "end": 2.5,
+        "text": "cut",
+        "segment": 0
+      },
+      {
+        "start": 3,
+        "end": 3,
+        "text": "(moment)",
+        "segment": 0
+      },
+      {
+        "start": 5,
+        "end": 5.5,
+        "text": "After",
+        "segment": 1
+      }
+    ],
+    "removed": 1,
+    "spans": [
+      [
+        1,
+        2
+      ]
+    ]
+  }
+}
