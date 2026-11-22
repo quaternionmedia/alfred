@@ -149,17 +149,33 @@ $rule: 1px solid #2e2e2e;
   padding: $gutter;
 }
 
-// In the workspace the panel is the scroller, so a short panel still
-// reaches its last button; nothing in it sticks, or the actions would sit
-// over the zoom as the panel scrolled.
+// In the workspace the panel takes whatever shape its stack is given -- a
+// column beside the timeline, a strip over or under it -- and what it holds
+// flows to fill it: the tools, the zoom, the render button and the save
+// state, as many to a row as its width holds, so a strip is one row. The
+// groups give their children to the panel's flow; nothing in it sticks, and
+// a panel too small for all of it scrolls. Its padding is half the gutter, so
+// one row fits a stack at the least height Golden Layout gives one.
 .workspace .toolspanel {
   box-sizing: border-box;
   height: 100%;
   overflow: auto;
+  padding: $gutter * 0.5;
+  flex-flow: row wrap;
+  align-items: center;
+  align-content: flex-start;
+  justify-content: flex-start;
+  container: toolspanel / inline-size;
 
   .editortools,
   .editoractions {
-    position: static;
+    display: contents;
+  }
+
+  // Beside one another, a toolbar's centring margins (style.css) would
+  // share the row's spare width out between them.
+  .toolbar {
+    margin: 0;
   }
 }
 
@@ -224,23 +240,23 @@ $rule: 1px solid #2e2e2e;
   }
 }
 
-// The workspace's tools column is two buttons wide, with no room for a bar
-// between them, and a row of its own under them ran past the bottom of the
-// Timeline panel at 1280x800, where a sticky column cannot be scrolled to.
-// There the buttons zoom alone: before, most of the bar was under the bin
-// beside the column anyway. Contained, so its own width does not widen the
-// column; the column's width, which a toolbar's centring margins
-// (style.css) would keep it from taking; and the two buttons' 92 pixels in
-// the 93 inside its border, with no padding beside them or gap between.
+// In a column the zoom is its two buttons alone: a bar between them would
+// have no room to be dragged along. A panel wide enough for a strip gives
+// the bar the row's spare width, up to a length a drag can use.
 .workspace .zoombar {
-  contain: inline-size;
-  align-self: stretch;
-  margin-inline: 0;
-  padding-inline: 0;
-  column-gap: 0;
-
   #scale {
     display: none;
+  }
+}
+
+@container toolspanel (min-width: 40rem) {
+  .workspace .zoombar {
+    flex: 1 1 10rem;
+    max-width: 22rem;
+
+    #scale {
+      display: block;
+    }
   }
 }
 
@@ -267,8 +283,11 @@ $rule: 1px solid #2e2e2e;
   border-radius: 4px;
   background: #161616;
 
+  // The timeline tools flow: as many to a row as the box they are in holds,
+  // so a strip lays them in one row and a column wraps them at its width.
   &.toolcol {
-    flex-direction: column;
+    flex-flow: row wrap;
+    justify-content: flex-start;
   }
 
   i {
@@ -644,16 +663,6 @@ $rule: 1px solid #2e2e2e;
     flex-direction: row;
     flex-wrap: wrap;
     position: static;
-  }
-
-  // A row of tools, as this always meant: `.toolcol` is a grid (style.css),
-  // which `flex-direction` does nothing to, and under 700px that grid is one
-  // column -- seven buttons standing above the timeline, pushing it out of
-  // its region on a phone.
-  .tools.toolcol {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
   }
 
   // The zoom bar takes what is left of its row, not its least width.

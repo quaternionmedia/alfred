@@ -75,7 +75,7 @@ it loops over.
 | `session.spec.js` | The session lifecycle: renewal, expiry, logout, and what a token is worth. | 16 |
 | `stacked.spec.js` | The phone flow: the editor's panels stacked one stage at a time. | 15 |
 | `templates.spec.js` | Template clips: adding them, and changing what they say. | 13 |
-| `timeline-tools.spec.js` | The timeline tools, by mouse and by touch. | 23 |
+| `timeline-tools.spec.js` | The timeline tools, by mouse and by touch. | 25 |
 | `tools.spec.js` | The timeline tools, and the media they act on. | 17 |
 | `transcript.spec.js` | Editing by text: words deleted from the Transcript panel cut the timeline. | 9 |
 | `views.spec.js` | The remaining top-level views. | 8 |

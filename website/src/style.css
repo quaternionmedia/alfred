@@ -240,11 +240,6 @@ th {
   margin-left: auto;
   margin-right: auto;
 }
-.toolcol {
-  display: grid;
-  grid-template-columns: 50% 50%;
-}
-
 .tools {
   justify-content: space-between;
   width: fit-content;
@@ -272,9 +267,6 @@ th {
 @media screen and (max-width: 700px) {
   .tools .custom {
     padding: 9px;
-  }
-  .toolcol {
-    grid-template-columns: 100%;
   }
 }
 .vl {

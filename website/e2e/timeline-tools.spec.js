@@ -801,6 +801,150 @@ test.describe('slip, slide and roll by touch', () => {
   })
 })
 
+// The workspace keeps its arrangement here (layout/saved_layout.js).
+const LAYOUT_KEY = 'alfred.layout.v1'
+
+/** A workspace panel, as a saved arrangement names it. */
+const panel = (id, title) => ({ type: 'component', componentType: id, id, title })
+
+/** The tools as a strip between the viewer and the timeline: the shape a person docks them in to give the timeline the width. */
+const STRIP = {
+  root: {
+    type: 'column',
+    content: [
+      { type: 'stack', size: '50%', content: [panel('viewer', 'Viewer')] },
+      { type: 'stack', size: '10%', content: [panel('tools', 'Timeline tools')] },
+      { type: 'stack', size: '40%', content: [panel('timeline', 'Timeline')] },
+    ],
+  },
+}
+
+/** The tools as a column beside the timeline, wider than the default's: room for three to a row or more. */
+const COLUMN = {
+  root: {
+    type: 'column',
+    content: [
+      { type: 'stack', size: '56%', content: [panel('viewer', 'Viewer')] },
+      {
+        type: 'row',
+        size: '44%',
+        content: [
+          { type: 'stack', size: '15%', content: [panel('tools', 'Timeline tools')] },
+          { type: 'stack', size: '85%', content: [panel('timeline', 'Timeline')] },
+        ],
+      },
+    ],
+  },
+}
+
+/**
+ * Open the editor on the media project, the workspace arranged as `layout`.
+ * The project opens by a change of the address's fragment, which loads no
+ * page and so runs no init script: the reload is what loads the arrangement.
+ */
+async function arranged(page, request, token, layout) {
+  await page.addInitScript(({ key, value }) => localStorage.setItem(key, value), {
+    key: LAYOUT_KEY,
+    value: JSON.stringify(layout),
+  })
+  await openMediaProject(page, request, token)
+  await page.reload()
+  await expect(page.locator('#timeline .clip').first()).toBeVisible()
+  // Only the arrangement's three panels are open: it is the one loaded.
+  await expect(page.locator('.lm_tab')).toHaveCount(3)
+}
+
+/** The tool buttons' boxes, in the rows they sit in, top to bottom. */
+async function toolRows(page) {
+  await page.evaluate(() => document.fonts.ready)
+  const boxes = await page
+    .locator('#TTools .tool')
+    .evaluateAll(buttons => buttons.map(b => b.getBoundingClientRect().toJSON()))
+  const rows = []
+  for (const b of boxes.sort((p, q) => p.y - q.y || p.x - q.x)) {
+    const row = rows.find(r => Math.abs(r[0].y - b.y) < b.height / 2)
+    if (row) row.push(b)
+    else rows.push([b])
+  }
+  return rows
+}
+
+/** Where a box's middle is, top to bottom. */
+const middle = b => b.y + b.height / 2
+
+test.describe('the tools panel', () => {
+  test.beforeEach(async () => {
+    test.skip(
+      test.info().project.name === 'phone',
+      'the workspace is the desktop layout; the phone lays the tools as a row of its own'
+    )
+  })
+
+  test('docked as a strip, the tools, the zoom and the render button lie in one row', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * The tools were a grid two buttons wide whatever their panel's shape,
+     * with the zoom, the render button and the save state stacked under
+     * them: docked as a strip over the timeline, they stood in four rows and
+     * the strip scrolled. They flow now, as many to a row as the panel holds.
+     *
+     * Mutation: put back the two-column grid on `.toolcol` (style.css) and
+     * the tools stand in four rows here.
+     */
+    await arranged(authedPage, request, token, STRIP)
+    const rows = await toolRows(authedPage)
+    expect(rows.map(r => r.length), 'the tools sit in one row').toEqual([7])
+    const band = { top: rows[0][0].y, bottom: rows[0][0].y + rows[0][0].height }
+    for (const name of ['zoom_out', 'zoom_in']) {
+      const b = await authedPage.locator('.zoombar i', { hasText: name }).boundingBox()
+      expect(middle(b), `${name} is beside the tools`).toBeGreaterThan(band.top)
+      expect(middle(b), `${name} is beside the tools`).toBeLessThan(band.bottom)
+    }
+    const render = await authedPage.locator('#render-timeline').boundingBox()
+    expect(middle(render), 'the render button is beside the tools').toBeGreaterThan(band.top)
+    expect(middle(render), 'the render button is beside the tools').toBeLessThan(band.bottom)
+    // A strip as wide as this one has room for the zoom's bar between its buttons.
+    await expect(authedPage.locator('#scale')).toBeVisible()
+    // And none of it is out of sight: the strip does not scroll.
+    const overflow = await authedPage
+      .locator('#panel-tools')
+      .evaluate(p => ({ down: p.scrollHeight - p.clientHeight, across: p.scrollWidth - p.clientWidth }))
+    expect(overflow.down, 'the strip scrolls down to what it holds').toBeLessThanOrEqual(1)
+    expect(overflow.across, 'the strip scrolls across to what it holds').toBeLessThanOrEqual(1)
+  })
+
+  test('in the column beside the timeline, as many tools to a row as fit', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * A column wraps the tools at its width rather than at two, so a wider
+     * column holds more to a row and a narrower one fewer. Mutation: the
+     * two-column grid leaves room for a third button beside each pair in
+     * this column, and this fails.
+     */
+    await arranged(authedPage, request, token, COLUMN)
+    const rows = await toolRows(authedPage)
+    expect(rows.length, 'a column wraps the tools').toBeGreaterThan(1)
+    expect(rows[0].length, 'this column holds more than two to a row').toBeGreaterThan(2)
+    const inside = await authedPage.locator('#TTools').evaluate(t => {
+      const box = t.getBoundingClientRect()
+      const style = getComputedStyle(t)
+      return box.right - parseFloat(style.paddingRight) - parseFloat(style.borderRightWidth)
+    })
+    for (const row of rows.slice(0, -1)) {
+      const last = row[row.length - 1]
+      // Each button keeps a margin of 2 pixels either side (editor.scss).
+      const room = inside - (last.x + last.width + 2)
+      expect(room, `a row of ${row.length} has room for another`).toBeLessThan(last.width + 4)
+    }
+  })
+})
+
 test.describe('on a phone', () => {
   test('the page is laid out to standard, and can be zoomed', async ({ page }) => {
     /**
