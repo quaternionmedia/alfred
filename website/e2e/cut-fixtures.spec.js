@@ -27,6 +27,16 @@ function excerpt(timeline, start, end) {
   return { clips: cut.clips, duration: toMs(to - from), captions: cut.captions, words: cut.words }
 }
 
+test('every fixture says what it is for, what is given and what comes out', () => {
+  for (const folder of ['cut', 'follow', 'excerpt']) {
+    for (const [name, fixture] of fixtures(folder)) {
+      expect(typeof fixture.about, `${folder}/${name} has no about`).toBe('string')
+      expect(fixture.given, `${folder}/${name} has nothing given`).toBeTruthy()
+      expect(fixture.expect, `${folder}/${name} expects nothing`).toBeTruthy()
+    }
+  }
+})
+
 test.describe('cutRanges over the shared fixtures', () => {
   for (const [name, fixture] of fixtures('cut')) {
     test(name, () => {
