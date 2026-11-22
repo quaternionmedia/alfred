@@ -6,6 +6,8 @@ Each works by mouse and by touch. The four drags that change a clip -- trim, sli
 
 An edit that moves the picture moves the project's captions, and the words of its transcript, with it; they are saved with the timeline. [Words follow the picture](editing-by-text.md#words-follow-the-picture) says what each tool does to them.
 
+The captions and the words in the Text lane under the clips are the tools' subjects as well: a press on a caption or a word with a tool does to it what the tool does to a clip. [The timeline's lanes](lanes.md#text) says what each tool does there.
+
 ## Keys
 
 | Key | What it does, whichever tool is chosen |

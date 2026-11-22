@@ -11,7 +11,8 @@
  * marked on the timeline -- the excerpts the harness proposes, and where each
  * stands. Press anywhere in a lane to put the playhead there; a word, a
  * caption or a cue takes it to its start. Zoom out and the words become marks,
- * then make way for the captions alone.
+ * then make way for the captions alone. Choose a tool and press a caption or
+ * a word: each tool does to it what it does to a clip, and it saves itself.
  *
  * The words, the captions, the cues and the sound are served here rather than
  * made: the stack under test may run no audio engine, and what the lanes draw
@@ -119,6 +120,186 @@ async function startOf(page, locator, scale) {
   const item = await box(locator)
   return (item.x - body.x) / scale
 }
+
+/**
+ * The lanes open on the served project with `tool` chosen, the captions'
+ * saves kept here and going no further -- the project's own captions are not
+ * these tests' to write -- and a drag and a tap on what the lanes draw.
+ */
+async function withTool(page, request, token, tool) {
+  const project = await mediaProject(request, token)
+  await serveLanes(page, project)
+  const saved = []
+  await page.route(
+    url => url.pathname === `/project/${project._id}/captions`,
+    async route => {
+      if (route.request().method() !== 'PUT') return route.fallback()
+      const body = route.request().postDataJSON()
+      saved.push(body)
+      await route.fulfill({ json: { captions: body.captions, style: body.style, job: null } })
+    }
+  )
+  await openLanes(page, project)
+  const scale = await scaleOf(page, project)
+  await page.locator(`#TTools [data-tool="${tool}"]`).click()
+  const at = async (locator, along) => {
+    const b = await box(locator)
+    return { x: Math.round(b.x + b.width * along), y: Math.round(b.y + b.height / 2) }
+  }
+  return {
+    saved,
+    scale,
+    /** Press `locator` `along` it and drag `seconds` along the timeline. */
+    drag: async (locator, along, seconds) => {
+      const { x, y } = await at(locator, along)
+      await page.mouse.move(x, y)
+      await page.mouse.down()
+      await page.mouse.move(x + Math.round(seconds * scale), y, { steps: 6 })
+      await page.mouse.up()
+    },
+    tap: async (locator, along) => {
+      const { x, y } = await at(locator, along)
+      await page.mouse.click(x, y)
+    },
+  }
+}
+
+/** The caption saved last that says `text`. */
+const savedCaption = (saved, text) => saved[saved.length - 1].captions.find(c => c.text === text)
+
+/** The word saved last that says `text`. */
+const savedWord = (saved, text) => saved[saved.length - 1].words.find(w => w.text === text)
+
+test.describe('the tools on the Text lane', () => {
+  test('trim drags a caption by its nearer edge, and it saves itself', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const { saved, scale, drag } = await withTool(authedPage, request, token, 'trim')
+    const caption = authedPage.locator('.lanecaption', { hasText: 'bars.' })
+
+    // Pressed on its second half, its end follows: 2.2 s becomes about 3.
+    await drag(caption, 0.8, 0.8)
+    await expect.poll(() => saved.length).toBe(1)
+    expect(savedCaption(saved, 'bars.').end).toBeCloseTo(3.0, 1)
+    expect(savedCaption(saved, 'bars.').start).toBeCloseTo(1.5, 1)
+    // Pressed on its first half, its start follows: 1.5 s becomes about 1.
+    await drag(caption, 0.2, -0.5)
+    await expect.poll(() => saved.length).toBe(2)
+    expect(savedCaption(saved, 'bars.').start).toBeCloseTo(1.0, 1)
+    expect(await startOf(authedPage, caption, scale)).toBeCloseTo(1.0, 1)
+    // The words were not touched, so they were not sent.
+    expect(saved[1].words).toBeUndefined()
+
+    // A tap still takes the playhead to its start.
+    await caption.click()
+    await expect(authedPage.locator('p.timecode')).toHaveText(/^0:0(1\.0|0\.9)\d$/)
+  })
+
+  test('slide moves a caption with its neighbour, and move moves it alone', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const { saved, drag } = await withTool(authedPage, request, token, 'slide')
+    // Slid 0.3 s earlier, the caption before it ends 0.3 s earlier too.
+    await drag(authedPage.locator('.lanecaption', { hasText: 'bars.' }), 0.5, -0.3)
+    await expect.poll(() => saved.length).toBe(1)
+    expect(savedCaption(saved, 'bars.').start).toBeCloseTo(1.2, 1)
+    expect(savedCaption(saved, 'bars.').end).toBeCloseTo(1.9, 1)
+    expect(savedCaption(saved, 'Here are').end).toBeCloseTo(1.1, 1)
+
+    // Moved half a second later, it keeps its length, and the other stays.
+    await authedPage.locator('#TTools [data-tool="move"]').click()
+    await drag(authedPage.locator('.lanecaption', { hasText: 'Here are' }), 0.5, 0.5)
+    await expect.poll(() => saved.length).toBe(2)
+    expect(savedCaption(saved, 'Here are').start).toBeCloseTo(0.7, 1)
+    expect(savedCaption(saved, 'Here are').end).toBeCloseTo(1.6, 1)
+    expect(savedCaption(saved, 'bars.').start).toBeCloseTo(1.2, 1)
+  })
+
+  test('dual roller moves where two captions meet, the edge nearer the press', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const { saved, drag } = await withTool(authedPage, request, token, 'dual roller')
+    // Pressed on the first half of the second caption: its meeting with the first.
+    await drag(authedPage.locator('.lanecaption', { hasText: 'bars.' }), 0.2, 0.3)
+    await expect.poll(() => saved.length).toBe(1)
+    expect(savedCaption(saved, 'Here are').end).toBeCloseTo(1.7, 1)
+    expect(savedCaption(saved, 'bars.').start).toBeCloseTo(1.8, 1)
+    expect(savedCaption(saved, 'bars.').end).toBeCloseTo(2.2, 1)
+  })
+
+  test('cut splits a caption where it is tapped, its text at its words', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const { saved, tap } = await withTool(authedPage, request, token, 'cut')
+    // Tapped half way, at 0.8 s: one of its two words is said before.
+    await tap(authedPage.locator('.lanecaption', { hasText: 'Here are' }), 0.5)
+    await expect(authedPage.locator('.lanecaption')).toHaveCount(3)
+    await expect.poll(() => saved.length).toBe(1)
+    expect(savedCaption(saved, 'Here').end).toBeCloseTo(0.8, 1)
+    expect(savedCaption(saved, 'are').start).toBeCloseTo(0.8, 1)
+    expect(savedCaption(saved, 'are').end).toBeCloseTo(1.4, 1)
+    // The playhead goes to the cut, as a clip's cut puts it.
+    await expect(authedPage.locator('p.timecode')).toHaveText(/^0:00\.[78]\d$/)
+
+    // A caption of one word says why it is not cut.
+    await tap(authedPage.locator('.lanecaption', { hasText: 'bars.' }), 0.5)
+    await expect(
+      authedPage.locator('.ajs-message').filter({ hasText: 'A caption of one word cannot be split.' })
+    ).toBeVisible()
+  })
+
+  test('slip keeps a caption in place and shows the words said under it', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const { saved, drag } = await withTool(authedPage, request, token, 'slip')
+    // Dragged half a second along, the first caption shows what is said from
+    // 0.7 to 1.9 s; dragged further, it stops where the transcript ends.
+    await drag(authedPage.locator('.lanecaption', { hasText: 'Here are' }), 0.5, 0.5)
+    await expect.poll(() => saved.length).toBe(1)
+    const first = saved[0].captions[0]
+    expect(first.text).toBe('are bars.')
+    expect(first.start).toBeCloseTo(0.2, 2)
+    expect(first.end).toBeCloseTo(1.4, 2)
+  })
+
+  test('a word is trimmed and moved between its neighbours, and saved with the captions', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const { saved, drag, tap } = await withTool(authedPage, request, token, 'trim')
+    // Its end dragged well past the next word's start stops there.
+    await drag(authedPage.locator('.laneword', { hasText: 'are' }), 0.9, 1)
+    await expect.poll(() => saved.length).toBe(1)
+    expect(savedWord(saved, 'are').end).toBeCloseTo(1.6, 2)
+    expect(saved[0].captions).toHaveLength(2)
+
+    // Moved well past the word after it, it stops against it.
+    await authedPage.locator('#TTools [data-tool="move"]').click()
+    await drag(authedPage.locator('.laneword', { hasText: 'Here' }), 0.5, 1)
+    await expect.poll(() => saved.length).toBe(2)
+    expect(savedWord(saved, 'Here').start).toBeCloseTo(0.7, 2)
+    expect(savedWord(saved, 'Here').end).toBeCloseTo(1.0, 2)
+
+    // A word is not cut, and says so.
+    await authedPage.locator('#TTools [data-tool="cut"]').click()
+    await tap(authedPage.locator('.laneword', { hasText: 'bars.' }), 0.5)
+    await expect(
+      authedPage.locator('.ajs-message').filter({ hasText: 'A word cannot be split.' })
+    ).toBeVisible()
+    expect(saved).toHaveLength(2)
+  })
+})
 
 test.describe('the lanes', () => {
   test('every lane is drawn, the clips among them', async ({ authedPage, request, token }) => {

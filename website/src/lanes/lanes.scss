@@ -162,6 +162,49 @@ $accent: #f2aa4c;
   }
 }
 
+// The tools act on the captions and the words as on the clips, with the
+// same pointers (editor.scss); a drag is the tool's, so the browser must not
+// take it for a scroll.
+.lanes {
+  &.tool-trim,
+  &.tool-move,
+  &.tool-slip,
+  &.tool-slide,
+  &.tool-dual-roller {
+    .lane.text .lanecaption,
+    .lane.text .laneword {
+      touch-action: none;
+    }
+  }
+
+  &.tool-trim,
+  &.tool-dual-roller {
+    .lane.text .lanecaption,
+    .lane.text .laneword {
+      cursor: ew-resize;
+    }
+  }
+
+  &.tool-slip,
+  &.tool-slide {
+    .lane.text .lanecaption,
+    .lane.text .laneword {
+      cursor: move;
+    }
+  }
+
+  &.tool-move {
+    .lane.text .lanecaption,
+    .lane.text .laneword {
+      cursor: grab;
+    }
+  }
+
+  &.tool-cut .lane.text .lanecaption {
+    cursor: url('../assets/content-cut.svg') 12 12, crosshair;
+  }
+}
+
 // ---- audio ---------------------------------------------------------------
 
 .lane.audio {

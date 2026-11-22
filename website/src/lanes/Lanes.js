@@ -1,4 +1,5 @@
 import m from 'mithril'
+import { message } from 'alertifyjs'
 import { state } from '../Globals'
 import { Edl } from '../Video'
 import { Player } from '../Player'
@@ -23,6 +24,7 @@ import {
   ticks,
   timecode,
 } from './arith'
+import { textCut, textEdit } from './textTools'
 import './lanes.scss'
 
 /**
@@ -42,7 +44,10 @@ import './lanes.scss'
  *
  * The playhead is one line down all of them. A press on a lane that is not a
  * clip seeks there; a word, a caption or a cue seeks to its start. The clips
- * keep their own gestures (OttoTimeline.js).
+ * keep their own gestures (OttoTimeline.js). The captions and the words in
+ * the Text lane are the tools' subjects too: each tool does to a caption or a
+ * word what it does to a clip, as textTools.js reckons it, and what it
+ * changed saves itself, as a clip's edit does.
  *
  * The lanes draw what is in view and a screen either side of it, so a long
  * recording's thousands of words cost what the screen shows; and the Text and
@@ -52,6 +57,60 @@ import './lanes.scss'
 
 // How far a press may wander and still count as a tap, in pixels.
 const TAP_SLOP = 8
+
+// The tools that drag a caption or a word; Cut acts on a tap, and Time seeks.
+const TEXT_DRAGS = new Set(['trim', 'move', 'slip', 'slide', 'dual roller'])
+
+// How long a save of the captions waits for one already away, in milliseconds.
+const SAVE_RETRY_MS = 400
+
+/** The captions the lane draws, in the order they start. */
+const drawnCaptions = () =>
+  Captions.list
+    .filter(c => !captionProblem(c))
+    .sort((a, b) => Number(a.start) - Number(b.start) || Number(a.end) - Number(b.end))
+
+/**
+ * The caption or the word a press landed on: `{kind, items, index, along}`,
+ * `items` the captions or the words in time order and `along` where on it the
+ * press was, 0 at its start and 1 at its end; null for anything else.
+ */
+function textAt(e) {
+  const caption = e.target.closest('.lanecaption')
+  const element = caption || e.target.closest('.laneword')
+  if (!element) return null
+  const box = element.getBoundingClientRect()
+  const along = box.width > 0 ? Math.min(1, Math.max(0, (e.clientX - box.left) / box.width)) : 1
+  if (caption) {
+    const items = drawnCaptions()
+    const index = items.findIndex(c => String(c._key) === element.dataset.key)
+    return index < 0 ? null : { kind: 'caption', items, index, along }
+  }
+  const index = Number(element.dataset.w)
+  return Transcript.words[index] ? { kind: 'word', items: Transcript.words, index, along } : null
+}
+
+/** What a drag made of the items, into the store they came from. */
+function write(edit, changes) {
+  if (edit.kind === 'word') {
+    const words = [...edit.items]
+    changes.forEach(c => {
+      words[c.index] = { ...words[c.index], start: c.start, end: c.end }
+    })
+    Transcript.words = words
+    Transcript.version++
+    return
+  }
+  const byKey = new Map(changes.map(c => [edit.items[c.index]._key, c]))
+  Captions.replace(
+    Captions.list.map(caption => {
+      const change = byKey.get(caption._key)
+      if (!change) return caption
+      const { index, ...times } = change
+      return { ...caption, ...times }
+    })
+  )
+}
 
 const scaleNow = () => (Number(state.scale()) > 0 ? Number(state.scale()) : 1)
 
@@ -116,10 +175,11 @@ function TextLane() {
             '.lanecaption',
             {
               'data-seek': '',
+              'data-key': caption._key,
+              'data-start': start,
               class: start <= Edl.time && Edl.time < end ? 'on' : '',
               style: { left: `${start * px}px`, width: `${Math.max(2, (end - start) * px)}px` },
               title: `${caption.text} · ${seconds(start)}–${seconds(end)}`,
-              onclick: () => Player.seek(start),
             },
             caption.text
           )
@@ -336,6 +396,70 @@ export function Lanes() {
     Player.seek(Math.max(0, x / scaleNow()))
   }
 
+  // A save asked for while another was away: whether it carries the words.
+  let wanted = null
+  let retry = null
+
+  /**
+   * The captions as they stand, and the words when `words`, saved: an edit
+   * in the lane saves itself as a clip's does, and one that lands while a
+   * save is away is saved after it. A caption the Captions panel holds
+   * incomplete stops this; that panel's Save keeps the change once it is
+   * whole.
+   */
+  const saveText = words => {
+    wanted = { words: Boolean(words || (wanted && wanted.words)) }
+    if (Captions.busy) {
+      clearTimeout(retry)
+      retry = setTimeout(() => saveText(false), SAVE_RETRY_MS)
+      return
+    }
+    if (!Captions.canSave()) return
+    const asked = wanted
+    wanted = null
+    Captions.save(asked.words ? { words: Transcript.wordsToSave() } : {}).then(saved => {
+      if (saved && asked.words) Transcript.saved()
+      if (wanted) saveText(false)
+    })
+  }
+
+  /** A drag in the Text lane, abandoned: what it moved is put back. */
+  const undoDrag = drag => {
+    if (drag.kind === 'word') {
+      Transcript.words = drag.items
+      Transcript.version++
+    } else write(drag, drag.gesture.apply(0))
+  }
+
+  /** A drag in the Text lane is done: the list settled and saved. */
+  const finishDrag = drag => {
+    if (drag.kind === 'word') {
+      Transcript.changed = true
+      saveText(true)
+      return
+    }
+    Captions.commit()
+    saveText(false)
+  }
+
+  /** A tap with the Cut tool on a caption: it splits there, or says why not. */
+  const cutText = found => {
+    const item = found.items[found.index]
+    const at = Number(item.start) + found.along * (Number(item.end) - Number(item.start))
+    const halves = textCut(found.kind, item, at, Transcript.words)
+    if (halves.refusal) {
+      message(halves.refusal, 4)
+      return
+    }
+    const { _key, ...second } = halves.second
+    Captions.replace(
+      Captions.list.flatMap(c => (c._key === item._key ? [halves.first, second] : [c]))
+    )
+    Captions.sort()
+    saveText(false)
+    Player.seek(Number(halves.second.start))
+  }
+
   return {
     oncreate: ({ dom: element }) => {
       dom = element
@@ -352,6 +476,7 @@ export function Lanes() {
     onremove: () => {
       if (observer) observer.disconnect()
       if (frame) cancelAnimationFrame(frame)
+      clearTimeout(retry)
       dom = null
     },
 
@@ -384,17 +509,78 @@ export function Lanes() {
               if (e.pointerType === 'mouse' && e.button !== 0) return
               if (e.target.closest('#timeline')) return
               press = { id: e.pointerId, x: e.clientX, y: e.clientY }
+              const tool = state.tool()
+              if (tool !== 'cut' && !TEXT_DRAGS.has(tool)) return
+              const found = textAt(e)
+              if (!found) return
+              if (tool === 'cut') {
+                press.cut = found
+                return
+              }
+              const gesture = textEdit(tool, found.kind, found.items, found.index, found.along, Transcript.words)
+              if (!gesture) return
+              if (gesture.refusal) {
+                message(gesture.refusal, 4)
+                return
+              }
+              // What the tool moves follows the pointer until the release,
+              // wherever that happens: the pointer is captured, as a clip's
+              // edits capture it (OttoTimeline.js).
+              press.drag = { ...found, gesture, moved: false }
+              e.preventDefault()
+              try {
+                e.currentTarget.setPointerCapture(e.pointerId)
+              } catch (err) {
+                // An id the browser no longer considers active: the drag
+                // still works while it stays over the lanes.
+              }
+            },
+            onpointermove: e => {
+              if (!press || !press.drag || e.pointerId !== press.id) return
+              const drag = press.drag
+              drag.moved = drag.moved || Math.abs(e.clientX - press.x) > TAP_SLOP
+              if (!drag.moved) return
+              write(drag, drag.gesture.apply((e.clientX - press.x) / scaleNow()))
+              m.redraw()
             },
             onpointerup: e => {
               if (!press || e.pointerId !== press.id) return
               const wandered =
                 Math.abs(e.clientX - press.x) > TAP_SLOP || Math.abs(e.clientY - press.y) > TAP_SLOP
+              const { drag, cut } = press
               press = null
-              // A clip, a word, a caption and a cue each seek for themselves.
+              if (drag && drag.moved) return finishDrag(drag)
+              if (cut) {
+                if (!wandered) cutText(cut)
+                return
+              }
+              if (drag) {
+                // A press that stayed put is a tap, whatever the tool: it
+                // seeks to the start of what was pressed, as the release's
+                // target is the lanes, which hold the pointer.
+                undoDrag(drag)
+                if (!wandered) Player.seek(Number(drag.items[drag.index].start) || 0)
+                return
+              }
+              const caption = e.target.closest('.lanecaption')
+              if (caption) {
+                if (!wandered) Player.seek(Number(caption.dataset.start) || 0)
+                return
+              }
+              // A clip, a word and a cue each seek for themselves.
               if (wandered || e.target.closest('#timeline') || e.target.closest('[data-seek]')) return
               seekAt(e.clientX)
             },
-            onpointercancel: () => {
+            // The browser took the pointer back (it is scrolling), or the
+            // capture went with a release already settled: a drag half done
+            // is put back rather than half applied.
+            onpointercancel: e => {
+              if (press && press.drag && e.pointerId === press.id) undoDrag(press.drag)
+              press = null
+            },
+            onlostpointercapture: e => {
+              if (!press || !press.drag || e.pointerId !== press.id) return
+              undoDrag(press.drag)
               press = null
             },
           },

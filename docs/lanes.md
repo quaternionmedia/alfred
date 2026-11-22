@@ -24,7 +24,8 @@ The playhead is one line down every lane. **Press** anywhere in a lane that
 is not a clip to put the playhead there; a word, a caption or a cue takes it
 to its start. Playing, the lanes scroll to keep the playhead in view. The
 clips keep their own gestures: with the Time tool a press on a clip seeks,
-and with any other it begins that tool's edit.
+and with any other it begins that tool's edit. The captions and the words
+are the tools' subjects too ([Text](#text)).
 
 **Zoom** scales every lane together. At the editor's usual zoom a word is a
 mark, and the captions carry the text; zoomed in until a word has room for
@@ -45,6 +46,29 @@ captions are in timeline seconds and move with the picture when a tool moves
 it ([Words follow the picture](editing-by-text.md#words-follow-the-picture)),
 so the lane stays true through an edit. The lane's label says when there is
 no transcript to draw, and when the words are still loading.
+
+Each tool does to a caption or a word what it does to a clip
+([Editing tools](tools.md)):
+
+| Tool | A caption | A word |
+|---|---|---|
+| **Time** | a tap puts the playhead at its start | the same |
+| **Trim** | the edge nearer the press follows the drag: its start from its first half, its end from its second | the same, no further than its neighbours |
+| **Move** | it moves along the timeline, its length kept | the same, between its neighbours |
+| **Cut** | a tap splits it there, its text divided where its words are: by how many of the transcript's words under it are said before the cut | not cut: a word is one word |
+| **Slip** | it keeps its place and its length, and shows the words said under it as it is dragged along the transcript; where nothing is said, it keeps the words it had | not slipped: a word shows only itself |
+| **Slide** | it moves, and the end of the caption before it and the start of the one after move with it, so the gaps either side stay | the same, with the words either side |
+| **Dual roller** | where it meets its neighbour moves: its edge nearer the press and the neighbour's edge facing it move together | the same |
+
+A caption is no shorter than a tenth of a second and a word than a
+twentieth, and nothing starts before the timeline does. A word stays between
+its neighbours, so the transcript keeps the order it is read in; a caption
+may pass over another, as the Captions panel lets it. A tool that cannot act
+where it was pressed says why, as it does on a clip. What a tool changed
+saves itself as the clips' edits do, the words with the captions; while a
+caption in the Captions panel is incomplete, that panel's **Save** keeps the
+change once it is whole. A tap with any tool still puts the playhead at the
+start of what was pressed, but with Cut, which splits.
 
 ## Audio
 

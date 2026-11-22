@@ -460,6 +460,13 @@ accepted are now refused, and a production stack needs its own signing key.
   is the templates alone. The **Timeline tools** panel holds the tools, the
   zoom, the render button and the save state beside the timeline, which
   takes its own panel's whole width; on a phone the tools are a row over it.
+- **The timeline tools act on the captions and the words.** In the Text
+  lane, Trim drags a caption's or a word's nearer edge, Move moves it, Slide
+  moves it with its neighbours' near edges, Dual roller moves where two
+  meet, Cut splits a caption with its text divided at its words, and Slip
+  keeps a caption in place and shows the words said under it. A word stays
+  between its neighbours; what a tool changed saves itself, and a tap still
+  seeks.
 - **The timeline's lanes** (`docs/lanes.md`): the clips are one lane of
   several on one time axis, at one scale, in one box that scrolls sideways.
   A ruler above them; under them the transcript's words and the captions
