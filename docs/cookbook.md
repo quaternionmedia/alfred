@@ -56,7 +56,8 @@ it loops over.
 | `journeys.spec.js` | The editor says what to do next. | 6 |
 | `lanes-arith.spec.js` | The lanes' arithmetic (src/lanes/arith.js): ticks, the view, the clips laid out, a sound's envelope over them, and a clip's effects. | 14 |
 | `lanes-fixtures.spec.js` | The Audio lane's arithmetic (src/lanes/arith.js `placed`, `silences`) over the fixtures the server's twin reads too (tests/fixtures/sound/, tests/unit/test_sound.py). | 1 |
-| `lanes.spec.js` | The timeline's lanes (src/lanes/Lanes.js): the ruler above the clips, and the words, the sound, the effects and the cues under them, at one scale. | 6 |
+| `lanes-text.spec.js` | The timeline tools on the Text lane's captions and words (src/lanes/textTools.js). | 21 |
+| `lanes.spec.js` | The timeline's lanes (src/lanes/Lanes.js): the ruler above the clips, and the words, the sound, the effects and the cues under them, at one scale. | 12 |
 | `login.spec.js` | Logging in, registering, and the links the server mails. | 14 |
 | `media.spec.js` | Media the browser fetches by itself. | 14 |
 | `navigation.spec.js` | Navigation and routing. | 8 |

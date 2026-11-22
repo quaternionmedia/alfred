@@ -6,8 +6,6 @@
 
 const { test, expect } = require('@playwright/test')
 const {
-  CAPTION_SHORTEST,
-  captionEdge,
   cueEnd,
   cueRow,
   dimmed,
@@ -20,7 +18,6 @@ const {
   tickStep,
   ticks,
   timecode,
-  trimCaption,
 } = require('../src/lanes/arith')
 
 test.describe('the ruler', () => {
@@ -170,32 +167,5 @@ test.describe('the cues', () => {
     expect(cueRow({ kind: 'chapter' })).toBe(0)
     expect(cueRow({ kind: 'excerpt' })).toBe(1)
     expect(cueRow({})).toBe(1)
-  })
-})
-
-test.describe('trimming a caption', () => {
-  const caption = { start: 1.5, end: 2.2, text: 'bars.' }
-
-  test('the nearer edge is the one that moves', () => {
-    expect(captionEdge(0.2)).toBe('start')
-    expect(captionEdge(0.5)).toBe('end')
-    expect(captionEdge(0.9)).toBe('end')
-  })
-
-  test('an edge follows the pointer, and the other stays', () => {
-    expect(trimCaption(caption, 'end', 0.8)).toEqual({ start: 1.5, end: 3 })
-    expect(trimCaption(caption, 'start', -1)).toEqual({ start: 0.5, end: 2.2 })
-  })
-
-  test('a caption keeps a tenth of a second, and starts no earlier than the timeline', () => {
-    expect(CAPTION_SHORTEST).toBe(0.1)
-    expect(trimCaption(caption, 'end', -5)).toEqual({ start: 1.5, end: 1.6 })
-    expect(trimCaption(caption, 'start', 5)).toEqual({ start: 2.1, end: 2.2 })
-    // Mutation: bound the start by the end alone -- fails here.
-    expect(trimCaption(caption, 'start', -5)).toEqual({ start: 0, end: 2.2 })
-  })
-
-  test('what is not a number moves nothing, and times as typed are read', () => {
-    expect(trimCaption({ start: '1.5', end: '2.2' }, 'end', NaN)).toEqual({ start: 1.5, end: 2.2 })
   })
 })

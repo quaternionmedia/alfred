@@ -6,6 +6,8 @@ Each works by mouse and by touch. The four drags that change a clip -- trim, sli
 
 An edit that moves the picture moves the project's captions, and the words of its transcript, with it; they are saved with the timeline. [Words follow the picture](editing-by-text.md#words-follow-the-picture) says what each tool does to them.
 
+The captions and the words in the Text lane under the clips are the tools' subjects as well: a press on a caption or a word with a tool does to it what the tool does to a clip. [The timeline's lanes](lanes.md#text) says what each tool does there.
+
 ## Keys
 
 | Key | What it does, whichever tool is chosen |
@@ -49,8 +51,6 @@ The panels either side of the viewer and the timeline are closed, and the timeli
 - **Mouse:** press the clip near its end and drag left or right.
 - **Touch:** the same drag, with a finger.
 - **Keys:** none of its own. A template clip's length can be typed instead, as its *Duration* beside the viewer.
-
-In the Text lane under the clips, Trim takes a caption as its subject too: press a caption on its first half and drag to move when it appears, on its second half to move when it goes, no shorter than a tenth of a second and no earlier than the timeline's start. A tap still puts the playhead at its start, and the captions save themselves as the clips do ([The timeline's lanes](lanes.md#text)).
 
 ![The trim tool chosen, the colour bars' end dragged in to 1.75 seconds](assets/screens/tools/trim.png)
 

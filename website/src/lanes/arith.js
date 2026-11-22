@@ -1,9 +1,8 @@
 /**
  * The lanes' arithmetic (Lanes.js): the ruler's ticks, what is in view, the
  * clips laid end to end, a sound's envelope over the clips that play it, and
- * what of a clip's effects there is to draw, and a caption's edge moved by the
- * Trim tool. Imports ClipWindow.js and nothing else, so its tests run in Node
- * (e2e/lanes-arith.spec.js).
+ * what of a clip's effects there is to draw. Imports ClipWindow.js and nothing
+ * else, so its tests run in Node (e2e/lanes-arith.spec.js).
  */
 import { chosenFade, clipSeconds, inOf } from '../ClipWindow'
 
@@ -170,26 +169,3 @@ export const cueEnd = cue =>
 
 /** Which row of the Cues lane a cue sits on: chapters above, everything else below. */
 export const cueRow = cue => (cue && cue.kind === 'chapter' ? 0 : 1)
-
-// The shortest a caption may be trimmed to, in seconds.
-export const CAPTION_SHORTEST = 0.1
-
-/** Which edge of a caption a press trims, `along` it from 0 to 1: the nearer one. */
-export const captionEdge = along => (Number(along) < 0.5 ? 'start' : 'end')
-
-/**
- * `caption` with its `edge` moved by `seconds`, as `{start, end}`: the start
- * no earlier than the timeline's and no later than CAPTION_SHORTEST before
- * the end, the end no earlier than CAPTION_SHORTEST after the start. Rounded
- * to a thousandth, as the Captions panel rounds what is typed.
- */
-export function trimCaption(caption, edge, seconds) {
-  const start = Number(caption.start) || 0
-  const end = Number(caption.end) || 0
-  const moved = Number(seconds) || 0
-  if (edge === 'start') {
-    const latest = Math.max(0, end - CAPTION_SHORTEST)
-    return { start: round(Math.max(0, Math.min(start + moved, latest))), end: round(end) }
-  }
-  return { start: round(start), end: round(Math.max(start + CAPTION_SHORTEST, end + moved)) }
-}
