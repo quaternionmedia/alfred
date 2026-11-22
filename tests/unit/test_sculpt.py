@@ -146,7 +146,9 @@ class TestOtherSegments:
     def test_spans_are_cut_at_pauses_and_sentence_ends_within_their_length(self):
         # The captions are three and a half seconds apart at most within a
         # chapter, and nine and a half across the long pause.
-        found = sculpt.spans(CAPTIONS, pause=3.6, chapter_pause=4, shortest=4, longest=12)
+        found = sculpt.spans(
+            CAPTIONS, pause=3.6, chapter_pause=4, shortest=4, longest=12
+        )
         assert found
         assert all(4 <= c.length <= 12 or c.length < 4 for c in found)
         assert {c.chapter for c in found} == {1, 2}
