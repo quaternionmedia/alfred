@@ -78,6 +78,8 @@ def source():
         levels=series(1, {10, 40, 41}),
         motion=series(1, {40, 41, 50}),
         silences=[{'start': 25, 'end': 34}, {'start': 52, 'end': 60}],
+        # The picture cuts at 10.3 s, 34.2 s and 45.4 s.
+        scenes=[10.3, 34.2, 45.4],
     )
 
 
@@ -198,6 +200,90 @@ class TestScores:
         note = sculpt.spikes([c], source, 1.5, 1.5, True)
         assert 'motion' in note
         assert c.scores == {}
+
+
+class TestSpeakers:
+    @staticmethod
+    def named(names):
+        """The words with a speaker per stretch of speech, from `names` by segment."""
+        return sculpt.spoken(
+            [{**w, 'speaker': names.get(w['segment'])} for w in make_words()]
+        )
+
+    def test_each_run_of_one_speaker_s_words_is_a_turn_titled_by_the_speaker(self):
+        words = self.named({0: 'Alice', 1: 'Alice', 2: 'Bob', 3: 'Bob', 4: 'Alice'})
+        found = sculpt.speakers(words, '', 0.5, 60)
+        assert [(c.start, c.end, c.title) for c in found] == [
+            (1, 7.9, 'Alice'),
+            (11, 18.9, 'Bob'),
+            (21, 21.9, 'Alice'),
+            (24, 51.9, 'Unknown'),
+        ]
+        # A turn shorter than `shortest` is left out: the question, 0.9 s.
+        assert [c.title for c in sculpt.speakers(words, '', 1, 60)] == [
+            'Alice',
+            'Bob',
+            'Unknown',
+        ]
+
+    def test_who_keeps_one_speaker_s_turns_whatever_the_case(self):
+        """Mutation: match the name exactly -- red."""
+        words = self.named({0: 'Alice', 2: 'Bob'})
+        found = sculpt.speakers(words, ' alice ', 0.1, 60)
+        assert [c.title for c in found] == ['Alice']
+        assert sculpt.speakers(words, 'nobody', 0.1, 60) == []
+
+    def test_a_short_turn_is_left_out_and_a_long_one_cut_at_word_ends(self):
+        words = self.named({n: 'Alice' for n in range(10)})
+        [whole] = sculpt.speakers(words, '', 1, 60)
+        assert (whole.start, whole.end) == (1, 51.9)
+        pieces = sculpt.speakers(words, '', 1, 20)
+        assert all(c.end - c.start <= 20 for c in pieces)
+        assert pieces[0].start == 1 and pieces[-1].end == 51.9
+        assert sculpt.speakers(self.named({0: 'Alice'}), 'Alice', 10, 60) == []
+
+    def test_shortest_above_longest_is_refused(self):
+        with pytest.raises(RecipeError, match='speakers: shortest'):
+            sculpt.speakers(WORDS, '', 9, 8)
+
+
+class TestScenes:
+    def test_each_edge_moves_to_the_nearest_cut_within_reach(self):
+        """Mutation: move an edge to a cut however far -- red."""
+        found = [Candidate(start=10, end=20), Candidate(start=34.6, end=46)]
+        kept = sculpt.snap_to_scenes(found, [10.3, 34.2, 45.4], within=1.0)
+        assert [(c.start, c.end) for c in kept] == [(10.3, 20), (34.2, 45.4)]
+
+    def test_an_edge_with_no_cut_in_reach_stays(self):
+        [c] = sculpt.snap_to_scenes([Candidate(start=12, end=30)], [10.3, 34.2], 1.0)
+        assert (c.start, c.end) == (12, 30)
+
+    def test_a_candidate_left_with_no_length_or_a_twin_goes(self):
+        found = [
+            Candidate(start=10.2, end=10.5),
+            Candidate(start=10, end=20),
+            Candidate(start=10.4, end=20.3),
+        ]
+        kept = sculpt.snap_to_scenes(found, [10.3, 20.1], 0.5)
+        assert [(c.start, c.end) for c in kept] == [(10.3, 20.1)]
+
+    def test_without_a_measure_the_step_leaves_a_note(self):
+        state = sculpt.State(candidates=[Candidate(start=10, end=20)])
+        sculpt.apply('scenes', {'within': 1.0}, state, Source(clips=[]), [], [])
+        assert state.notes == [
+            'scenes: no scene change was measured, so no edge was moved'
+        ]
+        assert (state.candidates[0].start, state.candidates[0].end) == (10, 20)
+
+    def test_a_recipe_s_windows_are_cut_at_the_picture_s_cuts(self, source):
+        steps = [
+            {'op': 'windows', 'shortest': 4, 'longest': 8, 'every': 5},
+            {'op': 'scenes', 'within': 1.5},
+            {'op': 'compose', 'how': 'each'},
+        ]
+        run = sculpt.run(steps, {}, [], source)
+        edges = {edge for d in run.drafts for edge in d.spans[0]}
+        assert {34.2, 45.4} & edges
 
 
 class TestFilters:

@@ -123,6 +123,18 @@ OPERATIONS: Dict[str, Dict[str, Any]] = {
         'about': 'the stretches the audio engine heard as silence, longer than `longer_than`',
         'parameters': {'longer_than': number(2.0, 0.1, 3600.0)},
     },
+    'speakers': {
+        'kind': 'segment',
+        'about': (
+            'each turn a speaker takes, from the speaker the words carry: every '
+            'speaker, or `who` alone, between shortest and longest seconds'
+        ),
+        'parameters': {
+            'who': text(''),
+            'shortest': number(3.0, 0.1, A_DAY),
+            'longest': number(60.0, 0.1, A_DAY),
+        },
+    },
     # --- score ---
     'dialogue': {
         'kind': 'score',
@@ -166,6 +178,15 @@ OPERATIONS: Dict[str, Dict[str, Any]] = {
             'shortest': number(0.0, 0.0, A_DAY),
             'longest': number(A_DAY, 0.1, A_DAY),
         },
+    },
+    'scenes': {
+        'kind': 'filter',
+        'about': (
+            "each candidate's edges moved to a scene change within `within` seconds "
+            'of them, where the picture cuts from one shot to another, so a cut does '
+            'not land inside a shot'
+        ),
+        'parameters': {'within': number(1.0, 0.0, 60.0)},
     },
     'fillers': {
         'kind': 'filter',

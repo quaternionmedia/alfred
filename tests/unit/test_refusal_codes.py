@@ -77,6 +77,7 @@ COVERED = [
     'alfred/core/routes/project.py',
     'alfred/core/routes/recipes.py',
     'alfred/core/routes/render.py',
+    'alfred/core/routes/scenes.py',
     'alfred/core/routes/sound.py',
     'alfred/core/utils/bucket.py',
     'alfred/core/utils/concurrency.py',

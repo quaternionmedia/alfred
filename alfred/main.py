@@ -41,6 +41,7 @@ from alfred.core.routes import (
     previewFrameAPI,
     recipesAPI,
     renderFileAPI,
+    scenesAPI,
     soundAPI,
     templateAPI,
     videoAPI,
@@ -277,6 +278,10 @@ app.include_router(
 # How a library file's picture moves, from otto, and a timeline's.
 app.include_router(
     motionAPI, dependencies=[Depends(current_active_user)], tags=['media']
+)
+# Where a file's picture cuts from one shot to another, and a timeline's.
+app.include_router(
+    scenesAPI, dependencies=[Depends(current_active_user)], tags=['media']
 )
 app.include_router(
     previewAPI,

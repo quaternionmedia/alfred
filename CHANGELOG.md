@@ -140,6 +140,13 @@ accepted are now refused, and a production stack needs its own signing key.
   than an engine takes in one upload is analysed all the same; an analysis is
   kept beside the library as well as in the api's memory.
 
+- **Where the picture cuts is measured.** otto finds where a video's
+  picture cuts from one shot to another, `GET /media/{name}/scenes` answers
+  it per file and `GET /project/{id}/scenes` over a timeline with each
+  clip's edges; a recipe's `scenes` step moves a candidate's edges to the
+  nearest cut so a draft is not cut in the middle of a shot, and its
+  `speakers` step takes each turn a speaker takes, from the speakers the
+  Transcript names, as a candidate.
 - **The cut's arithmetic has a server twin.** `alfred/core/utils/cut.py` cuts
   ranges out of a timeline, moves captions and words after the timeline
   tools and takes a span as a timeline of its own, as `website/src/ClipWindow.js`

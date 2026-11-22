@@ -40,11 +40,13 @@ it is measured against what people keep and drop.
 | `sentences` | segment | each sentence, captions joined until one ends a sentence | |
 | `spans` | segment | stretches cut at pauses and at the ends of sentences, between `shortest` and `longest` seconds, each in its chapter: the excerpt flow's proposal | `pause` 1, `chapter_pause` 4, `shortest` 10, `longest` 90 |
 | `silences` | segment | the stretches the audio engine heard as silence, longer than `longer_than` seconds | `longer_than` 2 |
+| `speakers` | segment | each turn a speaker takes, a run of words carrying one speaker as the Transcript names them ([Who spoke, and what about](editing-by-text.md#who-spoke-and-what-about)): every speaker's turns, the unnamed among them, or `who`'s alone; a turn shorter than `shortest` is left out and one longer than `longest` is cut at word ends | `who`, `shortest` 3, `longest` 60 |
 | `dialogue` | score | how much is said in a candidate, words a second over its whole length, so a stretch with a break in it scores by what is said around the break; scaled so the most talkative is 1 | `weight` 1 |
 | `spikes` | score | the share of a candidate's seconds in which the level rises above `level_above` times its usual and the picture moves above `motion_above` times its usual at once, each usual a baseline over the whole source; with `where_words`, only seconds in which a word is said; scaled so the spikiest is 1 | `weight` 1, `level_above` 1.5, `motion_above` 1.5, `where_words` true |
 | `label` | score | a title and a category from a labeller; skipped, with a note in the job, where there is none | `title` true, `categories` |
 | `top` | filter | the highest-scored candidates that do not overlap, by the weighted sum of their scores: `count` of them, or `per_hour` for each hour of the source when that is set | `count` 25, `per_hour` 0 |
 | `keep` | filter | the candidates between `shortest` and `longest` seconds | `shortest` 0, `longest` a day |
+| `scenes` | filter | each candidate's edges moved to the nearest scene change within `within` seconds of them, where the picture cuts from one shot to another ([What is measured](measures.md#scene-changes)), so a cut does not land inside a shot; skipped, with a note in the job, where no cut was measured | `within` 1 |
 | `fillers` | filter | cuts each of the `words`, separated by commas, out of what is kept | `words` um, uh, er, ah, erm, hmm |
 | `tighten` | edit | cuts every pause between words longer than `longer_than` seconds down to `to` seconds | `longer_than` 1.5, `to` 0.5 |
 | `excerpt` | edit | each candidate as a draft of its own: `compose` with `how` `each` | |

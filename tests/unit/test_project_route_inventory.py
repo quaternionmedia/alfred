@@ -42,6 +42,8 @@ INVENTORY = {
     ('GET', '/project/{item_id}/sound'),
     # The timeline's motion: routes/motion.py.
     ('GET', '/project/{item_id}/motion'),
+    # Where the timeline's picture cuts: routes/scenes.py.
+    ('GET', '/project/{item_id}/scenes'),
     # Drafts: routes/drafts.py.
     ('GET', '/project/{item_id}/drafts'),
     ('POST', '/project/{item_id}/drafts'),

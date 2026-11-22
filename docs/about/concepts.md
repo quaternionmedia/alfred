@@ -2,7 +2,7 @@
 
 A video in alfred is a project's timeline, rendered. Four things make it up.
 The timeline's format is otto's, and [otto's timeline
-page](https://github.com/quaternionmedia/otto/blob/eac657d1a80721cab340df9277762b510c5d7c9a/docs/timeline.md)
+page](https://github.com/quaternionmedia/otto/blob/0b0f558/docs/timeline.md)
 has every field of it; where it and this page differ, otto's decides. This page
 says what alfred adds.
 
@@ -12,8 +12,8 @@ A timeline is an `Edl`, an edit decision list: `clips`, and an optional
 `duration`. Each clip is a `video`, `image`, `audio` or `template`, placed on
 the output by its own timing (`start`, `inpoint`, `outpoint` and `duration`),
 and where clips overlap a later one is drawn over an earlier one. otto's page
-has [the clips](https://github.com/quaternionmedia/otto/blob/eac657d1a80721cab340df9277762b510c5d7c9a/docs/timeline.md#a-clip)
-and [the timing rules](https://github.com/quaternionmedia/otto/blob/eac657d1a80721cab340df9277762b510c5d7c9a/docs/timeline.md#timing).
+has [the clips](https://github.com/quaternionmedia/otto/blob/0b0f558/docs/timeline.md#a-clip)
+and [the timing rules](https://github.com/quaternionmedia/otto/blob/0b0f558/docs/timeline.md#timing).
 
 The editor lays its clips end to end on one track. It sends each clip a
 `start`, its place on the timeline, and both an `outpoint` and a `duration`
