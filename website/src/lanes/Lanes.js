@@ -9,6 +9,7 @@ import { Sound } from './sound'
 import {
   WORD_MARK_SCALE,
   WORD_TEXT_SCALE,
+  captionEdge,
   cueEnd,
   cueRow,
   dimmed,
@@ -22,6 +23,7 @@ import {
   tickStep,
   ticks,
   timecode,
+  trimCaption,
 } from './arith'
 import './lanes.scss'
 
@@ -42,7 +44,9 @@ import './lanes.scss'
  *
  * The playhead is one line down all of them. A press on a lane that is not a
  * clip seeks there; a word, a caption or a cue seeks to its start. The clips
- * keep their own gestures (OttoTimeline.js).
+ * keep their own gestures (OttoTimeline.js). With the Trim tool a caption is
+ * a subject too: a press on it drags its nearer edge (`trimCaption`), and the
+ * captions save themselves as a tool's edit does.
  *
  * The lanes draw what is in view and a screen either side of it, so a long
  * recording's thousands of words cost what the screen shows; and the Text and
@@ -116,10 +120,11 @@ function TextLane() {
             '.lanecaption',
             {
               'data-seek': '',
+              'data-key': caption._key,
+              'data-start': start,
               class: start <= Edl.time && Edl.time < end ? 'on' : '',
               style: { left: `${start * px}px`, width: `${Math.max(2, (end - start) * px)}px` },
               title: `${caption.text} · ${seconds(start)}–${seconds(end)}`,
-              onclick: () => Player.seek(start),
             },
             caption.text
           )
@@ -336,6 +341,38 @@ export function Lanes() {
     Player.seek(Math.max(0, x / scaleNow()))
   }
 
+  /** The caption a press landed on, as the store holds it, and where along it. */
+  const captionAt = e => {
+    const element = e.target.closest('.lanecaption')
+    if (!element) return null
+    const caption = Captions.list.find(c => String(c._key) === element.dataset.key)
+    if (!caption) return null
+    const box = element.getBoundingClientRect()
+    return { caption, along: box.width > 0 ? (e.clientX - box.left) / box.width : 1 }
+  }
+
+  /** A trim of a caption begun by a press: its edge back where it was. */
+  const restore = trim => Captions.update(trim.key, trim.edge, trim.was[trim.edge])
+
+  /**
+   * The captions as they stand, saved: a trim saves itself as the clips'
+   * edits do, and one that lands while a save is away is saved after it.
+   * A caption the panel holds incomplete stops this; that panel's Save
+   * keeps the change once it is whole.
+   */
+  const saveCaptions = () => {
+    if (!Captions.canSave()) return
+    Captions.save().then(saved => {
+      if (saved && Captions.dirty()) saveCaptions()
+    })
+  }
+
+  /** A trim of a caption is done: the list settled and saved. */
+  const finishTrim = () => {
+    Captions.commit()
+    saveCaptions()
+  }
+
   return {
     oncreate: ({ dom: element }) => {
       dom = element
@@ -384,17 +421,68 @@ export function Lanes() {
               if (e.pointerType === 'mouse' && e.button !== 0) return
               if (e.target.closest('#timeline')) return
               press = { id: e.pointerId, x: e.clientX, y: e.clientY }
+              const found = state.tool() === 'trim' ? captionAt(e) : null
+              if (!found) return
+              // The caption's nearer edge follows the pointer until the
+              // release, wherever that happens: the pointer is captured, as
+              // a clip's edits capture it (OttoTimeline.js).
+              press.trim = {
+                key: found.caption._key,
+                edge: captionEdge(found.along),
+                was: { start: found.caption.start, end: found.caption.end },
+                moved: false,
+              }
+              e.preventDefault()
+              try {
+                e.currentTarget.setPointerCapture(e.pointerId)
+              } catch (err) {
+                // An id the browser no longer considers active: the drag
+                // still works while it stays over the lanes.
+              }
+            },
+            onpointermove: e => {
+              if (!press || !press.trim || e.pointerId !== press.id) return
+              const trim = press.trim
+              trim.moved = trim.moved || Math.abs(e.clientX - press.x) > TAP_SLOP
+              if (!trim.moved) return
+              const next = trimCaption(trim.was, trim.edge, (e.clientX - press.x) / scaleNow())
+              Captions.update(trim.key, trim.edge, next[trim.edge])
+              m.redraw()
             },
             onpointerup: e => {
               if (!press || e.pointerId !== press.id) return
               const wandered =
                 Math.abs(e.clientX - press.x) > TAP_SLOP || Math.abs(e.clientY - press.y) > TAP_SLOP
+              const { trim } = press
               press = null
-              // A clip, a word, a caption and a cue each seek for themselves.
+              if (trim) {
+                if (trim.moved) return finishTrim()
+                // A press that stayed put is a tap, whatever the tool: the
+                // caption seeks to its start, as the release's target is the
+                // lanes, which hold the pointer.
+                restore(trim)
+                if (!wandered) Player.seek(Number(trim.was.start) || 0)
+                return
+              }
+              const caption = e.target.closest('.lanecaption')
+              if (caption) {
+                if (!wandered) Player.seek(Number(caption.dataset.start) || 0)
+                return
+              }
+              // A clip, a word and a cue each seek for themselves.
               if (wandered || e.target.closest('#timeline') || e.target.closest('[data-seek]')) return
               seekAt(e.clientX)
             },
-            onpointercancel: () => {
+            // The browser took the pointer back (it is scrolling), or the
+            // capture went with a release already settled: a trim half done
+            // is put back rather than half applied.
+            onpointercancel: e => {
+              if (press && press.trim && e.pointerId === press.id) restore(press.trim)
+              press = null
+            },
+            onlostpointercapture: e => {
+              if (!press || !press.trim || e.pointerId !== press.id) return
+              restore(press.trim)
               press = null
             },
           },

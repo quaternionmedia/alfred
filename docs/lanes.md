@@ -24,7 +24,9 @@ The playhead is one line down every lane. **Press** anywhere in a lane that
 is not a clip to put the playhead there; a word, a caption or a cue takes it
 to its start. Playing, the lanes scroll to keep the playhead in view. The
 clips keep their own gestures: with the Time tool a press on a clip seeks,
-and with any other it begins that tool's edit.
+and with any other it begins that tool's edit. With the Trim tool a caption
+is a subject too: press it on its first half and drag to move when it
+appears, on its second half to move when it goes ([Trim](tools.md#trim)).
 
 **Zoom** scales every lane together. At the editor's usual zoom a word is a
 mark, and the captions carry the text; zoomed in until a word has room for
@@ -43,7 +45,13 @@ would take are struck through. A caption is drawn from when it is shown to
 when it goes, and the one under the playhead is outlined. The words and the
 captions are in timeline seconds and move with the picture when a tool moves
 it ([Words follow the picture](editing-by-text.md#words-follow-the-picture)),
-so the lane stays true through an edit. The lane's label says when there is
+so the lane stays true through an edit. With the Trim tool, a drag on a
+caption moves its nearer edge, the start from its first half and the end
+from its second, no shorter than a tenth of a second and no earlier than the
+timeline's start; a tap still puts the playhead at its start. The captions
+save themselves after the drag, as the clips do after theirs; while a
+caption in the Captions panel is incomplete, that panel's **Save** keeps the
+change once it is whole. The lane's label says when there is
 no transcript to draw, and when the words are still loading.
 
 ## Audio

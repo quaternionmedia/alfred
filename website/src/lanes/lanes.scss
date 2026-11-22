@@ -162,6 +162,13 @@ $accent: #f2aa4c;
   }
 }
 
+// With the Trim tool a caption's edges are handles: the browser must not
+// take the drag for a scroll (editor.scss says the same of the clips).
+.lanes.tool-trim .lane.text .lanecaption {
+  cursor: ew-resize;
+  touch-action: none;
+}
+
 // ---- audio ---------------------------------------------------------------
 
 .lane.audio {

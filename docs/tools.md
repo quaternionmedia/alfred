@@ -50,6 +50,8 @@ The panels either side of the viewer and the timeline are closed, and the timeli
 - **Touch:** the same drag, with a finger.
 - **Keys:** none of its own. A template clip's length can be typed instead, as its *Duration* beside the viewer.
 
+In the Text lane under the clips, Trim takes a caption as its subject too: press a caption on its first half and drag to move when it appears, on its second half to move when it goes, no shorter than a tenth of a second and no earlier than the timeline's start. A tap still puts the playhead at its start, and the captions save themselves as the clips do ([The timeline's lanes](lanes.md#text)).
+
 ![The trim tool chosen, the colour bars' end dragged in to 1.75 seconds](assets/screens/tools/trim.png)
 
 *Trim chosen and the bars' end dragged a quarter of a second in: they now play 0.5 to 1.75 of their file, and the title and the test card have moved up behind them.*

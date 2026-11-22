@@ -11,7 +11,8 @@
  * marked on the timeline -- the excerpts the harness proposes, and where each
  * stands. Press anywhere in a lane to put the playhead there; a word, a
  * caption or a cue takes it to its start. Zoom out and the words become marks,
- * then make way for the captions alone.
+ * then make way for the captions alone. Choose **Trim** and drag a caption by
+ * its edge to move when it appears or when it goes; it saves itself.
  *
  * The words, the captions, the cues and the sound are served here rather than
  * made: the stack under test may run no audio engine, and what the lanes draw
@@ -220,6 +221,60 @@ test.describe('the lanes', () => {
     await expect(timecode).toHaveText('0:01.50')
     await authedPage.locator('.cue.point').click()
     await expect(timecode).toHaveText('0:00.70')
+  })
+
+  test('with the trim tool a caption is dragged by its nearer edge, and saved', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    const project = await mediaProject(request, token)
+    await serveLanes(authedPage, project)
+    // The saves are kept here and go no further: the project's own captions
+    // are not this test's to write.
+    const saved = []
+    await authedPage.route(
+      url => url.pathname === `/project/${project._id}/captions`,
+      async route => {
+        if (route.request().method() !== 'PUT') return route.fallback()
+        const body = route.request().postDataJSON()
+        saved.push(body)
+        await route.fulfill({ json: { captions: body.captions, style: body.style, job: null } })
+      }
+    )
+    await openLanes(authedPage, project)
+    const scale = await scaleOf(authedPage, project)
+    await authedPage.locator('#TTools [data-tool="trim"]').click()
+    const caption = authedPage.locator('.lanecaption', { hasText: 'bars.' })
+    const drag = async (along, seconds) => {
+      const b = await box(caption)
+      const x = Math.round(b.x + b.width * along)
+      const y = Math.round(b.y + b.height / 2)
+      await authedPage.mouse.move(x, y)
+      await authedPage.mouse.down()
+      await authedPage.mouse.move(x + Math.round(seconds * scale), y, { steps: 6 })
+      await authedPage.mouse.up()
+    }
+
+    // Pressed on its second half, its end follows: 2.2 s becomes about 3.
+    await drag(0.8, 0.8)
+    await expect(caption).toHaveAttribute('title', /^bars\. · 0:01\.5–(0:03\.0|0:02\.9)$/)
+    expect(await startOf(authedPage, caption, scale)).toBeCloseTo(1.5, 1)
+    // Pressed on its first half, its start follows: 1.5 s becomes about 1.
+    await drag(0.2, -0.5)
+    await expect(caption).toHaveAttribute('title', /^bars\. · (0:01\.0|0:00\.9)–/)
+    expect(await startOf(authedPage, caption, scale)).toBeCloseTo(1.0, 1)
+
+    // Each drag saved the captions, the words untouched.
+    await expect.poll(() => saved.length).toBe(2)
+    const bars = saved[1].captions.find(c => c.text === 'bars.')
+    expect(bars.start).toBeCloseTo(1.0, 1)
+    expect(bars.end).toBeCloseTo(3.0, 1)
+    expect(saved[1].words).toBeUndefined()
+
+    // A tap still takes the playhead to its start.
+    await caption.click()
+    await expect(authedPage.locator('p.timecode')).toHaveText(/^0:0(1\.0|0\.9)\d$/)
   })
 
   test('a cue says what it is, and where it stands', async ({ authedPage, request, token }) => {
