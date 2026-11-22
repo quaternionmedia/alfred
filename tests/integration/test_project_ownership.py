@@ -53,6 +53,8 @@ SINGLE_PROJECT_ROUTES = [
     ('PUT', '/project/{id}/cues', {'cues': [{'start': 1, 'label': 'here'}]}),
     # POST /project/{id}/captions/transcribe answers 202 or 503 for its owner,
     # not 200; integration/test_captions_api.py holds it to the same 404s.
+    # GET /project/{id}/sound answers 503 for its owner without an engine;
+    # unit/test_sound_route.py holds it to the same 404s.
     ('DELETE', '/project/{id}', None),
 ]
 ROUTE_IDS = [f'{method} {path}' for method, path, _ in SINGLE_PROJECT_ROUTES]

@@ -36,6 +36,7 @@ from alfred.core.routes import (
     previewAPI,
     previewFrameAPI,
     renderFileAPI,
+    soundAPI,
     templateAPI,
     videoAPI,
     videoFileAPI,
@@ -235,6 +236,10 @@ app.include_router(
 )
 # A project's cues, drawn on the editor's timeline, scoped the same way.
 app.include_router(cuesAPI, dependencies=[Depends(current_active_user)], tags=['cues'])
+# The sound of a project's timeline, from the engine's analyses of its files.
+app.include_router(
+    soundAPI, dependencies=[Depends(current_active_user)], tags=['project']
+)
 
 app.include_router(fontAPI, dependencies=[Depends(current_active_user)], tags=['font'])
 app.include_router(
