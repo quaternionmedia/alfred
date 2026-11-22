@@ -41,7 +41,26 @@
     align-items: center;
     gap: 0.5rem;
     margin: 0;
+  }
+
+  .recipetickline {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
     cursor: pointer;
+  }
+
+  .recipeactions {
+    margin-left: auto;
+    display: flex;
+    gap: 0.3rem;
+
+    button {
+      font-size: 0.72rem;
+      padding: 0.1rem 0.4rem;
+    }
   }
 
   .recipelabel {
@@ -82,6 +101,119 @@
   .recipeknobtext {
     color: #9a9a9a;
   }
+}
+
+// A recipe being edited: its name and label, its steps in order, and the
+// refusal a check or a save earned, beside the step it names.
+.recipeeditor {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  border: 1px solid #333;
+  border-radius: 4px;
+
+  h4 {
+    margin: 0 0 0.4rem;
+    font-size: 0.85rem;
+  }
+
+  .recipemeta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+  }
+
+  .recipeknob {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    margin: 0;
+    font-size: 0.78rem;
+
+    input {
+      width: 7rem;
+    }
+
+    &.wide input {
+      width: 18rem;
+      max-width: 100%;
+    }
+  }
+
+  .recipeknobtext {
+    color: #9a9a9a;
+  }
+
+  .sculptnote.ok {
+    color: #8fcf8f;
+  }
+}
+
+.steplist {
+  margin: 0.4rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  padding: 0.3rem 0;
+  border-top: 1px solid #262626;
+
+  &.refused {
+    background: rgba(217, 138, 138, 0.08);
+  }
+
+  .stephead {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .stepnumber {
+    color: #9a9a9a;
+    font-size: 0.78rem;
+  }
+
+  .stepkind {
+    font-size: 0.7rem;
+    color: #f2aa4c;
+  }
+
+  .stepactions {
+    margin-left: auto;
+    display: flex;
+    gap: 0.3rem;
+
+    button {
+      font-size: 0.72rem;
+      padding: 0.1rem 0.4rem;
+    }
+  }
+
+  .stepabout {
+    margin: 0.15rem 0 0 1.4rem;
+    font-size: 0.75rem;
+    color: #9a9a9a;
+  }
+
+  .stepparams {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.8rem;
+    margin: 0.3rem 0 0 1.4rem;
+  }
+
+  .stepproblem {
+    margin: 0.3rem 0 0 1.4rem;
+    color: #d98a8a;
+    font-size: 0.8rem;
+  }
+}
+
+.recipeeditoractions {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
 }
 
 .draft {

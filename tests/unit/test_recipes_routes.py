@@ -1,8 +1,9 @@
 """The recipe routes, without a database.
 
-`GET /recipes`, `POST /recipes`, `GET`/`PUT /recipes/{id}` against an
-in-memory stand-in for the recipe collection: the built-in recipes every
-account reads, the caller's own, and each refusal by code.
+`GET /recipes`, `POST /recipes`, `GET`/`PUT`/`DELETE /recipes/{id}`,
+`GET /recipes/operations` and `POST /recipes/check` against an in-memory
+stand-in for the recipe collection: the built-in recipes every account
+reads, the caller's own, and each refusal by code.
 """
 
 import copy
@@ -11,6 +12,7 @@ import pytest
 from bson import ObjectId
 from fastapi.testclient import TestClient
 
+from alfred.core.models.recipes import OPERATIONS
 from alfred.core.routes import recipes as routes
 from alfred.core.utils.recipes_builtin import BUILTIN
 from alfred.main import app
@@ -49,6 +51,9 @@ class FakeRecipeStore:
 
     async def replace(self, recipe_id, fields):
         self.documents[recipe_id].update(copy.deepcopy(fields))
+
+    async def delete(self, recipe_id):
+        return 1 if self.documents.pop(recipe_id, None) is not None else 0
 
 
 def stored(**changes):
@@ -132,6 +137,93 @@ class TestOne:
         assert res.status_code == 404
         assert res.json()['code'] == 'unknown_recipe'
         assert 'highlights' in res.json()['detail']
+
+
+class TestOperations:
+    def test_every_operation_with_its_parameters(self, api):
+        client, _ = api(OWNER)
+        res = client.get('/recipes/operations')
+        assert res.status_code == 200, res.text
+        listed = {op['name']: op for op in res.json()}
+        assert list(listed) == list(OPERATIONS)
+        top = listed['top']
+        assert top['kind'] == 'filter' and top['about']
+        assert top['parameters']['count'] == {
+            'kind': 'integer',
+            'default': 25,
+            'low': 1,
+            'high': 500,
+        }
+        assert listed['compose']['parameters']['how'] == {
+            'kind': 'choice',
+            'default': 'each',
+            'choices': ['each', 'together', 'whole'],
+        }
+        assert listed['spikes']['parameters']['where_words'] == {
+            'kind': 'boolean',
+            'default': True,
+        }
+        assert listed['sentences']['parameters'] == {}
+
+
+class TestChecking:
+    def test_a_good_recipe_is_answered_tidied_and_stored_nowhere(self, api):
+        client, store = api(OWNER)
+        res = client.post('/recipes/check', json={**MINE, 'label': '  Mine  '})
+        assert res.status_code == 200, res.text
+        assert res.json() == {
+            'name': 'mine',
+            'label': 'Mine',
+            'description': '',
+            'fields': [],
+            'steps': MINE['steps'],
+        }
+        assert store.documents == {}
+
+    def test_a_rule_broken_names_the_step(self, api):
+        client, store = api(OWNER)
+        res = client.post(
+            '/recipes/check', json={**MINE, 'steps': [{'op': 'top', 'count': 900}]}
+        )
+        assert res.status_code == 422
+        assert res.json() == {
+            'detail': 'step 1 (top): count: 900 is above 500',
+            'code': 'recipe_refused',
+        }
+        assert store.documents == {}
+
+    def test_a_step_naming_no_operation(self, api):
+        client, _ = api(OWNER)
+        res = client.post('/recipes/check', json={**MINE, 'steps': [{'op': 'dance'}]})
+        assert res.status_code == 422
+        assert res.json()['code'] == 'unknown_operation'
+        assert res.json()['detail'].startswith("step 1: 'dance' is not an operation")
+
+
+class TestDeleting:
+    def test_mine_is_deleted(self, api):
+        mine = stored()
+        client, store = api(OWNER, mine)
+        res = client.delete(f'/recipes/{mine["_id"]}')
+        assert res.status_code == 200, res.text
+        assert res.json() == {'deleted': str(mine['_id'])}
+        assert store.documents == {}
+        assert client.get(f'/recipes/{mine["_id"]}').status_code == 404
+
+    def test_another_account_s_is_404_and_kept(self, api):
+        theirs = stored(owner=STRANGER.email)
+        client, store = api(OWNER, theirs)
+        res = client.delete(f'/recipes/{theirs["_id"]}')
+        assert res.status_code == 404
+        assert res.json()['code'] == 'unknown_recipe'
+        assert theirs['_id'] in store.documents
+
+    def test_a_built_in_cannot_be_deleted(self, api):
+        client, _ = api(OWNER)
+        res = client.delete('/recipes/highlights')
+        assert res.status_code == 422
+        assert res.json()['code'] == 'invalid_id'
+        assert client.get('/recipes/highlights').status_code == 200
 
 
 class TestWriting:

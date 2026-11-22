@@ -14,6 +14,11 @@ import { Transcript } from '../captions/transcript'
  * A run is the worker's, so the job is read again every couple of seconds
  * while it is queued or running; when it is done the project list and the
  * cues are read again, since both changed.
+ *
+ * A recipe is edited here too: a copy of any recipe, or one of the account's
+ * own, with its steps and their parameters, checked by `POST /recipes/check`
+ * and stored by `POST` or `PUT /recipes`; the operations a step may name come
+ * from `GET /recipes/operations`.
  */
 
 const RUNNING = ['queued', 'running']
@@ -37,6 +42,17 @@ export const Sculpt = {
   timer: null,
   // The drafts ticked to drop, by id.
   marked: new Set(),
+
+  // The operations a step may name (`GET /recipes/operations`).
+  operations: [],
+  operationsLoaded: false,
+  // The recipe being edited: `{id, name, label, description, fields, steps}`,
+  // `id` null for one not stored yet; each step `{op, params}`, every
+  // parameter as the text typed, `$knob` for a knob it reads.
+  editing: null,
+  // What the server said of it: 'ok' after a check passed, `{detail, step}`
+  // after a refusal, the step counted from 1 and 0 for none named.
+  verdict: null,
 
   /** The recipes, asked for once; `force` asks again. */
   loadRecipes: opts => {
@@ -192,6 +208,193 @@ export const Sculpt = {
   markAll: () => {
     if (Sculpt.marked.size === Sculpt.drafts.length) Sculpt.marked = new Set()
     else Sculpt.marked = new Set(Sculpt.drafts.map(d => d.id))
+  },
+
+  // --- editing a recipe -------------------------------------------------------
+
+  loadOperations: () => {
+    if (Sculpt.operationsLoaded) return
+    Sculpt.operationsLoaded = true
+    auth('/recipes/operations')
+      .then(operations => {
+        Sculpt.operations = operations || []
+      })
+      .catch(() => {
+        Sculpt.operationsLoaded = false
+      })
+  },
+
+  operation: name => Sculpt.operations.find(o => o.name === name) || null,
+
+  /** A stored step as the editor holds it: each parameter as text, `$knob` for a knob it reads. */
+  stepFrom: step => {
+    const params = {}
+    Object.entries(step || {}).forEach(([key, value]) => {
+      if (key === 'op') return
+      const reads = value && typeof value === 'object' && typeof value.var === 'string'
+      params[key] = reads ? `$${value.var}` : String(value)
+    })
+    return { op: step.op, params }
+  },
+
+  /**
+   * A step as the api takes it: a blank parameter left out, so the operation's
+   * own value holds; `$knob` as a read of that knob; a number or a boolean by
+   * the parameter's kind, and the rest as typed.
+   */
+  stepTo: step => {
+    const out = { op: step.op }
+    const operation = Sculpt.operation(step.op)
+    Object.entries(step.params || {}).forEach(([key, text]) => {
+      const typed = String(text == null ? '' : text).trim()
+      if (!typed) return
+      if (typed.startsWith('$')) {
+        out[key] = { var: typed.slice(1) }
+        return
+      }
+      const kind = operation && operation.parameters[key] ? operation.parameters[key].kind : 'text'
+      if ((kind === 'number' || kind === 'integer') && typed !== '' && Number.isFinite(Number(typed))) {
+        out[key] = Number(typed)
+      } else if (kind === 'boolean' && ['true', 'false'].includes(typed.toLowerCase())) {
+        out[key] = typed.toLowerCase() === 'true'
+      } else {
+        out[key] = typed
+      }
+    })
+    return out
+  },
+
+  /** Start editing: a copy of `recipe` as a new one of mine, or, with `own`, the recipe itself. */
+  edit: (recipe, own) => {
+    Sculpt.loadOperations()
+    Sculpt.editing = {
+      id: own ? recipe.id : null,
+      name: own ? recipe.name : `${recipe.name}-copy`,
+      label: own ? recipe.label || recipe.name : `${recipe.label || recipe.name} (copy)`,
+      description: recipe.description || '',
+      fields: JSON.parse(JSON.stringify(recipe.fields || [])),
+      steps: (recipe.steps || []).map(Sculpt.stepFrom),
+    }
+    Sculpt.verdict = null
+  },
+
+  cancelEdit: () => {
+    Sculpt.editing = null
+    Sculpt.verdict = null
+  },
+
+  setEditing: (key, value) => {
+    Sculpt.editing[key] = value
+    Sculpt.verdict = null
+  },
+
+  setStepOp: (index, op) => {
+    Sculpt.editing.steps[index] = { op, params: {} }
+    Sculpt.verdict = null
+  },
+
+  setParam: (index, name, text) => {
+    Sculpt.editing.steps[index].params[name] = text
+    Sculpt.verdict = null
+  },
+
+  addStep: op => {
+    if (op) Sculpt.editing.steps.push({ op, params: {} })
+    Sculpt.verdict = null
+  },
+
+  removeStep: index => {
+    Sculpt.editing.steps.splice(index, 1)
+    Sculpt.verdict = null
+  },
+
+  moveStep: (index, by) => {
+    const steps = Sculpt.editing.steps
+    const to = index + by
+    if (to < 0 || to >= steps.length) return
+    ;[steps[index], steps[to]] = [steps[to], steps[index]]
+    Sculpt.verdict = null
+  },
+
+  /** The recipe being edited as `POST /recipes` takes it. */
+  body: () => {
+    const e = Sculpt.editing
+    return {
+      name: String(e.name || '').trim(),
+      label: String(e.label || '').trim(),
+      description: String(e.description || '').trim(),
+      fields: e.fields,
+      steps: e.steps.map(Sculpt.stepTo),
+    }
+  },
+
+  /** A refusal as a verdict: its sentence, and the step it names, from 1, or 0. */
+  refused: err => {
+    const detail = requestProblem(err) || 'no answer'
+    const named = /^step (\d+)/.exec(detail)
+    return { detail, step: named ? Number(named[1]) : 0 }
+  },
+
+  /** Check the recipe as saving would, without saving. */
+  check: () => {
+    if (!Sculpt.editing || Sculpt.busy) return Promise.resolve()
+    Sculpt.busy = 'check'
+    return auth('/recipes/check', { method: 'POST', body: Sculpt.body() })
+      .then(() => {
+        Sculpt.verdict = 'ok'
+      })
+      .catch(err => {
+        Sculpt.verdict = Sculpt.refused(err)
+      })
+      .then(() => {
+        Sculpt.busy = null
+        m.redraw()
+      })
+  },
+
+  /** Store the recipe being edited as mine, new or replaced, and tick it. */
+  save: () => {
+    if (!Sculpt.editing || Sculpt.busy) return Promise.resolve()
+    const own = Sculpt.editing.id
+    Sculpt.busy = 'save'
+    return auth(own ? `/recipes/${own}` : '/recipes', {
+      method: own ? 'PUT' : 'POST',
+      body: Sculpt.body(),
+    })
+      .then(saved => {
+        Sculpt.editing = null
+        Sculpt.verdict = null
+        Sculpt.chosen = new Set([saved.id])
+        delete Sculpt.values[saved.id]
+        Sculpt.loadRecipes({ force: true })
+      })
+      .catch(err => {
+        Sculpt.verdict = Sculpt.refused(err)
+      })
+      .then(() => {
+        Sculpt.busy = null
+        m.redraw()
+      })
+  },
+
+  /** Delete one of mine; a draft it made keeps naming it. */
+  remove: id => {
+    if (Sculpt.busy) return Promise.resolve()
+    Sculpt.busy = 'remove'
+    Sculpt.error = null
+    return auth(`/recipes/${id}`, { method: 'DELETE' })
+      .then(() => {
+        Sculpt.chosen.delete(id)
+        if (Sculpt.editing && Sculpt.editing.id === id) Sculpt.cancelEdit()
+        Sculpt.loadRecipes({ force: true })
+      })
+      .catch(err => {
+        Sculpt.error = `Could not delete the recipe: ${requestProblem(err) || 'no answer'}`
+      })
+      .then(() => {
+        Sculpt.busy = null
+        m.redraw()
+      })
   },
 
   /** Drop the marked drafts, with their cues on the source. */

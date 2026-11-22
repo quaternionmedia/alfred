@@ -2,8 +2,12 @@
 
 `GET /recipes` lists the built-in recipes every account has and the caller's
 own; `POST /recipes` stores one of the caller's, `PUT /recipes/{id}` replaces
-it, `GET /recipes/{id}` reads one. A built-in recipe is read by its name and
-cannot be written: an account that wants a changed one stores a copy.
+it, `DELETE /recipes/{id}` deletes it, `GET /recipes/{id}` reads one. A
+built-in recipe is read by its name and cannot be written: an account that
+wants a changed one stores a copy. `GET /recipes/operations` lists what a
+step may name, with each operation's parameters, and `POST /recipes/check`
+checks a recipe as a write would and stores nothing, so an editor can show
+what a write would refuse before it writes.
 
 Scoped to the caller as projects are (`utils.ownership`): another account's
 recipe answers 404, exactly as one that does not exist. The routes reach
@@ -12,14 +16,14 @@ recipe's rules are the model's (`models.recipes.check_recipe`), raised here
 as refusals by code.
 """
 
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from ..errors import Code, Refusal
-from ..models.recipes import Recipe, RecipeError, check_recipe
+from ..models.recipes import OPERATIONS, Parameter, Recipe, RecipeError, check_recipe
 from ..utils.bucket import INVALID_ID, fresh
 from ..utils.db import User
 from ..utils.ownership import owner_filter, owner_key
@@ -42,6 +46,56 @@ class RecipeView(BaseModel):
     builtin: bool
 
 
+class RecipeChecked(BaseModel):
+    """A recipe as `POST /recipes` would store it: tidied, and nowhere yet."""
+
+    name: str
+    label: str
+    description: str
+    fields: List[dict]
+    steps: List[dict]
+
+
+class RecipeDeleted(BaseModel):
+    deleted: str
+
+
+class OperationView(BaseModel):
+    """One operation a step may name, as `GET /recipes/operations` lists it."""
+
+    name: str
+    kind: str
+    about: str
+    # By parameter name: `{kind, default, low, high, choices}`, the bounds for
+    # a number and the choices for a choice.
+    parameters: Dict[str, Dict[str, Any]]
+
+
+def parameter_view(parameter: Parameter) -> Dict[str, Any]:
+    view: Dict[str, Any] = {'kind': parameter.kind, 'default': parameter.default}
+    if parameter.low is not None:
+        view['low'] = parameter.low
+    if parameter.high is not None:
+        view['high'] = parameter.high
+    if parameter.choices:
+        view['choices'] = list(parameter.choices)
+    return view
+
+
+OPERATION_VIEWS = [
+    OperationView(
+        name=name,
+        kind=operation['kind'],
+        about=operation['about'],
+        parameters={
+            key: parameter_view(parameter)
+            for key, parameter in operation['parameters'].items()
+        },
+    )
+    for name, operation in OPERATIONS.items()
+]
+
+
 class RecipeStore:
     """The recipe collection, as these routes use it."""
 
@@ -60,6 +114,10 @@ class RecipeStore:
 
     async def replace(self, recipe_id, fields: dict) -> None:
         await self._recipes().update_one({'_id': recipe_id}, {'$set': fields})
+
+    async def delete(self, recipe_id) -> int:
+        result = await self._recipes().delete_one({'_id': recipe_id})
+        return result.deleted_count
 
 
 def get_recipe_store() -> RecipeStore:
@@ -153,6 +211,34 @@ async def createRecipe(
     return view_of(recipe)
 
 
+@recipesAPI.get('/recipes/operations', response_model=List[OperationView])
+async def listOperations(user: User = Depends(current_active_user)):
+    """# The operations
+
+    Every operation a recipe's step may name, in the order their kinds run:
+    its `kind`, what it does, and its parameters, each with its `kind`
+    (`number`, `integer`, `boolean`, `text` or `choice`), its `default`, its
+    `low` and `high` for a number and its `choices` for a choice.
+    docs/drafts.md is the same table, for a person.
+    """
+    return OPERATION_VIEWS
+
+
+@recipesAPI.post(
+    '/recipes/check',
+    response_model=RecipeChecked,
+    responses={422: {'description': 'not a recipe that can run; detail says the rule'}},
+)
+async def checkRecipe(body: dict, user: User = Depends(current_active_user)):
+    """# Check a recipe
+
+    The recipe as `POST /recipes` takes it, checked by the same rules and
+    refused by the same codes, the sentence naming the step; answered as it
+    would be stored, tidied, and stored nowhere.
+    """
+    return RecipeChecked(**checked(body))
+
+
 @recipesAPI.get('/recipes/{item_id}', response_model=RecipeView)
 async def getRecipe(
     item_id: str,
@@ -188,3 +274,24 @@ async def replaceRecipe(
     recipe = checked(body)
     await store.replace(found['_id'], recipe)
     return view_of({**found, **recipe})
+
+
+@recipesAPI.delete('/recipes/{item_id}', response_model=RecipeDeleted)
+async def deleteRecipe(
+    item_id: str,
+    user: User = Depends(current_active_user),
+    store: RecipeStore = Depends(get_recipe_store),
+):
+    """# Delete a recipe of yours
+
+    By its id; answers `{deleted}`. A built-in recipe cannot be deleted, and
+    its name is not an id (`invalid_id`); another account's is 404
+    (`unknown_recipe`). A draft the recipe made keeps naming it.
+    """
+    if not ObjectId.is_valid(item_id):
+        raise fresh(INVALID_ID)
+    found = await store.find({'_id': ObjectId(item_id), **owner_filter(user, OWNER)})
+    if found is None:
+        raise Refusal(Code.UNKNOWN_RECIPE, 'No recipe of yours has that id.')
+    await store.delete(found['_id'])
+    return RecipeDeleted(deleted=str(found['_id']))

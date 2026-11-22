@@ -81,7 +81,15 @@ lists the built-in recipes and yours, each with a tick and, once ticked, its
 knobs drawn as a form project's fields are; **Sculpt** starts the run over
 the open project, and a line under the button follows it to done or failed,
 with the run's notes. The button waits, and says why, while the project has
-no transcript. **Drafts** lists what the runs left, each with its length, its
+no transcript. **Copy** on any recipe, or **Edit** on one of yours, opens it
+in the panel: its name, label and description, and its steps in order, each
+an operation chosen from the table above with its parameters, a blank one
+the operation's own and `$knob` reading one of the recipe's knobs; steps are
+added, removed and moved. **Check** asks the server whether the recipe can
+run, as saving would, and a refusal is shown beside the step it names;
+**Save as mine** stores it as yours, listed and ticked, and a built-in is
+never written. **Delete** on one of yours removes it; a draft it made keeps
+naming it. **Drafts** lists what the runs left, each with its length, its
 recipe and the scores it was chosen by; opening one takes it to Edit as any
 project, and ticking several then **Drop** lets go of them with their cues.
 On a phone the stage shows one panel at a time, chosen by a switch. The line
@@ -134,6 +142,9 @@ a project that is not a draft keeps having no delete here.
 | `POST /recipes` | `{name, label, description, fields, steps}`, owned by the caller; answers it with its `id` |
 | `GET /recipes/{id}` | a built-in recipe by its name, or one of the caller's by its id; 404 `unknown_recipe` otherwise |
 | `PUT /recipes/{id}` | replaces one of the caller's whole; a built-in cannot be replaced |
+| `DELETE /recipes/{id}` | deletes one of the caller's; a built-in cannot be deleted, and a draft the recipe made keeps naming it |
+| `GET /recipes/operations` | every operation a step may name: its kind, what it does, and its parameters with their kind, default, bounds and choices; the table above, for a program |
+| `POST /recipes/check` | a recipe as `POST /recipes` takes it, checked by the same rules and refused by the same codes, answered tidied and stored nowhere |
 | `POST /project/{id}/drafts` | `{recipes: [{recipe, values}]}` → `202 {job}`; the worker makes the drafts |
 | `GET /project/{id}/drafts` | `{job, drafts}`, each draft `{id, name, description, duration, source}` |
 | `DELETE /project/{id}/drafts` | `{drafts: [id]}` → `{dropped}`: those drafts and their cues |
