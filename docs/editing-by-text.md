@@ -97,7 +97,7 @@ decides what happens to what was said in them ([Editing tools](tools.md)):
 | A clip dragged off the timeline | it goes, and what follows moves up | its words go |
 | A clip added | it goes in where it is put, and what follows moves on | those after it move on; over the new clip, what your projects that play its file say |
 | Slip | the clip shows another part of its file, in the same place | its words move with the picture, and those now outside its window go; what it shows that it did not is said as its sources said it |
-| Slide | the clip moves between its neighbours, which give and take the time | its words move with it; its neighbours' follow their windows |
+| Slide | the clip moves between its neighbours, which give and take the time | its words move with it; its neighbours' follow their windows; what the one that gained shows is said as its sources said it |
 | Dual roller | the cut between two clips moves, and nothing else | what either clip lost at the cut goes; nothing moves; what one gained is said as its sources said it |
 | Cut, or S | the clip becomes two that meet | nothing moves |
 | A template's **Duration**, typed | as a trim, once the field is left | as a trim |
@@ -120,7 +120,9 @@ clip, a slip, a roll, a slide, a clip added -- has words and captions only
 where another project says what was said over that part of its file: the
 project the draft was cut from, and that one's sources up the chain, nearest
 first, so a word a person corrected in a draft is the word a later draft of
-it gets; then your other projects that play the file and hold words. Each
+it gets; then the newest of your other projects that play the file and hold
+words, as many as the server reads for one answer, those not cut from
+another first. Each
 second is taken from the first of them that plays it, and a stretch a nearer
 source played and heard nothing in stays silent; a caption that runs past
 the stretch is cut to it and says the words said in what is left. The editor

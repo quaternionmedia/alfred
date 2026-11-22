@@ -263,6 +263,14 @@ test.describe('what an edit shows', () => {
     ])
   })
 
+  test('a slide shows what the neighbour before it took in, and nothing of its own', () => {
+    // b slides a second later: a plays a second more of its file, c a second
+    // less from its start, and b plays the window it played.
+    const before = [clip('a', 0, 4, 10), clip('b', 4, 4, 0, 'b.mp4'), clip('c', 8, 4, 30, 'c.mp4')]
+    const after = [clip('a', 0, 5, 10), clip('b', 5, 4, 0, 'b.mp4'), clip('c', 9, 3, 31, 'c.mp4')]
+    expect(revealed(before, after)).toEqual([{ key: 'a', name: 'a.mp4', start: 14, end: 15 }])
+  })
+
   test('a new clip shows all of its window; a template and a picture show no file', () => {
     expect(revealed([], [clip('b', 0, 3, 20, 'b.wav', 'audio')])).toEqual([
       { key: 'b', name: 'b.wav', start: 20, end: 23 },

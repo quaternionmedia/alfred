@@ -51,7 +51,7 @@ it loops over.
 | `editor.spec.js` | The timeline editor, with a project open. | 9 |
 | `examples.spec.js` | Each docs example (docs/examples/edl/*.json) previews on the demo media alone. | 2 |
 | `flow.spec.js` | The four-stage flow, end to end, against real data. | 16 |
-| `follow-clips.spec.js` | `followClips` (src/ClipWindow.js): captions and words follow an edit made with the timeline tools; and `revealed` and `saidOnto`, what an edit shows that the timeline held no words for, and what was said there put onto it. | 19 |
+| `follow-clips.spec.js` | `followClips` (src/ClipWindow.js): captions and words follow an edit made with the timeline tools; and `revealed` and `saidOnto`, what an edit shows that the timeline held no words for, and what was said there put onto it. | 20 |
 | `health.spec.js` | Whether the stack can do its work. | 4 |
 | `journeys.spec.js` | The editor says what to do next. | 6 |
 | `lanes-arith.spec.js` | The lanes' arithmetic (src/lanes/arith.js): ticks, the view, the clips laid out, a sound's envelope over them, and a clip's effects. | 14 |
