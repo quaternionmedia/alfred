@@ -133,6 +133,11 @@ test.describe('who spoke', () => {
       const reading = authedPage.locator('#transcript-reading')
       await expect(reading).toHaveAttribute('data-state', 'read', { timeout: 60_000 })
       await expect(reading).toContainText('Unknown (2)')
+      // The reading opens on the engine's own page, by the id the engine gave it.
+      const open = reading.locator('#transcript-open-in')
+      await expect(open).toHaveText('Open in looksatwords')
+      await expect(open).toHaveAttribute('href', /\/\?conversation=\d+$/)
+      await expect(open).toHaveAttribute('target', '_blank')
 
       authedPage.once('dialog', dialog => dialog.accept('Bob'))
       await authedPage.locator('#transcript-text .speakerlabel').nth(1).click()

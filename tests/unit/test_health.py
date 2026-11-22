@@ -103,13 +103,38 @@ class TestHealth:
                 'configured': False,
                 'ok': False,
                 'detail': 'none configured',
+                'page': None,
             },
             'language_engine': {
                 'configured': False,
                 'ok': False,
                 'detail': 'none configured',
+                'page': None,
             },
         }
+
+    def test_each_engine_s_page_is_its_address_or_the_one_set_for_browsers(
+        self, client, monkeypatch
+    ):
+        """Mutation: report the engine's address whatever ALFRED_*_PAGE says --
+        red; a browser outside a Docker network cannot open a service's name."""
+        monkeypatch.setattr(config, 'AUDIO_ENGINE_PAGE', 'http://joe:1059')
+        monkeypatch.setattr(
+            config, 'LANGUAGE_ENGINE_PAGE', 'http://me:secret@words.test:8000/?x=1'
+        )
+        answer(
+            FixedRenderer(workers=1, pending=0),
+            engine=FixedAudioEngine(configured=True, ok=True, detail=None),
+        )
+        app.dependency_overrides[health.get_language_engine_state] = lambda: (
+            FixedLanguageEngine(configured=True, ok=True, detail=None)
+        )
+        report = client.get('/health').json()
+        assert report['audio_engine']['page'] == 'http://joe:1059'
+        assert report['language_engine']['page'] == 'http://words.test:8000'
+        # Without an engine there is no page, whatever the setting says.
+        answer(FixedRenderer(workers=1, pending=0))
+        assert client.get('/health').json()['audio_engine']['page'] is None
 
     def test_no_worker_is_not_ok(self, client):
         """What the thin stack answers: renders will wait for ever."""
@@ -142,6 +167,7 @@ class TestTheAudioEngine:
             'configured': True,
             'ok': True,
             'detail': None,
+            'page': None,
         }
 
     def test_configured_and_not_answering_says_why(self, client):

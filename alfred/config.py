@@ -259,6 +259,18 @@ LANGUAGE_ENGINE_TIMEOUT = resolve_seconds(
     environ, 'ALFRED_LANGUAGE_ENGINE_TIMEOUT', 120
 )
 
+# Where a person's browser opens each engine's own page, for the links the
+# editor offers (Open in joe, Open in looksatwords): the engine's address,
+# unless the stack reaches the engine by a name a browser cannot, such as a
+# service's name inside Docker, and ALFRED_*_PAGE names the address a
+# browser can. Unset with no engine, there is no page to open.
+AUDIO_ENGINE_PAGE = (
+    environ.get('ALFRED_AUDIO_ENGINE_PAGE') or ''
+).strip() or AUDIO_ENGINE_URL
+LANGUAGE_ENGINE_PAGE = (
+    environ.get('ALFRED_LANGUAGE_ENGINE_PAGE') or ''
+).strip() or LANGUAGE_ENGINE_URL
+
 # A field of vox's EngineContract per variable. `none` is None (not offered),
 # empty is unset, and a name that is no field is reported by /health.
 AUDIO_ENGINE_CONTRACT_PREFIX = 'ALFRED_AUDIO_ENGINE_CONTRACT_'

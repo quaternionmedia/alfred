@@ -8,6 +8,7 @@ import { requestProblem } from '../Problem'
 import { saveTimeline } from '../Tools'
 import { Autosave } from '../Autosave'
 import { Transcript } from '../captions/transcript'
+import { OpenIn } from '../Stages'
 import '../captions/captions.scss'
 
 /**
@@ -67,10 +68,22 @@ export const JobLine = {
   view: ({ attrs: { id = 'captions-job' } }) => {
     const job = Captions.job
     if (!job || !JOB_SAYS[job.state]) return null
+    const engine = Health.state && Health.state.audio_engine
     return m(
       `p.captionsjob#${id}`,
       { class: job.state, 'data-state': job.state, role: 'status' },
-      JOB_SAYS[job.state](job)
+      [
+        JOB_SAYS[job.state](job),
+        job.state === 'done'
+          ? m(OpenIn, {
+              id: `${id}-open-in`,
+              app: job.engine || 'the audio engine',
+              page: (engine && engine.page) || null,
+              at: '/',
+              what: 'its latest run',
+            })
+          : null,
+      ]
     )
   },
 }

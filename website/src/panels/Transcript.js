@@ -8,6 +8,7 @@ import { User } from '../User'
 import { SaveState } from '../Autosave'
 import { JobLine, TranscribeButton, TranscribeConfirm, transcribeBlocker } from './Captions'
 import { Conversation } from '../captions/conversation'
+import { OpenIn } from '../Stages'
 import '../captions/captions.scss'
 
 /**
@@ -225,6 +226,12 @@ const Words = () => {
 }
 
 /** What the language engine reads in the words: the speakers, the topics, the tangents. */
+/** Where the language engine's own page is, as the health report names it. */
+const readingPage = () => {
+  const engine = Health.state && Health.state.language_engine
+  return (engine && engine.page) || null
+}
+
 const Reading = {
   view: () => {
     const state = Conversation.state
@@ -276,6 +283,13 @@ const Reading = {
             )
           )
         : null,
+      m(OpenIn, {
+        id: 'transcript-open-in',
+        app: 'looksatwords',
+        page: readingPage(),
+        at: Conversation.id != null ? `/?conversation=${Conversation.id}` : null,
+        what: 'this reading',
+      }),
     ])
   },
 }

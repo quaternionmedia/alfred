@@ -27,6 +27,8 @@ export const Conversation = {
   speakers: {},
   topics: [],
   tangents: [],
+  // What the engine keeps the reading under; its page opens it by this.
+  id: null,
   // Bumped when the reading changes; the paragraphs redraw on it.
   version: 0,
   seen: null,
@@ -83,6 +85,7 @@ export const Conversation = {
         Conversation.speakers = (answer && answer.speakers) || {}
         Conversation.topics = (answer && answer.topics) || []
         Conversation.tangents = (answer && answer.tangents) || []
+        Conversation.id = answer && answer.id != null ? answer.id : null
         Conversation.state = 'read'
         Conversation.why = null
       })

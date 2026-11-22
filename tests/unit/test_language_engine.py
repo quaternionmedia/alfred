@@ -108,6 +108,20 @@ class TestWhatIsSent:
 
 
 class TestWhatIsRead:
+    def test_the_engine_s_id_for_the_conversation_is_kept(self, engine):
+        """Mutation: drop the id -- red; the engine's page opens a reading by it."""
+        kept = read(
+            LINES, transport=answering(lambda r: httpx.Response(200, json=ANSWER))
+        )
+        assert kept.id == 1
+        without = read(
+            LINES,
+            transport=answering(
+                lambda r: httpx.Response(200, json={**ANSWER, 'conversation_id': 'x'})
+            ),
+        )
+        assert without.id is None
+
     def test_speakers_topics_and_tangents_in_alfred_s_words(self, engine):
         found = read(
             LINES, transport=answering(lambda r: httpx.Response(200, json=ANSWER))

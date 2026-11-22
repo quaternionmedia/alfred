@@ -30,6 +30,8 @@ x-alfred-settings: &alfred-settings
   # looksatwords beside the stack, for who spoke and what about.
   ALFRED_LANGUAGE_ENGINE_URL:
   ALFRED_LANGUAGE_ENGINE_TIMEOUT:
+  ALFRED_AUDIO_ENGINE_PAGE:
+  ALFRED_LANGUAGE_ENGINE_PAGE:
 
 # One per field of vox's EngineContract; see dev.yml.
 x-audio-engine-contract: &audio-engine-contract
