@@ -42,7 +42,7 @@ it is measured against what people keep and drop.
 | `silences` | segment | the stretches the audio engine heard as silence, longer than `longer_than` seconds | `longer_than` 2 |
 | `dialogue` | score | how much is said in a candidate, words a second over its whole length, so a stretch with a break in it scores by what is said around the break; scaled so the most talkative is 1 | `weight` 1 |
 | `spikes` | score | the share of a candidate's seconds in which the level rises above `level_above` times its usual and the picture moves above `motion_above` times its usual at once, each usual a baseline over the whole source; with `where_words`, only seconds in which a word is said; scaled so the spikiest is 1 | `weight` 1, `level_above` 1.5, `motion_above` 1.5, `where_words` true |
-| `label` | score | a title for each candidate: the topic the language engine has live over it, the strongest of those it read within the candidate ([Who spoke, and what about](editing-by-text.md#who-spoke-and-what-about)); and a category from a labeller; each skipped, with a note in the job, where there is none | `title` true, `categories` |
+| `label` | score | a title for each candidate: the topic the language engine has live over it, the strongest of those it read within the candidate ([Who spoke, and what about](editing-by-text.md#who-spoke-and-what-about)); a category, the one of `categories` (separated by commas) a labeller sorts what is said in the candidate into; and, with `score`, how well the labeller says it stands alone, 0 to 1, under `label` ([The labeller](#the-labeller)); each skipped, with a note in the job, where there is none | `title` true, `categories`, `score` false |
 | `top` | filter | the highest-scored candidates that do not overlap, by the weighted sum of their scores: `count` of them, or `per_hour` for each hour of the source when that is set | `count` 25, `per_hour` 0 |
 | `keep` | filter | the candidates between `shortest` and `longest` seconds | `shortest` 0, `longest` a day |
 | `fillers` | filter | cuts each of the `words`, separated by commas, out of what is kept | `words` um, uh, er, ah, erm, hmm |
@@ -55,6 +55,25 @@ A recipe with no compose step makes one draft per candidate. A step naming
 no operation, a parameter the operation lacks or a value out of its range is
 refused when the recipe is written ([Refusals](api/errors.md),
 `unknown_operation` and `recipe_refused`), the sentence naming the step.
+
+### The labeller
+
+A `label` step with `categories`, or with `score`, asks a labeller: a chat
+model behind an OpenAI-style route at `ALFRED_LABELLER_URL`, serving the
+model `ALFRED_LABELLER_MODEL` names
+([Configuration](configuration.md#the-labeller)). It is asked a candidate at
+a time, after the filters, so a run asks as many questions as it keeps
+drafts and not one per window: which one of the categories fits what is said
+in the candidate, answered with the category alone, and how well the stretch
+stands alone as a clip, answered with a whole number from 0 to 10, which the
+step scales to 0 to 1. The words sent are cut to a fixed length; the answer
+is read for the longest category it names, and for the first number it
+holds. A labeller that does not answer ends the asking at the first failure,
+with a note in the job, and the drafts are made all the same, uncategorised.
+alfred names no model: the route and the model are the operator's, and `GET
+/health` reports whether the labeller answers and serves the model named.
+No built-in recipe asks it; a copy of one with `categories` on its `label`
+step does.
 
 ## The built-in recipes
 
@@ -82,7 +101,7 @@ knobs drawn as a form project's fields are; **Sculpt** starts the run over
 the open project, and a line under the button follows it to done or failed,
 with the run's notes. The button waits, and says why, while the project has
 no transcript. **Drafts** lists what the runs left, each with its length, its
-recipe and the scores it was chosen by; opening one takes it to Edit as any
+recipe, its category where a labeller gave one, and its scores; opening one takes it to Edit as any
 project, and ticking several then **Drop** lets go of them with their cues.
 On a phone the stage shows one panel at a time, chosen by a switch. The line
 under the rail offers **Next: Sculpt** from Source once a project is
@@ -108,10 +127,15 @@ settings, and `source`:
   "recipe": "highlights",
   "values": {"shortest": "8", "longest": "12", "count": "25"},
   "spans": [[1832.4, 1841.9]],
-  "scores": {"dialogue": 0.84, "spikes": 1.0},
+  "scores": {"dialogue": 0.84, "spikes": 1.0, "label": 0.8},
+  "category": "story",
   "made_at": "2026-11-21T15:02:11Z"
 }
 ```
+
+`category` is the one a labeller sorted the draft into, empty where none was
+asked or the answer named none; `scores.label` is how well the labeller said
+it stands alone, where that was asked.
 
 The source keeps the run as its `drafts_job`, `queued`, `running`, then
 `done` with how many were `made` and the run's `notes` (a step skipped, a

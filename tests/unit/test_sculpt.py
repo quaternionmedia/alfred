@@ -103,6 +103,29 @@ TOPICS = [
 WORDS = sculpt.spoken(make_words())
 CAPTIONS = sculpt.spoken(make_captions())
 
+# A `label` step's parameters as resolved: titles alone, and sorting with a score.
+TITLE_ONLY = {'title': True, 'categories': '', 'score': False}
+SORTING = {'title': False, 'categories': 'rules, tower', 'score': True}
+
+
+class FakeLabeller:
+    """A labeller that sorts by a word in the text and scores by how much is
+    said, a tenth a word, counting what it is asked; or fails every ask."""
+
+    def __init__(self, failing=False):
+        self.asked = []
+        self.failing = failing
+
+    def category(self, text, categories):
+        self.asked.append(('category', text))
+        if self.failing:
+            raise RuntimeError('the labeller at labels.test: it answered 500')
+        return 'tower' if 'tower' in text.lower() else categories[0]
+
+    def alone(self, text):
+        self.asked.append(('alone', text))
+        return round(min(len(text.split()) / 10, 1.0), 2)
+
 
 class TestWindows:
     def test_each_begins_at_a_word_and_ends_at_a_word_within_its_length(self):
@@ -277,13 +300,11 @@ class TestLabel:
     def test_without_a_reading_the_step_says_why_and_titles_nothing(self, source):
         state = sculpt.State(candidates=[Candidate(39, 45)])
         unread = Source(clips=source.clips, unread='the engine was away')
-        sculpt.apply('label', {'title': True, 'categories': ''}, state, unread, [], [])
+        sculpt.apply('label', {**TITLE_ONLY}, state, unread, [], [])
         assert state.candidates[0].title == ''
         assert state.notes == ['label: nothing was titled: the engine was away']
         state = sculpt.State(candidates=[Candidate(39, 45)])
-        sculpt.apply(
-            'label', {'title': True, 'categories': ''}, state, Source(clips=[]), [], []
-        )
+        sculpt.apply('label', {**TITLE_ONLY}, state, Source(clips=[]), [], [])
         assert state.notes == [
             'label: nothing was titled: no topic was read over the source'
         ]
@@ -291,12 +312,79 @@ class TestLabel:
     def test_title_off_titles_nothing_and_a_category_waits_on_a_labeller(self, source):
         state = sculpt.State(candidates=[Candidate(39, 45)])
         sculpt.apply(
-            'label', {'title': False, 'categories': 'a, b'}, state, source, [], []
+            'label',
+            {'title': False, 'categories': 'a, b', 'score': False},
+            state,
+            source,
+            [],
+            [],
         )
         assert state.candidates[0].title == ''
         assert state.notes == [
-            'label: no labeller is configured, so no category was given'
+            'label: nothing was categorised: no labeller is configured'
         ]
+
+    def test_the_note_says_why_there_is_no_labeller(self, source):
+        state = sculpt.State(candidates=[Candidate(39, 45)])
+        unlabelled = Source(clips=source.clips, unlabelled='No labeller: set it')
+        sculpt.apply(
+            'label', {**SORTING, 'categories': ''}, state, unlabelled, WORDS, []
+        )
+        assert state.notes == ['label: nothing was scored: No labeller: set it']
+        state = sculpt.State(candidates=[Candidate(39, 45)])
+        sculpt.apply('label', {**SORTING}, state, unlabelled, WORDS, [])
+        assert state.notes == [
+            'label: nothing was categorised or scored: No labeller: set it'
+        ]
+
+    def test_each_candidate_is_sorted_and_scored_by_the_labeller(self, source):
+        state = sculpt.State(candidates=[Candidate(39, 45), Candidate(10, 18)])
+        sorter = FakeLabeller()
+        sculpt.apply('label', {**SORTING}, state, source, WORDS, [], sorter)
+        assert [c.category for c in state.candidates] == ['tower', 'rules']
+        # Five words fall in 39-45 s and seven in 10-18 s, a tenth each.
+        assert [c.scores['label'] for c in state.candidates] == [0.5, 0.7]
+        assert [kind for kind, _ in sorter.asked] == ['category', 'alone'] * 2
+        assert sorter.asked[0][1] == 'Oh no, the tower fell!'
+        assert state.notes == []
+
+    def test_without_categories_or_score_the_labeller_is_not_asked(self, source):
+        state = sculpt.State(candidates=[Candidate(39, 45)])
+        sorter = FakeLabeller()
+        sculpt.apply('label', {**TITLE_ONLY}, state, source, WORDS, [], sorter)
+        assert sorter.asked == []
+        assert state.notes == []
+
+    def test_a_candidate_in_which_nothing_is_said_is_not_asked(self, source):
+        state = sculpt.State(candidates=[Candidate(26, 33)])
+        sorter = FakeLabeller()
+        sculpt.apply('label', {**SORTING}, state, source, WORDS, [], sorter)
+        assert sorter.asked == []
+        assert state.candidates[0].category == ''
+        assert 'label' not in state.candidates[0].scores
+
+    def test_a_labeller_that_fails_is_one_note_and_the_rest_are_left(self, source):
+        state = sculpt.State(candidates=[Candidate(39, 45), Candidate(10, 18)])
+        sorter = FakeLabeller(failing=True)
+        sculpt.apply('label', {**SORTING}, state, source, WORDS, [], sorter)
+        assert state.notes == [
+            'label: the labeller failed, so not every candidate was labelled: '
+            'the labeller at labels.test: it answered 500'
+        ]
+        assert len(sorter.asked) == 1
+        assert [c.category for c in state.candidates] == ['', '']
+
+    def test_a_sorted_draft_carries_its_category_and_its_score(self, source):
+        steps = [
+            {'op': 'chapters'},
+            {'op': 'label', 'categories': 'rules, tower', 'score': True},
+            {'op': 'compose', 'how': 'each'},
+        ]
+        run = sculpt.run(steps, {}, [], source, labeller=FakeLabeller())
+        assert [d.category for d in run.drafts] == ['rules', 'tower']
+        assert all('label' in d.scores for d in run.drafts)
+        assert 'category tower' in run.drafts[1].description
+        assert run.notes == []
 
     def test_a_titled_draft_carries_its_title(self, source):
         steps = [{'op': 'chapters'}, {'op': 'label'}, {'op': 'compose', 'how': 'each'}]

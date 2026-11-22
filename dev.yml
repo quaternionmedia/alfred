@@ -28,6 +28,9 @@ x-alfred-settings: &alfred-settings
   # looksatwords beside the stack, for who spoke and what about.
   ALFRED_LANGUAGE_ENGINE_URL:
   ALFRED_LANGUAGE_ENGINE_TIMEOUT:
+  ALFRED_LABELLER_URL:
+  ALFRED_LABELLER_MODEL:
+  ALFRED_LABELLER_TIMEOUT:
 
 # One per field of vox's EngineContract, in its order. Compose takes names,
 # not patterns; test_stack_settings.py holds the list to the contract.

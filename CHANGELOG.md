@@ -107,6 +107,14 @@ accepted are now refused, and a production stack needs its own signing key.
   source's words read once per run and the reading kept beside the library;
   `highlights`, `chapters`, `excerpts` and `quotes` carry the step. Without
   an engine a draft keeps its recipe's name and the job says why.
+- **A draft is sorted and scored by a labeller.** A recipe's `label` step
+  with `categories` asks a chat model behind an OpenAI-style route at
+  `ALFRED_LABELLER_URL`, serving the model `ALFRED_LABELLER_MODEL` names,
+  which of the categories what is said in each draft belongs to, and with
+  `score`, how well it stands alone; the draft carries the category and the
+  score, the Drafts panel shows them, and `GET /health` reports the labeller.
+  alfred names no model. Without a labeller the step gives neither and the
+  job says why.
 
 - **The Sculpt stage.** A fifth stage on the rail, between Source and Edit:
   its Recipes panel runs the recipes over the open project with the knobs a

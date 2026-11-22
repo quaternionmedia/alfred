@@ -178,6 +178,7 @@ const DraftRow = {
           m('span.draftmeta', [
             draft.duration ? m('span', seconds(draft.duration)) : null,
             recipe ? m('span', recipe.label || recipe.name) : null,
+            source.category ? m('span.draftcategory', source.category) : null,
             scores ? m('span.draftscores', scores) : null,
           ]),
         ]
