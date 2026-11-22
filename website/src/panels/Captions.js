@@ -77,7 +77,7 @@ export const JobLine = {
         job.state === 'done'
           ? m(OpenIn, {
               id: `${id}-open-in`,
-              app: job.engine || 'the audio engine',
+              app: 'joe',
               page: (engine && engine.page) || null,
               at: '/',
               what: 'its latest run',
