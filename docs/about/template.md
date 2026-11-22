@@ -14,7 +14,7 @@ A `Template` is a `Clip` whose picture is drawn rather than read from a file: te
 }
 ```
 
-A template clip needs `data`, and is otherwise placed and timed like any [clip](https://github.com/quaternionmedia/otto/blob/0b0f558/docs/timeline.md#a-clip): `start`, `duration`, `inpoint` and `outpoint`, `fadeIn` and `fadeOut`, `opacity`, `position`, and `clipsize`, the size the template is drawn at (the frame, by default).
+A template clip needs `data`, and is otherwise placed and timed like any [clip](https://github.com/quaternionmedia/otto/blob/0b0f5584efe88bf269670afe1fb54792dc160611/docs/timeline.md#a-clip): `start`, `duration`, `inpoint` and `outpoint`, `fadeIn` and `fadeOut`, `opacity`, `position`, and `clipsize`, the size the template is drawn at (the frame, by default).
 
 !!! info
     `GET /templates` lists the templates this server offers, each with its `name` (what a clip's `name` must be), a `label` for people to read (`Text box` for `textBox`), a `description`, the `parameters` its template takes, and whether it is `deprecated`.
@@ -34,8 +34,8 @@ A template clip needs `data`, and is otherwise placed and timed like any [clip](
 
 ## `data`
 
-`data` is otto's `TemplateData`: [otto's table](https://github.com/quaternionmedia/otto/blob/0b0f558/docs/timeline.md#template-data) has
-each field, what it draws and its default, and [`fxs`](https://github.com/quaternionmedia/otto/blob/0b0f558/docs/timeline.md#fxs) the
+`data` is otto's `TemplateData`: [otto's table](https://github.com/quaternionmedia/otto/blob/0b0f5584efe88bf269670afe1fb54792dc160611/docs/timeline.md#template-data) has
+each field, what it draws and its default, and [`fxs`](https://github.com/quaternionmedia/otto/blob/0b0f5584efe88bf269670afe1fb54792dc160611/docs/timeline.md#fxs) the
 movement. Any other key is dropped without an error, so some `parameters`
 that `GET /templates` lists, such as `opacity`, `fps` and `start`, cannot be
 set through it: the template keeps its own value. What this server adds:
