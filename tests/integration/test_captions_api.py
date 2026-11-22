@@ -334,7 +334,11 @@ class TestWhatWasSaid:
             source={'project': str(recording), 'recipe': 'teaser'},
         )
         quote = self.stored(
-            projects, alice, [self.talk(10, 1)], [], source={'project': str(teaser)}
+            projects,
+            alice,
+            [self.talk(10, 1)],
+            [],
+            source={'project': str(teaser), 'recipe': 'quotes'},
         )
         # Another of Alice's plays the same file and says something else: the
         # chain is read before it.
