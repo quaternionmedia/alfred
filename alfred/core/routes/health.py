@@ -14,6 +14,8 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
+from alfred import config
+
 from ..utils import audio_engine, language_engine, tasks
 from ..utils.concurrency import previews
 from ..utils.db import get_db
@@ -57,6 +59,9 @@ class AudioEngineHealth(BaseModel):
     ok: bool
     # Why not, when it is not ok; null when it is.
     detail: Optional[str] = None
+    # Where a browser opens the engine's own page (ALFRED_AUDIO_ENGINE_PAGE);
+    # None without an engine.
+    page: Optional[str] = None
 
 
 class LanguageEngineHealth(BaseModel):
@@ -65,6 +70,9 @@ class LanguageEngineHealth(BaseModel):
     # Whether it answered: there is one to read a transcript with.
     ok: bool
     detail: Optional[str] = None
+    # Where a browser opens the engine's own page (ALFRED_LANGUAGE_ENGINE_PAGE);
+    # None without an engine.
+    page: Optional[str] = None
 
 
 class Health(BaseModel):
@@ -161,6 +169,12 @@ def get_renderer_state() -> CachedRenderer:
 # is a request to another service, and a page polls this.
 AUDIO_ENGINE_CACHE_SECONDS = 10.0
 AUDIO_ENGINE_TIMEOUT = 5.0
+
+
+def page_of(url) -> Optional[str]:
+    """An engine's page as a browser may be sent to it: the address with no
+    credentials and no query, and nothing for none."""
+    return language_engine.describe(url) if url else None
 
 
 def check_audio_engine() -> audio_engine.EngineStatus:
@@ -307,9 +321,15 @@ async def health(
         queue=QueueHealth(pending=state.pending),
         previews=PreviewHealth(**vars(previews.use())),
         audio_engine=AudioEngineHealth(
-            configured=engine.configured, ok=engine.ok, detail=engine.detail
+            configured=engine.configured,
+            ok=engine.ok,
+            detail=engine.detail,
+            page=page_of(config.AUDIO_ENGINE_PAGE) if engine.configured else None,
         ),
         language_engine=LanguageEngineHealth(
-            configured=reader.configured, ok=reader.ok, detail=reader.detail
+            configured=reader.configured,
+            ok=reader.ok,
+            detail=reader.detail,
+            page=page_of(config.LANGUAGE_ENGINE_PAGE) if reader.configured else None,
         ),
     )

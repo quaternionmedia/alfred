@@ -80,6 +80,9 @@ class Conversation(BaseModel):
     topics: List[Topic]
     tangents: List[Tangent]
     lines: List[LineView]
+    # What the engine keeps the reading under, which its own page opens it
+    # by (`GET /health`'s `language_engine.page`); null where it said nothing.
+    id: Optional[int] = None
 
 
 class WordsSent(BaseModel):
@@ -157,6 +160,7 @@ async def reading_of(lines: List[LineView], title: Optional[str]) -> Conversatio
             'speakers': read.speakers,
             'topics': read.topics,
             'tangents': read.tangents,
+            'id': read.id,
         }
         _cache.put(key, known)
     return Conversation(**known, lines=lines)

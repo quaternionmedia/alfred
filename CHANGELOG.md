@@ -96,6 +96,13 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **Open in joe, open in looksatwords.** A transcribed timeline's job line
+  offers the audio engine's own page, and the transcript's reading offers
+  the reading on the language engine's page, each in a new tab, by the id
+  the engine keeps it under; `GET /health` names each page as
+  `audio_engine.page` and `language_engine.page`, the engine's address
+  unless `ALFRED_AUDIO_ENGINE_PAGE` or `ALFRED_LANGUAGE_ENGINE_PAGE` names
+  one a browser can reach.
 - **Who spoke, and what about.** A transcript's words carry a `speaker`, set
   from the Transcript panel a paragraph at a time and saved with the words.
   With a language engine, looksatwords, at `ALFRED_LANGUAGE_ENGINE_URL`,

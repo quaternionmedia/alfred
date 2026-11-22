@@ -644,7 +644,7 @@ test.describe('the audio engine, through the API', () => {
      * `detail`, why not.
      */
     const health = await (await request.get('/health', auth(token))).json()
-    expect(Object.keys(health.audio_engine).sort()).toEqual(['configured', 'detail', 'ok'])
+    expect(Object.keys(health.audio_engine).sort()).toEqual(['configured', 'detail', 'ok', 'page'])
     expect(typeof health.audio_engine.configured).toBe('boolean')
     expect(typeof health.audio_engine.ok).toBe('boolean')
   })

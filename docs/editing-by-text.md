@@ -152,7 +152,12 @@ stretch of speech, `[m:ss] Speaker: words`, which is the shape the engine
 takes; both answer `{speakers, topics, tangents, lines}` in timeline seconds
 and store nothing. The engine is reached only through
 `alfred/core/utils/language_engine.py`, which names its two routes and
-nothing else of it; `GET /health` reports it as `language_engine`.
+nothing else of it; `GET /health` reports it as `language_engine`. The
+engine keeps each reading under an `id`, which the answer carries, and the
+panel offers **Open in looksatwords**: the reading on the engine's own page,
+in a new tab, opened by that id; the page is the engine's address unless
+`ALFRED_LANGUAGE_ENGINE_PAGE` names another
+([Configuration](configuration.md#the-language-engine)).
 
 ## Saving
 

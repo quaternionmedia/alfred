@@ -88,6 +88,7 @@ All four are read by the api.
 | Setting | Default | What it does |
 |---|---|---|
 | `ALFRED_AUDIO_ENGINE_URL` | unset: no engine | The engine's base address, for transcribing captions and analysing media. Unset, captions can still be typed and imported, and **Transcribe timeline** says why it cannot. [Docker hosts and joe](#docker-hosts-and-joe). |
+| `ALFRED_AUDIO_ENGINE_PAGE` | the engine's address | Where a person's browser opens the engine's own page, for the editor's **Open in joe**: set it when the stack reaches the engine by a name a browser cannot, such as a service's name inside Docker. `GET /health` reports it as `audio_engine.page`. |
 | `ALFRED_AUDIO_ENGINE_TIMEOUT` | `1800` | Seconds one request to the engine may take. |
 | `ALFRED_AUDIO_ENGINE_CONTRACT_<FIELD>` | vox's | One field of vox's `EngineContract`, for an engine that spells its API differently from joe: `ALFRED_AUDIO_ENGINE_CONTRACT_MEDIA_UPLOAD=/v2/upload`; `none` says the engine does not offer it. `GET /health` reports a name that is not a field. The stacks pass one variable per field. |
 
@@ -100,6 +101,7 @@ vox's README the contract itself.
 |---|---|---|
 | `ALFRED_LANGUAGE_ENGINE_URL` | unset: no engine | The engine's base address, looksatwords', for reading a transcript: who spoke, which topics were live and when, where the talk went off. Unset, the transcript is edited as before, and its reading says why there is none. |
 | `ALFRED_LANGUAGE_ENGINE_TIMEOUT` | `120` | Seconds one request to the engine may take. |
+| `ALFRED_LANGUAGE_ENGINE_PAGE` | the engine's address | Where a person's browser opens the engine's own page, for the editor's **Open in looksatwords**: set it when the stack reaches the engine by a name a browser cannot. `GET /health` reports it as `language_engine.page`. |
 
 [Editing by text](editing-by-text.md#who-spoke-and-what-about) says what
 alfred asks the engine.

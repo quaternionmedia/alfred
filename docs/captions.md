@@ -63,13 +63,19 @@ editor, saved or not, as it carries the timeline.
 | `GET /media/{name}/audio` | the engine's analysis of a library file |
 | `GET /project/{id}/conversation` | `{speakers, topics, tangents, lines}`: the transcript as the language engine reads it ([Who spoke](editing-by-text.md#who-spoke-and-what-about)); `POST` reads the words sent instead |
 | `GET /project/{id}/sound` | `{duration, rate, levels, silences}`: the saved timeline's level over time and its silences, in timeline seconds, from the analyses of the files it plays |
-| `GET /health` | gains `audio_engine: {configured, ok, detail}`, and `language_engine` the same |
+| `GET /health` | gains `audio_engine: {configured, ok, detail, page}`, and `language_engine` the same; `page` is where a browser opens the engine's own page ([Configuration](configuration.md#the-audio-engine)) |
 
 Each route is scoped to the caller, like every project route: a project that
 is not yours answers 404. `GET /project/{id}` carries `captions` and
 `caption_style` too, and not the words, which run to thousands in a long
 talk. A refusal carries a `code` beside its `detail`;
 [Refusals](api/errors.md) lists them.
+
+Once a timeline is transcribed, the job's line in the Captions and
+Transcript panels offers **Open in joe**: the audio engine's own page, in a
+new tab, where its latest run is shown; the page is the engine's address
+unless `ALFRED_AUDIO_ENGINE_PAGE` names another. The engine keeps no library
+of alfred's files, so the link opens the engine, not the file.
 
 A caption is `{start, end, text}`: `start` at or after 0, `end` after it, and
 text that says something, at most 500 characters. A project's captions are

@@ -72,6 +72,9 @@ class Reading:
     topics: List[dict] = field(default_factory=list)
     # Each `{start, end, type, topics, text, resolution}`, in order.
     tangents: List[dict] = field(default_factory=list)
+    # What the engine keeps the conversation under, which its own page opens
+    # it by; None where it said nothing.
+    id: Optional[int] = None
 
 
 @dataclass(frozen=True)
@@ -206,7 +209,9 @@ def _reading(answer: dict) -> Reading:
             }
         )
     tangents.sort(key=lambda t: t['start'])
-    return Reading(speakers=speakers, topics=topics, tangents=tangents)
+    kept = answer.get('conversation_id')
+    kept = kept if isinstance(kept, int) and not isinstance(kept, bool) else None
+    return Reading(speakers=speakers, topics=topics, tangents=tangents, id=kept)
 
 
 def _client(transport=None) -> httpx.Client:

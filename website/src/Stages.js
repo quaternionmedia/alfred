@@ -386,6 +386,29 @@ export const AsyncButton = () => ({
   },
 })
 
+/**
+ * A link to a thing's own page in another of the family's programs: `Open in
+ * joe`, `Open in looksatwords`. `page` is where the program is, as the
+ * health report names it; `at` the path to the thing there; `what` names
+ * it for the title. Nothing is drawn without a page or a path.
+ */
+export const OpenIn = () => ({
+  view: ({ attrs: { id, app, page, at, what } }) => {
+    if (!page || !at) return null
+    return m(
+      'a.openin',
+      {
+        id,
+        href: `${String(page).replace(/\/+$/, '')}${at}`,
+        target: '_blank',
+        rel: 'noopener',
+        title: `Open ${what || 'this'} in ${app}, in a new tab`,
+      },
+      `Open in ${app}`
+    )
+  },
+})
+
 /** An empty state that offers to fix itself.
  *
  * "No projects yet." and "No media on the server. `./al demo` downloads some."
