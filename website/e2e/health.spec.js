@@ -48,8 +48,9 @@ test.describe('health', () => {
     // many may be drawn at once (ALFRED_PREVIEW_CONCURRENCY).
     expect(Object.keys(health.previews).sort()).toEqual(['limit', 'running', 'waiting'])
     expect(health.previews.limit).toBeGreaterThanOrEqual(1)
-    expect(Object.keys(health.audio_engine).sort()).toEqual(['configured', 'detail', 'ok'])
-    expect(Object.keys(health.language_engine).sort()).toEqual(['configured', 'detail', 'ok'])
+    // `page`: where a browser opens each engine's own page.
+    expect(Object.keys(health.audio_engine).sort()).toEqual(['configured', 'detail', 'ok', 'page'])
+    expect(Object.keys(health.language_engine).sort()).toEqual(['configured', 'detail', 'ok', 'page'])
   })
 
   test('the running worker answers, so the renderer is ok', async ({
