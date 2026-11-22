@@ -13,7 +13,6 @@ from bson import ObjectId
 from fastapi.testclient import TestClient
 
 from alfred.core.models.render import Render
-from alfred.core.utils.captions import MAX_CAPTIONS
 from alfred.main import app
 from tests.unit.render_harness import (
     OWNER,
@@ -112,14 +111,10 @@ class TestQueueing:
         )
         json.dumps(payload)
 
-    def test_too_many_is_422_and_nothing_is_queued(self, api):
-        client, store, queue = api
-        many = [
-            {'start': i, 'end': i + 0.5, 'text': 'x'} for i in range(MAX_CAPTIONS + 1)
-        ]
-        res = client.post('/render', json=render_request(captions=many))
-        assert res.status_code == 422
-        assert store.renders == {} and queue.sent == []
+    def test_however_many_are_queued(self, api):
+        many = [{'start': i, 'end': i + 0.5, 'text': 'x'} for i in range(5000)]
+        render, _ = queue_one(api, captions=many)
+        assert len(render.captions) == 5000
 
     @pytest.mark.parametrize(
         'caption',

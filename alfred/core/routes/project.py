@@ -9,11 +9,9 @@ from pydantic import BaseModel
 
 from alfred.config import DB_NAME, DB_URL
 
-from ..errors import Code, Refusal
 from ..models import Project, ProjectUpdate, RenderSettings
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
 from ..utils.captions import (
-    TooManyCaptions,
     checked_captions,
     project_style,
     style_to_store,
@@ -164,12 +162,9 @@ class ProjectAPI(MotorCRUDRouter):
             model.captions_job = None
             # Cues too have their own route.
             model.cues = None
-            try:
-                model.captions = (
-                    checked_captions(model.captions) if model.captions else None
-                )
-            except TooManyCaptions as exc:
-                raise Refusal(Code.TOO_MANY_CAPTIONS, str(exc)) from exc
+            model.captions = (
+                checked_captions(model.captions) if model.captions else None
+            )
             if model.captions or model.caption_style is not None:
                 model.caption_style = project_style(
                     style_to_store(model.caption_style, None)

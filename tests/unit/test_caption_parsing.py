@@ -10,7 +10,6 @@ not read when it is not.
 import pytest
 
 from alfred.core.utils.captions import (
-    MAX_CAPTIONS,
     CaptionFormatError,
     parse,
     parse_json,
@@ -125,10 +124,9 @@ class TestSubRip:
         assert parse_srt('').captions == []
         assert parse_srt('﻿\n\n').captions == []
 
-    def test_too_many_cues_is_refused(self):
+    def test_however_many_cues_are_read(self):
         cue = '00:00:01,000 --> 00:00:02,000\nx\n\n'
-        with pytest.raises(CaptionFormatError, match=str(MAX_CAPTIONS)):
-            parse_srt(cue * (MAX_CAPTIONS + 1))
+        assert len(parse_srt(cue * 5000).captions) == 5000
 
 
 VTT = """WEBVTT - with a title

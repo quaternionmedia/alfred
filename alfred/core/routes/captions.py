@@ -16,7 +16,7 @@ from typing import List, Literal, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends
 from otto.models import Edl
-from pydantic import BaseModel, ConfigDict, ValidationError, conlist, constr
+from pydantic import BaseModel, ConfigDict, ValidationError, constr
 from starlette.concurrency import run_in_threadpool
 
 from alfred import config
@@ -27,9 +27,7 @@ from ..models.project import Project, as_sent
 from ..utils import audio_engine
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
 from ..utils.captions import (
-    MAX_WORDS,
     CaptionFormatError,
-    TooManyCaptions,
     checked_captions,
     parse,
     project_style,
@@ -81,7 +79,7 @@ class CaptionsUpdate(BaseModel):
 
     captions: List[Caption]
     style: Optional[CaptionStyle] = None
-    words: Optional[conlist(Word, max_length=MAX_WORDS)] = None
+    words: Optional[List[Word]] = None
     timeline: Optional[Edl] = None
 
     model_config = ConfigDict(extra='forbid')
@@ -234,9 +232,9 @@ async def saveProjectCaptions(
     they are sent; nothing else on the project is written, and all of it in
     one write. Each caption starts at or after 0, ends after it starts and
     has text, at most 500 characters of it; they are stored in order of when
-    they start, at most 1000. Each word is `{start, end, text, segment}`,
+    they start. Each word is `{start, end, text, segment}`,
     ending no earlier than it starts, its text one word of at most 100
-    characters; they are stored in the order sent, at most 50,000. The
+    characters; they are stored in the order sent. The
     timeline is stored as `PUT /project/{id}/timeline` stores it.
 
     The style's `enabled` is always stored: as sent, else as it was, else
@@ -244,10 +242,7 @@ async def saveProjectCaptions(
     someone says they should be. Answers `{captions, style, job}` as stored.
     """
     project = await owned(store, item_id, user)
-    try:
-        captions = checked_captions(update.captions)
-    except TooManyCaptions as exc:
-        raise Refusal(Code.TOO_MANY_CAPTIONS, str(exc)) from exc
+    captions = checked_captions(update.captions)
     fields = {'captions': [caption.model_dump() for caption in captions]}
     style = style_to_store(update.style, project.get('caption_style'))
     if style is not None:

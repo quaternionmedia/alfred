@@ -96,6 +96,11 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **A project's captions and words are not counted.** A transcription of a
+  long recording, a subtitle file of thousands of cues and a render carrying
+  them are all taken, and the refusal `too_many_captions` is gone. What
+  bounds a project is its document, which the database refuses past its own
+  size.
 - **The timeline saves itself**, a second after it stops changing, with the
   captions and words a cut moved. There is no Save for the timeline, and the
   Transcript panel's is gone too. An indicator says Saving…, Saved, or Not

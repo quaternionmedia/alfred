@@ -29,7 +29,7 @@ from alfred.core.routes import media as media_routes
 from alfred.core.routes import render as render_routes
 from alfred.core.routes.templates import TEMPLATE_NAMES
 from alfred.core.utils import audio_engine, bucket, concurrency, support_mail
-from alfred.core.utils.captions import MAX_CAPTIONS, CaptionFormatError, parse
+from alfred.core.utils.captions import CaptionFormatError, parse
 from alfred.core.utils.concurrency import RETRY_AFTER
 from alfred.core.utils.encoding import QUALITIES
 from alfred.core.utils.media import RefusedEdl, check_edl
@@ -273,16 +273,6 @@ def not_found(world):
     return world.client.get(f'/project/{ObjectId()}/captions'), 'Item not found'
 
 
-def too_many_captions(world):
-    project = world.projects.add()
-    many = [{'start': n, 'end': n + 0.5, 'text': 'x'} for n in range(MAX_CAPTIONS + 1)]
-    res = world.client.put(f'/project/{project}/captions', json={'captions': many})
-    return (
-        res,
-        f'{MAX_CAPTIONS + 1} captions is more than the {MAX_CAPTIONS} a project may carry',
-    )
-
-
 def too_many_cues(world):
     project = world.projects.add()
     many = [{'start': n, 'label': 'here'} for n in range(MAX_CUES + 1)]
@@ -514,7 +504,6 @@ def mail_not_queued(world):
 REQUESTS = {
     Code.INVALID_ID: invalid_id,
     Code.NOT_FOUND: not_found,
-    Code.TOO_MANY_CAPTIONS: too_many_captions,
     Code.CAPTION_FILE_UNREADABLE: caption_file_unreadable,
     Code.AUDIO_ENGINE_MISSING: audio_engine_missing,
     Code.TIMELINE_EMPTY: timeline_empty,

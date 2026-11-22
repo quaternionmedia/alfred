@@ -70,14 +70,15 @@ talk. A refusal carries a `code` beside its `detail`;
 [Refusals](api/errors.md) lists them.
 
 A caption is `{start, end, text}`: `start` at or after 0, `end` after it, and
-text that says something, at most 500 characters. A project carries at most
-1000, kept in start order.
+text that says something, at most 500 characters. A project's captions are
+kept in start order, however many there are: what bounds them is the
+project's document, which the database refuses past its own size.
 
 A word is `{start, end, text, segment}`, in timeline seconds: `end` no earlier
 than `start` (an engine times some words as taking no time at all), `text` one
 word of at most 100 characters, and `segment` which stretch of speech it was
-heard in, counted from 0. A project keeps at most 50,000, in the order sent:
-the order heard, until an edit moves some ahead of others. A transcription
+heard in, counted from 0. A project keeps them in the order sent: the order
+heard, until an edit moves some ahead of others. A transcription
 replaces them; `PUT /project/{id}/captions` replaces them when it is sent
 `words`, and keeps them when it is not. A request whose words break these
 rules is refused 422, by FastAPI, with no `code`.

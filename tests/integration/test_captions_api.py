@@ -249,23 +249,16 @@ class TestTheRestOfTheProject:
         assert project['captions_job'] is None
         assert project['caption_style']['enabled'] is False
 
-    def test_a_new_project_with_more_than_it_carries_is_refused_by_code(
-        self, api, alice
-    ):
-        """As the captions route refuses them: the sentence, and its code."""
-        many = [{'start': n, 'end': n + 0.5, 'text': 'x'} for n in range(1001)]
+    def test_a_new_project_carries_however_many_captions(self, api, alice):
+        """A long talk's captions, in the thousands, are stored and read back."""
+        many = [{'start': n, 'end': n + 0.5, 'text': 'x'} for n in range(5000)]
         res = api.post(
             '/project',
-            json={'name': 'too many', 'logic': {}, 'captions': many},
+            json={'name': 'a long talk', 'logic': {}, 'captions': many},
             headers=alice.headers,
         )
-        assert (res.status_code, res.json()) == (
-            422,
-            {
-                'detail': '1001 captions is more than the 1000 a project may carry',
-                'code': 'too_many_captions',
-            },
-        )
+        assert res.status_code == 200, res.text
+        assert len(res.json()['captions']) == 5000
 
     def test_the_project_says_whether_its_captions_are_drawn(
         self, api, alice, make_project
