@@ -116,10 +116,10 @@ It moves a cut: the clip before the cut ends where the clip after it now starts.
 
 ## Zoom
 
-The magnifiers below the tools. Each press draws a second of the timeline narrower or wider; the edits are the same at any zoom, and the timeline scrolls once it is wider than its panel. Where the panel is wide enough, as a strip in the workspace or in the phone layout, a bar between them can be dragged as well; in the workspace's column the two buttons zoom alone.
+The magnifiers after the tools. Each press draws a second of the timeline narrower or wider; the edits are the same at any zoom, and the timeline scrolls once it is wider than its panel. Where the panel is wide enough, as a strip in the workspace or in the phone layout, a bar between them can be dragged as well; in the workspace's column the two buttons zoom alone.
 
 - **Mouse:** click zoom out or zoom in.
-- **Touch:** tap them, or drag the bar on a phone.
+- **Touch:** tap them, or drag the bar where it is drawn.
 - **Keys:** none of their own.
 
 ![The timeline zoomed in four steps, wider than its panel](assets/screens/tools/zoom.png)
