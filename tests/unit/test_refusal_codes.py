@@ -23,11 +23,13 @@ from otto.models import Edl
 from alfred import config
 from alfred.core.errors import REFUSALS, Code, Refusal
 from alfred.core.models.cues import MAX_CUES
+from alfred.core.models.recipes import OPERATIONS
 from alfred.core.models.render import Render
 from alfred.core.routes import captions as caption_routes
 from alfred.core.routes import cues as cue_routes
 from alfred.core.routes import media as media_routes
 from alfred.core.routes import motion as motion_routes
+from alfred.core.routes import recipes as recipe_routes
 from alfred.core.routes import render as render_routes
 from alfred.core.routes.templates import TEMPLATE_NAMES
 from alfred.core.utils import audio_engine, bucket, concurrency, support_mail
@@ -35,6 +37,7 @@ from alfred.core.utils.captions import CaptionFormatError, parse
 from alfred.core.utils.concurrency import RETRY_AFTER
 from alfred.core.utils.encoding import QUALITIES
 from alfred.core.utils.media import RefusedEdl, check_edl
+from alfred.core.utils.recipes_builtin import BY_NAME
 from alfred.main import app
 from tests.unit.render_harness import (
     OWNER,
@@ -63,6 +66,7 @@ COVERED = [
     'alfred/core/routes/issue.py',
     'alfred/core/routes/motion.py',
     'alfred/core/routes/project.py',
+    'alfred/core/routes/recipes.py',
     'alfred/core/routes/render.py',
     'alfred/core/routes/sound.py',
     'alfred/core/utils/bucket.py',
@@ -154,6 +158,22 @@ class Projects:
         return self.claims
 
 
+class Recipes:
+    """The recipe collection, in memory, holding nothing of the caller's."""
+
+    async def list(self, query):
+        return []
+
+    async def find(self, query):
+        return None
+
+    async def insert(self, document):
+        return ObjectId()
+
+    async def replace(self, recipe_id, fields):
+        pass
+
+
 class BrokerDown:
     def __call__(self, **kwargs):
         raise ConnectionError('[Errno 111] Connection refused')
@@ -185,10 +205,13 @@ class World:
             lambda: self.transcriptions
         )
         app.dependency_overrides[cue_routes.get_cues_store] = lambda: self.projects
+        self.recipes = Recipes()
+        app.dependency_overrides[recipe_routes.get_recipe_store] = lambda: self.recipes
         self.overrides += [
             caption_routes.get_captions_store,
             caption_routes.get_captions_queue,
             cue_routes.get_cues_store,
+            recipe_routes.get_recipe_store,
         ]
         self.client = TestClient(app)
 
@@ -464,6 +487,32 @@ def media_silent(world):
     return world.sound_of('still.png'), 'videos/still.png is an image: it has no sound'
 
 
+def unknown_operation(world):
+    res = world.client.post(
+        '/recipes', json={'name': 'mine', 'steps': [{'op': 'shuffle'}]}
+    )
+    return res, (
+        "step 1: 'shuffle' is not an operation; the operations are "
+        + ', '.join(OPERATIONS)
+    )
+
+
+def recipe_refused(world):
+    res = world.client.post(
+        '/recipes', json={'name': 'mine', 'steps': [{'op': 'top', 'count': 0}]}
+    )
+    return res, 'step 1 (top): count: 0 is below 1'
+
+
+def unknown_recipe(world):
+    res = world.client.get('/recipes/nowhere')
+    return res, (
+        "No recipe is named 'nowhere': the built-in ones are "
+        + ', '.join(BY_NAME)
+        + ', and yours are listed by GET /recipes.'
+    )
+
+
 def no_picture(world):
     (Path(config.VIDEO_DIR) / 'still.png').write_bytes(b'not really a picture')
     return world.client.get('/media/videos/still.png/motion'), (
@@ -550,6 +599,9 @@ REQUESTS = {
     Code.MEDIA_EXISTS: media_exists,
     Code.MEDIA_TOO_LARGE: media_too_large,
     Code.MEDIA_SILENT: media_silent,
+    Code.UNKNOWN_OPERATION: unknown_operation,
+    Code.RECIPE_REFUSED: recipe_refused,
+    Code.UNKNOWN_RECIPE: unknown_recipe,
     Code.NO_PICTURE: no_picture,
     Code.PICTURE_UNREADABLE: picture_unreadable,
     Code.AUDIO_ENGINE_REFUSED: audio_engine_refused,

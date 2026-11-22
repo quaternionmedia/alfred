@@ -58,6 +58,10 @@ class Code(StrEnum):
     # Motion in the picture (`GET /media/{name}/motion`, `GET /project/{id}/motion`).
     NO_PICTURE = 'no_picture'
     PICTURE_UNREADABLE = 'picture_unreadable'
+    # Recipes (`/recipes`), and the drafts they make.
+    UNKNOWN_OPERATION = 'unknown_operation'
+    RECIPE_REFUSED = 'recipe_refused'
+    UNKNOWN_RECIPE = 'unknown_recipe'
     # Previews.
     PREVIEWS_BUSY = 'previews_busy'
     # Mail to support: issue reports and invoices.
@@ -102,6 +106,9 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.AUDIO_ENGINE_FAILED: Meaning(502, 'the audio engine failed'),
     Code.NO_PICTURE: Meaning(422, 'an image or a sound: no moving picture'),
     Code.PICTURE_UNREADABLE: Meaning(422, 'the picture could not be read'),
+    Code.UNKNOWN_OPERATION: Meaning(422, 'a step names no operation'),
+    Code.RECIPE_REFUSED: Meaning(422, 'a recipe that cannot run'),
+    Code.UNKNOWN_RECIPE: Meaning(404, 'no recipe of that name or id, or not yours'),
     Code.PREVIEWS_BUSY: Meaning(503, 'no preview slot came free in time'),
     Code.MAIL_NOT_CONFIGURED: Meaning(503, 'no mail is set up on this server'),
     Code.MAIL_NOT_QUEUED: Meaning(503, 'the broker would not take the mail'),

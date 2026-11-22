@@ -11,6 +11,7 @@ from .media import mediaAPI
 from .motion import motionAPI
 from .preview import previewAPI, previewFrameAPI
 from .project import ProjectAPI
+from .recipes import recipesAPI
 from .render import RenderAPI, renderFileAPI
 from .sound import soundAPI
 from .templates import templateAPI
@@ -30,6 +31,7 @@ __all__ = [
     videoAPI,
     videoFileAPI,
     ProjectAPI,
+    recipesAPI,
     RenderAPI,
     renderFileAPI,
     soundAPI,
