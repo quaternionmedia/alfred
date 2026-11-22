@@ -78,7 +78,26 @@ def source():
         levels=series(1, {10, 40, 41}),
         motion=series(1, {40, 41, 50}),
         silences=[{'start': 25, 'end': 34}, {'start': 52, 'end': 60}],
+        # What the language engine read: the rules were the topic early on,
+        # and the tower when it fell.
+        topics=TOPICS,
     )
+
+
+TOPICS = [
+    {
+        'name': 'Tower',
+        'points': [{'time': 40, 'intensity': 0.9}, {'time': 41, 'intensity': 0.5}],
+    },
+    {
+        'name': 'Rules',
+        'points': [
+            {'time': 12, 'intensity': 0.6},
+            {'time': 17, 'intensity': 0.4},
+            {'time': 40, 'intensity': 0.3},
+        ],
+    },
+]
 
 
 WORDS = sculpt.spoken(make_words())
@@ -237,6 +256,56 @@ class TestEdits:
         assert ranges == [[24.9, 34]]
 
 
+class TestLabel:
+    def test_each_candidate_is_titled_by_the_strongest_topic_within_it(self):
+        found = [Candidate(39, 45), Candidate(10, 18), Candidate(20, 24)]
+        sculpt.titles(found, TOPICS)
+        assert [c.title for c in found] == ['Tower', 'Rules', '']
+
+    def test_a_point_s_intensity_left_out_counts_as_one(self):
+        topics = [
+            {'name': 'A', 'points': [{'time': 5}]},
+            {'name': 'B', 'points': [{'time': 5, 'intensity': 0.9}]},
+        ]
+        assert sculpt.live_topic(topics, 0, 10) == 'A'
+
+    def test_a_long_or_untidy_name_is_one_line_cut_to_length(self):
+        topics = [{'name': '  Very\n long ' + 'x' * 80, 'points': [{'time': 5}]}]
+        title = sculpt.live_topic(topics, 0, 10)
+        assert title.startswith('Very long xxx') and len(title) == 60
+
+    def test_without_a_reading_the_step_says_why_and_titles_nothing(self, source):
+        state = sculpt.State(candidates=[Candidate(39, 45)])
+        unread = Source(clips=source.clips, unread='the engine was away')
+        sculpt.apply('label', {'title': True, 'categories': ''}, state, unread, [], [])
+        assert state.candidates[0].title == ''
+        assert state.notes == ['label: nothing was titled: the engine was away']
+        state = sculpt.State(candidates=[Candidate(39, 45)])
+        sculpt.apply(
+            'label', {'title': True, 'categories': ''}, state, Source(clips=[]), [], []
+        )
+        assert state.notes == [
+            'label: nothing was titled: no topic was read over the source'
+        ]
+
+    def test_title_off_titles_nothing_and_a_category_waits_on_a_labeller(self, source):
+        state = sculpt.State(candidates=[Candidate(39, 45)])
+        sculpt.apply(
+            'label', {'title': False, 'categories': 'a, b'}, state, source, [], []
+        )
+        assert state.candidates[0].title == ''
+        assert state.notes == [
+            'label: no labeller is configured, so no category was given'
+        ]
+
+    def test_a_titled_draft_carries_its_title(self, source):
+        steps = [{'op': 'chapters'}, {'op': 'label'}, {'op': 'compose', 'how': 'each'}]
+        run = sculpt.run(steps, {}, [], source)
+        assert [d.title for d in run.drafts] == ['Rules', 'Tower']
+        assert run.notes == []
+        assert 'Tower' in run.drafts[1].description
+
+
 class TestCompose:
     def test_each_candidate_is_a_draft_cut_from_the_source(self, source):
         state = sculpt.State(
@@ -307,8 +376,10 @@ class TestTheBuiltInRecipes:
             assert 4 <= draft.timeline['duration'] <= 8
             assert set(draft.scores) == {'dialogue', 'spikes'}
             assert draft.timeline['words']
-        # The tower falling, the two spiking seconds, is in one of them.
-        assert any(s <= 40 and 41 <= e for [s, e] in (d.spans[0] for d in run.drafts))
+        # The tower falling, the two spiking seconds, is in one of them, and
+        # that one is titled by it.
+        tower = [d for d in run.drafts if d.spans[0][0] <= 40 and 41 <= d.spans[0][1]]
+        assert tower and all(d.title == 'Tower' for d in tower)
 
     def test_teaser_is_one_draft_of_about_the_target(self, source):
         [draft] = self.run(

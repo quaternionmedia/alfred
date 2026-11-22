@@ -14,8 +14,6 @@ stand in for either. A reading is kept in this process by what was read,
 so the same words asked about twice cost one request.
 """
 
-import hashlib
-import json
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends
@@ -33,9 +31,6 @@ from .users import current_active_user
 
 # Readings kept in this process: a long transcript's is some kilobytes.
 CACHE_SIZE = 32
-
-# Words with no stretch of speech of their own: a gap this long starts a line.
-LINE_GAP = 1.0
 
 _cache = ProbeCache(size=CACHE_SIZE)
 
@@ -91,43 +86,21 @@ class WordsSent(BaseModel):
 
 
 def lines_of(words: List[Word]) -> List[LineView]:
-    """The words as lines: a line per stretch of speech (`segment`), or, for
-    words with none, per run of words less than LINE_GAP apart; each from its
-    first word's start to its last word's end, said by the speaker its first
-    word names, or by nobody."""
-    lines: List[LineView] = []
-    last: Optional[Word] = None
-    for word in sorted(words, key=lambda w: (w.start, w.end)):
-        same = last is not None and (
-            (word.segment is not None and word.segment == last.segment)
-            or (
-                word.segment is None
-                and last.segment is None
-                and word.start - last.end < LINE_GAP
-            )
+    """The words as the engine reads them (`language_engine.lines_of`), each
+    line said by its speaker or by nobody, with when it ends."""
+    return [
+        LineView(
+            start=line.start,
+            end=line.end if line.end is not None else line.start,
+            speaker=line.speaker or NOBODY,
+            text=line.text,
         )
-        if same and lines:
-            line = lines[-1]
-            line.end = max(line.end, word.end)
-            line.text = f'{line.text} {word.text}'
-        else:
-            lines.append(
-                LineView(
-                    start=word.start,
-                    end=word.end,
-                    speaker=(word.speaker or NOBODY),
-                    text=word.text,
-                )
-            )
-        last = word
-    return lines
+        for line in language_engine.lines_of([word.model_dump() for word in words])
+    ]
 
 
 def _key(lines: List[LineView]) -> str:
-    digest = hashlib.sha256(
-        json.dumps([[line.start, line.speaker, line.text] for line in lines]).encode()
-    ).hexdigest()
-    return f'{language_engine.describe()}|{digest}'
+    return f'{language_engine.describe()}|{language_engine.digest(lines)}'
 
 
 async def reading_of(lines: List[LineView], title: Optional[str]) -> Conversation:

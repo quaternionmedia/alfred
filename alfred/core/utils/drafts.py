@@ -11,22 +11,28 @@ draft took and a draft's cue is dropped with it.
 The timeline's measures come from `utils.measures`, kept beside the library,
 so a source measured once is measured once however many times recipes run
 over it; a file that cannot be measured is a note, and the recipes run over
-what there is.
+what there is. Where a recipe has a `label` step, the language engine reads
+the source's words once per run (`utils.language_engine`), kept the same way
+by what was read, and each draft is named by the topic live over it; without
+an engine the draft keeps its recipe's name and the job says why.
 """
 
 from datetime import datetime, timezone
-from typing import List, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple
 
 from bson import ObjectId
 
 from ..models.cues import Cue, checked_cues
 from ..models.drafts import CUE_KIND, CUE_SOURCE
 from ..models.recipes import RecipeError
-from . import measures, sculpt
+from . import analyses, language_engine, measures, sculpt
 from .recipes_builtin import BY_NAME
 
 # Where recipes are kept: beanie names the collection after the class.
 RECIPES = 'Recipe'
+
+# What a reading of a source's words is kept under, beside the library.
+READING = 'reading'
 
 
 class UnknownRecipe(LookupError):
@@ -56,7 +62,9 @@ def draft_document(
     timeline = draft.timeline
     return {
         'name': draft_name(
-            source.get('name'), recipe.get('label') or recipe['name'], draft.number
+            source.get('name'),
+            draft.title or recipe.get('label') or recipe['name'],
+            draft.number,
         ),
         'description': draft.description,
         'owner': source.get('owner'),
@@ -113,6 +121,33 @@ def mark_source(source: dict, cues: List[dict], projects) -> None:
     )
 
 
+def topics_of(source: dict) -> Tuple[List[dict], Optional[str]]:
+    """The topics the language engine reads over the source's words, kept
+    beside the library by the engine asked and what was read; or none, and
+    why: no words, no engine, or the engine's failure, in one line."""
+    lines = language_engine.lines_of(source.get('words') or [])
+    if not lines:
+        return [], 'the source has no words to read'
+    key = [READING, language_engine.describe(), language_engine.digest(lines)]
+    kept = analyses.get(key)
+    if isinstance(kept, list):
+        return kept, None
+    try:
+        reading = language_engine.read(lines, str(source.get('_id')))
+    except language_engine.LanguageEngineError as exc:
+        return [], str(exc)
+    analyses.put(key, reading.topics)
+    return reading.topics, None
+
+
+def wants_titles(recipes: Sequence[dict]) -> bool:
+    return any(
+        step.get('op') == 'label'
+        for recipe in recipes
+        for step in recipe.get('steps') or []
+    )
+
+
 def make_drafts(
     source: dict, requests: Sequence[dict], projects, recipes
 ) -> Tuple[int, List[str]]:
@@ -129,6 +164,11 @@ def make_drafts(
     clips = (source.get('edl') or {}).get('clips') or []
     measured = measures.timeline_measures(clips)
     notes = list(measured.notes)
+    topics, unread = (
+        topics_of(source)
+        if wants_titles([recipe for recipe, _ in chosen])
+        else ([], None)
+    )
     reading = sculpt.Source(
         clips=clips,
         captions=source.get('captions') or [],
@@ -136,6 +176,8 @@ def make_drafts(
         levels=measured.levels,
         motion=measured.motion,
         silences=measured.silences,
+        topics=topics,
+        unread=unread,
     )
     made_at = datetime.now(timezone.utc)
     documents = []

@@ -143,8 +143,11 @@ with how many stretches each said, the topics that were live and when, each
 a chip coloured by the engine that opens on its first moment, and how many
 times the talk went off on a tangent. The reading follows the words as they
 stand: a cut, an undo or a speaker named sends them again a moment later,
-unsaved, and the chips update. Without an engine the panel says so in a
-line, and the labels work all the same.
+unsaved, and the chips update. The same reading titles the drafts a recipe
+leaves, each by the topic live over its span
+([Recipes and drafts](drafts.md#the-operations)). Without an engine the
+panel says so in a line, the labels work all the same, and a draft keeps its
+recipe's name.
 
 Through the API, `GET /project/{id}/conversation` reads the stored words and
 `POST /project/{id}/conversation` the words sent, each as lines, one per

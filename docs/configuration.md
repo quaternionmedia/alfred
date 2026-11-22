@@ -98,7 +98,7 @@ vox's README the contract itself.
 
 | Setting | Default | What it does |
 |---|---|---|
-| `ALFRED_LANGUAGE_ENGINE_URL` | unset: no engine | The engine's base address, looksatwords', for reading a transcript: who spoke, which topics were live and when, where the talk went off. Unset, the transcript is edited as before, and its reading says why there is none. |
+| `ALFRED_LANGUAGE_ENGINE_URL` | unset: no engine | The engine's base address, looksatwords', for reading a transcript: who spoke, which topics were live and when, where the talk went off; and for titling the drafts a recipe leaves, each by the topic live over it. Unset, the transcript is edited as before, its reading says why there is none, and a draft keeps its recipe's name. |
 | `ALFRED_LANGUAGE_ENGINE_TIMEOUT` | `120` | Seconds one request to the engine may take. |
 
 [Editing by text](editing-by-text.md#who-spoke-and-what-about) says what
