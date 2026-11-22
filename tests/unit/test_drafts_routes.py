@@ -106,6 +106,7 @@ def draft(of, number, **fields):
             'spans': [[10, 19.5]],
             'scores': {'dialogue': 1.0},
             'made_at': datetime(2026, 11, 21, tzinfo=timezone.utc),
+            'made_duration': 9.5,
         },
     }
     document.update(fields)
@@ -312,6 +313,7 @@ class TestDropping:
         assert kept['recipe'] == first['source']['recipe']
         assert kept['spans'] == first['source']['spans']
         assert kept['scores'] == first['source']['scores']
+        assert kept['made_duration'] == first['source']['made_duration']
         assert kept['duration'] == first['edl']['duration']
         assert kept['dropped_at'] is not None
 

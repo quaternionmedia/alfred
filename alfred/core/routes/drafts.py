@@ -40,7 +40,15 @@ PROJECTION = {'name': 1, 'owner': 1, 'edl': 1, 'drafts_job': 1, 'cues': 1}
 # What a listing says of a draft.
 DRAFT_PROJECTION = {'name': 1, 'description': 1, 'edl.duration': 1, 'source': 1}
 # What a source keeps of a dropped draft (`models.drafts.DroppedDraft`).
-KEPT_OF_DROPPED = ('name', 'recipe', 'values', 'spans', 'scores', 'made_at')
+KEPT_OF_DROPPED = (
+    'name',
+    'recipe',
+    'values',
+    'spans',
+    'scores',
+    'made_at',
+    'made_duration',
+)
 
 # How many recipes one run may ask for.
 MAX_RECIPES = 10

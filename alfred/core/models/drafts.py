@@ -33,6 +33,9 @@ class DraftSource(BaseModel):
     spans: List[List[float]] = []
     scores: dict = {}
     made_at: Optional[datetime] = None
+    # The draft's timeline length as the recipe cut it, in seconds: the spans
+    # less what its edits (fillers, pauses tightened) took out of them.
+    made_duration: Optional[float] = None
 
 
 class DroppedDraft(BaseModel):
@@ -46,6 +49,7 @@ class DroppedDraft(BaseModel):
     spans: List[List[float]] = []
     scores: dict = {}
     made_at: Optional[datetime] = None
+    made_duration: Optional[float] = None
     # The draft's timeline length when it was dropped, in seconds.
     duration: Optional[float] = None
     dropped_at: Optional[datetime] = None

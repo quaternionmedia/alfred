@@ -120,6 +120,7 @@ class TestMakingDrafts:
         assert len(source_of['spans']) == 1
         assert set(source_of['scores']) == {'dialogue', 'spikes'}
         assert isinstance(source_of['made_at'], datetime)
+        assert source_of['made_duration'] == first['edl']['duration']
         assert 'of the source' in first['description']
 
     def test_the_source_gets_a_cue_per_draft_and_keeps_other_writers(self, measured):

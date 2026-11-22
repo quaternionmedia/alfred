@@ -13,7 +13,8 @@ What is counted, per source and per recipe:
 - `made`: drafts the runs left, held and dropped together;
 - `held`: drafts still there; `dropped`: remembered on the source;
 - `edited`: held drafts whose timeline is no longer the length the recipe
-  cut, by more than a frame or so;
+  cut (`made_duration`), by more than a frame or so, so what a recipe's own
+  edits took out is not counted as a person's;
 - `rendered`: held drafts with a render;
 - the lengths, in seconds: the mean length as made, as held now, and as
   rendered, so a default that is always trimmed shows.
@@ -42,6 +43,17 @@ def span_seconds(spans: Iterable) -> float:
             if start is not None and end is not None and end > start:
                 total += end - start
     return round(total, 3)
+
+
+def made_length(provenance: dict) -> float:
+    """How long a draft was as the recipe cut it: its `made_duration`, or,
+    where it carries none, how long its spans run together."""
+    length = _time(provenance.get('made_duration'))
+    return (
+        round(length, 3)
+        if length is not None
+        else span_seconds(provenance.get('spans'))
+    )
 
 
 def _mean(values: List[float]) -> Optional[float]:
@@ -85,7 +97,7 @@ def report(projects: Iterable[dict], renders: Iterable[dict] = ()) -> Dict[str, 
         if not isinstance(source, dict) or not source.get('project'):
             continue
         tally = recipe_of(str(source['project']), str(source.get('recipe') or '?'))
-        made = span_seconds(source.get('spans'))
+        made = made_length(source)
         now = _time((project.get('edl') or {}).get('duration'))
         tally['made'] += 1
         tally['held'] += 1
@@ -110,7 +122,7 @@ def report(projects: Iterable[dict], renders: Iterable[dict] = ()) -> Dict[str, 
             )
             tally['made'] += 1
             tally['dropped'] += 1
-            tally['_made'].append(span_seconds(dropped.get('spans')))
+            tally['_made'].append(made_length(dropped))
     totals = {'made': 0, 'held': 0, 'dropped': 0, 'edited': 0, 'rendered': 0}
     for source in sources.values():
         for tally in source['recipes'].values():

@@ -2,7 +2,7 @@
 over projects and renders as dicts: no database."""
 
 from alfred.core.utils import measured
-from alfred.core.utils.measured import lines, report, span_seconds
+from alfred.core.utils.measured import lines, made_length, report, span_seconds
 
 SOURCE = 'aaaaaaaaaaaaaaaaaaaaaaaa'
 
@@ -63,6 +63,23 @@ def test_held_dropped_edited_and_rendered_are_counted_per_source_and_recipe():
         'edited': 1,
         'rendered': 1,
     }
+
+
+def test_what_a_recipe_cut_is_measured_by_the_length_it_made():
+    """Mutation: read the made length from the spans alone -- red: the
+    recipe's own cuts read as a person's edit."""
+    # Tight-cut takes 1.5 s of fillers and pauses out of its 10 s span.
+    tight = draft(1, [[0, 10]], 8.5, recipe='tight-cut')
+    tight['source']['made_duration'] = 8.5
+    trimmed = draft(2, [[20, 30]], 6.0, recipe='tight-cut')
+    trimmed['source']['made_duration'] = 8.5
+    found = report([tight, trimmed])
+    tally = found['sources'][SOURCE]['recipes']['tight-cut']
+    assert (tally['held'], tally['edited']) == (2, 1)
+    assert tally['length']['made'] == 8.5
+    # A dropped draft is measured the same way.
+    assert made_length({'spans': [[0, 10]], 'made_duration': 8.5}) == 8.5
+    assert made_length({'spans': [[0, 10]]}) == 10
 
 
 def test_a_difference_within_a_frame_is_not_an_edit():
