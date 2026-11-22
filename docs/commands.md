@@ -61,7 +61,7 @@ Docker.
 
 | What | Why |
 |---|---|
-| Docker with `docker compose` | the api, the render worker, the database, the site's build and both test suites run in containers |
+| Docker with `docker compose` | the api, the render worker, the database, the site's build and both test suites run in containers; [Running on the host](host-run.md) runs the first four as processes instead |
 | git | the engines, otto and vox, are submodules; the images do not build without them |
 | Python 3.8 or newer | `./al family` and `./al loop` run on the host with its standard library |
 | uv | joe, the docs build and the host's quick tests (`uv`, `uvx`) |
@@ -82,6 +82,8 @@ variable in front of a command is set for that command only; in PowerShell,
 | ... with joe, for captions | `ALFRED_FAMILY_JOE=../joe ./al family up` | `$env:ALFRED_FAMILY_JOE = '../joe'; al family up` |
 | Stop it | `./al stop` | `al stop` |
 | ... and the joe it started | `./al family down` | `al family down` |
+| Start the app without Docker | `ALFRED_DEV_SKIP_AUTH=1 ./al host up` | `$env:ALFRED_DEV_SKIP_AUTH = '1'; al host up` |
+| ... see what answers, and stop it | `./al host`, `./al host down` | `al host`, `al host down` |
 | Follow its logs | `./al logs` | `al logs` |
 | A shell in the api | `./al sh` | `al sh` |
 | Tidy renders, orphans and fetched media | `./al storage migrate`, `orphans` or `cache`: a dry run, until `--apply` | `al storage ...`, the same |

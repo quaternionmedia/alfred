@@ -23,6 +23,14 @@ gives. `./al` with nothing after it lists every command.
 <http://127.0.0.1:1732>. [Get started](start.md) walks it, and says what you
 see when it worked.
 
+**"Can I run it without Docker?"**
+
+`ALFRED_DEV_SKIP_AUTH=1 ./al host up`: the api, a render worker and the
+site's watcher as processes on this machine, against a MongoDB you can
+reach, with joe beside them. [Running on the host](host-run.md) is the run,
+and says what it lacks: the suites' stacks, production, fontconfig's font
+list and ImageMagick's text.
+
 **"Is that alfred answering, or something else on the port?"**
 
 `curl 127.0.0.1:1732/openapi.json` names whatever answers: alfred says `Alfred

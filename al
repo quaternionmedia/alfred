@@ -34,6 +34,7 @@ loop                    suites side by side, one named run of several: ./al loop
 n | nox                 a nox session in the test container: ./al nox -s lint
 cookbook                regenerate docs/cookbook.md from the browser specs
 family                  alfred with otto, vox, joe, qmcp and the rest: status, test, up, smoke, down, loop
+host                    alfred as processes on this machine, no Docker: status, up, down
 recipes                 record the recipes as GIFs, take the docs' screenshots (needs a dev stack)
 docs | doc              serve the docs on http://127.0.0.1:4000
 flower                  Celery monitoring on http://127.0.0.1:5555
@@ -311,6 +312,13 @@ elif [ $1 = "family" ]; then
   # See docs/family.md.
   py=$(hostPython) || exit 1
   "$py" "$(dirname "$0")/scripts/family.py" "$@"
+
+elif [ $1 = "host" ]; then
+  shift
+  # See docs/host-run.md. The key, as ./al dev makes it.
+  ensureDevKey
+  py=$(hostPython) || exit 1
+  "$py" "$(dirname "$0")/scripts/host.py" "$@"
 
 elif [ $1 = "flower" ]; then
   shift

@@ -14,7 +14,6 @@ Helpers are fixtures rather than importable functions: the test directories
 are not packages, so a test module cannot import from this file reliably.
 """
 
-import shutil
 import uuid
 from dataclasses import dataclass
 
@@ -84,11 +83,6 @@ def api(db):
     a database, and once this tier had run on a worker it could -- so those
     pins passed or failed by test order. Each class's settings are put back as
     they were found.
-
-    `checkFonts` shells out to `fc-list`, which the API image has and a bare
-    Windows or macOS host may not. It is unrelated to anything tested here,
-    so it is left out where the binary is missing rather than failing every
-    test in the tier on a font probe.
     """
     from fastapi.testclient import TestClient
 
@@ -97,15 +91,10 @@ def api(db):
     found = {
         cls: cls.__dict__.get('_document_settings', _ABSENT) for cls in _documents()
     }
-    startup = main.app.router.on_startup
-    hooks = list(startup)
-    if shutil.which('fc-list') is None and main.checkFonts in startup:
-        startup.remove(main.checkFonts)
     try:
         with TestClient(main.app) as client:
             yield client
     finally:
-        startup[:] = hooks
         for cls in _documents():
             before = found.get(cls, _ABSENT)
             if before is not _ABSENT:

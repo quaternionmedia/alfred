@@ -23,6 +23,7 @@ nav:
       - Questions a new developer asks: develop.md
       - Commands: commands.md
       - dev-server.md
+      - Running on the host: host-run.md
       - Test loop: loop.md
       - Family dev loop: family.md
       - Browser suite: cookbook.md

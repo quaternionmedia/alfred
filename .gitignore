@@ -136,3 +136,4 @@ videos-test-output/
 
 # `./al family`'s logs and the record of the joe it started (scripts/family.py).
 .family/
+.host/

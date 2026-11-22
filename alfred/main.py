@@ -1,4 +1,5 @@
 from os import environ
+from shutil import which
 from subprocess import run as bash
 from textwrap import wrap
 
@@ -111,8 +112,18 @@ async def seedDb():
         await db.Project.insert_many(owned_by(SEED_OWNER, seed))
 
 
+NO_FONT_LIST = (
+    'fc-list is not on this host, so the font list is left as it was: '
+    'fontconfig lists the fonts, and the api image has it.'
+)
+
+
 def installed_fonts():
-    """fontconfig's fonts, a `family-style` line each. Starts fc-list."""
+    """fontconfig's fonts, a `family-style` line each, from fc-list; None where
+    there is no fc-list to ask. That is a host without fontconfig, which the api
+    image has, not a host without fonts."""
+    if which('fc-list') is None:
+        return None
     return (
         bash(['fc-list', '-f', '"%{family}-%{style}\n"'], capture_output=True)
         .stdout.decode()
@@ -140,6 +151,9 @@ async def checkFonts():
     db = get_db()
     # In the thread pool, like every process the api starts; no exceptions.
     fonts = await run_in_threadpool(installed_fonts)
+    if fonts is None:
+        print(NO_FONT_LIST, flush=True)
+        return
     found = font_styles(fonts)
     for family, styles in found:
         await db.fonts.update_one(

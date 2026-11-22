@@ -514,13 +514,17 @@ def joe_problem(title, port):
     return f'port {port} is held by {what}: move joe with ALFRED_JOE_PORT'
 
 
-def start_joe(path, host, port):
-    STATE.mkdir(parents=True, exist_ok=True)
-    LOGS.mkdir(parents=True, exist_ok=True)
+def start_joe(path, host, port, record=None, log_path=None):
+    """joe from its checkout, detached; its pid in `record` (JOE_PID unless
+    named) and its output in `log_path` (the family's joe.log unless named)."""
+    record = JOE_PID if record is None else Path(record)
+    log_path = LOGS / 'joe.log' if log_path is None else Path(log_path)
+    record.parent.mkdir(parents=True, exist_ok=True)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     uv = tool('uv')
     if not uv:
         raise SystemExit('./al family up: joe runs with uv, which is not on PATH')
-    log = (LOGS / 'joe.log').open('w', encoding='utf-8')
+    log = log_path.open('w', encoding='utf-8')
     argv = [
         uv,
         'run',
@@ -545,7 +549,7 @@ def start_joe(path, host, port):
         stdin=subprocess.DEVNULL,
         **options,
     )
-    JOE_PID.write_text(
+    record.write_text(
         json.dumps({'pid': process.pid, 'port': port, 'host': host, 'path': str(path)}),
         encoding='utf-8',
     )
@@ -562,41 +566,52 @@ def wait_for(check, seconds, every=1.0):
     return None
 
 
-def up(args):
+def ensure_joe(command='./al family up', record=None, log_path=None):
+    """joe answering on its port: the one already there, or one started from
+    its checkout, its pid in `record` and its output in `log_path` (the
+    family's unless named). (probe, port), or None once the reason is said,
+    as `command`."""
+    log_path = LOGS / 'joe.log' if log_path is None else Path(log_path)
     port = joe_port()
     host = joe_host()
     probe = f'http://{LOOPBACK if host in ("0.0.0.0", "::") else host}:{port}'
     title = title_at(probe)
     problem = joe_problem(title, port)
     if problem:
-        say(f'./al family up: {problem}')
-        return 1
+        say(f'{command}: {problem}')
+        return None
     if title:
         say(f'joe: "{title}" already answers on {probe}; using it')
     else:
         joe, how = locate(BY_NAME['joe'])
         if joe is None:
-            say(f'./al family up: joe {how}')
-            return 1
+            say(f'{command}: joe {how}')
+            return None
         if not has_media_api(joe):
             say(
                 f'! joe at {joe} has no media API: captions and audio analysis will refuse'
             )
-        say(
-            f'joe: starting from {joe} on {host}:{port} (log: {shown(LOGS / "joe.log")})'
-        )
-        process = start_joe(joe, host, port)
+        say(f'joe: starting from {joe} on {host}:{port} (log: {shown(log_path)})')
+        process = start_joe(joe, host, port, record, log_path)
         answered = wait_for(lambda: process.poll() is not None or title_at(probe), 120)
         if process.poll() is not None or not answered:
-            say(f'./al family up: joe did not come up; {shown(LOGS / "joe.log")} ends:')
-            for line in tail(LOGS / 'joe.log'):
+            say(f'{command}: joe did not come up; {shown(log_path)} ends:')
+            for line in tail(log_path):
                 say(f'     {line}')
-            return 1
+            return None
     status, _, _ = fetch(probe + '/api/media/capabilities')
     if status != 200:
         say(
             f'! joe answered {status} for /api/media/capabilities: no media engine there'
         )
+    return probe, port
+
+
+def up(args):
+    joe = ensure_joe()
+    if joe is None:
+        return 1
+    probe, port = joe
 
     env = dict(os.environ)
     env.setdefault('ALFRED_AUDIO_ENGINE_URL', f'http://host.docker.internal:{port}')

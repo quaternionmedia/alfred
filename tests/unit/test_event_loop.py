@@ -310,6 +310,8 @@ class TestRunsInAThread:
             async def delete_many(self, query):
                 written.append((query,))
 
+        # Whether this host has fontconfig is not the question here.
+        monkeypatch.setattr(main, 'which', lambda name: f'/usr/bin/{name}')
         monkeypatch.setattr(main, 'bash', fc_list)
         monkeypatch.setattr(main, 'get_db', lambda: SimpleNamespace(fonts=Fonts()))
         asyncio.run(main.checkFonts())

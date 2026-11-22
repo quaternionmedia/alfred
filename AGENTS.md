@@ -135,6 +135,7 @@ arguments prints the full command list.
 | `./al docs` | Serve mkdocs locally on :4000 |
 | `./al family` | Every repository alfred works with: status, the vendored pins, what's off |
 | `./al family loop` | Each one's quick suite, then joe and the dev stack together, a live check, and down ([docs/family.md](docs/family.md)) |
+| `./al host up` | The api, a render worker and the site as processes on this machine, without Docker ([docs/host-run.md](docs/host-run.md)) |
 | `./al prod` | Production stack (expects a running traefik and the production `ALFRED_SECRET_KEY` exported) |
 
 Tests can also run directly: `nox -f tests/noxfile.py -s coverage`.
