@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 from bson import ObjectId
 from fastapi.testclient import TestClient
+from pymongo.errors import DocumentTooLarge
 
 from alfred import config
 from alfred.core.models.captions import RUNNING
@@ -28,6 +29,8 @@ class FakeCaptionsStore:
         self.projects = {p['_id']: copy.deepcopy(p) for p in projects}
         self.writes = []
         self.projections = []
+        # What the database says to the next write, when it refuses one.
+        self.refuses = None
 
     async def find(self, query, projection=routes.PROJECTION):
         self.projections.append(projection)
@@ -45,6 +48,8 @@ class FakeCaptionsStore:
         return await self.find(query, routes.WORDS)
 
     async def set(self, project_id, fields):
+        if self.refuses is not None:
+            raise self.refuses
         self.writes.append(copy.deepcopy(fields))
         self.projects[project_id].update(copy.deepcopy(fields))
 
@@ -282,6 +287,30 @@ class TestSaving:
         assert res.status_code == 200, res.text
         assert len(res.json()['captions']) == 5000
         assert len(store.writes[-1]['captions']) == 5000
+
+    def test_a_write_the_database_would_not_take_is_refused_naming_the_size(self, api):
+        mine = project()
+        client, store, _ = api(OWNER, mine)
+        store.refuses = DocumentTooLarge(
+            'BSON document too large (17000000 bytes) - the connected server '
+            'supports BSON document sizes up to 16793598 bytes.'
+        )
+        res = client.put(
+            url(mine),
+            json={
+                'captions': [{'start': 0, 'end': 1, 'text': 'x'}],
+                'words': [{'start': 0, 'end': 1, 'text': 'x', 'segment': 0}],
+            },
+        )
+        assert res.status_code == 413, res.text
+        assert res.json() == {
+            'detail': "The project's document with these captions and words would be "
+            'larger than the database holds: BSON document too large (17000000 '
+            'bytes) - the connected server supports BSON document sizes up to '
+            '16793598 bytes.',
+            'code': 'project_too_large',
+        }
+        assert store.writes == []
 
     def test_other_fields_are_422(self, api):
         mine = project()

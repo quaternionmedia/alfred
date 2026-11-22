@@ -74,7 +74,8 @@ talk. A refusal carries a `code` beside its `detail`;
 A caption is `{start, end, text}`: `start` at or after 0, `end` after it, and
 text that says something, at most 500 characters. A project's captions are
 kept in start order, however many there are: what bounds them is the
-project's document, which the database refuses past its own size.
+project's document, which the database refuses past its own size; the write
+is then refused with the code `project_too_large`.
 
 A word is `{start, end, text, segment}`, in timeline seconds: `end` no earlier
 than `start` (an engine times some words as taking no time at all), `text` one

@@ -134,6 +134,21 @@ class TestMakingDrafts:
         assert all(c['kind'] == 'draft' and ObjectId.is_valid(c['ref']) for c in ours)
         assert {c['ref'] for c in ours} == {str(d['_id']) for d in projects.inserted}
 
+    def test_thousands_of_cues_on_the_source_are_written(self, measured):
+        """Nothing counts a source's cues: a run over a source many runs and
+        writers have marked adds its own."""
+        crowded = source(
+            cues=[
+                {'start': n, 'label': f'mark {n}', 'source': 'editor'}
+                for n in range(3000)
+            ]
+        )
+        projects, recipes = FakeCollection(crowded), FakeCollection()
+        drafts.make_drafts(crowded, [{'recipe': 'chapters'}], projects, recipes)
+        cues = projects.documents[crowded['_id']]['cues']
+        assert len(cues) == 3002
+        assert len([c for c in cues if c['source'] == CUE_SOURCE]) == 2
+
     def test_a_second_run_replaces_the_drafts_cues_and_leaves_the_old_drafts(
         self, measured
     ):
