@@ -62,14 +62,17 @@ A `label` step with `categories`, or with `score`, asks a labeller: a chat
 model behind an OpenAI-style route at `ALFRED_LABELLER_URL`, serving the
 model `ALFRED_LABELLER_MODEL` names
 ([Configuration](configuration.md#the-labeller)). It is asked a candidate at
-a time, after the filters, so a run asks as many questions as it keeps
-drafts and not one per window: which one of the categories fits what is said
-in the candidate, answered with the category alone, and how well the stretch
+a time, over the candidates standing where the step is in the recipe: after
+`top`, as the built-in recipes place it, a run asks about as many candidates
+as it keeps drafts, and before it, about every window. Of each, it is asked
+which one of the categories fits what is said in the candidate, answered with the category alone, and how well the stretch
 stands alone as a clip, answered with a whole number from 0 to 10, which the
 step scales to 0 to 1. The words sent are cut to a fixed length; the answer
 is read for the longest category it names, and for the first number it
 holds. A labeller that does not answer ends the asking at the first failure,
-with a note in the job, and the drafts are made all the same, uncategorised.
+with a note in the job: the candidates asked before it keep what they were
+given, the rest are made uncategorised, and the drafts are made all the
+same.
 alfred names no model: the route and the model are the operator's, and `GET
 /health` reports whether the labeller answers and serves the model named.
 No built-in recipe asks it; a copy of one with `categories` on its `label`
