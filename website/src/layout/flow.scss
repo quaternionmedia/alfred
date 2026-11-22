@@ -159,6 +159,18 @@ body:has(> .flowstage--render) {
   }
 }
 
+// On Source the work is choosing a project. Arranging is Edit's, so the row
+// of tools has no floor here and gives way before the lists do; and the
+// material takes at most a third of the stage, so the project list beside it
+// shows whole projects however much the library holds.
+body:has(> .flowstage--source) .flowpanel--tools .toolspanel {
+  min-height: 0;
+}
+
+.flowstage--source > .flowpanel--media {
+  max-height: 33%;
+}
+
 // The Render stage's panel is a short form, all of it the point, so on a
 // phone held upright it keeps its height -- up to the stage's share of the
 // screen above -- where the Source stage's lists give way and scroll. Held
