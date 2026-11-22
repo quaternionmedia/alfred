@@ -13,11 +13,11 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | Code | Status | Means | Answered by |
 |---|---|---|---|
 | `invalid_id` | 422 | the id in the path is not an id -- not an ObjectId's 24 hex digits -- refused before anything is looked up | every project, captions and render route that takes an id |
-| `not_found` | 404 | no such project or render, or not yours: alfred does not say which; or no such file in the media library, which a timeline playing remote media names | every project, captions and render route that takes an id; `GET /media/{name}/audio`, `GET /media/{name}/motion`, `GET /project/{id}/sound`, `GET /project/{id}/motion` |
+| `not_found` | 404 | no such project or render, or not yours: alfred does not say which; or no such file in the media library, which a timeline playing remote media names | every project, captions and render route that takes an id; `GET /media/{name}/audio`, `GET /media/{name}/motion`, `GET /project/{id}/sound`, `GET /project/{id}/motion`, `GET /media/{name}/scenes`, `GET /project/{id}/scenes` |
 | `too_many_cues` | 422 | more cues than the 2000 a project carries | `PUT /project/{id}/cues` |
 | `caption_file_unreadable` | 422 | the subtitle file cannot be read; `detail` names the line | `POST /project/{id}/captions/import` |
 | `audio_engine_missing` | 503 | no audio engine alfred can ask: none is configured, or a setting or this build cannot reach one; `detail` is the reason `GET /health` gives as `audio_engine.detail`. Asked for an analysis, also an engine whose contract offers none | `POST /project/{id}/captions/transcribe`, `GET /media/{name}/audio` |
-| `timeline_empty` | 422 | the project has no saved timeline to transcribe, hear or measure | `POST /project/{id}/captions/transcribe`, `GET /project/{id}/sound`, `GET /project/{id}/motion` |
+| `timeline_empty` | 422 | the project has no saved timeline to transcribe, hear or measure | `POST /project/{id}/captions/transcribe`, `GET /project/{id}/sound`, `GET /project/{id}/motion`, `GET /project/{id}/scenes` |
 | `timeline_unplayable` | 422 | the saved timeline cannot be played; `detail` names the clip | `POST /project/{id}/captions/transcribe` |
 | `timeline_silent` | 422 | nothing in the timeline can make a sound: no video or audio clips | `POST /project/{id}/captions/transcribe`, `GET /project/{id}/sound` |
 | `transcription_running` | 409 | a transcription of this project is under way; `GET /project/{id}/captions` follows it | `POST /project/{id}/captions/transcribe` |
