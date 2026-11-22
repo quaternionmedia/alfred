@@ -130,13 +130,37 @@ $rule: 1px solid #2e2e2e;
 
 .editor {
   display: grid;
-  // tools | surface | actions. The middle column takes everything left over,
-  // which is what makes the timeline the largest thing on the page.
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  // The surface alone: the tools are a panel of their own (panels/Tools.js),
+  // so the timeline is the whole of this one.
+  grid-template-columns: minmax(0, 1fr);
   gap: $gutter;
   align-items: start;
   padding-top: $gutter;
   padding-bottom: $gutter;
+}
+
+// The tools' panel: the tools and the zoom, then the render button and the
+// save state, a column beside the timeline.
+.toolspanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $gutter;
+  padding: $gutter;
+}
+
+// In the workspace the panel is the scroller, so a short panel still
+// reaches its last button; nothing in it sticks, or the actions would sit
+// over the zoom as the panel scrolled.
+.workspace .toolspanel {
+  box-sizing: border-box;
+  height: 100%;
+  overflow: auto;
+
+  .editortools,
+  .editoractions {
+    position: static;
+  }
 }
 
 .editortools,
@@ -606,10 +630,13 @@ $rule: 1px solid #2e2e2e;
 }
 
 @media only screen and (max-width: 820px) {
-  // Below tablet width three columns do not fit, so the tools move above and
-  // below the surface rather than shrinking it.
-  .editor {
-    grid-template-columns: minmax(0, 1fr);
+  // Below tablet width the tools' panel is a row over the timeline rather
+  // than a column beside it.
+  .toolspanel {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 0 $gutter;
   }
 
   .editortools,

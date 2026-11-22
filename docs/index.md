@@ -12,7 +12,8 @@ The editor is one page, worked in four stages named on the rail along its top:
 
 1. **Source**: choose a project, and the media and templates for its timeline.
 2. **Edit**: arrange, trim and cut the clips, title them, and cut the video by
-   deleting words from its transcript.
+   deleting words from its transcript, on a timeline whose lanes show the
+   words, the sound, the fades and what has been marked under the clips.
 3. **Render**: choose the output's size, and have the server make the video.
 4. **Deliver**: follow the render, then download it or send it on.
 

@@ -15,6 +15,7 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `invalid_id` | 422 | the id in the path is not an id -- not an ObjectId's 24 hex digits -- refused before anything is looked up | every project, captions and render route that takes an id |
 | `not_found` | 404 | no such project or render, or not yours: alfred does not say which; or no such file in the media library | every project, captions and render route that takes an id; `GET /media/{name}/audio` |
 | `too_many_captions` | 422 | more captions than the 1000 a project carries | `PUT /project/{id}/captions`, `POST /project`, `POST /render` |
+| `too_many_cues` | 422 | more cues than the 2000 a project carries | `PUT /project/{id}/cues` |
 | `caption_file_unreadable` | 422 | the subtitle file cannot be read; `detail` names the line | `POST /project/{id}/captions/import` |
 | `audio_engine_missing` | 503 | no audio engine alfred can ask: none is configured, or a setting or this build cannot reach one; `detail` is the reason `GET /health` gives as `audio_engine.detail`. Asked for an analysis, also an engine whose contract offers none | `POST /project/{id}/captions/transcribe`, `GET /media/{name}/audio` |
 | `timeline_empty` | 422 | the project has no saved timeline to transcribe | `POST /project/{id}/captions/transcribe` |
@@ -34,6 +35,9 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `delivered_without_link` | 502 | the render was uploaded to the bucket, and recorded so, but no link to it could be signed | `POST /render/{id}/deliver` |
 | `cloud_link_unavailable` | 502 | no link to the render's copy in the cloud bucket can be signed: always, on a server with no cloud account | `GET /render/{id}` |
 | `unknown_feature` | 422 | a `features` name that is not one of `tempo`, `beats`, `onsets`, `loudness`, `silences` and `peaks` | `GET /media/{name}/audio` |
+| `media_name_refused` | 422 | the upload's name is not one the library can hold: one file name with a media extension | `POST /media` |
+| `media_exists` | 409 | a file of that name is in the library already, and `replace=true` was not sent | `POST /media` |
+| `media_too_large` | 413 | the upload is larger than the limit, which `detail` names | `POST /media` |
 | `media_silent` | 422 | the file is an image, which has no sound to analyse | `GET /media/{name}/audio` |
 | `audio_engine_refused` | 422 | the audio engine would not take the file -- no sound in it, a type it does not read, too large; `detail` is the engine's reason | `GET /media/{name}/audio` |
 | `audio_engine_failed` | 502 | the audio engine could not be reached, broke, or answered something that is not an answer; asking again may work | `GET /media/{name}/audio` |

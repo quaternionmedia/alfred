@@ -14,6 +14,7 @@ import { Draft } from './Draft'
 import { User } from './User'
 import { Captions } from './captions/store'
 import { Transcript } from './captions/transcript'
+import { Cues } from './cues/store'
 import Bin from './Bin'
 
 // How far a press may wander and still count as a tap. Past this it is a drag
@@ -281,6 +282,13 @@ export function OttoTimeline() {
   // pass the check -- the second appending A's clips after the first's.
   let ticket = 0
 
+  /** Load what the lanes draw of `projectId`: its captions, words and cues. */
+  const held = projectId => {
+    Captions.ensure(projectId)
+    Transcript.ensure(projectId)
+    Cues.ensure(projectId)
+  }
+
   const open = () => {
     // Only ask for a project when there is one to ask for. Unguarded, this
     // interpolated `undefined` into the path and requested
@@ -299,7 +307,13 @@ export function OttoTimeline() {
     // bin, was wiped by the next redraw before it could be seen. It looked
     // like the click had done nothing.
     const projectId = m.route.param('project') || null
-    if (projectId === loaded) return
+    if (projectId === loaded) {
+      // A session confirmed after the project opened -- the page restoring
+      // one, or the development bypass -- loads now what it could not then.
+      // Each store returns at once while it holds this project's.
+      if (User.loggedIn && projectId) held(projectId)
+      return
+    }
     loaded = projectId
     const mine = ++ticket
 
@@ -307,11 +321,9 @@ export function OttoTimeline() {
     // it is kept for that project before it goes (Draft.js).
     Draft.opening()
 
-    // Its captions and words move with its clips (Transcript.follow).
-    if (User.loggedIn) {
-      Captions.ensure(projectId)
-      Transcript.ensure(projectId)
-    }
+    // Its captions and words move with its clips (Transcript.follow); its
+    // cues are drawn under them.
+    if (User.loggedIn) held(projectId)
 
     // Empty now, not when the response lands. The previous project's clips
     // are not this one's, and leaving them up while the request is in flight

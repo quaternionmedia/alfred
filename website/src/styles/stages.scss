@@ -365,9 +365,105 @@
 
 // The media item is now a button rather than a label, so the border and
 // padding belong to the control -- otherwise the clickable area is the text
-// and the box around it is decoration that does nothing when pressed.
+// and the box around it is decoration that does nothing when pressed. The
+// file's kind and its delete button sit after it, small.
 .mediaitem {
   display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  max-width: 100%;
+
+  &.confirming {
+    flex-wrap: wrap;
+  }
+}
+
+.mediakind {
+  color: #8f8f8f;
+
+  i {
+    font-size: 1rem;
+    vertical-align: middle;
+  }
+}
+
+// Delete, as an icon: it is the second thing a file offers, not the first.
+.mediadelete {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: #8f8f8f;
+  cursor: pointer;
+
+  i {
+    font-size: 1rem;
+  }
+
+  &:hover {
+    border-color: #3a3a3a;
+    color: #e57373;
+  }
+}
+
+// A question asked in place: delete this file, replace that one.
+.mediaconfirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.2rem 0;
+  font-size: 0.8rem;
+  color: #f2aa4c;
+
+  button {
+    padding: 0.15rem 0.5rem;
+    border: 1px solid #3a3a3a;
+    border-radius: 3px;
+    background: #222;
+    color: #d8d8d8;
+    font: inherit;
+    cursor: pointer;
+  }
+}
+
+// Where files from this device arrive: a box to press or to drop on.
+.mediaupload {
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px dashed #3a3a3a;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  color: #9a9a9a;
+
+  &.dragging {
+    border-color: #f2aa4c;
+    color: #f2aa4c;
+  }
+
+  .mediauploadlabel {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    cursor: pointer;
+
+    i {
+      font-size: 1.1rem;
+    }
+  }
+
+  // The picker itself is the label's: present for the keyboard and the
+  // tests, drawn as the label.
+  input[type='file'] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
 }
 
 // A template is offered the way a file is, though it is not one.

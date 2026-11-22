@@ -52,8 +52,10 @@ it loops over.
 | `follow-clips.spec.js` | `followClips` (src/ClipWindow.js): captions and words follow an edit made with the timeline tools. | 12 |
 | `health.spec.js` | Whether the stack can do its work. | 4 |
 | `journeys.spec.js` | The editor says what to do next. | 6 |
+| `lanes-arith.spec.js` | The lanes' arithmetic (src/lanes/arith.js): ticks, the view, the clips laid out, a sound's envelope over them, and a clip's effects. | 14 |
+| `lanes.spec.js` | The timeline's lanes (src/lanes/Lanes.js): the ruler above the clips, and the words, the sound, the effects and the cues under them, at one scale. | 6 |
 | `login.spec.js` | Logging in, registering, and the links the server mails. | 14 |
-| `media.spec.js` | Media the browser fetches by itself. | 10 |
+| `media.spec.js` | Media the browser fetches by itself. | 14 |
 | `navigation.spec.js` | Navigation and routing. | 8 |
 | `otto.spec.js` | Otto editor toolbar. | 6 |
 | `performance.spec.js` | Page-load budget. | 1 |
@@ -65,7 +67,7 @@ it loops over.
 | `screens-examples.spec.js` | Each docs example opened in the editor at its moment, saved as `docs/assets/screens/examples/<name>.png`. | 1 |
 | `screens-guide.spec.js` | Each step of making a video, from the editor opening to the render delivered, saved as `docs/assets/screens/guide/<step>.png` for docs/guide.md. | 1 |
 | `screens-tools.spec.js` | Each timeline tool chosen and its edit made, saved as `docs/assets/screens/tools/<tool>.png` for docs/tools.md. | 8 |
-| `screens.spec.js` | The screenshots the docs open with, taken from the running app. | 9 |
+| `screens.spec.js` | The screenshots the docs open with, taken from the running app. | 10 |
 | `session.spec.js` | The session lifecycle: renewal, expiry, logout, and what a token is worth. | 16 |
 | `stacked.spec.js` | The phone flow: the editor's panels stacked one stage at a time. | 15 |
 | `templates.spec.js` | Template clips: adding them, and changing what they say. | 13 |

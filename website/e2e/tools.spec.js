@@ -431,10 +431,11 @@ test.describe('the editor layout groups its tools', () => {
 
   test('every region starts on the same left edge', async ({ authedPage }) => {
     // Separate bars with separate padding is most of why the page read as
-    // stacked fragments rather than one interface.
+    // stacked fragments rather than one interface. The tools' panel sits
+    // under the viewer, at its edge; the timeline is beside the tools.
     await authedPage.goto('/')
     const lefts = await authedPage
-      .locator('section.viewer, section.transport, section.editor')
+      .locator('section.viewer, section.transport, section.toolspanel')
       .evaluateAll(nodes => nodes.map(n => Math.round(n.getBoundingClientRect().x)))
 
     expect(new Set(lefts).size, `regions start at ${lefts}`).toBe(1)
@@ -468,13 +469,14 @@ test.describe('the editor layout groups its tools', () => {
 
   test('related tools sit in one group, not scattered', async ({ authedPage }) => {
     // Playback and speed both move the playhead, so both live in the
-    // transport; the tools that change clips live beside the timeline.
+    // transport; the tools that change clips live in their panel beside the
+    // timeline.
     await authedPage.goto('/')
 
     const grouped = await authedPage.evaluate(() => ({
       playbackInTransport: !!document.querySelector('.transport #PlaybackTools'),
       speedInTransport: !!document.querySelector('.transport .tools'),
-      timelineToolsInEditor: !!document.querySelector('.editor #TTools'),
+      timelineToolsInEditor: !!document.querySelector('.toolspanel #TTools'),
       bin: (() => {
         const t = document.querySelector('#timeline')
         const b = document.querySelector('#bin')
@@ -486,8 +488,8 @@ test.describe('the editor layout groups its tools', () => {
     expect(grouped.playbackInTransport).toBe(true)
     expect(grouped.speedInTransport).toBe(true)
     expect(grouped.timelineToolsInEditor).toBe(true)
-    // Under the timeline where it shows; beside the Media & templates panel it steps aside.
-    const listed = await authedPage.locator('#panel-media').isVisible()
+    // Under the timeline where it shows; beside the Media or Templates panel it steps aside.
+    const listed = await authedPage.locator('#panel-media, #panel-templates').first().isVisible()
     expect(grouped.bin).toBe(listed ? 'absent' : 'under')
   })
 })

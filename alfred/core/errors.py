@@ -32,6 +32,8 @@ class Code(StrEnum):
     TIMELINE_SILENT = 'timeline_silent'
     TRANSCRIPTION_RUNNING = 'transcription_running'
     TRANSCRIPTION_NOT_QUEUED = 'transcription_not_queued'
+    # Cues.
+    TOO_MANY_CUES = 'too_many_cues'
     # Renders: queueing one, and getting it back.
     ENCODER_OPTIONS_REFUSED = 'encoder_options_refused'
     FRAME_SIZE_OUT_OF_RANGE = 'frame_size_out_of_range'
@@ -47,6 +49,10 @@ class Code(StrEnum):
     # How a library file sounds (`GET /media/{name}/audio`), beside NOT_FOUND
     # and AUDIO_ENGINE_MISSING.
     UNKNOWN_FEATURE = 'unknown_feature'
+    # The library written to (`POST` and `DELETE /media`).
+    MEDIA_NAME_REFUSED = 'media_name_refused'
+    MEDIA_EXISTS = 'media_exists'
+    MEDIA_TOO_LARGE = 'media_too_large'
     MEDIA_SILENT = 'media_silent'
     AUDIO_ENGINE_REFUSED = 'audio_engine_refused'
     AUDIO_ENGINE_FAILED = 'audio_engine_failed'
@@ -74,6 +80,7 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.TIMELINE_SILENT: Meaning(422, 'nothing in the timeline can make a sound'),
     Code.TRANSCRIPTION_RUNNING: Meaning(409, 'a transcription is under way'),
     Code.TRANSCRIPTION_NOT_QUEUED: Meaning(503, 'the broker would not take the job'),
+    Code.TOO_MANY_CUES: Meaning(422, 'more cues than a project carries'),
     Code.ENCODER_OPTIONS_REFUSED: Meaning(422, 'encoder options, not a quality'),
     Code.FRAME_SIZE_OUT_OF_RANGE: Meaning(422, 'a width or height out of range'),
     Code.FPS_OUT_OF_RANGE: Meaning(422, 'a frame rate out of range'),
@@ -86,6 +93,9 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.DELIVERED_WITHOUT_LINK: Meaning(502, 'uploaded, but no link was signed'),
     Code.CLOUD_LINK_UNAVAILABLE: Meaning(502, 'no cloud link can be signed'),
     Code.UNKNOWN_FEATURE: Meaning(422, 'not a feature the engine is asked for'),
+    Code.MEDIA_NAME_REFUSED: Meaning(422, 'not a name the library can hold'),
+    Code.MEDIA_EXISTS: Meaning(409, 'a file of that name is in the library'),
+    Code.MEDIA_TOO_LARGE: Meaning(413, 'larger than an upload may be'),
     Code.MEDIA_SILENT: Meaning(422, 'an image, which has no sound'),
     Code.AUDIO_ENGINE_REFUSED: Meaning(422, 'the audio engine would not take it'),
     Code.AUDIO_ENGINE_FAILED: Meaning(502, 'the audio engine failed'),

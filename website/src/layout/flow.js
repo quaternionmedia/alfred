@@ -13,11 +13,13 @@ import { NextStep } from '../NextStep'
  *
  * Edit had nothing of its own -- it *is* the timeline -- and is where the
  * captions are edited, the one thing about a timeline that is written rather
- * than arranged; and the transcript.
+ * than arranged; the transcript; and the templates, since arranging and
+ * titling is Edit's work, and a third panel on Source left the project list
+ * a row.
  */
 export const FLOW_STAGE_PANELS = Object.freeze({
   source: ['projects', 'media'],
-  edit: ['captions', 'transcript'],
+  edit: ['captions', 'transcript', 'templates'],
   render: ['render'],
   deliver: ['deliver'],
 })
@@ -107,6 +109,8 @@ export const StackedFlow = {
       panel: 'viewer',
       with: { settings: () => m(PanelRegistry.get('template').component, { quiet: true }) },
     }),
+    // The tools as a row over the timeline they act on.
+    m(Slot, { panel: 'tools' }),
     m(Slot, { panel: 'timeline' }),
   ],
 }

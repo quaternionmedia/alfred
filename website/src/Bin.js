@@ -26,7 +26,7 @@ import { Library } from './Library'
 var Bin = {
   templates: [],
   loaded: false,
-  // How many Media & templates panels are showing; the bin hides while any is.
+  // How many Media and Templates panels are showing; the bin hides while any is.
   listed: 0,
 
   /** Templates to offer for a new clip. A deprecated one still draws a clip that has it. */

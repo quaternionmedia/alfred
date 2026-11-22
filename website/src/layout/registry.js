@@ -1,7 +1,9 @@
 import { Projects } from '../panels/Projects'
 import { Media } from '../panels/Media'
+import { Templates } from '../panels/Templates'
 import { Viewer } from '../panels/Viewer'
 import { Timeline } from '../panels/Timeline'
+import { Tools } from '../panels/Tools'
 import { TemplateSettings } from '../panels/TemplateSettings'
 import { Render } from '../panels/Render'
 import { Deliver } from '../panels/Deliver'
@@ -51,9 +53,12 @@ import Transcript from '../panels/Transcript'
 /** @type {readonly PanelDefinition[]} */
 const PANELS = Object.freeze([
   { id: 'projects', title: 'Projects', stage: 'source', component: Projects, whileShown: true },
-  { id: 'media', title: 'Media & templates', stage: 'source', component: Media, whileShown: true },
+  { id: 'media', title: 'Media', stage: 'source', component: Media, whileShown: true },
+  { id: 'templates', title: 'Templates', stage: 'source', component: Templates, whileShown: true },
   { id: 'viewer', title: 'Viewer', stage: 'edit', component: Viewer },
   { id: 'timeline', title: 'Timeline', stage: 'edit', component: Timeline, closable: false },
+  // The tools that act on the timeline, beside it (panels/Tools.js).
+  { id: 'tools', title: 'Timeline tools', stage: 'edit', component: Tools, closable: false },
   { id: 'template', title: 'Template settings', stage: 'edit', component: TemplateSettings },
   { id: 'render', title: 'Render', stage: 'render', component: Render, whileShown: true },
   { id: 'deliver', title: 'Deliver', stage: 'deliver', component: Deliver, whileShown: true },
@@ -74,12 +79,13 @@ export const PanelRegistry = {
 /**
  * The panels a stage brings forward, the one it is about first.
  *
- * `?stage=source` shows the project list and the library, `?stage=edit` the
- * timeline and the viewer, and Render and Deliver their own panels.
+ * `?stage=source` shows the project list, the library and the templates,
+ * `?stage=edit` the timeline, the viewer and the tools, and Render and
+ * Deliver their own panels.
  */
 export const STAGE_PANELS = Object.freeze({
-  source: ['projects', 'media'],
-  edit: ['timeline', 'viewer'],
+  source: ['projects', 'media', 'templates'],
+  edit: ['timeline', 'viewer', 'tools'],
   render: ['render'],
   deliver: ['deliver'],
 })

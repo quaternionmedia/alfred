@@ -18,9 +18,21 @@
 .flowpanel--viewer,
 .flowpanel--viewer > .panelhost,
 .flowpanel--viewer .viewerpanel,
+.flowpanel--tools,
+.flowpanel--tools > .panelhost,
 .flowpanel--timeline,
 .flowpanel--timeline > .panelhost {
   display: contents;
+}
+
+// The tools give way as the timeline does, down to one row that scrolls
+// inside itself: on a phone the stage's panel and the picture come first.
+// Their box and its host are `display: contents`, so the panel itself is the
+// column's child, and this names it.
+.flowpanel--tools .toolspanel {
+  flex: 0 1 auto;
+  min-height: 2.75rem;
+  overflow: auto;
 }
 
 // The frame's room, as tall as the frame was before it fitted a room (Head.js):
@@ -141,9 +153,22 @@ body > .stagerail {
 body:has(> .flowstage--source),
 body:has(> .flowstage--render) {
   .flowpanel--viewer .viewer,
+  .flowpanel--tools .toolspanel,
   .flowpanel--timeline .editor {
     flex-shrink: 4;
   }
+}
+
+// On Source the work is choosing a project. Arranging is Edit's, so the row
+// of tools has no floor here and gives way before the lists do; and the
+// material takes at most a third of the stage, so the project list beside it
+// shows whole projects however much the library holds.
+body:has(> .flowstage--source) .flowpanel--tools .toolspanel {
+  min-height: 0;
+}
+
+.flowstage--source > .flowpanel--media {
+  max-height: 33%;
 }
 
 // The Render stage's panel is a short form, all of it the point, so on a

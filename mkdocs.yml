@@ -17,6 +17,7 @@ nav:
       - Captions: captions.md
       - Editing by text: editing-by-text.md
       - Editing tools: tools.md
+      - The timeline's lanes: lanes.md
       - Configuration: configuration.md
   - Develop:
       - Questions a new developer asks: develop.md

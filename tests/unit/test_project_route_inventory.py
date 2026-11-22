@@ -35,6 +35,9 @@ INVENTORY = {
     ('GET', '/project/{item_id}/captions/words'),
     ('POST', '/project/{item_id}/captions/import'),
     ('POST', '/project/{item_id}/captions/transcribe'),
+    # Cues: routes/cues.py.
+    ('GET', '/project/{item_id}/cues'),
+    ('PUT', '/project/{item_id}/cues'),
 }
 
 

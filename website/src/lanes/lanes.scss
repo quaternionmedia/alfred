@@ -1,0 +1,307 @@
+// The timeline's lanes (Lanes.js): one time axis, several rows under it, in
+// one box that scrolls sideways. Everything here is scoped to the lanes, so
+// the timeline can sit wherever the layout puts it and style nothing else.
+
+$rule: 1px solid #2e2e2e;
+$label: #9a9a9a;
+$text: #d8d8d8;
+$accent: #f2aa4c;
+
+.lanes {
+  position: relative;
+  overflow: auto;
+  // A share of the screen at most, as the clip strip's box was: past it the
+  // lanes scroll inside the box rather than push the rest of the page down.
+  max-height: 40vh;
+  border: 1px solid #46346e;
+  border-radius: 1em;
+  background: #101010;
+}
+
+// On a phone the stage's panel, the viewer and the timeline share one
+// column, and the lanes at their full height squeezed the panel to a
+// scroller a few lines tall. The box shows the ruler, the clips and the
+// start of the words, and the rest is a scroll inside it.
+@media (max-width: 1023px) {
+  .lanes {
+    max-height: 7.5rem;
+  }
+}
+
+// As wide as the timeline is long, at the editor's scale, and never narrower
+// than the box. Every lane's items sit at `start * scale` pixels from its
+// left edge, and the clips are laid out from the same edge, so the lanes
+// agree on where a second is.
+.lanebody {
+  position: relative;
+  min-width: 100%;
+}
+
+.lane {
+  position: relative;
+  height: 44px;
+  border-top: $rule;
+  box-sizing: border-box;
+  // Items sit where their seconds put them, and the label at the left edge:
+  // a lane is not centred text.
+  text-align: left;
+}
+
+// The lane's name stays at the box's left edge while the lane scrolls under it.
+.lanelabel {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  display: inline-block;
+  padding: 0 0.45em;
+  border-radius: 0 0 4px 0;
+  background: rgba(16, 16, 16, 0.85);
+  color: $label;
+  font-size: 0.62rem;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+// ---- time ----------------------------------------------------------------
+
+.lane.ruler {
+  height: 20px;
+  border-top: 0;
+
+  .tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    padding-left: 3px;
+    border-left: 1px solid #3a3a3a;
+    color: $label;
+    font-size: 0.6rem;
+    line-height: 20px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+}
+
+// ---- clips ---------------------------------------------------------------
+
+.lane.clips {
+  height: auto;
+}
+
+// The clip strip is a lane now, not a box of its own: the lanes' box draws
+// the border and scrolls, and the clips start where every other lane's
+// second 0 is.
+.lanes #timeline {
+  display: flex;
+  overflow: visible;
+  width: max-content;
+  min-width: 100%;
+  // As tall as a clip with its margins, so an empty strip is still a strip:
+  // the editor with no project open shows a timeline with nothing on it.
+  min-height: 50px;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+// ---- text ----------------------------------------------------------------
+
+.lane.text {
+  .laneword,
+  .lanecaption {
+    position: absolute;
+    height: 18px;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0 3px;
+    border-radius: 2px;
+    color: $text;
+    font-size: 0.7rem;
+    line-height: 18px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+  }
+
+  .laneword {
+    top: 3px;
+    background: #222;
+
+    &.mark {
+      background: #3a3a3a;
+    }
+
+    &.selected {
+      background: #46346e;
+    }
+
+    &.going {
+      opacity: 0.55;
+      text-decoration: line-through;
+    }
+
+    &.current {
+      background: $accent;
+      color: #101820;
+    }
+  }
+
+  .lanecaption {
+    top: 23px;
+    background: #26323a;
+
+    &.on {
+      outline: 1px solid $accent;
+    }
+  }
+}
+
+// ---- audio ---------------------------------------------------------------
+
+.lane.audio {
+  height: 40px;
+  // A hairline through the middle: the envelope's zero.
+  background: linear-gradient(to bottom, transparent 19px, #2a2a2a 19px, #2a2a2a 20px, transparent 20px);
+
+  svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    height: 100%;
+  }
+
+  .envelope {
+    fill: #4f8fa8;
+  }
+
+  .silence {
+    fill: rgba(0, 0, 0, 0.45);
+  }
+}
+
+// ---- fx ------------------------------------------------------------------
+
+.lane.fx {
+  height: 24px;
+
+  .fade,
+  .dim {
+    position: absolute;
+    top: 4px;
+    height: 16px;
+    box-sizing: border-box;
+  }
+
+  // A fade is drawn as its ramp: up for a fade in, down for a fade out.
+  .fade {
+    background: #c08a3a;
+    opacity: 0.85;
+
+    &.in {
+      clip-path: polygon(0 100%, 100% 0, 100% 100%);
+    }
+
+    &.out {
+      clip-path: polygon(0 0, 100% 100%, 0 100%);
+    }
+  }
+
+  .dim {
+    padding-left: 4px;
+    border: 1px dashed #777;
+    color: $label;
+    font-size: 0.6rem;
+    line-height: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+}
+
+// ---- cues ----------------------------------------------------------------
+
+.lane.cues {
+  .cue {
+    position: absolute;
+    top: 3px;
+    height: 17px;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0 4px;
+    border-radius: 3px;
+    background: #3a3a5a;
+    color: #e8e8e8;
+    font-size: 0.68rem;
+    line-height: 17px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+
+    &.below {
+      top: 23px;
+    }
+
+    // A point: a post, with no room for its label (its title carries it).
+    &.point {
+      width: 2px;
+      padding: 0;
+      background: $accent;
+    }
+
+    // Where an excerpt stands on the harness's queue.
+    &.waiting {
+      background: #7a5a1e;
+    }
+
+    &.approved {
+      background: #2f6b3a;
+    }
+
+    &.rejected {
+      background: #4a2a2a;
+      opacity: 0.6;
+      text-decoration: line-through;
+    }
+
+    &.queued,
+    &.rendering {
+      background: #1f4a52;
+    }
+
+    &.rendered {
+      background: #1f5a62;
+    }
+
+    &.delivered {
+      background: #2f6b3a;
+      outline: 1px solid #7fbf7f;
+    }
+
+    &.failed {
+      background: #5a2a2a;
+    }
+
+    &.on {
+      box-shadow: inset 0 0 0 1px $accent;
+    }
+  }
+}
+
+// ---- the playhead ----------------------------------------------------------
+
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 2;
+  width: 2px;
+  margin-left: -1px;
+  background: $accent;
+  pointer-events: none;
+}

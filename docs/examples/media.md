@@ -1,6 +1,17 @@
 # Add media
 All examples here can be previewed or rendered as a full video. A clip's `name` is a file in the server's media library, as `GET /videos` lists it; the [usage notes](index.md) say where the files come from, and what a URL needs instead.
 
+A file of your own goes into the library with one request, kept under its own name, and comes back out with another:
+
+``` bash title="Add a file to the library"
+curl -X POST \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@talk.mp4" \
+  http://127.0.0.1:1732/media
+```
+
+This answers the file as `GET /media` describes it, `videos/talk.mp4`. A name the library holds already is refused (`media_exists`) unless the request adds `?replace=true`; a name that is not one file name with a media extension is refused (`media_name_refused`), as is a file past the upload limit (`media_too_large`). `DELETE /media/videos/talk.mp4` takes it out again, and answers 404 for a file the library does not hold. The [refusals](../api/errors.md) have each code.
+
 === "Preview"
     Set `t` to the time to preview, in seconds, and keep the slash in `/preview/`.
     ``` bash title="Preview EDL"

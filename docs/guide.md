@@ -70,9 +70,9 @@ says where each panel is.
 
 ## 3. Bring your media
 
-![Two demo clips and a sound added from the Material list, on the timeline in the order chosen](assets/screens/guide/media.png)
+![Two demo clips and a sound added from the Media panel, on the timeline in the order chosen](assets/screens/guide/media.png)
 
-*Material chosen in the order it should play: colour bars, a test card and a sound.*
+*Media chosen in the order it should play: colour bars, a test card and a sound.*
 
 Choose **Source** on the rail. Under **Projects**, choose the project to make
 the video in, or press **New project**, type a name and press **Create** to
@@ -81,14 +81,18 @@ project**, which makes one called Demo with a title, a text box and a colour
 field on its timeline. The pictures here start from a project with nothing on
 it yet.
 
-**Material** lists the server's media library, each file with how long it
-runs where the server can tell. On an empty library, **Generate demo media**
-has otto make three short clips, colour bars, a test card and a colour field,
-with no network. Your own
-files go into the `videos/` directory of alfred's checkout, which is the
-library; reload the page and they are listed. Choose a file to put it on the
-end of the timeline. To be transcribed, the video needs sound: the demo clips
-are silent, so the pictures here add a sound file after them.
+**Media** lists the server's media library, each file with how long it runs
+where the server can tell, and what it is. On an empty library, **Generate
+demo media** has otto make three short clips, colour bars, a test card and a
+colour field, with no network. Your own files are added from this device:
+press **Add files from this device**, or drop them on the panel, and each is
+listed as it arrives; a file of a name the library holds already asks before
+it replaces the old one. Files put straight into the `videos/` directory of
+alfred's checkout, which is the library, are listed on a reload. The bin
+beside a file takes it out of the library, asked twice, and a long list has
+a filter. Choose a file to put it on the end of the timeline. To be
+transcribed, the video needs sound: the demo clips are silent, so the
+pictures here add a sound file after them.
 
 ## 4. Arrange the timeline and add a title
 
@@ -96,17 +100,20 @@ are silent, so the pictures here add a sound file after them.
 
 *The title, moved to the front with the Move tool, its text typed in Template settings.*
 
-**Templates**, under Material, are clips made rather than filed: choose
-**Title** to put one on the end. Its settings open on the right: type its
-text, and its length as **Duration**. The viewer shows the frame otto draws
-of it.
+**Templates**, in its own panel under Media, are clips made rather than
+filed: choose **Title** to put one on the end. Its settings open on the
+right: type its text, and its length as **Duration**. The viewer shows the
+frame otto draws of it.
 
-The tools in the column beside the timeline change the clips. Choose **Move**
+The **Timeline tools** panel, beside the timeline, changes the clips. Choose **Move**
 (the two arrows) and drag the title to the front. **Trim** drags a clip's end,
 **Cut** splits one in two, and **Slip**, **Slide** and **Dual roller** shift
 what a clip plays, where it sits and where a cut falls; [Editing
 tools](tools.md) shows each one.
-Choose **Time** again, and a press on a clip puts the playhead there.
+Choose **Time** again, and a press on a clip puts the playhead there. Under
+the clips, the timeline's lanes show the words, the sound, the fades and the
+cues at the same seconds ([The timeline's lanes](lanes.md)); a press on any of
+them seeks there too.
 
 There is no Save to press: the timeline saves itself a second after each
 change, and the indicator beside it says **Saved**.

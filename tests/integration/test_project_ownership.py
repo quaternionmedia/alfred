@@ -49,6 +49,8 @@ SINGLE_PROJECT_ROUTES = [
     ),
     ('GET', '/project/{id}/captions/words', None),
     ('POST', '/project/{id}/captions/import', {'format': 'srt', 'text': CUE}),
+    ('GET', '/project/{id}/cues', None),
+    ('PUT', '/project/{id}/cues', {'cues': [{'start': 1, 'label': 'here'}]}),
     # POST /project/{id}/captions/transcribe answers 202 or 503 for its owner,
     # not 200; integration/test_captions_api.py holds it to the same 404s.
     ('DELETE', '/project/{id}', None),
