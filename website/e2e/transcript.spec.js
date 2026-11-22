@@ -146,6 +146,12 @@ async function needEngine(request, token) {
   expect(engine.ok, engine.detail).toBe(true)
 }
 
+/** What each paragraph says: its words, without the label naming who said it. */
+const said = page =>
+  page
+    .locator('#transcript-text .transcriptpara')
+    .evaluateAll(paras => paras.map(p => [...p.querySelectorAll('.word')].map(w => w.textContent).join(' ')))
+
 test.describe('@slow from the transcription to the cut', () => {
   test('words deleted from the transcript cut the timeline, the captions and the words', async ({
     authedPage,
@@ -167,7 +173,7 @@ test.describe('@slow from the transcription to the cut', () => {
       })
 
       await expect(words(authedPage)).toHaveCount(9)
-      await expect(authedPage.locator('#transcript-text .transcriptpara')).toHaveText([
+      await expect.poll(() => said(authedPage)).toEqual([
         'the first thing said',
         'and then a second line',
       ])
@@ -185,7 +191,7 @@ test.describe('@slow from the transcription to the cut', () => {
 
       await authedPage.keyboard.press('Delete')
       await expect(words(authedPage)).toHaveCount(7)
-      await expect(authedPage.locator('#transcript-text .transcriptpara').first()).toHaveText('the said')
+      await expect.poll(async () => (await said(authedPage))[0]).toBe('the said')
       await expect(going(authedPage)).toHaveCount(0)
       // The sound clip is split: three clips.
       await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)

@@ -2,6 +2,7 @@ from .admin import adminAPI
 from .audio import audioAPI
 from .auth import auth as authAPI
 from .captions import captionsAPI
+from .conversation import conversationAPI
 from .cues import cuesAPI
 from .demo import demoAPI
 from .drafts import draftsAPI
@@ -23,6 +24,7 @@ __all__ = [
     audioAPI,
     authAPI,
     captionsAPI,
+    conversationAPI,
     cuesAPI,
     draftsAPI,
     issueAPI,

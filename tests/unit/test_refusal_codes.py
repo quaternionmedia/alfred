@@ -32,7 +32,14 @@ from alfred.core.routes import media as media_routes
 from alfred.core.routes import recipes as recipe_routes
 from alfred.core.routes import render as render_routes
 from alfred.core.routes.templates import TEMPLATE_NAMES
-from alfred.core.utils import audio_engine, bucket, concurrency, measures, support_mail
+from alfred.core.utils import (
+    audio_engine,
+    bucket,
+    concurrency,
+    language_engine,
+    measures,
+    support_mail,
+)
 from alfred.core.utils.captions import CaptionFormatError, parse
 from alfred.core.utils.concurrency import RETRY_AFTER
 from alfred.core.utils.encoding import QUALITIES
@@ -62,6 +69,7 @@ COVERED = [
     'alfred/core/routes/admin.py',
     'alfred/core/routes/audio.py',
     'alfred/core/routes/captions.py',
+    'alfred/core/routes/conversation.py',
     'alfred/core/routes/cues.py',
     'alfred/core/routes/drafts.py',
     'alfred/core/routes/issue.py',
@@ -150,6 +158,9 @@ class Projects:
         return document['_id']
 
     async def find(self, query):
+        return self.projects.get(query['_id'])
+
+    async def find_words(self, query):
         return self.projects.get(query['_id'])
 
     async def set(self, project_id, fields):
@@ -586,6 +597,27 @@ def not_a_draft(world):
     return res, "'not-an-id' is not the id of a draft."
 
 
+def language_engine_missing(world):
+    world.monkeypatch.setattr(config, 'LANGUAGE_ENGINE_URL', None)
+    project = world.projects.add(words=[{'start': 0, 'end': 1, 'text': 'hi'}])
+    return world.client.get(f'/project/{project}/conversation'), (
+        'No language engine is configured: set ALFRED_LANGUAGE_ENGINE_URL to its '
+        'address (docs/editing-by-text.md says how to run one).'
+    )
+
+
+def language_engine_failed(world):
+    world.monkeypatch.setattr(config, 'LANGUAGE_ENGINE_URL', 'http://words.test:8000')
+    why = 'the language engine at http://words.test:8000: it answered 500: broke'
+
+    def fail(lines, title=None, transport=None):
+        raise language_engine.LanguageEngineFailed(why)
+
+    world.monkeypatch.setattr(language_engine, 'read', fail)
+    project = world.projects.add(words=[{'start': 0, 'end': 1, 'text': 'hi'}])
+    return world.client.get(f'/project/{project}/conversation'), why
+
+
 def no_picture(world):
     (Path(config.VIDEO_DIR) / 'still.png').write_bytes(b'not really a picture')
     return world.client.get('/media/videos/still.png/motion'), (
@@ -679,6 +711,8 @@ REQUESTS = {
     Code.DRAFTS_RUNNING: drafts_running,
     Code.DRAFTS_NOT_QUEUED: drafts_not_queued,
     Code.NOT_A_DRAFT: not_a_draft,
+    Code.LANGUAGE_ENGINE_MISSING: language_engine_missing,
+    Code.LANGUAGE_ENGINE_FAILED: language_engine_failed,
     Code.NO_PICTURE: no_picture,
     Code.PICTURE_UNREADABLE: picture_unreadable,
     Code.AUDIO_ENGINE_REFUSED: audio_engine_refused,

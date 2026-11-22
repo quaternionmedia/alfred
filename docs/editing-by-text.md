@@ -129,6 +129,31 @@ through every edit since. A transcription hears the *saved* timeline, and
 of a timeline saved from elsewhere with overlapping clips line up only once
 the editor has saved it.
 
+## Who spoke, and what about { #who-spoke-and-what-about }
+
+Each paragraph of the transcript carries a speaker's name, once someone has
+said who: press the label at the paragraph's start, type the name, and every
+word of the paragraph carries it, saved with the words. The labels are
+coloured by speaker, and a paragraph nobody has named reads **Unknown**.
+
+With a language engine beside the server, looksatwords
+(`ALFRED_LANGUAGE_ENGINE_URL`, [Configuration](configuration.md#the-language-engine)),
+the panel also shows what the engine reads in the transcript: the speakers
+with how many stretches each said, the topics that were live and when, each
+a chip coloured by the engine that opens on its first moment, and how many
+times the talk went off on a tangent. The reading follows the words as they
+stand: a cut, an undo or a speaker named sends them again a moment later,
+unsaved, and the chips update. Without an engine the panel says so in a
+line, and the labels work all the same.
+
+Through the API, `GET /project/{id}/conversation` reads the stored words and
+`POST /project/{id}/conversation` the words sent, each as lines, one per
+stretch of speech, `[m:ss] Speaker: words`, which is the shape the engine
+takes; both answer `{speakers, topics, tangents, lines}` in timeline seconds
+and store nothing. The engine is reached only through
+`alfred/core/utils/language_engine.py`, which names its two routes and
+nothing else of it; `GET /health` reports it as `language_engine`.
+
 ## Saving
 
 The timeline saves itself a second after it stops changing

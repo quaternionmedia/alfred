@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
-from ..utils import audio_engine, tasks
+from ..utils import audio_engine, language_engine, tasks
 from ..utils.concurrency import previews
 from ..utils.db import get_db
 from .users import current_active_user
@@ -59,6 +59,14 @@ class AudioEngineHealth(BaseModel):
     detail: Optional[str] = None
 
 
+class LanguageEngineHealth(BaseModel):
+    # Whether ALFRED_LANGUAGE_ENGINE_URL names an engine at all.
+    configured: bool
+    # Whether it answered: there is one to read a transcript with.
+    ok: bool
+    detail: Optional[str] = None
+
+
 class Health(BaseModel):
     """`GET /health` (contracts M3 and K2)."""
 
@@ -68,6 +76,7 @@ class Health(BaseModel):
     queue: QueueHealth
     previews: PreviewHealth
     audio_engine: AudioEngineHealth
+    language_engine: LanguageEngineHealth
 
 
 @dataclass(frozen=True)
@@ -190,6 +199,42 @@ def get_audio_engine_state() -> CachedRenderer:
     return _audio_engine
 
 
+def check_language_engine() -> language_engine.EngineStatus:
+    """Ask the engine. Blocking: one request, bounded by its own timeout."""
+    try:
+        return language_engine.status()
+    except Exception as exc:  # noqa: BLE001 - an engine that breaks is "not ok"
+        return language_engine.EngineStatus(
+            configured=bool(language_engine.engine_url()), ok=False, detail=str(exc)
+        )
+
+
+def language_engine_unanswered() -> language_engine.EngineStatus:
+    return language_engine.EngineStatus(
+        configured=bool(language_engine.engine_url()),
+        ok=False,
+        detail=f'the language engine at {language_engine.describe()} did not answer',
+    )
+
+
+def cached_language_engine(check=check_language_engine, ttl=AUDIO_ENGINE_CACHE_SECONDS):
+    """The language engine's status, kept as the audio engine's is."""
+    return CachedRenderer(
+        check=check,
+        ttl=ttl,
+        timeout=AUDIO_ENGINE_TIMEOUT,
+        unanswered=language_engine_unanswered,
+    )
+
+
+_language_engine = cached_language_engine()
+
+
+def get_language_engine_state() -> CachedRenderer:
+    """A dependency, so a test can answer for the language engine."""
+    return _language_engine
+
+
 async def ping_database() -> bool:
     try:
         await asyncio.wait_for(get_db().command('ping'), DB_TIMEOUT)
@@ -225,6 +270,7 @@ async def health(
     renderer: CachedRenderer = Depends(get_renderer_state),
     database=Depends(get_database_check),
     sound: CachedRenderer = Depends(get_audio_engine_state),
+    words: CachedRenderer = Depends(get_language_engine_state),
 ):
     """# Health
 
@@ -237,7 +283,9 @@ async def health(
     `audio_engine` says whether an audio engine is `configured`
     (ALFRED_AUDIO_ENGINE_URL) and whether it is `ok` -- it answered -- with
     the reason in `detail` when it is not. Transcribing captions needs both,
-    and a renderer to do the mixing.
+    and a renderer to do the mixing. `language_engine` says the same of the
+    engine that reads a transcript (ALFRED_LANGUAGE_ENGINE_URL): who spoke,
+    and which topics were live.
 
     `previews` says how many previews are being drawn (`running`), how many
     are waiting for one of those to finish (`waiting`), and how many may be
@@ -249,7 +297,9 @@ async def health(
     the answer between is the last one. A ping takes about a second, so the
     first request after that pays for it.
     """
-    db_ok, state, engine = await asyncio.gather(database(), renderer.get(), sound.get())
+    db_ok, state, engine, reader = await asyncio.gather(
+        database(), renderer.get(), sound.get(), words.get()
+    )
     return Health(
         api='ok',
         db='ok' if db_ok else 'down',
@@ -258,5 +308,8 @@ async def health(
         previews=PreviewHealth(**vars(previews.use())),
         audio_engine=AudioEngineHealth(
             configured=engine.configured, ok=engine.ok, detail=engine.detail
+        ),
+        language_engine=LanguageEngineHealth(
+            configured=reader.configured, ok=reader.ok, detail=reader.detail
         ),
     )

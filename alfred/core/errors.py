@@ -66,6 +66,9 @@ class Code(StrEnum):
     DRAFTS_RUNNING = 'drafts_running'
     DRAFTS_NOT_QUEUED = 'drafts_not_queued'
     NOT_A_DRAFT = 'not_a_draft'
+    # The language engine (`/project/{id}/conversation`).
+    LANGUAGE_ENGINE_MISSING = 'language_engine_missing'
+    LANGUAGE_ENGINE_FAILED = 'language_engine_failed'
     # Previews.
     PREVIEWS_BUSY = 'previews_busy'
     # Mail to support: issue reports and invoices.
@@ -117,6 +120,8 @@ REFUSALS: Mapping[Code, Meaning] = {
     Code.DRAFTS_RUNNING: Meaning(409, 'a run of recipes is under way'),
     Code.DRAFTS_NOT_QUEUED: Meaning(503, 'the broker would not take the run'),
     Code.NOT_A_DRAFT: Meaning(422, 'not one of this project\'s drafts'),
+    Code.LANGUAGE_ENGINE_MISSING: Meaning(503, 'no language engine alfred can ask'),
+    Code.LANGUAGE_ENGINE_FAILED: Meaning(502, 'the language engine failed'),
     Code.PREVIEWS_BUSY: Meaning(503, 'no preview slot came free in time'),
     Code.MAIL_NOT_CONFIGURED: Meaning(503, 'no mail is set up on this server'),
     Code.MAIL_NOT_QUEUED: Meaning(503, 'the broker would not take the mail'),

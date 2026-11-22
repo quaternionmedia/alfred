@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 
 from alfred import config
 from alfred.core.routes import health
-from alfred.core.utils import audio_engine, tasks
+from alfred.core.utils import audio_engine, language_engine, tasks
 from alfred.main import app
 from tests.unit.render_harness import OWNER, anonymous, as_user
 
@@ -37,6 +37,14 @@ class FixedAudioEngine:
         return self.state
 
 
+class FixedLanguageEngine:
+    def __init__(self, configured=False, ok=False, detail='none configured'):
+        self.state = language_engine.EngineStatus(configured, ok, detail)
+
+    async def get(self):
+        return self.state
+
+
 def database(up):
     async def check():
         return up
@@ -52,6 +60,7 @@ def client():
         health.get_renderer_state,
         health.get_database_check,
         health.get_audio_engine_state,
+        health.get_language_engine_state,
     ]:
         app.dependency_overrides.pop(dependency, None)
 
@@ -63,6 +72,9 @@ def answer(renderer=None, db_up=True, engine=None):
     app.dependency_overrides[health.get_database_check] = database(db_up)
     app.dependency_overrides[health.get_audio_engine_state] = lambda: (
         engine or FixedAudioEngine()
+    )
+    app.dependency_overrides[health.get_language_engine_state] = lambda: (
+        FixedLanguageEngine()
     )
 
 
@@ -88,6 +100,11 @@ class TestHealth:
                 'limit': config.PREVIEW_CONCURRENCY,
             },
             'audio_engine': {
+                'configured': False,
+                'ok': False,
+                'detail': 'none configured',
+            },
+            'language_engine': {
                 'configured': False,
                 'ok': False,
                 'detail': 'none configured',

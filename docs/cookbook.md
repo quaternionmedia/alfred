@@ -39,6 +39,7 @@ it loops over.
 | `auth.spec.js` | API-level auth. | 8 |
 | `autosave.spec.js` | The timeline saves itself. | 3 |
 | `captions.spec.js` | Captions: typed, imported, transcribed, and drawn into renders. | 15 |
+| `conversation.spec.js` | Who spoke, and what about: each paragraph of the transcript carries a speaker a person names, saved with the words, and the panel shows what the language engine reads in the words as they stand. | 3 |
 | `cut-fixtures.spec.js` | `cutRanges`, `followClips` and an excerpt (src/ClipWindow.js) over the fixtures the server's twin reads too (tests/fixtures/, tests/unit/test_cut.py). | 1 |
 | `cut-ranges.spec.js` | `cutRanges` (src/ClipWindow.js), the cut behind editing by text, at its edges. | 20 |
 | `deliver.spec.js` | Following a render from queued to delivered. | 12 |

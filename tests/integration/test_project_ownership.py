@@ -58,6 +58,8 @@ SINGLE_PROJECT_ROUTES = [
     # GET /project/{id}/motion 422 for a timeline with no video; the unit
     # tests of each route hold them to the same 404s. POST and DELETE
     # /project/{id}/drafts answer 202 and 422 for their owner; unit/test_drafts_routes.py.
+    # GET and POST /project/{id}/conversation answer 503 without a language
+    # engine; unit/test_conversation_routes.py.
     ('DELETE', '/project/{id}', None),
 ]
 ROUTE_IDS = [f'{method} {path}' for method, path, _ in SINGLE_PROJECT_ROUTES]

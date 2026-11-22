@@ -24,11 +24,12 @@ import { Captions, captionProblem } from './store'
 export const UNDO_DEPTH = 10
 
 /** A word as the server keeps it. */
-const plain = ({ start, end, text, segment }) => ({
+const plain = ({ start, end, text, segment, speaker }) => ({
   start,
   end,
   text,
   ...(segment === undefined || segment === null ? {} : { segment }),
+  ...(speaker ? { speaker } : {}),
 })
 
 /** The editor's clips, each placed where the editor plays it. */
@@ -347,6 +348,23 @@ export const Transcript = {
       pending: [],
       changed: Boolean(captions || words),
     })
+    Transcript.version++
+  },
+
+  /** The words as a save sends them, held or not: what a reading is asked about. */
+  plainWords: () => Transcript.words.map(plain),
+
+  /** Name who said the words from `from` to `to`, inclusive: every one carries it. Unsaved. */
+  setSpeaker: (from, to, name) => {
+    const speaker = String(name || '').trim().slice(0, 60)
+    const words = Transcript.words.map((word, i) => {
+      if (i < from || i > to) return word
+      const { speaker: was, ...rest } = word
+      return speaker ? { ...rest, speaker } : rest
+    })
+    if (words.every((word, i) => word === Transcript.words[i])) return
+    Transcript.words = words
+    Transcript.changed = true
     Transcript.version++
   },
 

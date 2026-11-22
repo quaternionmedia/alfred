@@ -94,6 +94,16 @@ All four are read by the api.
 [Captions](captions.md#the-audio-engine) has what alfred asks the engine, and
 vox's README the contract itself.
 
+### The language engine
+
+| Setting | Default | What it does |
+|---|---|---|
+| `ALFRED_LANGUAGE_ENGINE_URL` | unset: no engine | The engine's base address, looksatwords', for reading a transcript: who spoke, which topics were live and when, where the talk went off. Unset, the transcript is edited as before, and its reading says why there is none. |
+| `ALFRED_LANGUAGE_ENGINE_TIMEOUT` | `120` | Seconds one request to the engine may take. |
+
+[Editing by text](editing-by-text.md#who-spoke-and-what-about) says what
+alfred asks the engine.
+
 ### The dev stack, on the host
 
 These are read by compose and `./al`, not by alfred.
