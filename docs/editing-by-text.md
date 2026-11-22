@@ -92,13 +92,13 @@ decides what happens to what was said in them ([Editing tools](tools.md)):
 
 | Edit | The clips | The words and the captions |
 |---|---|---|
-| Trim | the clip's end moves, and everything after it by as much | those in the end it lost go; those after move with their clips |
+| Trim | the clip's end moves, and everything after it by as much | those in the end it lost go; those after move with their clips; what a longer clip shows is said as its sources said it |
 | Move | the clip goes elsewhere in the order, and the rest close up | its words go with it; the rest move as their clips do |
 | A clip dragged off the timeline | it goes, and what follows moves up | its words go |
-| A clip added | it goes in where it is put, and what follows moves on | those after it move on; nothing is said over the new clip |
-| Slip | the clip shows another part of its file, in the same place | its words move with the picture, and those now outside its window go |
-| Slide | the clip moves between its neighbours, which give and take the time | its words move with it; its neighbours' follow their windows |
-| Dual roller | the cut between two clips moves, and nothing else | what either clip lost at the cut goes; nothing moves |
+| A clip added | it goes in where it is put, and what follows moves on | those after it move on; over the new clip, what your projects that play its file say |
+| Slip | the clip shows another part of its file, in the same place | its words move with the picture, and those now outside its window go; what it shows that it did not is said as its sources said it |
+| Slide | the clip moves between its neighbours, which give and take the time | its words move with it; its neighbours' follow their windows; what the one that gained shows is said as its sources said it |
+| Dual roller | the cut between two clips moves, and nothing else | what either clip lost at the cut goes; nothing moves; what one gained is said as its sources said it |
 | Cut, or S | the clip becomes two that meet | nothing moves |
 | A template's **Duration**, typed | as a trim, once the field is left | as a trim |
 
@@ -114,6 +114,22 @@ A caption past the end of the timeline, over nothing, stays where it is. A
 still picture has no place in a file, so what it loses is taken from its
 end. The words are kept in the order they play, so after a move the
 transcript reads as the picture does.
+
+Material an edit shows that the timeline did not show before -- a longer
+clip, a slip, a roll, a slide, a clip added -- has words and captions only
+where another project says what was said over that part of its file: the
+project the draft was cut from, and that one's sources up the chain, nearest
+first, so a word a person corrected in a draft is the word a later draft of
+it gets; then the newest of your other projects that play the file and hold
+words, as many as the server reads for one answer, those not cut from
+another first. Each
+second is taken from the first of them that plays it, and a stretch a nearer
+source played and heard nothing in stays silent; a caption that runs past
+the stretch is cut to it and says the words said in what is left. The editor
+asks the server once the edit is done (`POST /project/{id}/captions/said`,
+[Captions](captions.md)), puts what it is told where the clip now plays it,
+and saves it with the timeline. A file none of your projects holds words
+for stays silent until it is transcribed.
 
 This is one function, `followClips` in `website/src/ClipWindow.js`, given the
 clips before an edit and after it. A tool marks the timeline when its edit

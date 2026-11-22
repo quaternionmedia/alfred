@@ -48,6 +48,45 @@ class FakeCaptionsStore:
         self.writes.append(copy.deepcopy(fields))
         self.projects[project_id].update(copy.deepcopy(fields))
 
+    async def sources(self, project_id, names, scope):
+        """As `CaptionsStore.sources`: the draft's sources up the chain, then
+        the other projects in scope that play one of `names` and hold words."""
+
+        def reachable(project):
+            return project is not None and all(
+                project.get(k) == v for k, v in scope.items()
+            )
+
+        seen = {project_id}
+        chain = []
+        current = self.projects.get(project_id)
+        while reachable(current):
+            parent = (current.get('source') or {}).get('project')
+            if (
+                not parent
+                or not ObjectId.is_valid(str(parent))
+                or ObjectId(str(parent)) in seen
+            ):
+                break
+            seen.add(ObjectId(str(parent)))
+            current = self.projects.get(ObjectId(str(parent)))
+            if reachable(current):
+                chain.append(copy.deepcopy(current))
+        others = [
+            copy.deepcopy(p)
+            for pid, p in sorted(
+                self.projects.items(), key=lambda kv: kv[0], reverse=True
+            )
+            if pid not in seen
+            and reachable(p)
+            and p.get('words')
+            and any(
+                c.get('name') in names for c in (p.get('edl') or {}).get('clips') or []
+            )
+        ]
+        others.sort(key=lambda p: bool(p.get('source')))
+        return chain + others
+
     async def claim(self, project_id, job, stale_before):
         current = self.projects[project_id].get('captions_job') or {}
         running = current.get('state') in RUNNING
@@ -426,6 +465,122 @@ TIMELINE = {
     ],
     'duration': 5,
 }
+
+
+def heard_by(clips, words, captions=(), **fields):
+    """A project of OWNER's whose timeline plays `clips` and says `words`."""
+    return project(
+        edl={'clips': clips},
+        words=[{'start': a, 'end': b, 'text': t} for a, b, t in words],
+        captions=[{'start': a, 'end': b, 'text': t} for a, b, t in captions],
+        **fields,
+    )
+
+
+TALK = 'videos/talk.mp4'
+
+
+def talk(inpoint, duration):
+    return {'type': 'video', 'name': TALK, 'inpoint': inpoint, 'duration': duration}
+
+
+class TestWhatWasSaid:
+    """`POST /project/{id}/captions/said`: what a draft's sources say over
+    the stretches of a file its timeline now plays and holds no words for."""
+
+    def chain(self):
+        recording = heard_by(
+            [talk(0, 30)],
+            [(t + 0.1, t + 0.6, f'w{t}') for t in range(30)],
+            [(20, 24, 'w20 w21 w22 w23')],
+        )
+        teaser = heard_by(
+            [talk(10, 5), talk(20, 5)],
+            [(0.1, 0.6, 'w10'), (5.1, 5.6, 'twenty, corrected')],
+            source={'project': str(recording['_id']), 'recipe': 'teaser'},
+        )
+        quote = heard_by(
+            [talk(20, 1)],
+            [],
+            source={'project': str(teaser['_id']), 'recipe': 'quotes'},
+        )
+        return recording, teaser, quote
+
+    def test_each_stretch_from_the_nearest_source_that_plays_it(self, api):
+        recording, teaser, quote = self.chain()
+        client, store, _ = api(OWNER, recording, teaser, quote)
+        res = client.post(
+            url(quote, '/said'),
+            json={'windows': [{'name': TALK, 'start': 20, 'end': 27}]},
+        )
+        assert res.status_code == 200, res.text
+        [stretch] = res.json()['said']
+        assert (stretch['name'], stretch['start'], stretch['end']) == (TALK, 20, 27)
+        texts = [w['text'] for w in stretch['words']]
+        # 20 to 25 s from the teaser, which corrected a word and holds no other
+        # there; 25 to 27 s from the recording, which the teaser does not play.
+        assert texts == ['twenty, corrected', 'w25', 'w26']
+        assert stretch['words'][0]['start'] == 20.1
+        # The recording's caption at 20 s is in a stretch the teaser plays.
+        assert stretch['captions'] == []
+        assert not store.writes
+
+    def test_a_caption_running_past_the_stretch_is_cut_to_it(self, api):
+        recording, _, _ = self.chain()
+        draft = heard_by([talk(0, 1)], [], source={'project': str(recording['_id'])})
+        client, _, _ = api(OWNER, recording, draft)
+        res = client.post(
+            url(draft, '/said'),
+            json={'windows': [{'name': TALK, 'start': 22, 'end': 26}]},
+        )
+        assert res.json()['said'][0]['captions'] == [
+            {'start': 22.0, 'end': 24.0, 'text': 'w22 w23'}
+        ]
+
+    def test_another_project_playing_the_file_is_read_when_no_source_is(self, api):
+        recording, _, _ = self.chain()
+        fresh = heard_by([talk(0, 2)], [])
+        client, _, _ = api(OWNER, recording, fresh)
+        res = client.post(
+            url(fresh, '/said'),
+            json={'windows': [{'name': TALK, 'start': 5, 'end': 7}]},
+        )
+        assert [w['text'] for w in res.json()['said'][0]['words']] == ['w5', 'w6']
+
+    def test_nobody_else_s_projects_are_read(self, api):
+        recording, _, _ = self.chain()
+        theirs = {**recording, '_id': ObjectId(), 'owner': STRANGER.email}
+        fresh = heard_by([talk(0, 2)], [])
+        client, _, _ = api(OWNER, theirs, fresh)
+        res = client.post(
+            url(fresh, '/said'),
+            json={'windows': [{'name': TALK, 'start': 5, 'end': 7}]},
+        )
+        assert res.json()['said'][0]['words'] == []
+
+    def test_a_project_not_yours_is_not_found(self, api):
+        recording, _, quote = self.chain()
+        client, _, _ = api(STRANGER, recording, quote)
+        res = client.post(
+            url(quote, '/said'),
+            json={'windows': [{'name': TALK, 'start': 0, 'end': 1}]},
+        )
+        assert res.status_code == 404
+
+    @pytest.mark.parametrize(
+        'body',
+        [
+            {'windows': [{'name': TALK, 'start': -1, 'end': 1}]},
+            {'windows': [{'name': '', 'start': 0, 'end': 1}]},
+            {'windows': [{'name': TALK, 'start': 0, 'end': 1, 'extra': 1}]},
+            {'windows': [{'name': TALK, 'start': 0, 'end': 1}] * 51},
+            {},
+        ],
+    )
+    def test_a_body_out_of_shape_is_refused(self, api, body):
+        _, _, quote = self.chain()
+        client, _, _ = api(OWNER, quote)
+        assert client.post(url(quote, '/said'), json=body).status_code == 422
 
 
 class TestTheTimeline:

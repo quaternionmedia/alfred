@@ -58,6 +58,7 @@ editor, saved or not, as it carries the timeline.
 | `GET /project/{id}/captions` | `{captions, style, job}` |
 | `PUT /project/{id}/captions` | `{captions, style?, words?, timeline?}`: stores those and nothing else, in one write; answers as `GET` does |
 | `GET /project/{id}/captions/words` | `{words}`: the transcript, word by word |
+| `POST /project/{id}/captions/said` | `{windows: [{name, start, end}]}`, stretches of files in their own seconds; answers `{said}`, the `words` and `captions` said over each, in the file's seconds, from the projects that play it: the one the draft was cut from and its sources first, then your other projects that play the file and hold words, the newest up to a bound, those not cut from another first. Writes nothing ([Words follow the picture](editing-by-text.md#words-follow-the-picture)) |
 | `POST /project/{id}/captions/import` | `{format: "srt"\|"vtt"\|"json", text}` → `{captions, skipped}`; stores nothing |
 | `POST /project/{id}/captions/transcribe` | `202 {job}`; `503` with the reason when there is no engine (`audio_engine_missing`) or the job could not be queued (`transcription_not_queued`); `409` while one runs; `422` when the saved timeline has nothing to hear |
 | `GET /media/{name}/audio` | the engine's analysis of a library file |

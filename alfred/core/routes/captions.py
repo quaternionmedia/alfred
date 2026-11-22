@@ -1,7 +1,9 @@
 """Captions on a project (contract K2): read them, write them, import them
 from a subtitle file, and have the timeline's sound transcribed into them;
 and the words a transcription heard, which the editor cuts the timeline by.
-A write may carry the timeline too, so the three are saved as one.
+A write may carry the timeline too, so the three are saved as one. What was
+said over stretches of files the timeline does not hold words for comes from
+the projects that play them (`utils.said`).
 
 Every route is scoped to the caller the way every project route is
 (`utils.ownership`): a project that is not yours answers 404, exactly as one
@@ -16,7 +18,7 @@ from typing import List, Literal, Optional
 from bson import ObjectId
 from fastapi import APIRouter, Depends
 from otto.models import Edl
-from pydantic import BaseModel, ConfigDict, ValidationError, constr
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, constr
 from starlette.concurrency import run_in_threadpool
 
 from alfred import config
@@ -36,6 +38,7 @@ from ..utils.captions import (
 from ..utils.db import User
 from ..utils.media import RefusedEdl, check_edl
 from ..utils.ownership import owner_filter
+from ..utils.said import said
 from ..utils.tasks import transcribeCaptions
 from ..utils.transcription import sounding_clips
 from .templates import TEMPLATE_NAMES
@@ -53,6 +56,15 @@ PROJECTION = {'edl': 1, 'captions': 1, 'caption_style': 1, 'captions_job': 1}
 # Words are read only by their own route: they are long, and the captions
 # route is polled during a transcription.
 WORDS = {'words': 1}
+# What a source of what was said is read for.
+SAID = {'edl': 1, 'words': 1, 'captions': 1, 'source': 1}
+
+# How far up a draft's sources the said route looks, and how many other
+# projects playing the same files it reads after them.
+MAX_ANCESTORS = 20
+MAX_OTHERS = 20
+# The most stretches one request asks about: an edit reveals one or two.
+MAX_SAID_WINDOWS = 50
 
 
 def stale_after() -> timedelta:
@@ -108,6 +120,40 @@ class WordsView(BaseModel):
     words: List[Word]
 
 
+class SaidAsked(BaseModel):
+    """A stretch of a file: `name` as the timeline's clips name it, from
+    `start` to `end` in the file's own seconds."""
+
+    model_config = ConfigDict(extra='forbid')
+
+    name: constr(min_length=1, max_length=1000)
+    start: float = Field(ge=0)
+    end: float = Field(ge=0)
+
+
+class SaidBody(BaseModel):
+    """What `POST /project/{id}/captions/said` takes."""
+
+    model_config = ConfigDict(extra='forbid')
+
+    windows: List[SaidAsked] = Field(max_length=MAX_SAID_WINDOWS)
+
+
+class SaidStretch(BaseModel):
+    name: str
+    start: float
+    end: float
+    # In the file's seconds.
+    words: List[Word]
+    captions: List[Caption]
+
+
+class SaidView(BaseModel):
+    """`POST /project/{id}/captions/said`: one stretch for each asked, in order."""
+
+    said: List[SaidStretch]
+
+
 class CaptionsStore:
     """The project collection, as these routes use it."""
 
@@ -123,6 +169,44 @@ class CaptionsStore:
 
     async def set(self, project_id, fields: dict) -> None:
         await self._projects().update_one({'_id': project_id}, {'$set': fields})
+
+    async def sources(self, project_id, names: List[str], scope: dict) -> List[dict]:
+        """Where what was said over files `names` may be read, nearest first:
+        the project the draft `project_id` was cut from, and the one that was
+        cut from, as far up as they go; then the other projects in `scope`
+        whose timelines play one of the files and hold words, the ones no
+        draft was cut from first, the newest first among each."""
+        projects = self._projects()
+        seen = {project_id}
+        chain = []
+        current = await projects.find_one({'_id': project_id, **scope}, {'source': 1})
+        while current is not None and len(chain) < MAX_ANCESTORS:
+            parent = (current.get('source') or {}).get('project')
+            if not parent or not ObjectId.is_valid(str(parent)):
+                break
+            parent = ObjectId(str(parent))
+            if parent in seen:
+                break
+            seen.add(parent)
+            current = await projects.find_one({'_id': parent, **scope}, SAID)
+            if current is not None:
+                chain.append(current)
+        found = (
+            projects.find(
+                {
+                    '_id': {'$nin': list(seen)},
+                    **scope,
+                    'edl.clips.name': {'$in': list(names)},
+                    'words.0': {'$exists': True},
+                },
+                SAID,
+            )
+            .sort('_id', -1)
+            .limit(MAX_OTHERS)
+        )
+        others = await found.to_list(MAX_OTHERS)
+        others.sort(key=lambda p: bool(p.get('source')))
+        return chain + others
 
     async def claim(self, project_id, job: dict, stale_before: datetime) -> bool:
         """Record `job` unless a transcription is already under way: one that
@@ -268,6 +352,45 @@ async def getProjectWords(
     `segment` numbers stretches of speech from 0. Empty until a transcription.
     """
     return words_of(await owned(store, item_id, user, words=True))
+
+
+@captionsAPI.post('/project/{item_id}/captions/said', response_model=SaidView)
+async def saidOverFiles(
+    item_id: str,
+    body: SaidBody,
+    user: User = Depends(current_active_user),
+    store: CaptionsStore = Depends(get_captions_store),
+):
+    """# What was said over stretches of files
+
+    `{windows: [{name, start, end}]}`: stretches of files, in the files' own
+    seconds, that the project's timeline now plays and holds no words for --
+    what a longer clip, a slip, a roll, a slide or a new clip shows. Answers
+    `{said}`, one stretch for each asked, in order, with the `words` and the
+    `captions` said over it, in the file's seconds: each second from the first
+    project that plays it, of the project the draft was cut from and that
+    one's sources up the chain, then the caller's other projects that play the
+    file and hold words. A caption that runs past the stretch is cut to it and
+    says the words said in what is left. Nothing is written; the editor puts
+    what it is answered onto the timeline and saves it with the timeline.
+    """
+    project = await owned(store, item_id, user)
+    scope = owner_filter(user, OWNER)
+    names = sorted({window.name for window in body.windows})
+    sources = await store.sources(project['_id'], names, scope) if names else []
+    stretches = []
+    for window in body.windows:
+        found = said(sources, window.name, window.start, max(window.start, window.end))
+        stretches.append(
+            SaidStretch(
+                name=window.name,
+                start=window.start,
+                end=window.end,
+                words=words_of({'words': found['words']}).words,
+                captions=view_of({'captions': found['captions']}).captions,
+            )
+        )
+    return SaidView(said=stretches)
 
 
 @captionsAPI.post('/project/{item_id}/captions/import', response_model=ImportedCaptions)

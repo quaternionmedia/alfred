@@ -1,6 +1,6 @@
 /**
  * A clip's window arithmetic; `cutRanges` for editing by text; `followClips` for the
- * timeline tools.
+ * timeline tools, and `revealed` and `saidOnto` for the material they show.
  * Imports nothing, so its tests run in Node (e2e/cut-ranges.spec.js, e2e/follow-clips.spec.js).
  * The server holds the same arithmetic in Python (alfred/core/utils/cut.py); the fixtures
  * under tests/fixtures/ hold the two equal (e2e/cut-fixtures.spec.js, tests/unit/test_cut.py).
@@ -363,4 +363,85 @@ export function followClips({ before = [], after = [], captions = [], words = []
     .sort(([x, i], [y, j]) => Number(x.start) - Number(y.start) || i - j)
     .map(([word]) => word)
   return { captions: keptCaptions.filter(Boolean), words: ordered }
+}
+
+// ---- what an edit shows that the timeline held no words for ----------------
+
+/**
+ * The stretches of files an edit with the tools shows that the timeline did
+ * not show before: for each clip after it that plays a file, the part of its
+ * window now that its window before did not hold, and the whole of a clip
+ * that is new. `before`, `after`: placed clips as `followClips` takes them,
+ * each with the `name` of its file. Each `{key, name, start, end}`, in the
+ * file's seconds, to the millisecond.
+ */
+export function revealed(before = [], after = []) {
+  const was = new Map()
+  for (const clip of before || []) {
+    if (clip && clip.key !== undefined && clip.key !== null) was.set(clip.key, clip)
+  }
+  const shown = []
+  for (const clip of after || []) {
+    if (!clip || !MEDIA.has(clip.type) || !clip.name) continue
+    const from = inOf(clip)
+    const to = from + clipSeconds(clip)
+    const old = was.get(clip.key)
+    const parts = []
+    const a = old ? Math.max(from, inOf(old)) : to
+    const b = old ? Math.min(to, inOf(old) + clipSeconds(old)) : to
+    if (!old || b - a <= 0) parts.push([from, to])
+    else parts.push([from, a], [b, to])
+    for (const [start, end] of parts) {
+      if (toMs(end - start) > 0) {
+        shown.push({ key: clip.key, name: clip.name, start: toMs(start), end: toMs(end) })
+      }
+    }
+  }
+  return shown
+}
+
+/**
+ * What was said over a stretch an edit showed, put onto the timeline where
+ * the clip plays it now. `stretch`: `{start, end, words, captions}` in the
+ * file's seconds, as `POST /project/{id}/captions/said` answers; `clip`:
+ * `{start, inpoint, duration}` as the clip is placed now; `held`: the
+ * timeline's `{words, captions}`. Answers `{words, captions}` to add: those
+ * whose middle is in the stretch and the clip's window, in timeline seconds
+ * and cut to them, none over a word or a caption already held; each word's
+ * stretch of speech numbered on from `segmentFrom`, in the order it comes.
+ */
+export function saidOnto(stretch, clip, held = {}, segmentFrom = 0) {
+  const offset = Number(clip.start) - inOf(clip)
+  const lo = Math.max(Number(stretch.start), inOf(clip))
+  const hi = Math.min(Number(stretch.end), inOf(clip) + clipSeconds(clip))
+  if (!(toMs(hi - lo) > 0)) return { words: [], captions: [] }
+  const middleIn = item => {
+    const middle = (Number(item.start) + Number(item.end)) / 2
+    return lo <= middle && middle < hi
+  }
+  const onto = item => ({
+    start: toMs(Math.max(Number(item.start), lo) + offset),
+    end: toMs(Math.min(Number(item.end), hi) + offset),
+  })
+  const over = (list, start, end) =>
+    (list || []).some(x => {
+      const a = Number(x.start)
+      const b = Number(x.end)
+      return end > start ? Math.min(b, end) - Math.max(a, start) > 0.0005 : a <= start && start < b
+    })
+  const segments = new Map()
+  const segmentOf = segment => {
+    const known = segment === undefined || segment === null ? 'none' : segment
+    if (!segments.has(known)) segments.set(known, segmentFrom + segments.size)
+    return segments.get(known)
+  }
+  const words = (stretch.words || [])
+    .filter(middleIn)
+    .map(word => ({ ...word, ...onto(word), segment: segmentOf(word.segment) }))
+    .filter(word => !over(held.words, word.start, word.end))
+  const captions = (stretch.captions || [])
+    .filter(middleIn)
+    .map(caption => ({ ...caption, ...onto(caption) }))
+    .filter(caption => caption.end > caption.start && !over(held.captions, caption.start, caption.end))
+  return { words, captions }
 }

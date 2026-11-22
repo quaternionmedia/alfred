@@ -282,6 +282,90 @@ class TestTheRestOfTheProject:
         assert whole['caption_style']['enabled'] is True
 
 
+class TestWhatWasSaid:
+    """`POST /project/{id}/captions/said` with the real queries: a draft's
+    sources up the chain, then the owner's other projects, nobody else's."""
+
+    @staticmethod
+    def stored(projects, account, clips, words, **fields):
+        document = {
+            'name': f'said {ObjectId()}',
+            'logic': {},
+            'fields': [],
+            'owner': account.email,
+            'edl': {'clips': clips, 'duration': sum(c['duration'] for c in clips)},
+            'words': [{'start': a, 'end': b, 'text': t} for a, b, t in words],
+            'captions': [],
+            **fields,
+        }
+        return projects.insert_one(document).inserted_id
+
+    @staticmethod
+    def talk(inpoint, duration):
+        return {
+            'type': 'audio',
+            'name': 'videos/talk.wav',
+            'inpoint': inpoint,
+            'duration': duration,
+        }
+
+    def ask(self, api, account, project, start, end):
+        return api.post(
+            f'/project/{project}/captions/said',
+            json={'windows': [{'name': 'videos/talk.wav', 'start': start, 'end': end}]},
+            headers=account.headers,
+        )
+
+    def test_the_chain_then_the_owner_s_other_projects(
+        self, api, alice, make_account, projects
+    ):
+        bob = make_account('bob')
+        recording = self.stored(
+            projects,
+            alice,
+            [self.talk(0, 30)],
+            [(t + 0.1, t + 0.6, f'w{t}') for t in range(30)],
+        )
+        teaser = self.stored(
+            projects,
+            alice,
+            [self.talk(10, 5)],
+            [(0.1, 0.6, 'ten, corrected')],
+            source={'project': str(recording), 'recipe': 'teaser'},
+        )
+        quote = self.stored(
+            projects,
+            alice,
+            [self.talk(10, 1)],
+            [],
+            source={'project': str(teaser), 'recipe': 'quotes'},
+        )
+        # Another of Alice's plays the same file and says something else: the
+        # chain is read before it.
+        self.stored(
+            projects,
+            alice,
+            [self.talk(0, 30)],
+            [(t, t + 0.5, 'other') for t in range(30)],
+        )
+        # Bob's says something else over the same file, and is not read.
+        self.stored(
+            projects, bob, [self.talk(0, 30)], [(t, t + 0.5, 'bob') for t in range(30)]
+        )
+        res = self.ask(api, alice, quote, 10, 17)
+        assert res.status_code == 200, res.text
+        words = res.json()['said'][0]['words']
+        assert [w['text'] for w in words] == ['ten, corrected', 'w15', 'w16']
+        # Bob asking about Alice's draft is told it is not there.
+        assert self.ask(api, bob, quote, 10, 17).status_code == 404
+
+    def test_with_no_chain_another_project_playing_the_file(self, api, alice, projects):
+        self.stored(projects, alice, [self.talk(0, 30)], [(5.1, 5.6, 'five')])
+        fresh = self.stored(projects, alice, [self.talk(0, 2)], [])
+        res = self.ask(api, alice, fresh, 4, 6)
+        assert [w['text'] for w in res.json()['said'][0]['words']] == ['five']
+
+
 class TestTranscribing:
     def test_no_engine_is_503(self, api, alice, make_project, queue, monkeypatch):
         from alfred import config
