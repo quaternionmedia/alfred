@@ -113,7 +113,7 @@ class TestMakingDrafts:
         assert made == 2
         assert not [n for n in notes if 'scenes' in n]
         assert [d['source']['spans'] for d in projects.inserted] == [
-            [[1, 24.4]],
+            [[0, 24.4]],
             [[34.2, 51.9]],
         ]
 
