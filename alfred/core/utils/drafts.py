@@ -79,6 +79,7 @@ def draft_document(
             'spans': draft.spans,
             'scores': draft.scores,
             'made_at': made_at,
+            'made_duration': timeline['duration'],
         },
     }
 

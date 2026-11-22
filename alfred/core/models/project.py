@@ -7,7 +7,7 @@ from pymongo import ASCENDING, IndexModel
 
 from .captions import Caption, CaptionsJob, CaptionStyle
 from .cues import Cue
-from .drafts import DraftsJob, DraftSource
+from .drafts import DraftsJob, DraftSource, DroppedDraft
 
 # One generated demo per account, held by MongoDB: two racing
 # `POST /demo/project`s cannot both insert. Partial: only `demo: true` counts.
@@ -71,6 +71,8 @@ class Project(Document):
     source: Optional[DraftSource] = None
     # The last run of recipes over this project. Server-owned.
     drafts_job: Optional[DraftsJob] = None
+    # What a source keeps of each draft dropped from it (`models.drafts`).
+    drafts_dropped: List[DroppedDraft] = []
 
     model_config = ConfigDict(title='Alfred Project')
 

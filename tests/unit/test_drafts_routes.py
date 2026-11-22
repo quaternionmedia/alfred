@@ -70,6 +70,10 @@ class FakeDraftsStore:
             self.projects.pop(i, None)
         return before - len(self.projects)
 
+    async def remember(self, project_id, dropped):
+        kept = self.projects[project_id].setdefault('drafts_dropped', [])
+        kept.extend(copy.deepcopy(dropped))
+
 
 def source(**fields):
     document = {
@@ -102,6 +106,7 @@ def draft(of, number, **fields):
             'spans': [[10, 19.5]],
             'scores': {'dialogue': 1.0},
             'made_at': datetime(2026, 11, 21, tzinfo=timezone.utc),
+            'made_duration': 9.5,
         },
     }
     document.update(fields)
@@ -301,6 +306,27 @@ class TestDropping:
             'Highlights 2',
             'Chapter 1',
         ]
+        # The source remembers what it dropped, with what the draft carried.
+        [kept] = store.projects[mine['_id']]['drafts_dropped']
+        assert kept['id'] == str(first['_id'])
+        assert kept['name'] == first['name']
+        assert kept['recipe'] == first['source']['recipe']
+        assert kept['spans'] == first['source']['spans']
+        assert kept['scores'] == first['source']['scores']
+        assert kept['made_duration'] == first['source']['made_duration']
+        assert kept['duration'] == first['edl']['duration']
+        assert kept['dropped_at'] is not None
+
+    def test_nothing_is_remembered_when_nothing_is_dropped(self, api):
+        """Mutation: remember before checking every id -- red."""
+        mine = source()
+        first = draft(mine, 1)
+        client, store, _ = api(OWNER, mine, first)
+        res = client.request(
+            'DELETE', url(mine), json={'drafts': [str(first['_id']), str(ObjectId())]}
+        )
+        assert res.status_code == 422
+        assert 'drafts_dropped' not in store.projects[mine['_id']]
 
     def test_a_project_that_is_not_a_draft_of_this_source_drops_nothing(self, api):
         mine = source()

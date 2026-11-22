@@ -107,9 +107,13 @@ source's render settings, and `source`:
   "values": {"shortest": "8", "longest": "12", "count": "25"},
   "spans": [[1832.4, 1841.9]],
   "scores": {"dialogue": 0.84, "spikes": 1.0},
-  "made_at": "2026-11-21T15:02:11Z"
+  "made_at": "2026-11-21T15:02:11Z",
+  "made_duration": 9.5
 }
 ```
+
+`made_duration` is how long the draft's timeline was as the recipe cut it:
+its spans, less what the recipe's edits took out of them.
 
 The source keeps the run as its `drafts_job`, `queued`, `running`, then
 `done` with how many were `made` and the run's `notes` (a step skipped, a
@@ -125,6 +129,28 @@ take the job (`drafts_not_queued`). `DELETE /project/{id}/drafts` with
 `{drafts: [id]}` drops the drafts named, with their cues; it drops nothing
 unless every id is one of this source's drafts of yours (`not_a_draft`), and
 a project that is not a draft keeps having no delete here.
+
+## Measured
+
+A recipe's first values are a guess until real recordings have been cut by
+them and people have kept, dropped, edited and rendered what came out, and
+no default moves before that is read. The signal is in the projects: a
+source's drafts as they stand, what the source keeps of each draft dropped
+from it, and the renders made from a draft. When a draft is dropped the
+source remembers it as `drafts_dropped`: its `id`, `name`, `recipe`,
+`values`, `spans`, `scores`, `made_at` and `made_duration`, as the draft
+carried them, with
+the `duration` its timeline had when it went and `dropped_at`.
+
+`./al measured` reads every project and render from the database
+`ALFRED_HOST_DB` names ([Running on the host](host-run.md)) and prints, per
+source and per recipe: how many drafts were made, held and dropped; how
+many held drafts were edited, their timeline no longer the length the recipe
+cut, so what the recipe's own edits took out is not counted; how many were
+rendered; and the mean length as made, as held and as
+rendered, so a default that is always trimmed shows. A source is named by
+its id alone. `--json` prints the report whole. The figures belong in a
+dated retrospective with the commit they were read at, never on this page.
 
 ## Through the API
 
