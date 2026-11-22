@@ -7,6 +7,7 @@ from pymongo import ASCENDING, IndexModel
 
 from .captions import Caption, CaptionsJob, CaptionStyle
 from .cues import Cue
+from .drafts import DraftsJob, DraftSource
 
 # One generated demo per account, held by MongoDB: two racing
 # `POST /demo/project`s cannot both insert. Partial: only `demo: true` counts.
@@ -44,6 +45,8 @@ class Project(Document):
     logic: dict
     fields: Optional[List] = None
     name: Optional[str] = None
+    # A line under the name: a draft's says what it was cut from.
+    description: Optional[str] = None
     # The creator's owner key (`utils.ownership`, docs/ownership.md). Set by
     # the server, never from a request. None: superusers only.
     owner: Optional[str] = None
@@ -63,6 +66,11 @@ class Project(Document):
     # In timeline seconds. Written by `PUT /project/{id}/cues`; a
     # whole-project update keeps them.
     cues: Optional[List[Cue]] = None
+    # Where a draft came from: set by the worker that made it, never from a
+    # request. None on a project that is not a draft.
+    source: Optional[DraftSource] = None
+    # The last run of recipes over this project. Server-owned.
+    drafts_job: Optional[DraftsJob] = None
 
     model_config = ConfigDict(title='Alfred Project')
 

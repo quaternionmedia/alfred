@@ -4,6 +4,7 @@ from .auth import auth as authAPI
 from .captions import captionsAPI
 from .cues import cuesAPI
 from .demo import demoAPI
+from .drafts import draftsAPI
 from .fonts import fontAPI
 from .health import healthAPI
 from .issue import issueAPI
@@ -23,6 +24,7 @@ __all__ = [
     authAPI,
     captionsAPI,
     cuesAPI,
+    draftsAPI,
     issueAPI,
     fontAPI,
     healthAPI,

@@ -162,6 +162,9 @@ class ProjectAPI(MotorCRUDRouter):
             model.captions_job = None
             # Cues too have their own route.
             model.cues = None
+            # A draft is made by the worker; nothing sent is one.
+            model.source = None
+            model.drafts_job = None
             model.captions = (
                 checked_captions(model.captions) if model.captions else None
             )
@@ -189,6 +192,8 @@ class ProjectAPI(MotorCRUDRouter):
             model.caption_style = project.caption_style
             model.captions_job = project.captions_job
             model.cues = project.cues
+            model.source = project.source
+            model.drafts_job = project.drafts_job
             del model.id
             await project.update(Set(model))
             return await self._as_stored(project)

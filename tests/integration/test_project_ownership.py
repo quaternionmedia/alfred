@@ -50,12 +50,14 @@ SINGLE_PROJECT_ROUTES = [
     ('GET', '/project/{id}/captions/words', None),
     ('POST', '/project/{id}/captions/import', {'format': 'srt', 'text': CUE}),
     ('GET', '/project/{id}/cues', None),
+    ('GET', '/project/{id}/drafts', None),
     ('PUT', '/project/{id}/cues', {'cues': [{'start': 1, 'label': 'here'}]}),
     # POST /project/{id}/captions/transcribe answers 202 or 503 for its owner,
     # not 200; integration/test_captions_api.py holds it to the same 404s.
     # GET /project/{id}/sound answers 503 for its owner without an engine, and
     # GET /project/{id}/motion 422 for a timeline with no video; the unit
-    # tests of each route hold them to the same 404s.
+    # tests of each route hold them to the same 404s. POST and DELETE
+    # /project/{id}/drafts answer 202 and 422 for their owner; unit/test_drafts_routes.py.
     ('DELETE', '/project/{id}', None),
 ]
 ROUTE_IDS = [f'{method} {path}' for method, path, _ in SINGLE_PROJECT_ROUTES]
