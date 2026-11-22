@@ -7,7 +7,9 @@ import '../styles/sculpt.scss'
 
 /**
  * The Sculpt stage's two panels: the recipes to run over the open project,
- * each with its knobs, and the drafts a run left, each opening on Edit.
+ * each with its knobs, and the drafts a run left, each opening on Edit. The
+ * Recipes panel also edits a recipe: a copy of any, or one of the account's
+ * own, step by step, checked by the server and saved as the account's.
  * Behaviour: docs/drafts.md.
  */
 
@@ -60,20 +62,37 @@ const JobLine = {
   },
 }
 
-/** One recipe: ticked or not, and its knobs when ticked. */
+/** One recipe: ticked or not, its knobs when ticked, and the ways to change it. */
 const RecipeRow = {
   view: ({ attrs: { recipe } }) => {
     const chosen = Sculpt.chosen.has(recipe.id)
+    const action = (suffix, title, text, onclick) =>
+      m('button', { type: 'button', id: `recipe-${recipe.id}-${suffix}`, title, onclick }, text)
     return m('li.recipe', { class: chosen ? 'chosen' : '', 'data-recipe': recipe.id }, [
-      m('label.recipehead', [
-        m('input.recipetick', {
-          type: 'checkbox',
-          id: `recipe-${recipe.id}`,
-          checked: chosen,
-          onchange: () => Sculpt.toggle(recipe.id),
-        }),
-        m('span.recipelabel', recipe.label || recipe.name),
-        recipe.builtin ? null : m('span.recipemine', 'yours'),
+      m('.recipehead', [
+        m('label.recipetickline', [
+          m('input.recipetick', {
+            type: 'checkbox',
+            id: `recipe-${recipe.id}`,
+            checked: chosen,
+            onchange: () => Sculpt.toggle(recipe.id),
+          }),
+          m('span.recipelabel', recipe.label || recipe.name),
+          recipe.builtin ? null : m('span.recipemine', 'yours'),
+        ]),
+        m('span.recipeactions', [
+          action('copy', 'Copy this recipe, to change its steps', 'Copy', () =>
+            Sculpt.edit(recipe, false)
+          ),
+          recipe.builtin
+            ? null
+            : action('edit', 'Change this recipe', 'Edit', () => Sculpt.edit(recipe, true)),
+          recipe.builtin
+            ? null
+            : action('delete', 'Delete this recipe; a draft it made keeps naming it', 'Delete', () =>
+                Sculpt.remove(recipe.id)
+              ),
+        ]),
       ]),
       recipe.description ? m('p.recipeabout', recipe.description) : null,
       chosen && (recipe.fields || []).length
@@ -94,6 +113,207 @@ const RecipeRow = {
           )
         : null,
     ])
+  },
+}
+
+/** The kinds of operation, in the order they run. */
+const KINDS = ['segment', 'score', 'filter', 'edit', 'compose']
+
+/** The operations as a select's options, grouped by kind. */
+const operationOptions = () =>
+  KINDS.map(kind => {
+    const ops = Sculpt.operations.filter(o => o.kind === kind)
+    return ops.length
+      ? m(
+          'optgroup',
+          { label: kind },
+          ops.map(o => m('option', { value: o.name, title: o.about }, o.name))
+        )
+      : null
+  })
+
+/** What a parameter takes, for its input's title. */
+const parameterHint = p => {
+  const parts = []
+  if (p.kind === 'choice') parts.push(`one of ${(p.choices || []).join(', ')}`)
+  else if (p.kind === 'boolean') parts.push('true or false')
+  else if (p.kind === 'integer') parts.push(`a whole number from ${p.low} to ${p.high}`)
+  else if (p.kind === 'number') parts.push(`a number from ${p.low} to ${p.high}`)
+  else parts.push('text')
+  parts.push(`blank for ${String(p.default)}`)
+  parts.push('$knob to read a knob')
+  return parts.join('; ')
+}
+
+/** One step of the recipe being edited: its operation, its parameters, and the refusal it earned. */
+const StepRow = {
+  view: ({ attrs: { step, index, problem } }) => {
+    const op = Sculpt.operation(step.op)
+    const n = index + 1
+    const last = Sculpt.editing.steps.length - 1
+    return m('li.step', { 'data-step': n, class: problem ? 'refused' : '' }, [
+      m('.stephead', [
+        m('span.stepnumber', `${n}.`),
+        m(
+          'select.stepop',
+          {
+            id: `recipe-editor-step-${n}-op`,
+            'aria-label': `Step ${n}'s operation`,
+            value: step.op,
+            onchange: e => Sculpt.setStepOp(index, e.target.value),
+          },
+          operationOptions()
+        ),
+        op ? m('span.stepkind', op.kind) : null,
+        m('span.stepactions', [
+          m(
+            'button',
+            {
+              type: 'button',
+              title: 'Move this step up',
+              disabled: index === 0,
+              onclick: () => Sculpt.moveStep(index, -1),
+            },
+            '↑'
+          ),
+          m(
+            'button',
+            {
+              type: 'button',
+              title: 'Move this step down',
+              disabled: index === last,
+              onclick: () => Sculpt.moveStep(index, 1),
+            },
+            '↓'
+          ),
+          m(
+            'button.stepremove',
+            { type: 'button', title: 'Remove this step', onclick: () => Sculpt.removeStep(index) },
+            'Remove'
+          ),
+        ]),
+      ]),
+      op && op.about ? m('p.stepabout', op.about) : null,
+      op && Object.keys(op.parameters).length
+        ? m(
+            '.stepparams',
+            Object.entries(op.parameters).map(([name, p]) =>
+              m('label.recipeknob', [
+                m('span.recipeknobtext', name),
+                m('input', {
+                  type: 'text',
+                  id: `recipe-editor-step-${n}-${name}`,
+                  placeholder: String(p.default),
+                  title: parameterHint(p),
+                  value: step.params[name] == null ? '' : step.params[name],
+                  oninput: e => Sculpt.setParam(index, name, e.target.value),
+                }),
+              ])
+            )
+          )
+        : null,
+      problem ? m('p.stepproblem', { role: 'alert' }, problem) : null,
+    ])
+  },
+}
+
+/** The recipe being edited: its name, label and description, its steps, and Check, Save and Cancel. */
+const RecipeEditor = {
+  view: () => {
+    const e = Sculpt.editing
+    const verdict = Sculpt.verdict
+    const problem = verdict && verdict !== 'ok' ? verdict : null
+    const knobs = (e.fields || []).map(f => f.attrs && f.attrs.name).filter(Boolean)
+    const meta = (key, text, id, wide) =>
+      m(`label.recipeknob${wide ? '.wide' : ''}`, [
+        m('span.recipeknobtext', text),
+        m('input', {
+          type: 'text',
+          id,
+          value: e[key],
+          oninput: ev => Sculpt.setEditing(key, ev.target.value),
+        }),
+      ])
+    return m(
+      'form.recipeeditor#recipe-editor',
+      {
+        onsubmit: ev => {
+          ev.preventDefault()
+          Sculpt.save()
+        },
+      },
+      [
+        m('h4', e.id ? `Changing ${e.label || e.name}` : 'A recipe of yours'),
+        m('.recipemeta', [
+          meta('name', 'Name, one word', 'recipe-editor-name'),
+          meta('label', 'Label', 'recipe-editor-label'),
+          meta('description', 'Description', 'recipe-editor-description', true),
+        ]),
+        m(
+          'p.sculptnote',
+          (knobs.length ? `Its knobs, which a step reads as $name: ${knobs.join(', ')}. ` : '') +
+            "A blank parameter is the operation's own."
+        ),
+        m(
+          'ol.steplist',
+          e.steps.map((step, index) =>
+            m(StepRow, {
+              key: `${index}-${step.op}`,
+              step,
+              index,
+              problem: problem && problem.step === index + 1 ? problem.detail : null,
+            })
+          )
+        ),
+        m('label.recipeknob#recipe-editor-add-step', [
+          m('span.recipeknobtext', 'Add a step'),
+          m(
+            'select#recipe-editor-add',
+            {
+              value: '',
+              onchange: ev => {
+                Sculpt.addStep(ev.target.value)
+                ev.target.value = ''
+              },
+            },
+            [m('option', { value: '' }, '…'), ...operationOptions()]
+          ),
+        ]),
+        problem && !problem.step
+          ? m('p.stageerror#recipe-editor-problem', { role: 'alert' }, problem.detail)
+          : null,
+        verdict === 'ok'
+          ? m('p.sculptnote.ok#recipe-editor-ok', { role: 'status' }, 'Checked: the recipe can run.')
+          : null,
+        m('.recipeeditoractions', [
+          m(AsyncButton, {
+            id: 'recipe-editor-check',
+            type: 'button',
+            busy: Sculpt.busy === 'check',
+            disabled: Boolean(Sculpt.busy),
+            title: 'Check the recipe as saving would, without saving it',
+            label: 'Check',
+            busyLabel: 'Checking…',
+            onclick: () => Sculpt.check(),
+          }),
+          m(AsyncButton, {
+            id: 'recipe-editor-save',
+            class: 'primary',
+            type: 'submit',
+            busy: Sculpt.busy === 'save',
+            disabled: Boolean(Sculpt.busy),
+            title: e.id ? 'Save the changes to this recipe' : 'Store this recipe as yours',
+            label: e.id ? 'Save' : 'Save as mine',
+            busyLabel: 'Saving…',
+          }),
+          m(
+            'button#recipe-editor-cancel',
+            { type: 'button', onclick: () => Sculpt.cancelEdit() },
+            'Cancel'
+          ),
+        ]),
+      ]
+    )
   },
 }
 
@@ -131,14 +351,15 @@ const RecipesPanel = {
       m(
         'p.stagehint',
         id
-          ? 'Tick the recipes to run, set their knobs, then Sculpt. Each draft opens on Edit.'
-          : 'Choose a project on the Source stage to sculpt it.'
+          ? 'Tick the recipes to run, set their knobs, then Sculpt. Each draft opens on Edit. Copy a recipe to change its steps.'
+          : 'Choose a project on the Source stage to sculpt it. Copy a recipe to change its steps.'
       ),
       sourceOf() ? m(SourceLine, { source: sourceOf(), id: 'sculpt-source' }) : null,
       blocker && id && !sourceOf() ? m('p.sculptnote#sculpt-blocker', blocker) : null,
       Sculpt.recipesError ? m('p.stageerror', Sculpt.recipesError) : null,
       Sculpt.error ? m('p.stageerror#sculpt-error', { role: 'alert' }, Sculpt.error) : null,
       id ? m(JobLine) : null,
+      Sculpt.editing ? m(RecipeEditor) : null,
       Sculpt.recipes.length
         ? m(
             'ul.recipelist',

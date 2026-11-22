@@ -7,6 +7,12 @@
  * Tick a recipe, set its knobs, press Sculpt; the drafts appear under Drafts
  * and under the project on Source. The run is the worker's, so the test that
  * runs one needs the stack's worker; the rest needs the api alone.
+ *
+ * # Recipe: change a recipe's steps
+ *
+ * Copy a recipe, change a step or its parameters, Check, then Save as mine:
+ * the copy is listed as yours and ticked, and a step the server refuses is
+ * shown where it is.
  * Desktop and phone.
  */
 
@@ -73,6 +79,20 @@ async function giveWords(request, token, project) {
 
 const phone = () => test.info().project.name === 'phone'
 
+/** The copies the editor tests leave are deleted, whatever the test did. */
+async function withoutCopies(request, token, use) {
+  try {
+    await use()
+  } finally {
+    const listed = await request.get('/recipes', auth(token))
+    for (const recipe of await listed.json()) {
+      if (!recipe.builtin && recipe.name.endsWith('-copy')) {
+        await request.delete(`/recipes/${recipe.id}`, auth(token))
+      }
+    }
+  }
+}
+
 /** The Sculpt stage open on `project`, its Recipes panel showing. */
 async function openSculpt(page, project) {
   await page.goto(`/#!/?project=${project._id}&stage=sculpt`)
@@ -134,6 +154,96 @@ test.describe('the Sculpt stage', () => {
       await authedPage.locator('#next-step-go').click()
       await expect(authedPage.locator('#stage-sculpt')).toHaveClass(/active/)
       await expect(authedPage.locator('#sculpt-run')).toBeEnabled()
+    })
+  })
+
+  test('a recipe is copied, a refused step is shown where it is, and the copy is saved as mine', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    await withoutCopies(request, token, async () => {
+      await withProject(request, token, COLOUR, async project => {
+        await openSculpt(authedPage, project)
+        await authedPage.locator('#recipe-highlights-copy').click()
+        const editor = authedPage.locator('#recipe-editor')
+        await expect(editor).toBeVisible()
+        await expect(authedPage.locator('#recipe-editor-name')).toHaveValue('highlights-copy')
+        await expect(authedPage.locator('#recipe-editor-label')).toHaveValue('Highlights (copy)')
+        await expect(editor.locator('.step').first().locator('.stepop')).toHaveValue('windows')
+        await expect(authedPage.locator('#recipe-editor-step-1-shortest')).toHaveValue('$shortest')
+
+        // A value under the operation's bound is refused beside its step.
+        await authedPage.locator('#recipe-editor-step-1-every').fill('0')
+        await authedPage.locator('#recipe-editor-check').click()
+        const first = editor.locator('.step[data-step="1"]')
+        await expect(first.locator('.stepproblem')).toHaveText('step 1 (windows): every: 0.0 is below 0.1')
+        await expect(first).toHaveClass(/refused/)
+        await expect(editor.locator('.step[data-step="2"] .stepproblem')).toHaveCount(0)
+
+        // Put right, it checks, and saves as mine, listed and ticked.
+        await authedPage.locator('#recipe-editor-step-1-every').fill('3')
+        await authedPage.locator('#recipe-editor-check').click()
+        await expect(authedPage.locator('#recipe-editor-ok')).toBeVisible()
+        await expect(first).not.toHaveClass(/refused/)
+        await authedPage.locator('#recipe-editor-save').click()
+        await expect(editor).toBeHidden()
+        const mine = authedPage.locator('.recipe', { hasText: 'Highlights (copy)' })
+        await expect(mine).toHaveCount(1)
+        await expect(mine.locator('.recipemine')).toBeVisible()
+        await expect(mine.locator('.recipetick')).toBeChecked()
+        await expect(authedPage.locator('#recipe-highlights')).not.toBeChecked()
+
+        // The server holds the copy with the changed step, as a number.
+        const listed = await request.get('/recipes', auth(token))
+        const saved = (await listed.json()).find(r => r.name === 'highlights-copy')
+        expect(saved.builtin).toBe(false)
+        expect(saved.steps[0]).toEqual({
+          op: 'windows',
+          shortest: { var: 'shortest' },
+          longest: { var: 'longest' },
+          every: 3,
+        })
+
+        // Deleted from its row, it is gone from the list and the server.
+        await mine.locator(`#recipe-${saved.id}-delete`).click()
+        await expect(mine).toHaveCount(0)
+        expect((await request.get(`/recipes/${saved.id}`, auth(token))).status()).toBe(404)
+      })
+    })
+  })
+
+  test('@slow a copy of the chapters recipe with a step changed is run from the panel', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * The chapters recipe copied, its pause set in the step itself rather
+     * than through its knob, saved as mine and run: the two stretches of
+     * speech become two drafts named for the copy.
+     */
+    test.setTimeout(120_000)
+    await withoutCopies(request, token, async () => {
+      await withProject(request, token, COLOUR, async project => {
+        await giveWords(request, token, project)
+        await openSculpt(authedPage, project)
+        await authedPage.locator('#recipe-chapters-copy').click()
+        await authedPage.locator('#recipe-editor-step-1-pause').fill('1')
+        await authedPage.locator('#recipe-editor-save').click()
+        await expect(authedPage.locator('#recipe-editor')).toBeHidden()
+        const mine = authedPage.locator('.recipe', { hasText: 'Chapters (copy)' })
+        await expect(mine.locator('.recipetick')).toBeChecked()
+        await authedPage.locator('#sculpt-run').click()
+        await expect(authedPage.locator('#sculpt-job')).toHaveAttribute('data-state', 'done', {
+          timeout: 90_000,
+        })
+        await expect(authedPage.locator('#sculpt-job')).toContainText('2 drafts made')
+        await showDrafts(authedPage)
+        const drafts = authedPage.locator('#panel-drafts .draft')
+        await expect(drafts).toHaveCount(2)
+        await expect(drafts.first()).toContainText('Chapters (copy) 1')
+      })
     })
   })
 

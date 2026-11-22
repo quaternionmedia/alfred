@@ -38,9 +38,9 @@ A request alfred refuses answers with an HTTP status and a JSON body. When alfre
 | `media_exists` | 409 | a file of that name is in the library already, and `replace=true` was not sent | `POST /media` |
 | `media_too_large` | 413 | the upload is larger than the limit, which `detail` names | `POST /media` |
 | `media_silent` | 422 | the file is an image, or a video with no sound track: nothing to analyse | `GET /media/{name}/audio`, `GET /project/{id}/sound` |
-| `unknown_operation` | 422 | a recipe's step names an operation the recipes do not have; `detail` names the step and lists the operations | `POST /recipes`, `PUT /recipes/{id}` |
-| `recipe_refused` | 422 | a recipe that cannot run: a parameter out of its range or of the wrong kind, a field read that is not declared, a name that is not a word; `detail` names the step and the rule | `POST /recipes`, `PUT /recipes/{id}` |
-| `unknown_recipe` | 404 | no recipe of that name or id, or not yours: the built-in recipes are read by name, and `detail` lists them | `GET /recipes/{id}`, `PUT /recipes/{id}`, `POST /project/{id}/drafts` |
+| `unknown_operation` | 422 | a recipe's step names an operation the recipes do not have; `detail` names the step and lists the operations | `POST /recipes`, `POST /recipes/check`, `PUT /recipes/{id}` |
+| `recipe_refused` | 422 | a recipe that cannot run: a parameter out of its range or of the wrong kind, a field read that is not declared, a name that is not a word; `detail` names the step and the rule | `POST /recipes`, `POST /recipes/check`, `PUT /recipes/{id}` |
+| `unknown_recipe` | 404 | no recipe of that name or id, or not yours: the built-in recipes are read by name, and `detail` lists them | `GET /recipes/{id}`, `PUT /recipes/{id}`, `DELETE /recipes/{id}`, `POST /project/{id}/drafts` |
 | `no_words` | 422 | the project has no words to cut by, or to read: transcribe its timeline first | `POST /project/{id}/drafts`, `GET /project/{id}/conversation` |
 | `drafts_running` | 409 | recipes are running over this project; `GET /project/{id}/drafts` follows the job | `POST /project/{id}/drafts` |
 | `drafts_not_queued` | 503 | the broker would not take the run; the project's job is recorded `failed` with the reason | `POST /project/{id}/drafts` |

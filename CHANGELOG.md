@@ -103,6 +103,14 @@ accepted are now refused, and a production stack needs its own signing key.
   topics were live and when, and where the talk went off, which the panel
   shows and refreshes as the words change; `GET /health` reports the engine.
 
+- **A recipe is edited on Sculpt.** Copy on any recipe, or Edit on one of
+  yours, opens it in the Recipes panel: its steps in order, each an
+  operation with its parameters, added, removed and moved; Check asks the
+  server whether it can run and shows a refusal beside the step it names;
+  Save as mine stores it, listed and ticked, and Delete removes one of
+  yours. `GET /recipes/operations` lists what a step may name, `POST
+  /recipes/check` checks without storing, and `DELETE /recipes/{id}` deletes
+  one of the caller's.
 - **The Sculpt stage.** A fifth stage on the rail, between Source and Edit:
   its Recipes panel runs the recipes over the open project with the knobs a
   person sets, and its Drafts panel lists what they left, each opening on
