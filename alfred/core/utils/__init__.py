@@ -2,8 +2,7 @@ from .db import get_client, get_db, get_sync_db
 from .email import sendMail
 from .tasks import renderer
 
-# Names, not objects: `__all__` holding function objects made
-# `from alfred.core.utils import *` raise TypeError.
+# Names, not objects: a star import raises TypeError on objects.
 __all__ = [
     'get_db',
     'get_sync_db',

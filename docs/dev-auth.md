@@ -23,7 +23,7 @@ While it is on, the stack prints a banner on every boot:
 Every route guarded by `current_active_user` or `current_active_superuser`
 resolves to one account instead of authenticating the caller. The bypass is
 all-or-nothing: the dev account is a verified superuser, so the admin routes
-open too. Anything finer grained is auth work, the next phase.
+open too. Anything finer grained is auth work.
 
 The account is a **real, persisted user**, not a stand-in. Routes attribute
 renders and projects to the caller's email (`render.username`,
@@ -37,6 +37,16 @@ own dependency from the authenticator, a different callable, and
 would 401 and bring back the login screen while every other endpoint stayed
 open. `/users/me` returns the id as a string, under real auth and the bypass
 alike; `tests/unit/test_user_serialisation.py` pins it.
+
+## The dev account's address
+
+`ALFRED_DEV_USER_EMAIL` is `dev@example.com` unless set. The address has to
+be reserved, so that mail sent to it reaches nobody, and valid to the
+`EmailStr` that `UserRead` types it as, or `/users/me` answers 500. Few
+addresses are both. `dev@localhost` is stored but fails validation on the way
+out, and the email validator refuses reserved top-level domains such as
+`.invalid`. RFC 2606 also reserves `example.com`, `example.net` and
+`example.org`, which validate.
 
 ## What the dev account sees
 
@@ -67,9 +77,9 @@ which is refused (guard 5).
    the operator believing it took effect, with a process that looks healthy
    either way.
 3. **No production passthrough.** Only `dev.yml` wires the variable.
-   `production.yml` names it only to say it is withheld, so a production stack
-   has no variable to read even if the host sets one.
-   `tests/unit/test_stack_settings.py` holds that.
+   `production.yml` does not pass it, so a production stack has no variable to
+   read even if the host sets one. `tests/unit/test_stack_settings.py` holds
+   that.
 4. **Loopback by default.** `dev.yml` publishes the api on 127.0.0.1, so with
    the bypass on, the superuser is reachable from this machine only.
    `ALFRED_BIND=0.0.0.0` opens it to the network (to try the editor on a phone,

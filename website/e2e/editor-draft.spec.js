@@ -3,21 +3,23 @@
  *
  * # Recipe: getting unsaved edits back
  *
- * Edits to a project's timeline are kept in the tab until they are saved. If
- * the page is reloaded, or the session runs out and you log in again, opening
- * the project offers them back: **Restore them** puts the unsaved timeline on
- * screen, **Discard** keeps the saved one. Saving clears what was kept. It is
- * the tab's own, and goes when the tab does.
+ * The timeline saves itself a moment after each change. When a save cannot
+ * reach the server, the indicator beside the timeline says **Not saved**, and
+ * the edits are kept in the tab. If the page is reloaded, or the session runs
+ * out and you log in again, opening the project offers them back: **Restore
+ * them** puts the unsaved timeline on screen, and it saves itself again;
+ * **Discard** keeps the saved one. A save clears what was kept. It is the
+ * tab's own, and goes when the tab does.
  *
  * Every edit since the last save used to be lost, with no warning, whenever
  * the page went away.
  *
- * These open the shared media project and never save it: what a test keeps
- * stays in its own browser, and the one test that saves brings its own
- * project.
+ * These open the shared media project with its saves refused, so nothing
+ * reaches it: what a test keeps stays in its own browser, and the one test
+ * that saves brings its own project.
  */
 
-const { test, expect, CREDENTIALS, MEDIA_PROJECT } = require('./fixtures')
+const { test, expect, expectSaved, addTemplate, CREDENTIALS, MEDIA_PROJECT } = require('./fixtures')
 
 async function mediaProject(request, token) {
   const projects = await (
@@ -56,14 +58,16 @@ async function open(page, project) {
   await expect(clips(page)).toHaveCount(project.edl.clips.length)
 }
 
-/** Add a title card from the bin, changed to say `text`. */
+/** Add a title card, changed to say `text`. */
 async function addTitle(page, text) {
-  await page.locator('#bin .binclip[data-bin-name="title"] .binadd').click()
+  await addTemplate(page, 'title')
   await page.locator('#param-text').fill(text)
   await expect(page.locator('#timeline .clip.template[name="title"]')).toHaveText(text)
 }
 
 test.describe('an unsaved timeline outlives a reload', () => {
+  test.use({ saves: 'refused' })
+
   test('after a reload the unsaved timeline is offered back, and restored', async ({
     authedPage,
     request,
@@ -139,6 +143,10 @@ test.describe('an unsaved timeline outlives a reload', () => {
     await authedPage.waitForTimeout(500)
     await expect(offer(authedPage)).toHaveCount(0)
   })
+})
+
+test.describe('a save', () => {
+  test.use({ saves: 'real' })
 
   test('saving clears what was kept', async ({ authedPage, request, token }) => {
     const created = await request.post('/project', {
@@ -154,7 +162,7 @@ test.describe('an unsaved timeline outlives a reload', () => {
     try {
       await open(authedPage, { ...project, edl: { clips: [] } })
       await addTitle(authedPage, 'Saved now')
-      await authedPage.locator('#save-timeline').click()
+      await expectSaved(authedPage)
       await expect
         .poll(async () => {
           const saved = await (
@@ -175,6 +183,8 @@ test.describe('an unsaved timeline outlives a reload', () => {
 })
 
 test.describe('an unsaved timeline outlives the session', () => {
+  test.use({ saves: 'refused' })
+
   test('when the session ends, logging in again offers it back', async ({
     authedPage,
     request,
@@ -217,6 +227,8 @@ test.describe('an unsaved timeline outlives the session', () => {
 })
 
 test.describe('storage that refuses', () => {
+  test.use({ saves: 'refused' })
+
   test('a browser that will not keep the timeline still edits it', async ({
     authedPage,
     request,

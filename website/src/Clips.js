@@ -2,6 +2,7 @@ import { Edl } from './Video'
 import { Player } from './Player'
 import { Library } from './Library'
 import { toMs } from './Timing'
+import { Transcript } from './captions/transcript'
 
 /**
  * New clips, and putting them on the timeline.
@@ -77,7 +78,10 @@ export function addClip(clip, index) {
     index === undefined || index === null
       ? Edl.edl.length
       : Math.max(0, Math.min(Number(index), Edl.edl.length))
+  const before = Transcript.mark()
   Edl.edl = [...Edl.edl.slice(0, at), clip, ...Edl.edl.slice(at)]
+  // What follows it moves on, words and captions too.
+  Transcript.follow(before)
   Player.pause()
   Edl.jump(Edl.startOf(at))
   return at

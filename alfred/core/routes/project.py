@@ -22,19 +22,14 @@ from ..utils.db import User, get_client
 from ..utils.ownership import owner_filter, owner_key
 from .users import current_active_user
 
-# Where a project keeps its owner key. Every query below scopes itself with
-# `owner_filter(user, OWNER)`, the same rule the renders use, so "can I see it
-# in the list" and "can I open it" cannot disagree -- here or across the two.
+# Where a project keeps its owner key; every query scopes with
+# `owner_filter(user, OWNER)`, as the renders' do.
 OWNER = 'owner'
 
 
 class ProjectSettings(BaseModel):
-    """The subset of a project the flow stages may write.
-
-    Deliberately not `ProjectUpdate`: this route must not be a way to replace
-    a project's clips or logic. Naming the writable fields keeps "remember my
-    render size" from becoming an arbitrary write to the document.
-    """
+    """The subset of a project the flow stages may write; not `ProjectUpdate`,
+    so this route cannot replace a project's clips or logic."""
 
     render_settings: Optional[RenderSettings] = None
     destination: Optional[str] = None
@@ -43,15 +38,9 @@ class ProjectSettings(BaseModel):
 class ProjectAPI(MotorCRUDRouter):
     """Projects, each visible only to its owner and to superusers.
 
-    The crud router's generated routes knew nothing about who was asking: any
-    authenticated account could list, read, overwrite or delete any project,
-    and `DELETE /project` emptied the collection for everybody. Each generated
-    route is replaced here with one that scopes its query to the caller, and
-    the bulk delete is not mounted at all.
-
-    A project the caller may not see answers 404, exactly as one that does not
-    exist. 403 would confirm that the id is real, which is information about
-    somebody else's work.
+    Each route the crud router generates is replaced by one scoped to the
+    caller, and the bulk delete is not mounted. A project the caller may not
+    see is a 404, never a 403, which would confirm the id.
     """
 
     def __init__(
@@ -68,7 +57,6 @@ class ProjectAPI(MotorCRUDRouter):
         self.update_schema = (update_schema,)
         self.db_name = db_name
         self.client = get_client()
-        # self.db = self.client[DB_NAME]
         super().__init__(
             *args,
             **kwargs,
@@ -78,9 +66,7 @@ class ProjectAPI(MotorCRUDRouter):
             update_schema=update_schema,
             db_url=DB_URL,
             database=DB_NAME,
-            # No `DELETE /project`. One request from any account deleted every
-            # project in the database; there is no ownership-scoped version of
-            # that worth having, and a superuser who means it has the shell.
+            # No `DELETE /project`: the bulk delete takes everybody's.
             delete_all_route=False,
         )
 
@@ -95,15 +81,8 @@ class ProjectAPI(MotorCRUDRouter):
             The render size and destination a project should default to, so
             reopening it brings the flow back rather than asking again.
 
-            A separate route rather than a PUT to the project, because the
-            crud router's update replaces the whole document -- a partial body
-            arrives with `logic` unset, and `logic` is required, so saving one
-            preference meant sending the entire project back and racing anyone
-            else editing it. This writes only the fields it is given.
-
-            Only those, at the database too. It loaded the project, changed
-            the fields and saved the whole document back, so a timeline saved
-            in between was overwritten with the one this request had loaded.
+            Writes only the fields given, at the database too, so it races no
+            other save. `PUT /project/{id}` replaces the whole document.
             """
             project = await self._owned(item_id, user)
 
@@ -120,24 +99,11 @@ class ProjectAPI(MotorCRUDRouter):
         ):
             """# Save a project's timeline
 
-            The clips, and nothing else.
-
-            The editor had a save button that posted to `/edl`, which is not a
-            route on this server and never has been -- so the timeline could
-            not be persisted at all, and every edit was lost on reload. The
-            obvious alternative, `PUT /project/{id}`, replaces the whole
-            document: a partial body arrives with `logic` unset, `logic` is
-            required, and the project is left unreadable. That is not
-            hypothetical; it happened, and every subsequent GET answered 500.
-
-            So this writes one field, for the same reason `/settings` does.
+            The clips, and nothing else: one field, as `/settings` writes.
 
             Each clip is validated against otto's `Clip` and stored as sent
-            (contract M4): the fields the editor set and no others, so a
-            saved timeline renders exactly as the editor renders it. It used
-            to come back with otto's defaults written in -- `fadeIn: 1` and
-            `fadeOut: 1` on every clip -- which rendered as fades nobody
-            chose. The answer is the project as stored.
+            (contract M4), with no defaults written in, so it renders as the
+            editor shows it. The answer is the project as stored.
             """
             project = await self._owned(item_id, user)
 
@@ -146,24 +112,15 @@ class ProjectAPI(MotorCRUDRouter):
 
     async def _as_stored(self, project):
         """`project` read back after a write: what the next GET will answer.
-
-        Not the object just written. beanie merges the stored document into
-        it field by field after an update, which marks the EDL's `duration`
-        as sent even where it was not, and the answer would say `null` for
-        something the project does not hold.
-        """
+        Not the written object, which beanie's merge leaves claiming fields
+        the EDL was never sent."""
         return await self.schema.get(project.id)
 
     async def _owned(self, item_id, user):
-        """The project `item_id`, if `user` may touch it; otherwise 404.
-
-        Every single-project route goes through here. The id is checked
-        before the query so a malformed one answers 422 -- "that is not an
-        id" -- rather than the 404 reserved for "no project of yours".
-        """
+        """The project `item_id`, if `user` may touch it; otherwise 404. A
+        malformed id is a 422, not the 404 of "no project of yours"."""
         if not ObjectId.is_valid(item_id):
-            # A copy per raise: re-raising the shared instance grows its
-            # traceback with every request (see `bucket.fresh`).
+            # A copy per raise (`bucket.fresh`).
             raise fresh(INVALID_ID)
         project = await self.schema.find_one(
             {'_id': ObjectId(item_id), **owner_filter(user, OWNER)}
@@ -172,10 +129,8 @@ class ProjectAPI(MotorCRUDRouter):
             raise fresh(NOT_FOUND)
         return project
 
-    # The generated routes, scoped to the caller. The crud router builds each
-    # route from these factories, so overriding them replaces the routes at
-    # their original paths and methods -- no second registration that the
-    # first would shadow.
+    # The generated routes, scoped to the caller: overriding the factories
+    # replaces each route in place, with nothing to shadow.
 
     def _get_all(self, *args, **kwargs):
         async def route(
@@ -199,17 +154,13 @@ class ProjectAPI(MotorCRUDRouter):
             model: self.create_schema,  # type: ignore
             user: User = Depends(current_active_user),
         ):
-            # All assigned by the server. A client-chosen id could collide
-            # with a project the caller cannot see, and the duplicate-key
-            # error would confirm that it exists. Only the demo generator marks
-            # a project as the account's demo; a second mark would collide
-            # with the real one on its unique index.
+            # Server-assigned: a client's id could confirm another's project
+            # by colliding, and only the demo generator marks a demo.
             model.id = None
             model.owner = owner_key(user)
             model.demo = None
-            # A transcription is the server's record; captions sent with a new
-            # project are held to the rules their own route applies, and its
-            # style says whether they are drawn -- false unless it was sent.
+            # Captions held to their own route's rules; drawn only if the
+            # style sent says so.
             model.captions_job = None
             try:
                 model.captions = (
@@ -232,19 +183,11 @@ class ProjectAPI(MotorCRUDRouter):
             user: User = Depends(current_active_user),
         ):
             project = await self._owned(item_id, user)
-            # This route writes every field of the body, present or not. Left
-            # as sent, `owner` would be whatever the caller claimed -- or null,
-            # for any body that simply omitted it, which would orphan the
-            # project out of its own owner's reach. `demo` likewise: a body
-            # could otherwise mark any project as the account's demo, or unmark
-            # the real one.
+            # Every field of the body is written, sent or not: keep the
+            # server's own as stored.
             model.owner = project.owner
             model.demo = project.demo
-            # Likewise the captions: they have a route of their own, which
-            # checks them as a list, and the job is the server's record of a
-            # transcription. Written here, a body that left them out -- every
-            # client that saves a project it read before captions existed --
-            # would wipe them.
+            # Captions have their own route; a body without them must not wipe them.
             model.captions = project.captions
             model.caption_style = project.caption_style
             model.captions_job = project.captions_job
@@ -258,9 +201,7 @@ class ProjectAPI(MotorCRUDRouter):
         async def route(item_id: str, user: User = Depends(current_active_user)):
             project = await self._owned(item_id, user)
             await project.delete()
-            # The deleted project, as the route documents. The generated
-            # version returned the driver's DeleteResult, which is not a
-            # Project, so every successful delete answered 500.
+            # The deleted project, as documented; not the driver's DeleteResult.
             return project
 
         return route

@@ -39,6 +39,13 @@
       border-color: #f2aa4c;
     }
 
+    // Where a first visit begins, until a project is open.
+    &.starthere:not(.active) {
+      color: #f2aa4c;
+      border-color: #f2aa4c;
+      border-style: dashed;
+    }
+
     .stagenum {
       display: inline-flex;
       align-items: center;
@@ -196,8 +203,10 @@
     margin-bottom: 0.4rem;
   }
 
+  // Gives way first, so the heading, the filter and New project share a phone's row.
   .filter {
-    min-width: 12rem;
+    flex: 1 1 8rem;
+    min-width: 6rem;
   }
 
   label.inline {
@@ -408,13 +417,6 @@
   }
 }
 
-// Still offered, and said to be on the way out, as otto's own docstrings do.
-.templatelist .deprecated {
-  margin-left: 0.3rem;
-  font-size: 0.7rem;
-  color: #8f8f8f;
-}
-
 // Confirms an addition landed. The timeline can be below the fold, so the
 // result of a successful click is not always visible from the control that
 // caused it.
@@ -593,5 +595,90 @@
     background: #f2aa4c;
     border-color: #f2aa4c;
     color: #101820;
+  }
+}
+
+// New project: a button, then a name and Create (Projects.js).
+.newprojectopen,
+.newproject {
+  margin: 0 0 0.4rem;
+}
+
+.newprojectopen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  .material-icons {
+    font-size: 1rem;
+  }
+}
+
+.newproject {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 0.4rem;
+
+  input {
+    flex: 1 1 8rem;
+    min-width: 0;
+  }
+
+  .stageerror {
+    flex-basis: 100%;
+  }
+}
+
+// On a phone, + alone: the heading, the filter and it share one row.
+@media only screen and (max-width: 480px) {
+  .newprojectopen .newprojectlabel {
+    display: none;
+  }
+}
+
+// The line under the rail: what to do next (NextStep.js).
+.nextstep {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  padding: 0.3rem 0.75rem;
+  background: #1b1b1b;
+  border-bottom: 1px solid #2e2e2e;
+  color: #cfcfcf;
+  font-size: 0.85rem;
+
+  .nextsteptext {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+
+  .nextstepgo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.6rem;
+    border: 1px solid #f2aa4c;
+    border-radius: 999px;
+    background: transparent;
+    color: #f2aa4c;
+    font: inherit;
+    cursor: pointer;
+
+    .material-icons {
+      font-size: 1rem;
+    }
+
+    &:hover {
+      color: #101820;
+      background: #f2aa4c;
+    }
+  }
+
+  .nextstephow {
+    color: #9ec5ff;
   }
 }

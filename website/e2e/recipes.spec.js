@@ -19,9 +19,11 @@
  * not pay for the pauses.
  */
 
-const { test: base, expect, login } = require('./fixtures')
+const { test: base, expect, expectSaved, savesSoFar, login } = require('./fixtures')
 // Screenshots for the docs (screens.js).
 const { save, clear } = require('./screens')
+// docs/guide.md's walk, from an empty project to a delivered render.
+const guide = require('./guide')
 
 // What a recipe's project is made from, of what `POST /demo/media` makes.
 const DEMO_MEDIA = ['demo-bars.mp4', 'demo-colour.mp4', 'demo-testcard.mp4']
@@ -37,11 +39,11 @@ const auth = token => ({ headers: { Authorization: token } })
  * with only the recipe's entries -- its projects, the demo media, and the
  * renders of its projects.
  */
-async function onlyWhatItMade(page, made) {
+async function onlyWhatItMade(page, made, library = DEMO_MEDIA) {
   const its = {
     '/project': entry => made.has(entry._id),
-    '/media': entry => DEMO_MEDIA.some(name => String(entry.name).endsWith(name)),
-    '/videos': entry => DEMO_MEDIA.some(name => String(entry).endsWith(name)),
+    '/media': entry => library.some(name => String(entry.name).endsWith(name)),
+    '/videos': entry => library.some(name => String(entry).endsWith(name)),
     '/render': entry => made.has(entry.project_id),
   }
   await page.route(
@@ -67,8 +69,8 @@ async function onlyWhatItMade(page, made) {
  * seconds it took are noted on the test, and `./al recipes` starts the
  * recipe's GIF there.
  */
-async function openRecipe(page, made, opened) {
-  await onlyWhatItMade(page, made)
+async function openRecipe(page, made, opened, library) {
+  await onlyWhatItMade(page, made, library)
   await login(page)
   test.info().annotations.push({
     type: 'recipe-starts',
@@ -77,7 +79,7 @@ async function openRecipe(page, made, opened) {
 }
 
 /** Every project, file and render the page shows is the recipe's own. */
-async function everyRowIsItsOwn(page, made) {
+async function everyRowIsItsOwn(page, made, library = DEMO_MEDIA) {
   const names = [...made.values()].map(entry => entry.name)
   const strangers = []
   for (const text of await page.locator('.projectchoice').allTextContents()) {
@@ -86,7 +88,7 @@ async function everyRowIsItsOwn(page, made) {
   for (const name of await page
     .locator('.mediachoice')
     .evaluateAll(rows => rows.map(row => row.dataset.media))) {
-    if (!DEMO_MEDIA.some(file => String(name).endsWith(file))) strangers.push(`file ${name}`)
+    if (!library.some(file => String(name).endsWith(file))) strangers.push(`file ${name}`)
   }
   for (const text of await page.locator('.renderitem .rendername').allTextContents()) {
     if (!names.some(name => text.includes(name))) strangers.push(`render ${text}`)
@@ -185,6 +187,9 @@ const test = base.extend({
     await page.unrouteAll({ behavior: 'ignoreErrors' })
   },
 })
+
+// Recordings of the real thing: saves reach the server.
+test.use({ saves: 'real' })
 
 // Long enough to read what changed, short enough that a full recording is
 // still a couple of minutes.
@@ -435,7 +440,8 @@ test.describe('@recipe editing by text', () => {
   }) => {
     /**
      * Drag across "you see here", press Delete: the bars lose their end, the
-     * test card its start, and the captions after move up. Save keeps it.
+     * test card its start, and the captions after move up. Ctrl+Z puts the
+     * words back, selected, and Delete takes them again. Save keeps it.
      */
     clear('transcript')
     clear('transcript-cut')
@@ -480,8 +486,54 @@ test.describe('@recipe editing by text', () => {
     await beat(authedPage, 1400)
     await save(authedPage, 'transcript-cut')
 
-    await authedPage.locator('#transcript-save').click()
-    await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+    const said = authedPage.locator('#transcript-text .transcriptpara').nth(1)
+    await authedPage.keyboard.press('Control+z')
+    await expect(said).toHaveText('Every frame you see here is drawn by the server.')
+    await beat(authedPage, 1200)
+    const saves = await savesSoFar(authedPage)
+    await authedPage.keyboard.press('Delete')
+    await expect(said).toHaveText('Every frame is drawn by the server.')
+
+    // The cut saves itself.
+    await expectSaved(authedPage, { since: saves, id: 'transcript-save-state' })
     await beat(authedPage)
+  })
+})
+
+test.describe('@recipe making a video', () => {
+  // A transcription and a render, both waited for.
+  test.describe.configure({ timeout: 360_000 })
+  // The guide's screenshot size.
+  test.use({ viewport: { width: 1280, height: 800 } })
+
+  test('recipe: make a video from start to finish', async ({
+    page,
+    opened,
+    made,
+    request,
+    token,
+  }) => {
+    /**
+     * [Make a video with the family](guide.md), step by step: two demo clips
+     * and a sound on an empty project, a title moved to the front, the sound
+     * transcribed and two of its words cut, the captions corrected and styled,
+     * then a render, delivered.
+     */
+    // The stub's tones, or a file of speech for joe: E2E_SPEECH.
+    const speech = guide.SPEECH
+    const why = await guide.cannotWalk(request, token, speech)
+    test.skip(Boolean(why), why)
+    const project = await guide.emptyProject(request, token)
+    made.set(project._id, { name: project.name, owned: true })
+    await openRecipe(page, made, opened, guide.library(speech))
+
+    await guide.walk(
+      page,
+      { project, speech, request, token },
+      { shown: () => beat(page, 1600), pause: ms => beat(page, ms) }
+    )
+    await everyRowIsItsOwn(page, made, guide.library(speech))
+    // The Deliver panel's list can still be in flight as the page closes.
+    await page.unrouteAll({ behavior: 'ignoreErrors' })
   })
 })

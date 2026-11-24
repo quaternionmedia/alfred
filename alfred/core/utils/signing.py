@@ -1,14 +1,8 @@
 """Short-lived capability URLs for media the browser fetches by itself.
 
-Contract M1. A `<video src>`, an `<img src>` or an `<a download>` is a request
-the browser makes on its own, and it carries no Authorization header. So every
-file route that needs a session answered those elements 401, and the SPA had
-to fetch whole files with the token and hand the bytes over as object URLs --
-no streaming, every render held in memory, and a public `/data` mount for the
-frames it could not fetch that way.
-
-A signed URL is the request the browser can make: `<path>?exp=<unix
-seconds>&sig=<signature>`, where the signature is an HMAC-SHA256 over
+Contract M1. A `<video src>`, an `<img src>` or an `<a download>` carries no
+Authorization header, so the file routes also take a signed URL:
+`<path>?exp=<unix seconds>&sig=<signature>`, the signature an HMAC-SHA256 over
 `"GET\\n<path>\\n<exp>"`, urlsafe base64 without padding, keyed by
 HMAC-SHA256(ALFRED_SECRET_KEY, b"alfred-media-v1"). Holding one is permission
 to GET exactly that path until `exp`, and nothing else: the routes issue them
@@ -38,19 +32,13 @@ from alfred import config
 
 KEY_CONTEXT = b'alfred-media-v1'
 
-# The key used when ALFRED_SECRET_KEY is empty, as the development stub
-# committed to this repository leaves it: random, and this process's alone.
-# Its URLs work until the api restarts, and only in the process that issued
-# them -- but nobody can forge one, which signing with the empty secret would
-# allow. A configured key is never replaced by this.
+# The key when ALFRED_SECRET_KEY is empty: random, this process's alone, so
+# its URLs die on restart and nobody can forge one.
 _PROCESS_KEY = secrets.token_bytes(32)
 _warned = False
 
-# Expiries are rounded up to a whole minute, so every URL issued for a path in
-# the same minute is the same URL. A browser caches by URL: without this, each
-# listing or status poll would hand out a new address for the same file, and
-# an `<img>` or `<video>` given it would fetch the file again. The cost is a
-# URL living up to a minute longer than the TTL asked for.
+# Expiries round up to the minute, so a path's URL is the same for a minute
+# and the browser's cache holds; a URL may outlive its TTL by up to a minute.
 EXPIRY_STEP = 60
 
 # What a refused signature was, for the caller's error message.
@@ -108,9 +96,8 @@ def check(path: str, exp, sig, now: Optional[float] = None) -> Optional[str]:
     """
     if not exp or not sig or not isinstance(exp, str) or not isinstance(sig, str):
         return INVALID
-    # One spelling per expiry: decimal digits, no sign, no leading zeros, and
-    # not absurdly long (Python refuses to read a number of thousands of
-    # digits, which would otherwise be a 500).
+    # One spelling per expiry: digits, no sign, no leading zeros, and short
+    # (a number of thousands of digits would be a 500).
     if len(exp) > 12 or not exp.isascii() or not exp.isdigit():
         return INVALID
     if exp != str(int(exp)):

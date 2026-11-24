@@ -14,7 +14,7 @@ const { MEDIA_PROJECT } = require('./fixtures')
  * behavior and one that only appears to.
  */
 module.exports = async () => {
-  const baseURL = process.env.E2E_BASE_URL || 'http://localhost:8000'
+  const baseURL = process.env.E2E_BASE_URL || 'http://127.0.0.1:1732'
   const api = await request.newContext({ baseURL })
 
   // Establish *what* is answering before measuring anything about it.
@@ -23,7 +23,7 @@ module.exports = async () => {
   // find out: Docker starts the stack, reports it healthy, and every request
   // from the host reaches the other application. That is not hypothetical --
   // this suite was run repeatedly against `Apothecary API`, a different QM
-  // service that also defaults to 8000, while Alfred was up and serving
+  // service that also defaulted to 8000, while Alfred was up and serving
   // correctly on its own network. The numbers it produced were real
   // measurements of the wrong program.
   //
@@ -43,9 +43,9 @@ module.exports = async () => {
 ` +
         `Something else holds that port. Start Alfred elsewhere and point the
 ` +
-        `suite at it:  ALFRED_PORT=8100 ./al dev
+        `suite at it:  ALFRED_PORT=1832 ./al dev
 ` +
-        `              E2E_BASE_URL=http://localhost:8100 npm run e2e`
+        `              E2E_BASE_URL=http://127.0.0.1:1832 npm run e2e`
     )
   }
 

@@ -1,8 +1,6 @@
 services:
   pytest:
-    # The `test` stage of the root Dockerfile: the api image this checkout
-    # builds, plus nox. See the comment above that stage for why it is not a
-    # Dockerfile of its own.
+    # The Dockerfile's `test` stage: this checkout's api image, plus nox.
     build:
       context: .
       target: test
@@ -10,10 +8,8 @@ services:
     command: -f tests/noxfile.py
     volumes:
       - .:/app
-    # The needs_db tier (tests/integration) runs the API against this. Order
-    # only: depends_on does not wait for MongoDB to accept connections, so the
-    # tier's own fixture waits for it, and fails rather than skips if it never
-    # answers -- the database is promised here, so its absence is a fault.
+    # For the needs_db tier. Order only: its fixture waits, and fails if the
+    # database never answers.
     depends_on:
       - db
     environment:
@@ -23,8 +19,6 @@ services:
       - DB_NAME=alfred
       - GOOGLE_APPLICATION_CREDENTIALS=/cred.json
 
-  # Throwaway. Nothing is published on the host and nothing is mounted: each
-  # test worker drops its own database before and after the run, so there is
-  # no state worth keeping and no port for a parallel stack to collide on.
+  # Throwaway: no ports, no mounts. Each test worker drops its own database.
   db:
     image: mongo:bionic

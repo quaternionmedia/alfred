@@ -1,6 +1,7 @@
 """Captions on a project (contract K2): read them, write them, import them
 from a subtitle file, and have the timeline's sound transcribed into them;
 and the words a transcription heard, which the editor cuts the timeline by.
+A write may carry the timeline too, so the three are saved as one.
 
 Every route is scoped to the caller the way every project route is
 (`utils.ownership`): a project that is not yours answers 404, exactly as one
@@ -22,7 +23,7 @@ from alfred import config
 
 from ..errors import Code, Refusal
 from ..models.captions import RUNNING, Caption, CaptionsJob, CaptionStyle, Word
-from ..models.project import Project
+from ..models.project import Project, as_sent
 from ..utils import audio_engine
 from ..utils.bucket import INVALID_ID, NOT_FOUND, fresh
 from ..utils.captions import (
@@ -75,12 +76,13 @@ class CaptionsView(BaseModel):
 
 
 class CaptionsUpdate(BaseModel):
-    """`PUT /project/{id}/captions`: the captions, and -- if sent -- the style
-    and the words."""
+    """`PUT /project/{id}/captions`: the captions, and -- if sent -- the style,
+    the words and the timeline they belong to."""
 
     captions: List[Caption]
     style: Optional[CaptionStyle] = None
     words: Optional[conlist(Word, max_length=MAX_WORDS)] = None
+    timeline: Optional[Edl] = None
 
     model_config = ConfigDict(extra='forbid')
 
@@ -228,12 +230,14 @@ async def saveProjectCaptions(
     """# Save a project's captions
 
     Replaces the captions with `captions`, the style with `style` when one
-    is sent, and the words with `words` when they are sent; nothing else on
-    the project is written. Each caption starts at or after 0, ends after it
-    starts and has text, at most 500 characters of it; they are stored in
-    order of when they start, at most 1000. Each word is `{start, end, text,
-    segment}`, ending no earlier than it starts, its text one word of at most
-    100 characters; they are stored in the order sent, at most 50,000.
+    is sent, the words with `words` and the timeline with `timeline` when
+    they are sent; nothing else on the project is written, and all of it in
+    one write. Each caption starts at or after 0, ends after it starts and
+    has text, at most 500 characters of it; they are stored in order of when
+    they start, at most 1000. Each word is `{start, end, text, segment}`,
+    ending no earlier than it starts, its text one word of at most 100
+    characters; they are stored in the order sent, at most 50,000. The
+    timeline is stored as `PUT /project/{id}/timeline` stores it.
 
     The style's `enabled` is always stored: as sent, else as it was, else
     false -- a project's captions are not drawn into its renders until
@@ -250,6 +254,8 @@ async def saveProjectCaptions(
         fields['caption_style'] = style
     if update.words is not None:
         fields['words'] = [word.model_dump() for word in update.words]
+    if update.timeline is not None:
+        fields['edl'] = as_sent(update.timeline)
     await store.set(project['_id'], fields)
     return view_of({**project, **fields})
 

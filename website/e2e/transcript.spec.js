@@ -3,10 +3,16 @@
  *
  * # Recipe: cut the video by deleting words
  *
- * Select words, press Delete, Save. Desktop and phone; the @slow test transcribes via the stub engine.
+ * Select words and press Delete; the cut saves itself. Ctrl+Z, or Undo, takes
+ * a cut back. A trim moves the words with the picture, and a draft keeps them
+ * with its timeline.
+ * Desktop and phone; the @slow test transcribes via the stub engine.
  */
 
-const { test, expect } = require('./fixtures')
+const { test, expect, expectSaved, savesSoFar, letSavesThrough } = require('./fixtures')
+
+// These check what reaches the server.
+test.use({ saves: 'real' })
 
 // Stub engine fixture: tone at 0.5-1.5 and 2.0-3.2 s.
 const FIXTURE = 'videos/e2e-speech.wav'
@@ -95,10 +101,17 @@ const playhead = async page => {
 const words = page => page.locator('#transcript-text .word')
 const going = page => page.locator('#transcript-text .word.going')
 
+const phone = () => test.info().project.name === 'phone'
+
 /** Open Edit with the Transcript panel shown: its tab at 1200x800, the stage's switch on a phone. */
 async function openTranscript(page, project) {
-  if (test.info().project.name !== 'phone') await page.setViewportSize({ width: 1200, height: 800 })
+  if (!phone()) await page.setViewportSize({ width: 1200, height: 800 })
   await page.goto(`/#!/?project=${project._id}&stage=edit`)
+  await showTranscript(page)
+}
+
+/** The Transcript panel, on the Edit stage already open. */
+async function showTranscript(page) {
   await expect(page.locator('#timeline .clip').first()).toBeVisible()
   const tab = page.locator('#paneltab-transcript')
   if (test.info().project.name === 'phone') {
@@ -174,13 +187,11 @@ test.describe('@slow from the transcription to the cut', () => {
       await expect(words(authedPage)).toHaveCount(7)
       await expect(authedPage.locator('#transcript-text .transcriptpara').first()).toHaveText('the said')
       await expect(going(authedPage)).toHaveCount(0)
-      await expect(authedPage.locator('#transcript-unsaved')).toBeVisible()
       // The sound clip is split: three clips.
       await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)
 
       const removed = Math.round((thing.end - first.start) * 1000) / 1000
-      await authedPage.locator('#transcript-save').click()
-      await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+      await expectSaved(authedPage, { id: 'transcript-save-state' })
 
       // Mutation: don't shift parts after the cut -- fails.
       const edl = await timelineOf(request, token, project)
@@ -192,7 +203,8 @@ test.describe('@slow from the transcription to the cut', () => {
       ])
 
       const after = await captionsOf(request, token, project)
-      // First caption trimmed, second moved up.
+      // First caption trimmed, and says what is left of it; second moved up.
+      expect(after.map(c => c.text)).toEqual(['the said', 'and then a second line'])
       expect(after[0].start).toBeCloseTo(before[0].start, 3)
       expect(after[0].end).toBeCloseTo(before[0].end - removed, 3)
       expect(after[1].start).toBeCloseTo(before[1].start - removed, 3)
@@ -212,7 +224,7 @@ test.describe('the transcript', () => {
     request,
     token,
   }) => {
-    /** "three four" spans the clip boundary: both clips lose a second. */
+    /** "three four" spans the clip boundary: both clips lose a second, and each caption a word. */
     await withProject(request, token, COLOUR, async project => {
       await transcribed(request, token, project)
       await openTranscript(authedPage, project)
@@ -229,17 +241,17 @@ test.describe('the transcript', () => {
       await authedPage.keyboard.press('End')
       await expect.poll(() => playhead(authedPage)).toBeCloseTo(4, 1)
 
-      await authedPage.locator('#transcript-save').click()
-      await expect(authedPage.locator('#transcript-unsaved')).toHaveCount(0)
+      await expectSaved(authedPage, { id: 'transcript-save-state' })
       const edl = await timelineOf(request, token, project)
       expect(edl.clips.map(c => [c.start, c.duration, c.inpoint ?? null])).toEqual([
         [0, 2, null],
         // Resumes one second in.
         [2, 2, 1],
       ])
+      // Mutation: keep a caption's text through a cut -- fails.
       expect(await captionsOf(request, token, project)).toEqual([
-        { start: 0, end: 2, text: 'One two three' },
-        { start: 2, end: 4, text: 'four five six' },
+        { start: 0, end: 2, text: 'One two' },
+        { start: 2, end: 4, text: 'five six' },
       ])
     })
   })
@@ -298,6 +310,209 @@ test.describe('the transcript', () => {
       await expect(authedPage.locator('#transcript-transcribe')).toBeVisible()
       await expect(words(authedPage)).toHaveCount(0)
       await expect(authedPage.locator('#transcript-cut')).toHaveCount(0)
+    })
+  })
+})
+
+test.describe('undo', () => {
+  /** Ctrl+Z at a desk; the Undo button on a phone, which has no keys. */
+  const undo = page =>
+    phone() ? page.locator('#transcript-undo').click() : page.keyboard.press('Control+z')
+
+  test('Undo puts back what a cut took: the words, the clips and the captions', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * Two cuts are undone one at a time, last first. The words come back
+     * selected, so Delete would cut them again; the second undo is the
+     * project as it was, and the server comes back to it.
+     */
+    await withProject(request, token, COLOUR, async project => {
+      await transcribed(request, token, project)
+      await openTranscript(authedPage, project)
+      await expect(authedPage.locator('#transcript-undo')).toBeDisabled()
+
+      await words(authedPage).nth(1).dblclick()
+      await expect(going(authedPage)).toHaveText(['two'])
+      await authedPage.keyboard.press('Delete')
+      await expect(words(authedPage)).toHaveText(['One', 'three', 'four', 'five', 'six'])
+      await words(authedPage).nth(3).dblclick()
+      await expect(going(authedPage)).toHaveText(['five'])
+      await authedPage.keyboard.press('Delete')
+      await expect(words(authedPage)).toHaveText(['One', 'three', 'four', 'six'])
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(4)
+
+      // Mutation: drop Transcript.undo's restore of the words -- fails.
+      await undo(authedPage)
+      await expect(words(authedPage)).toHaveText(['One', 'three', 'four', 'five', 'six'])
+      await expect(going(authedPage)).toHaveText(['five'])
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)
+      await expect(authedPage.locator('#transcript-last')).toContainText('Undid a cut of 1 word')
+
+      await undo(authedPage)
+      await expect(words(authedPage)).toHaveText(['One', 'two', 'three', 'four', 'five', 'six'])
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(2)
+      await expect(authedPage.locator('#transcript-undo')).toBeDisabled()
+      // A cut that saved itself meanwhile is saved back.
+      await expect.poll(async () => (await wordsOf(request, token, project)).length).toBe(6)
+    })
+  })
+
+  test('a saved cut can be undone, and that saves too; another edit after a cut keeps it', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * Undo after a cut has saved puts the project back as it was, and that
+     * saves too. A cut followed by a trim stays: Undo takes back a cut only
+     * while nothing else has changed since.
+     */
+    await withProject(request, token, COLOUR, async project => {
+      await transcribed(request, token, project)
+      await openTranscript(authedPage, project)
+      await words(authedPage).nth(1).dblclick()
+      await expect(going(authedPage)).toHaveText(['two'])
+      await authedPage.keyboard.press('Delete')
+      await expectSaved(authedPage, { id: 'transcript-save-state' })
+      expect((await wordsOf(request, token, project)).map(w => w.text)).toEqual([
+        'One',
+        'three',
+        'four',
+        'five',
+        'six',
+      ])
+
+      const cut = await savesSoFar(authedPage, 'transcript-save-state')
+      await undo(authedPage)
+      await expect(words(authedPage)).toHaveCount(6)
+      await expectSaved(authedPage, { since: cut, id: 'transcript-save-state' })
+      expect(await wordsOf(request, token, project)).toEqual(WORDS)
+      expect(await captionsOf(request, token, project)).toEqual(CAPTIONS)
+      expect((await timelineOf(request, token, project)).clips.map(c => c.duration)).toEqual([3, 3])
+
+      // "two" is selected again: cut it, then split "five"'s clip at the word.
+      await authedPage.keyboard.press('Delete')
+      await expect(words(authedPage)).toHaveCount(5)
+      await expect(authedPage.locator('#transcript-undo')).toBeEnabled()
+      await words(authedPage).nth(3).click()
+      await expect.poll(() => playhead(authedPage)).toBeCloseTo(3, 1)
+      await authedPage.keyboard.press('s')
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(4)
+      // Mutation: make undoable() ignore the timeline -- enabled, fails.
+      await expect(authedPage.locator('#transcript-undo')).toBeDisabled()
+    })
+  })
+})
+
+test.describe('words follow the picture', () => {
+  test('a trim moves the words and the captions with it, and the toolbar saves all three', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * The first clip trimmed to half its length: "three" goes with its end,
+     * "two" is cut short, the second clip's words and caption move up, and
+     * the first caption says what it has left. The toolbar's save writes
+     * the timeline, the captions and the words in one request.
+     */
+    await withProject(request, token, COLOUR, async project => {
+      await transcribed(request, token, project)
+      await openTranscript(authedPage, project)
+      await expect(words(authedPage)).toHaveCount(6)
+
+      await authedPage.locator('#TTools [data-tool="trim"]').click()
+      const clip = authedPage.locator('#timeline .clip').first()
+      await clip.scrollIntoViewIfNeeded()
+      const box = await clip.boundingBox()
+      const y = box.y + box.height / 2
+      await authedPage.mouse.move(box.x + box.width - 4, y)
+      await authedPage.mouse.down()
+      await authedPage.mouse.move(box.x + box.width / 2 - 4, y, { steps: 8 })
+      await authedPage.mouse.up()
+
+      // Mutation: drop Transcript.follow from the trim's release -- "three" stays, fails.
+      await expect(words(authedPage)).toHaveText(['One', 'two', 'four', 'five', 'six'])
+
+      // Saved with the trim: the timeline, the captions and the words in one request.
+      const path = `/project/${project._id}/captions`
+      const saved = await authedPage.waitForResponse(
+        r => r.request().method() === 'PUT' && new URL(r.url()).pathname === path
+      )
+      expect(saved.request().postDataJSON().timeline.clips).toHaveLength(2)
+
+      const edl = await timelineOf(request, token, project)
+      const first = edl.clips[0].duration
+      expect(first).toBeGreaterThan(1)
+      expect(first).toBeLessThan(2)
+      const kept = await wordsOf(request, token, project)
+      expect(kept.map(w => w.text)).toEqual(['One', 'two', 'four', 'five', 'six'])
+      expect(kept[1].end).toBeCloseTo(first, 3)
+      expect(kept[2].start).toBeCloseTo(first, 3)
+      const captions = await captionsOf(request, token, project)
+      expect(captions.map(c => c.text)).toEqual(['One two', 'four five six'])
+      expect(captions[0].end).toBeCloseTo(first, 3)
+      expect(captions[1].start).toBeCloseTo(first, 3)
+      expect(captions[1].end).toBeCloseTo(first + 3, 3)
+    })
+  })
+})
+
+test.describe('a draft', () => {
+  // Kept, not saved, until the test lets saves through.
+  test.use({ saves: 'refused' })
+
+  test('a cut kept as a draft comes back with the captions and the words it moved', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * Cut "five" while saves fail, and leave the page. Opened again, the
+     * project shows as saved, words and all, and offers the cut back; Restore
+     * brings the timeline, the captions and the words together, and once the
+     * server answers they save together.
+     */
+    await withProject(request, token, COLOUR, async project => {
+      await transcribed(request, token, project)
+      await openTranscript(authedPage, project)
+      await words(authedPage).nth(4).dblclick()
+      await expect(going(authedPage)).toHaveText(['five'])
+      await authedPage.keyboard.press('Delete')
+      await expect(words(authedPage)).toHaveText(['One', 'two', 'three', 'four', 'six'])
+
+      await authedPage.reload()
+      await showTranscript(authedPage)
+      await expect(words(authedPage)).toHaveCount(6)
+      await expect(authedPage.locator('#draft-offer')).toContainText(
+        'the captions and words that moved with them'
+      )
+      await authedPage.locator('#draft-restore').click()
+      // Mutation: drop Transcript.restore from Draft.restore -- six words, fails.
+      await expect(words(authedPage)).toHaveText(['One', 'two', 'three', 'four', 'six'])
+      await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)
+      await expect(authedPage.locator('#transcript-save-state')).toHaveAttribute('data-state', 'failed', {
+        timeout: 15000,
+      })
+
+      await letSavesThrough(authedPage)
+      await authedPage.locator('#transcript-save-state-retry').click()
+      await expectSaved(authedPage, { id: 'transcript-save-state' })
+      expect((await wordsOf(request, token, project)).map(w => w.text)).toEqual([
+        'One',
+        'two',
+        'three',
+        'four',
+        'six',
+      ])
+      expect(await captionsOf(request, token, project)).toEqual([
+        { start: 0, end: 3, text: 'One two three' },
+        { start: 3, end: 5, text: 'four six' },
+      ])
+      expect((await timelineOf(request, token, project)).duration).toBe(5)
     })
   })
 })

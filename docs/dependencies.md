@@ -21,7 +21,8 @@ The image, nox (`tests/noxfile.py`) and CI install the three exports with
 the one the suites have tested.
 
 `tests/unit/test_stack_config.py` holds each export to `pdm.lock`: the same
-versions and the same markers.
+versions and the same markers. The image's uvicorn is the one thing installed
+unlocked ([Images and stacks](build.md#the-image)).
 
 To change a dependency:
 
@@ -114,9 +115,9 @@ moved together.
 
 ### fastapi-users 15
 
-alfred carries copies of five fastapi-users methods that hash in the thread
-pool, and the api refuses to start on any release but 15.0.5. See [password
-hashing](api/auth.md#password-hashing).
+alfred carries copies of five fastapi-users methods that hash off the event
+loop, in a pool of four threads of their own, and the api refuses to start on
+any release but 15.0.5. See [password hashing](api/auth.md#password-hashing).
 
 From 10.4.2 it took:
 
@@ -129,7 +130,8 @@ From 10.4.2 it took:
   `POST /auth/jwt/refresh` follows it.
 - PyJWT 2.15; fastapi-users asks for 2.12 or later. PyJWT 2.13 and later
   refuse an empty HMAC key, so an empty `ALFRED_SECRET_KEY` fails every login
-  with a 500, as an unset one does. PyJWT used to sign with it.
+  with a 500, as an unset one does ([the signing
+  key](configuration.md#the-signing-key)).
 - fastapi-users-db-beanie 4, and the email index below.
 
 GHSA-5j53-63w8-8625 (CVE-2025-68481), fixed in 15.0.2, is a CSRF in the OAuth
@@ -199,12 +201,12 @@ synthesizer, a CLI) serve parts alfred does not load. The floor is vox's.
 
 ### Python 3.11 only
 
-The image, CI, ruff and black all target 3.11. otto caps Python below 3.12,
-but pydantic no longer sets that cap: every release its `pydantic~=2.5`
-allows ships wheels for 3.12. Raising either cap waits on the suites passing
-on the newer Python. pdm locks for the whole `requires-python` range. With a floor of 3.8, any
-package that had since dropped 3.8 stayed at its last release for 3.8, numpy
-1.24 and anyio 4.5 among them, whatever Python ran.
+The image, CI, ruff and black all target 3.11, and `requires-python` admits
+nothing else. pdm locks for the whole `requires-python` range, so a wider one
+holds every package at the last release the oldest Python it admits can run.
+otto caps Python below 3.12, but pydantic no longer sets that cap: every
+release its `pydantic~=2.5` allows ships wheels for 3.12. Raising either cap
+waits on the suites passing on the newer Python.
 
 ## What the checks are told
 

@@ -383,7 +383,7 @@ class TestTheCollector:
         [
             pytest.param(
                 report_of(
-                    errors=[{'message': 'Error: connect ECONNREFUSED 127.0.0.1:8000'}]
+                    errors=[{'message': 'Error: connect ECONNREFUSED 127.0.0.1:1732'}]
                 ),
                 id='global setup failed',
             ),

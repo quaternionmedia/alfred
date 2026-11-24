@@ -26,6 +26,11 @@ import { Library } from './Library'
 var Bin = {
   templates: [],
   loaded: false,
+  // How many Media & templates panels are showing; the bin hides while any is.
+  listed: 0,
+
+  /** Templates to offer for a new clip. A deprecated one still draws a clip that has it. */
+  offered: () => Bin.templates.filter(t => !t.deprecated),
 
   // Fetch once a session exists, and not before.
   //
@@ -111,7 +116,7 @@ var Bin = {
 
   view: () =>
     m('#bin.bin.project', [
-      Bin.templates.map(t =>
+      Bin.offered().map(t =>
         m(BinEntry, {
           key: `template:${t.name}`,
           kind: 'template',

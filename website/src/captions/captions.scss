@@ -66,6 +66,13 @@ $problem: #e57373;
     margin-left: auto;
   }
 
+  // A row of their own: Cut's label grows as words are selected, and a row
+  // shared with the heading wrapped mid-drag, moving the words under the pointer.
+  &.transcriptpanel .captionsactions {
+    flex-basis: 100%;
+    justify-content: flex-end;
+  }
+
   button {
     min-height: 2rem;
     padding: 0 0.7rem;

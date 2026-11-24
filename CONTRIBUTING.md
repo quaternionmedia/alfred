@@ -27,7 +27,7 @@ is the contributor of record.
 git clone --recurse-submodules https://github.com/quaternionmedia/alfred.git
 cd alfred
 ./al init          # builds the website image, which carries its dependencies
-./al dev           # the stack, on http://127.0.0.1:8000
+./al dev           # the stack, on http://127.0.0.1:1732
 ```
 
 [README.md](README.md) covers the Windows symlink step, and a first run with
@@ -93,7 +93,7 @@ the recipes' GIFs:
 ```
 
 `./al recipes` runs against a dev stack you already have up (`E2E_BASE_URL` if
-it is not on :8000). It writes each screen as `docs/assets/screens/<name>.png`
+it is not on :1732). It writes each screen as `docs/assets/screens/<name>.png`
 and each passing recipe as `docs/recipes/<recipe>.gif`, converting with the
 ffmpeg in the api container, and exits non-zero if any step fails. Both build
 their own demo data and show nothing else, so recording on your own stack
@@ -146,9 +146,15 @@ exists because two other QM projects hit the cryptic version first.
 |---|---|
 | `CI.yml` | Black, Ruff, the backend suite, and the browser suite through `playwright.yml` |
 | `playwright.yml` | the browser suite, against the stack `test_e2e.yml` builds — the same run as `./al test` |
+| `docs.yml` | the strict docs build, as `./al loop`'s `docs` suite runs it; deploys only from a push |
+| `CD.yml` | builds the image, submodules included |
+| `license-report.yml` | the licenses of the Python, npm and image dependencies — **reporting only** |
 | `submodule-check.yml` | every submodule pin is reachable on its own remote |
 | `adr-lint.yml` | decision-record discipline, run from the governance submodule |
 | `reuse-lint.yml` | copyright and licence headers — **reporting only** |
+
+[Images and stacks](docs/build.md#ci) says more about each, and about
+`publish.yml`, which runs from a version tag.
 
 **REUSE is not blocking yet.** As of 2026-08-08, 0 of 206 files carry
 copyright or licence information, and there is no `LICENSES/` directory;

@@ -5,6 +5,15 @@ import { queueRender, renderSize, timelineRender } from '../RenderRequest'
 import { Health, RendererNotice } from '../Health'
 import { requestProblem } from '../Problem'
 import { AsyncButton, Empty, Flow, FlowPanel } from '../Stages'
+import { state } from '../Globals'
+
+/** Where the size on offer came from. */
+const sizeFrom = (project, typed) => {
+  if (Object.keys(typed).length) return 'As typed. A render keeps it for this project.'
+  const saved = (project && project.render_settings) || {}
+  if (Number(saved.width) && Number(saved.height)) return 'The size this project last rendered at.'
+  return `The viewer's frame: ${state.aspectWidth()}:${state.aspectHeight()} at ${state.resolution()}p.`
+}
 
 /** Stage 3 -- queue a render of what is on the timeline. */
 const RenderPanel = {
@@ -72,6 +81,7 @@ const RenderPanel = {
         m('label', ['Width', m('input#render-width', sizeInput('width'))]),
         m('label', ['Height', m('input#render-height', sizeInput('height'))]),
       ]),
+      m('p.stagehint#render-size-from', sizeFrom(project, Flow.draft.size)),
       m(AsyncButton, {
         id: 'queue-render',
         class: 'primary',
@@ -109,7 +119,7 @@ const RenderPanel = {
       }),
       // A timeline with no clips cannot be rendered, and saying so beats a
       // button that looks available and fails.
-      Edl.edl.length ? null : Empty('Add a clip on the Edit stage first.'),
+      Edl.edl.length ? null : Empty('Add material or a template on Source first.'),
       Flow.error ? m('p.stageerror', Flow.error) : null,
     ])
   },

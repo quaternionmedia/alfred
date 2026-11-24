@@ -1,11 +1,5 @@
 """What the server keeps on disk, and when it lets go of it.
 
-Files were written and never removed: every preview frame, every render's
-output and its local delivery copy, every remote file the engine fetched,
-outlived whatever made them. And renders finished before RENDER_DIR existed
-were written into the media library itself, where they are still listed as
-media to everyone.
-
 - `sweep` removes files that have outlived their time: preview frames, and
   the remote media cache (`sweep_remote_cache`, `./al storage cache`).
 - `remove_render_files` removes a deleted render's own files.

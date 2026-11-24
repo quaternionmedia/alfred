@@ -46,8 +46,24 @@ export const Viewer = {
           m(Head, { class: VIEWER_CLASS }, [m(Preview), viewerOverlays.map(overlay => m(overlay))])
         ),
         m('.viewersettings', [
-          m(Aspect, ['16:9', '4:3', '4:5', '1:1', '5:4', '3:4', '9:16']),
-          m(Resolution, ['1080p', '720p', '480p', '240p']),
+          // Not the render's settings alone: a project never rendered starts there (renderSize).
+          m('span.viewersettingslabel', 'Frame'),
+          m(
+            Aspect,
+            {
+              title: "The frame's shape: the picture here, and a first render's",
+              'aria-label': 'Frame shape',
+            },
+            ['16:9', '4:3', '4:5', '1:1', '5:4', '3:4', '9:16']
+          ),
+          m(
+            Resolution,
+            {
+              title: "The frame's size: how sharp the picture here is drawn, and a first render's size",
+              'aria-label': 'Frame size',
+            },
+            ['1080p', '720p', '480p', '240p']
+          ),
           typeof attrs.settings === 'function' ? attrs.settings() : null,
         ]),
       ]),

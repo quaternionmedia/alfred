@@ -1,10 +1,7 @@
 """Account tokens, delivered: password resets and address confirmations.
 
-fastapi-users issues a single-use token and hands it to a hook. The hook
-printed it, and nothing else ever saw it -- so outside development, where
-nobody asking for a reset can read the server's log, a reset could be asked
-for and never finished. When mail is configured the token now goes to the
-account's own address, as a link into the app's account page
+fastapi-users hands a single-use token to a hook. When mail is configured,
+it goes to the account's own address as a link into the app's account page
 (`/#!/account/<reset|verify>?token=...`).
 
 **Configured** means the existing mail settings, EMAIL_SERVER and
@@ -105,9 +102,8 @@ def deliver(purpose, address, token, lifetime_seconds) -> bool:
     if not configured():
         return False
     message = compose(purpose, token, lifetime_seconds)
-    # Each step of reaching the mail server bounded by ALFRED_SMTP_TIMEOUT, as
-    # for every mail alfred sends. Mail is sent one message at a time, so a
-    # server that never answered would hold up every message after it.
+    # Bounded by ALFRED_SMTP_TIMEOUT: one message at a time, so a server that
+    # never answers would hold every message behind it.
     dispatch(
         partial(
             sendMail,

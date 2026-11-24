@@ -2,9 +2,10 @@
 
 `HashesOffTheLoop` holds copies of the five fastapi-users methods that hash or
 check a password: the library's code line for line, but for awaiting every
-`password_helper` call in a pool of HASHES_AT_ONCE threads of its own. Importing this module refuses any
-release but CHECKED_AGAINST, and any original that changed (`LibraryChanged`).
-Why, and how to upgrade: docs/api/auth.md#password-hashing.
+`password_helper` call in a pool of HASHES_AT_ONCE threads of its own.
+Importing this module refuses any release but CHECKED_AGAINST, and any original
+that changed (`LibraryChanged`). Why, and how to upgrade:
+docs/api/auth.md#password-hashing.
 """
 
 import asyncio

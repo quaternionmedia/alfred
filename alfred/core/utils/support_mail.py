@@ -1,11 +1,8 @@
 """Mail to support, handed to the worker to send (`tasks.mailSupport`).
 
-`POST /render/{id}/report` and `POST /invoice` sent their mail over SMTP from
-the request, in a thread with no timeout: a mail server that was slow held the
-request, and one that never answered held it, and a thread of the api's pool,
-for as long as the connection lasted. They queue the mail now and answer 202
-as soon as it is queued. The worker sends it within ALFRED_SMTP_TIMEOUT, and
-tries again later when the failure may pass.
+`POST /render/{id}/report` and `POST /invoice` queue their mail and answer
+202, so no mail server holds a request. The worker sends it within
+ALFRED_SMTP_TIMEOUT, and tries again when the failure may pass.
 
 What is queued is the mail's subject, its text and any attachments, and a few
 words naming it for the log. Not the addresses: the worker sends to

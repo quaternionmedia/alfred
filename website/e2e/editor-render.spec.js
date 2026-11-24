@@ -12,7 +12,7 @@
  * here, so nothing is queued) rather than trusting the code that builds it.
  */
 
-const { test, expect, MEDIA_PROJECT } = require('./fixtures')
+const { test, expect, expectSaved, addTemplate, MEDIA_PROJECT } = require('./fixtures')
 
 const FAKE_RENDER_ID = 'abcdefabcdefabcdefabcdef'
 
@@ -251,7 +251,7 @@ test.describe('the render request places every clip', () => {
 })
 
 test.describe('a saved timeline is the timeline a render receives', () => {
-  test('Save sends exactly what Render sends: placed, with explicit fades', async ({
+  test('a save sends exactly what Render sends: placed, with explicit fades', async ({
     authedPage,
     request,
     token,
@@ -268,8 +268,9 @@ test.describe('a saved timeline is the timeline a render receives', () => {
      *
      * Served here with stale starts, the one-second fades the old routes
      * wrote onto every clip, a chosen fade, and an out-point that disagrees
-     * with the clip's length. The save is answered here too: the shared
-     * fixture is not written.
+     * with the clip's length. A title added after them makes the timeline
+     * save itself; the save is answered here too, so the shared fixture is
+     * not written.
      */
     const project = await projectNamed(request, token, MEDIA_PROJECT)
     const [video, colour] = project.edl.clips
@@ -303,17 +304,19 @@ test.describe('a saved timeline is the timeline a render receives', () => {
     await authedPage.goto(`/#!/?project=${project._id}&stage=edit`)
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(2)
 
-    await authedPage.locator('#save-timeline').click()
-    await expect.poll(() => saved.length).toBe(1)
+    await addTemplate(authedPage, 'title')
+    await expect(authedPage.locator('#timeline .clip')).toHaveCount(3)
+    await expectSaved(authedPage)
     await authedPage.locator('#render-timeline').click()
     await expect.poll(() => sent.length).toBe(1)
 
-    const stored = saved[0]
+    const stored = saved.at(-1)
     expect(stored).toEqual(sent[0].body.edl)
-    expect(stored.clips.map(c => c.start)).toEqual([0, video.duration])
-    expect(stored.duration).toBe(video.duration + colour.duration)
+    const title = stored.clips[2]
+    expect(stored.clips.map(c => c.start)).toEqual([0, video.duration, video.duration + colour.duration])
+    expect(stored.duration).toBe(title.start + title.duration)
     // The guessed default goes out as no fade; the chosen one is kept.
-    expect(fades({ edl: stored })).toEqual([
+    expect(fades({ edl: stored }).slice(0, 2)).toEqual([
       [0, 0],
       [0.5, 2],
     ])

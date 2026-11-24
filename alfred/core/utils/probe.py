@@ -1,15 +1,10 @@
 """How long a media file runs, and how big its picture is (contract M2).
 
-The editor added every library clip to the timeline as five seconds long,
-because nothing on the server would say how long a file was. The engine says
-now -- `otto.media.probe` asks the ffmpeg otto encodes with to describe the
-file, decoding nothing -- and this keeps the answer, so a listing does not
-start a process per file every time.
-
-What a file holds is otto's to say; when to ask again is alfred's. Answers are
-cached by the file's path, modification time and size, so an edited or
-replaced file is probed again and an unchanged one never is. The cache is
-bounded.
+What a file holds is otto's to say (`otto.media.probe`, which decodes
+nothing); when to ask again is alfred's, so a listing does not start a
+process per file every time. Answers are cached by the file's path,
+modification time and size, so an edited or replaced file is probed again
+and an unchanged one never is. The cache is bounded.
 """
 
 from collections import OrderedDict

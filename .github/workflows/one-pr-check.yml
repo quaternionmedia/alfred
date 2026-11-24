@@ -1,0 +1,66 @@
+# A pull request speaks as its contributor, to the world.
+#
+# SEED FILE: copy verbatim into .github/workflows/, the same discipline as
+# adr-lint.yml. Only the workflow is copied -- it runs its script out of the
+# governance submodule, so a fix to the rule reaches every project on its next
+# pin bump instead of needing N copies updated. The file and job names are
+# kept as they are, so a required `slot` context keeps reporting.
+#
+# Nothing here reads a stack: a stacked pull request is marked ready when its
+# work is finished (handbook/async-contract.md §1). A copy of this file that
+# still runs check_one_pr.py as a step gets a list of the stacks from it and
+# no failure; re-copying this file drops the step.
+
+name: Pull requests speak as their contributor
+
+on:
+  pull_request:
+    # `edited` fires on a change to the body, which the voice step reads, and
+    # on a change of base.
+    types: [opened, reopened, synchronize, edited]
+
+# One run per branch per workflow. A second push supersedes the first: the
+# result of a run whose commit has been replaced is not read, and its minutes
+# are billed.
+#
+# Cancellation applies to pull requests only. On the default branch and on a
+# project branch the run is the record of what that commit reported, and
+# cancelling it would remove the only evidence that the commit was checked.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  slot:
+    runs-on: ubuntu-latest
+    steps:
+      # Only the governance submodule: `submodules: true` is all-or-nothing, and
+      # a project with a private submodule the runner has no credential for
+      # fails the checkout before the check runs.
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Check out the governance submodule only
+        run: git submodule update --init --depth 1 governance/qm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # The body is posted under the contributor's account and is their statement
+      # of the change; a sentence addressed to them is a tool talking to its
+      # operator under the operator's name. Written to a file first: a body is
+      # multi-line and may hold anything, and an argument would re-parse it.
+      - name: This pull request speaks as its contributor, to the world
+        run: |
+          printf '%s' "$PR_BODY" > "$RUNNER_TEMP/pr-body.md"
+          python governance/qm/project-seed/ci/check_pr_voice.py \
+            --body-file "$RUNNER_TEMP/pr-body.md" \
+            --contributor "$PR_AUTHOR"
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}

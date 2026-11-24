@@ -114,17 +114,23 @@ export const Login = () => {
   return {
     view: (vnode) => {
       return [
-        m('h2', 'login'),
+        m('h2', 'Log in'),
+        User.username
+          ? null
+          : m(
+              'p.loginhint',
+              'New here? Type an email address and a password of at least eight characters, then Create an account.'
+            ),
         m('form#login', {
           action: '/auth/jwt/login',
           method: 'post',
         }, [
-          m('label[for=username]', 'email:'),
+          m('label[for=username]', 'Email'),
           m('input#username', {
             name: 'username',
           }),
           m('br'),
-          m('label[for=password]', 'password:'),
+          m('label[for=password]', 'Password'),
           m('input#password', {
             name: 'password',
             type: 'password',
@@ -132,7 +138,7 @@ export const Login = () => {
           m('br'),
           m('input#submit', {
             type: 'submit',
-            value: 'login',
+            value: 'Log in',
             style: {
               display: User.username ? 'none' : ''
             },
@@ -164,7 +170,7 @@ export const Login = () => {
                 message("not logged in. Can't log out.", 3)
               }
             }
-          }, 'logout'),
+          }, 'Log out'),
           m('button#register', {
             style: {
               display: User.username ? 'none' : ''
@@ -172,13 +178,15 @@ export const Login = () => {
             onclick: e => {
               e.preventDefault()
               if (document.getElementById('username').value == '') {
-                error('please enter a username')
+                error('Type your email address first.')
               } else if (document.getElementById('password').value.length < 8) {
-                error('password must be at least 8 characters')
+                error('A password needs at least eight characters.')
               } else {
-                prompt('register', 'what is your first name?', 'user', (e, first_name) => {
+                prompt('Create an account', 'Your first name, as the editor greets you:', '', (e, first_name) => {
                   let form = new FormData(document.getElementById('login'))
-                  let register = {first_name: first_name, email: form.get('username'), password: form.get('password')}
+                  // Left blank, the name is the address's own: before the @.
+                  const name = String(first_name || '').trim() || String(form.get('username')).split('@')[0]
+                  let register = {first_name: name, email: form.get('username'), password: form.get('password')}
                   console.log('registering user', register, e, form)
                   m.request({
                     url: '/auth/register',
@@ -195,7 +203,7 @@ export const Login = () => {
                 })
               }
             },
-          }, 'register'),
+          }, 'Create an account'),
           m('button#forgot', {
             style: {
               display: User.username ? 'none' : ''
@@ -204,7 +212,7 @@ export const Login = () => {
               e.preventDefault()
               askForReset(document.getElementById('username').value.trim())
             },
-          }, 'forgot password')
+          }, 'Forgot password')
         ]
       )
     ]

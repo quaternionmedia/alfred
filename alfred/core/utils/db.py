@@ -13,15 +13,8 @@ from pymongo import IndexModel
 
 from alfred.config import DB_NAME, DB_URL
 
-# Async clients are cached per event loop, not globally.
-#
-# A motor client binds to the loop that first drives it, and reusing one on a
-# second loop raises "Event loop is closed". A plain module-level singleton or
-# lru_cache would therefore work in the server -- one loop for the process
-# lifetime -- and break in tests, scripts, or anything calling asyncio.run()
-# more than once. Keying on the running loop gets the reuse where it matters
-# without that trap. The map is weak so a finished loop's client is not held
-# alive by this cache.
+# One async client per event loop, not one global: a motor client used on a
+# second loop raises "Event loop is closed". Weak, so a finished loop's goes.
 _clients: WeakKeyDictionary = WeakKeyDictionary()
 
 

@@ -1,18 +1,9 @@
 """Compression for the responses that gain from it, and none for media.
 
-The app gzipped every response whose client accepted it -- which a browser's
-fetch() always does -- including whole videos. Video, audio and images are
-compressed already, so that spent the server's CPU at level 9 for nothing,
-and it dropped `Content-Length`, which is how a download shows its progress.
-Each file response opted out by declaring `Content-Encoding: identity`, a
-header every one of them had to remember to send and that then went out on
-the wire.
-
-This decides once, for every response, from what the response is: media
-types, and any `206 Partial Content` (a byte range, which gzip would
-corrupt), go out as they are. Everything else -- JSON, the SPA's scripts and
-styles -- is handed to Starlette's own GZipMiddleware, used only through its
-public interface, so a newer Starlette changes nothing here.
+Decided once, for every response, by what it is: media types and any `206
+Partial Content` (which gzip would corrupt) go out as they are, keeping
+`Content-Length` for a download's progress. Everything else goes through
+Starlette's GZipMiddleware, by its public interface only.
 """
 
 from starlette.datastructures import Headers

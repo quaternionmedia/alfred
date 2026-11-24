@@ -7,7 +7,8 @@ const LOGO = new URL('./assets/alWhite.png', import.meta.url).href
 import './styles/menu.scss'
 
 export const Menu = {
-  view: vnode =>
+  // `links`: a component for the row beside the logo, where a layout gives one.
+  view: ({ attrs: { links, ...attrs } }) =>
     // One set of links, rendered once.
     //
     // This rendered `navLinks` into a drawer *and* `Links` into the bar, both
@@ -26,11 +27,11 @@ export const Menu = {
         'div.logo',
         m(
           Link,
-          { href: '/', id: 'home-link', ...vnode.attrs },
+          { href: '/', id: 'home-link', ...attrs },
           m('img.logoImg', { src: LOGO, alt: 'Alfred' })
         )
       ),
-      m('nav.menuLinks', m(Links)),
+      m('nav.menuLinks', links ? m(links) : m(Links)),
     ]),
 }
 

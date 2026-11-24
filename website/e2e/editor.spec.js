@@ -10,7 +10,7 @@
  * so it survives a reseed.
  */
 
-const { test, expect, MEDIA_PROJECT } = require('./fixtures')
+const { test, expect, showTheBin, MEDIA_PROJECT } = require('./fixtures')
 
 const DEMO = 'Timeline demo'
 
@@ -83,16 +83,17 @@ test.describe('timeline editor', () => {
   }) => {
     /**
      * The bin was permanently empty: it asked for /otto/templates, which has
-     * never existed, and the rejection was unhandled so nothing showed.
+     * never existed, and the rejection was unhandled so nothing showed. It
+     * shows where Media & templates does not, and offers no deprecated one.
      */
     const res = await request.get('/templates', { headers: { Authorization: token } })
     expect(res.status()).toBe(200)
-    const templates = await res.json()
+    const templates = (await res.json()).filter(t => !t.deprecated)
     expect(templates.length).toBeGreaterThan(0)
 
     await authedPage.goto('/#!/otto')
+    await showTheBin(authedPage)
     const bin = authedPage.locator('#bin')
-    await expect(bin).toBeVisible()
 
     // Polled rather than asserted once. The bin fills from two requests --
     // templates and videos -- and mithril redraws between them, so a one-shot

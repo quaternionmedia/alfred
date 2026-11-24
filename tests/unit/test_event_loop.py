@@ -270,7 +270,7 @@ def transcribable(signed_in, tmp_path, monkeypatch):
 
     (tmp_path / 'talk.mp4').write_bytes(b'not really a video')
     monkeypatch.setattr(config, 'VIDEO_DIR', str(tmp_path))
-    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:8010')
+    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:1059')
     monkeypatch.setattr(audio_engine, 'problem', lambda: None)
     clip = {'type': 'video', 'name': 'videos/talk.mp4', 'duration': 4, 'start': 0}
     project = {'_id': ObjectId(), 'owner': OWNER.email, 'edl': {'clips': [clip]}}

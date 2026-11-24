@@ -11,6 +11,9 @@ import { auth } from './Login'
 import { cutAtPlayhead } from './TimelineTools'
 import { clipSeconds, roll, slide, slip, trim } from './Timing'
 import { Draft } from './Draft'
+import { User } from './User'
+import { Captions } from './captions/store'
+import { Transcript } from './captions/transcript'
 import Bin from './Bin'
 
 // How far a press may wander and still count as a tap. Past this it is a drag
@@ -98,9 +101,11 @@ export function Clip() {
       }
 
       const finishEdit = keep => {
-        const { edit } = gesture
+        const { edit, before } = gesture
         gesture = null
         if (!keep) edit.cancel()
+        // Words and captions follow the picture.
+        else Transcript.follow(before)
         // The playhead stays where it was on the timeline; what lies under it
         // may have changed, so the viewer is brought up to date.
         Player.seek(Edl.time)
@@ -122,7 +127,8 @@ export function Clip() {
             return
           }
           e.preventDefault()
-          gesture = { kind: 'edit', tool, edit, id: e.pointerId, startX: e.clientX }
+          const before = Transcript.mark()
+          gesture = { kind: 'edit', tool, edit, before, id: e.pointerId, startX: e.clientX }
           capture(e.pointerId)
         } else if (tool === 'time' || tool === 'cut') {
           gesture = { kind: 'tap', tool, id: e.pointerId, x: e.clientX, y: e.clientY }
@@ -301,6 +307,12 @@ export function OttoTimeline() {
     // it is kept for that project before it goes (Draft.js).
     Draft.opening()
 
+    // Its captions and words move with its clips (Transcript.follow).
+    if (User.loggedIn) {
+      Captions.ensure(projectId)
+      Transcript.ensure(projectId)
+    }
+
     // Empty now, not when the response lands. The previous project's clips
     // are not this one's, and leaving them up while the request is in flight
     // made anything added meanwhile land on the wrong timeline. Not
@@ -397,14 +409,18 @@ export function OttoTimeline() {
           }
         },
         onUpdate: (e) => {
+          const before = Transcript.mark()
           Edl.edl = array_move(Edl.edl, e.oldIndex, e.newIndex)
+          Transcript.follow(before)
           Edl.update()
           console.log('sorting update', e, Edl.edl)
         },
         removeOnSpill: true,
         onSpill: e => {
           console.log('spilling', e)
+          const before = Transcript.mark()
           Edl.edl.splice(e.oldIndex, 1)
+          Transcript.follow(before)
           Edl.update()
         },
       })

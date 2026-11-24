@@ -231,6 +231,27 @@ test.describe('@screens', () => {
     await expect(page.locator('#caption-overlay')).toHaveText(CAPTION_AT_FIVE)
   }
 
+  test('screen: where to start', async ({ page }) => {
+    // No project open: the line under the rail, and Source outlined.
+    clear('start')
+    await onlyTheDemo(page)
+    await login(page)
+    await page.goto('/#!/?stage=edit')
+    await expect(page.locator('#next-step')).toContainText('Start here')
+    await expect(page.locator('#stage-source')).toHaveClass(/starthere/)
+    await save(page, 'start')
+  })
+
+  test('screen: a new project', async ({ page }) => {
+    // The form, named and not yet created: nothing is made.
+    clear('new-project')
+    await open(page, 'source')
+    await page.locator('#project-new').click()
+    await page.locator('#project-new-name').fill('Holiday')
+    await expect(page.locator('#project-new-create')).toBeEnabled()
+    await save(page, 'new-project')
+  })
+
   test('screen: the workspace at Edit', async ({ page }) => {
     clear('edit')
     await open(page, 'edit')

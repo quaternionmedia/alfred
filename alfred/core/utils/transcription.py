@@ -7,12 +7,8 @@ its video and audio clips, timed exactly as a render times them -- as one
 audio engine hears it (`utils.audio_engine`), and what it heard becomes
 captions and the words kept for editing by text (`utils.captions`). The
 file spans the whole timeline from 0, so the engine's times are already
-timeline seconds.
-
-alfred chose the codec, the channels and ffmpeg's options here, and had
-moviepy write the file: media encoding in a control plane that is meant to do
-none. It asks for a rate now, and says what a timeline with nothing to hear
-means to the person waiting; the mix and the file are otto's.
+timeline seconds. alfred asks for a rate, and says what a timeline with
+nothing to hear means; the mix and the file are otto's.
 """
 
 import os

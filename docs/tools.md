@@ -4,6 +4,8 @@ The tools sit in a column beside the timeline on the Edit stage, with zoom below
 
 Each works by mouse and by touch. The four drags that change a clip -- trim, slip, slide and dual roller -- keep following the pointer after it leaves the clip, and a drag the browser takes back (to scroll, say) leaves the clips as they were. A tool that cannot act where it was pressed says why, rather than doing nothing.
 
+An edit that moves the picture moves the project's captions, and the words of its transcript, with it; they are saved with the timeline. [Words follow the picture](captions.md#words-follow-the-picture) says what each tool does to them.
+
 ## Keys
 
 | Key | What it does, whichever tool is chosen |

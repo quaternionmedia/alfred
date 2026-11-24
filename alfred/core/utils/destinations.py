@@ -1,20 +1,9 @@
-"""Where a finished render goes.
+"""Where a finished render goes: each destination an adapter behind one seam.
 
-The control plane owns delivery as a lifecycle concern: which destination a
-render is bound for, whether it got there, and what to hand back to the caller.
-It does not own the transport itself -- each destination is a small adapter
-behind one interface.
-
-The interface exists because there was not one. `bucket.py` reaches Google
-Cloud Storage through its vendor SDK directly, and every caller that wanted a
-finished render had to know that. The adoption record lists that as an open
-gap: object storage should be reached through a protocol seam rather than a
-vendor API. This is the seam; the bucket becomes one implementation behind it
-rather than the only way out.
-
-`LocalDestination` is implemented fully. `BucketDestination` wraps what already
-existed, so nothing about the Google path changes -- it just stops being the
-only shape delivery can take, which is what makes it replaceable later.
+alfred owns which destination a render is bound for, whether it got there, and
+what the caller gets back; the transport is the adapter's. The seam is the one
+the adoption record asks object storage to be reached through, rather than a
+vendor SDK (`bucket.py`, behind `BucketDestination`).
 """
 
 from dataclasses import dataclass
@@ -26,12 +15,8 @@ from alfred import config
 
 
 class DeliveryError(Exception):
-    """A destination could not accept a render.
-
-    Distinct from "the render failed": the file exists, and getting it to its
-    destination is what did not work. Callers act on that difference -- a
-    failed delivery is worth retrying, a failed render is not.
-    """
+    """A destination could not accept a render. The render itself is fine, so
+    this is worth retrying, as a failed render is not."""
 
 
 class UnknownDestination(DeliveryError):
@@ -42,12 +27,8 @@ class UnknownDestination(DeliveryError):
 class Delivery:
     """What a caller gets back, whatever the destination was.
 
-    `location` is where the render now is, in a form that lasts: a path for
-    local deliveries, a `gs://` reference for the bucket. It is deliberately
-    not typed as one or the other: a caller that can only handle URLs would
-    be coupled to a particular destination, which is what the seam exists to
-    avoid. Turning a location into a link someone can follow -- signing it,
-    for the bucket -- happens when the link is handed out.
+    `location` lasts: a path, or a `gs://` reference. It becomes a link (signed,
+    for the bucket) when it is handed out.
     """
 
     destination: str
@@ -77,18 +58,9 @@ def _inside(path, directory) -> bool:
 
 
 class LocalDestination:
-    """Keep the render on this machine, under DELIVERY_DIR.
-
-    The useful default for development and for anyone running Alfred without a
-    cloud account -- the README's "cloud storage optional". Until now the only
-    finished-render path went to a Google bucket, so a server without one had
-    no way to give your video back.
-
-    Not anywhere the app serves statically. This used to copy into DATA_DIR,
-    which an unauthenticated mount served at /data, so every local delivery
-    was a public URL for somebody's video. The video comes back to its owner
-    through the download route instead.
-    """
+    """Keep the render on this machine, under DELIVERY_DIR: the default, and
+    all a server without a cloud account has. Never anywhere served
+    statically; its owner gets it back through the download route."""
 
     name = 'local'
 
@@ -100,46 +72,28 @@ class LocalDestination:
         if not source.is_file():
             raise DeliveryError(f'no such render: {filename}')
         if _inside(self.root, config.STATIC_DIR):
-            # Refused rather than written: the SPA's directory is served to
-            # anyone, so a delivery there would be published, which no
-            # setting should be able to do by accident.
+            # The SPA's directory is public: no setting may publish a render.
             raise DeliveryError(
                 'the delivery directory is inside STATIC_DIR, which is served '
                 'publicly; set ALFRED_DELIVERY_DIR somewhere else'
             )
         self.root.mkdir(parents=True, exist_ok=True)
         target = self.root / source.name
-        # copy, not move: the renderer may still be holding the file, and a
-        # delivery that destroys its own input cannot be retried.
+        # Copy, not move: the worker may hold the file, and a retry needs it.
         copyfile(source, target)
         return Delivery(destination=self.name, location=str(target))
 
 
 class BucketDestination:
-    """The existing Google Cloud Storage path, behind the interface.
-
-    Imports are function-local on purpose. `bucket.py` constructs a storage
-    client at call time and expects credentials to be present; importing it at
-    module scope would make every destination -- including the local one --
-    depend on a cloud SDK being importable and configured.
-    """
+    """Google Cloud Storage, behind the seam. `bucket` is imported in the
+    method, so no other destination needs the cloud SDK."""
 
     name = 'bucket'
 
     def deliver(self, filename: str) -> Delivery:
-        """Upload the file as an object named for it; locate it by reference.
-
-        This uploaded the object under the full server path and then asked
-        `generate_signed_url` -- which takes a render *id* -- to sign that
-        path, so it answered 422 "Not a valid identifier" after every
-        successful upload. The object is named by the file's own name, as the
-        worker's automatic upload names it.
-
-        The location is `gs://<bucket>/<object>`, not a signed URL: a signed
-        URL lasts fifteen minutes, and the location is what a render records,
-        so every recorded bucket link was dead a quarter of an hour after the
-        delivery. Whoever hands the link to a caller signs it then.
-        """
+        """Upload the file as an object of its own name, as the worker's upload
+        names it, and locate it as `gs://<bucket>/<object>`: a signed URL
+        would be dead in fifteen minutes."""
         from .bucket import object_reference, upload
 
         source = Path(filename)
@@ -155,24 +109,16 @@ DESTINATIONS = {
     BucketDestination.name: BucketDestination,
 }
 
-# What the editor offers. Cloud delivery is the next phase, so the bucket stays
-# implemented and reachable by name -- the seam is only worth having with more
-# than one implementation behind it -- but is not presented as a choice until
-# credentials, failure handling and the SSPL/vendor questions in the adoption
-# record have been worked through. Offering a destination that needs a service
-# account nobody has configured is a button that fails.
+# What the editor offers. The bucket stays reachable by name, not offered
+# until its credentials and the adoption record's vendor questions are settled.
 OFFERED_DESTINATIONS = (LocalDestination.name,)
 
 DEFAULT_DESTINATION = LocalDestination.name
 
 
 def get_destination(name=None) -> Destination:
-    """Resolve a destination by name.
-
-    Unknown names raise rather than falling back to the default: a typo in a
-    project's saved settings should stop the delivery and say so, not quietly
-    write somewhere else.
-    """
+    """Resolve a destination by name. An unknown one raises rather than
+    falling back: a typo should stop a delivery, not send it elsewhere."""
     chosen = name or DEFAULT_DESTINATION
     if chosen not in DESTINATIONS:
         raise UnknownDestination(

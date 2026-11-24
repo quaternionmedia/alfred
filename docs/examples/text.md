@@ -15,7 +15,7 @@ This example posts a single `template` clip that draws `text` in the large `titl
     curl -H "Content-Type: application/json" \
       -H "Authorization: Bearer $TOKEN" \
       -d @data.json \
-      "http://127.0.0.1:8000/preview/?t=1"
+      "http://127.0.0.1:1732/preview/?t=1"
     ```
 
 ## Results

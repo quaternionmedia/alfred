@@ -10,7 +10,7 @@ ok qmcp              33s
 ok codecartographer  2s
 -  org-dotgithub     skipped: no suite of its own here: its workflows run in the CI that calls them
 …
-PASS  alfred answers -- "Alfred API" at http://127.0.0.1:8000
+PASS  alfred answers -- "Alfred API" at http://127.0.0.1:1732
 PASS  database and a render worker -- db ok, 1 worker(s)
 PASS  audio engine -- answers
 PASS  media library -- 5 files
@@ -86,16 +86,16 @@ ALFRED_FAMILY_JOE=../../joe.worktrees/media ./al family up
 | codecartographer | `npm run typecheck`, `npm run test:pure` in `web/` | adds `test:state` and `build` |
 | org-dotgithub | none: its workflows run in the CI that calls them | |
 
-A repository that can't run its suite here (not found, or uv, docker or `node_modules` missing) is skipped with the reason, not failed. alfred's test image is built first because `./al nox` and `./al pytest` otherwise use whatever `alfred_test` image is there, however old.
+A repository that can't run its suite here (not found, or uv, docker or `node_modules` missing) is skipped with the reason, not failed. alfred's test image is built first because `./al nox` otherwise runs whatever `<prefix>_test` image is there, however old (`ALFRED_IMAGES`, the checkout's name, is the prefix).
 
-`./al pytest` and `./al nox` run as their own compose project, `<project>-pytest`, so a test run can't touch a running dev stack: their throwaway database is a service named `db`, as the dev stack's is.
+`./al pytest` and `./al nox` run as their own compose project, `<project>-pytest`, so a test run can't touch a running dev stack: their throwaway database is a service named `db`, as the dev stack's is ([Images and stacks](build.md#the-suites-stacks)).
 
 ## The stack, wired together
 
 `./al family up`:
 
 1. **Starts joe.**
-   - It runs `uv run --frozen uvicorn api:app` from joe's checkout on `ALFRED_JOE_HOST:ALFRED_JOE_PORT`, by default loopback and 8010. On a Linux host, the host defaults to docker0's address, because a container can't reach the host's loopback ([Configuration](configuration.md#docker-hosts-and-joe)).
+   - It runs `uv run --frozen uvicorn api:app` from joe's checkout on `ALFRED_JOE_HOST:ALFRED_JOE_PORT`, by default loopback and 1059. On a Linux host, the host defaults to docker0's address, because a container can't reach the host's loopback ([Configuration](configuration.md#docker-hosts-and-joe)).
    - If joe already answers on that port, it uses that joe. If something else holds the port, it names it by its OpenAPI title and stops.
    - Its log is `.family/logs/joe.log`.
 2. **Starts the dev stack** with `./al dev -d` (`--build` to rebuild), with `ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:<port>` unless you've set it, then waits for `/healthz`.

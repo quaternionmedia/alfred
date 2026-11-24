@@ -2,12 +2,14 @@ import m from 'mithril'
 import { Player } from './Player'
 import { Video, Edl } from './Video'
 import { auth } from './Login'
-import { message, success, error, defaults } from 'alertifyjs'
+import { message, error } from 'alertifyjs'
 import { Resolution, Aspect } from './Resolution'
 import { queueRender, renderSize, timelineEdl, timelineRender } from './RenderRequest'
 import { requestProblem } from './Problem'
 import { Flow } from './Stages'
 import { Draft } from './Draft'
+import { Captions } from './captions/store'
+import { Transcript } from './captions/transcript'
 
 // `downloadFile(url)` lived here and was never called: an anchor pointed at a
 // protected URL cannot carry the session's Authorization header, so it could
@@ -102,7 +104,9 @@ export function SpeedTools() {
 
 /**
  * Save the timeline on screen to `project`; resolves to the clip count.
- * Used by the toolbar's Save and the Transcript panel's.
+ * Used by Autosave.js, and by the Captions panel's Save once the captions
+ * moved. Captions and words that moved with the timeline go with it, in one
+ * request (docs/captions.md, "Saving").
  *
  * `/project/{id}/timeline`, and with a token. This posted to `/edl` with a
  * bare `m.request` -- no route of that name has ever existed on this server,
@@ -120,10 +124,16 @@ export function SpeedTools() {
  */
 export function saveTimeline(project) {
   const edl = timelineEdl(Edl.edl)
-  return auth(`/project/${project}/timeline`, { method: 'PUT', body: edl }).then(updated => {
+  const together = Transcript.moved(project)
+  const saving = together
+    ? withCaptions(project, edl)
+    : auth(`/project/${project}/timeline`, { method: 'PUT', body: edl })
+  return saving.then(updated => {
     // The project list shows clip counts and lengths.
     if (updated && updated._id) {
       Flow.projects = Flow.projects.map(p => (p._id === updated._id ? updated : p))
+    } else if (together) {
+      Flow.projects = Flow.projects.map(p => (p._id === project ? { ...p, edl } : p))
     }
     // What was saved is no longer a draft (Draft.js).
     Draft.saved(project, edl.clips)
@@ -131,8 +141,36 @@ export function saveTimeline(project) {
   })
 }
 
+/** A refusal the page makes itself, read as the server's are (`requestProblem`). */
+const refused = detail => Object.assign(new Error(detail), { response: { detail } })
+
+/** The timeline, the captions and the words: one `PUT /project/{id}/captions`. */
+function withCaptions(project, edl) {
+  if (Captions.projectId !== project || !Captions.loaded) {
+    return Promise.reject(refused('the captions, which moved with the timeline, are not loaded'))
+  }
+  const problem = Captions.problems().find(Boolean)
+  if (problem) {
+    return Promise.reject(
+      refused(`fix the caption marked in the Captions panel first (${problem.toLowerCase()})`)
+    )
+  }
+  const body = { ...Captions.body(), timeline: edl }
+  const words = Transcript.wordsToSave()
+  if (words) body.words = words
+  Captions.busy = 'save'
+  return auth(`/project/${project}/captions`, { method: 'PUT', body })
+    .then(answer => {
+      Captions.answered(project, answer)
+      Transcript.saved()
+      return null
+    })
+    .finally(() => {
+      Captions.busy = null
+    })
+}
+
 export function ProjectTools() {
-  let saving = false
   let rendering = false
 
   return {
@@ -144,14 +182,7 @@ export function ProjectTools() {
       // this button has no fields of its own to show it.
       const size = renderSize(Flow.project())
 
-      // Why each action is unavailable, or null when it is available. Saying
-      // which of two preconditions is missing is the difference between a
-      // control a person can act on and one that is merely inert.
-      const cannotSave = !project
-        ? 'Select a project before saving a timeline to it'
-        : !clips
-          ? 'Nothing on the timeline to save'
-          : null
+      // Why rendering is unavailable, or null when it is available.
       const cannotRender = !project
         ? 'Select a project before rendering'
         : !clips
@@ -159,29 +190,6 @@ export function ProjectTools() {
           : null
 
       return m('.tools.toolbar', {}, [
-        m(
-          'i.material-icons#save-timeline',
-          {
-            title: cannotSave || 'Save this timeline to the project',
-            class: cannotSave ? 'disabled' : '',
-            onclick: () => {
-              if (cannotSave || saving) return
-              saving = true
-              saveTimeline(project)
-                .then(saved => {
-                  saving = false
-                  success(`Saved ${saved} clips to the project`)
-                  m.redraw()
-                })
-                .catch(() => {
-                  saving = false
-                  error('Could not save the timeline', 4)
-                  m.redraw()
-                })
-            },
-          },
-          saving ? 'hourglass_top' : 'save'
-        ),
         m(
           'i.material-icons#render-timeline',
           {

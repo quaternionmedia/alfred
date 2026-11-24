@@ -1,63 +1,34 @@
-# The production stack, composed over docker-compose.yml:
-#
-#   docker compose -f docker-compose.yml -f production.yml up --build -d
-#
-# (`./al prod` runs that, after building the docs.) traefik terminates TLS on
-# the external `web` network and is expected to be running already.
+# Over docker-compose.yml, behind a running traefik on the external `web`
+# network. `./al prod` builds the docs, then starts it. See docs/build.md.
 
-# Every setting alfred reads, passed through from the deploying shell as
-# dev.yml passes them: export one before `./al prod` and the api and the
-# renderer both get it. Exported and not listed here, a setting did nothing
-# -- ALFRED_ALLOW_REGISTRATION, the only way to open registration on this
-# stack, among them. docs/configuration.md says what each one does.
-#
-# Bare names, so a setting nobody exported stays unset and the code's own
-# default holds; see dev.yml for why that is not the same as empty. One list,
-# merged into both services; tests/unit/test_stack_settings.py fails when
-# alfred reads a setting this does not pass.
-#
-# Two settings are not here on purpose. ALFRED_DEV_SKIP_AUTH: the auth bypass
-# has no way into this stack. ALFRED_SECRET_KEY: the api below requires it,
-# and the renderer signs nothing.
+# As dev.yml's list, minus ALFRED_DEV_SKIP_AUTH (no bypass here) and
+# ALFRED_SECRET_KEY (the api's own, below).
 x-alfred-settings: &alfred-settings
-  # Production is a property of this file, not of the shell that runs it.
+  # Production is this file's, not the shell's.
   ALFRED_PRODUCTION: 'true'
-  # Closed under ALFRED_PRODUCTION unless this says otherwise:
-  #   ALFRED_ALLOW_REGISTRATION=1 ./al prod
   ALFRED_ALLOW_REGISTRATION:
-  # Reserved in every mode -- it cannot register, log in or be reset -- so
-  # it matters here too, though nothing here acts as it.
+  # Reserved in every mode.
   ALFRED_DEV_USER_EMAIL:
   ALFRED_SEED_OWNER:
-  # The address account mail links to (password reset, confirmation) --
-  # never taken from a request's Host header, which the requester controls.
-  # The default is the host the traefik rule below serves; export
-  # ALFRED_PUBLIC_URL to deploy elsewhere. Reset mail also needs EMAIL_SERVER
-  # and EMAIL_USERNAME, which the `.email` env file carries.
+  # Account mail's links; the host traefik serves unless exported.
   ALFRED_PUBLIC_URL: ${ALFRED_PUBLIC_URL:-https://alfred.quaternion.media}
-  # Hosts a clip may name remote media on; none unless set.
   ALFRED_REMOTE_MEDIA_HOSTS:
-  # Also sets OTTO_DOWNLOAD_DIR, the engine's name for it, in each service.
+  # Also sets OTTO_DOWNLOAD_DIR in each service.
   ALFRED_REMOTE_CACHE_DIR:
   ALFRED_REMOTE_CACHE_TTL:
   ALFRED_RENDER_DIR:
   ALFRED_DELIVERY_DIR:
   ALFRED_PREVIEW_DIR:
   ALFRED_FRAME_TTL:
-  # How many previews the api draws at once, and how long one waits for its
-  # turn before a 503 with Retry-After.
   ALFRED_PREVIEW_CONCURRENCY:
   ALFRED_PREVIEW_WAIT:
   ALFRED_MEDIA_URL_TTL:
   ALFRED_BUCKET_NAME:
-  # Seconds each step of sending mail may take, for every mail alfred sends.
   ALFRED_SMTP_TIMEOUT:
-  # The audio engine captions are transcribed with; none unless set.
   ALFRED_AUDIO_ENGINE_URL:
   ALFRED_AUDIO_ENGINE_TIMEOUT:
 
-# An audio engine's own spelling, one ALFRED_AUDIO_ENGINE_CONTRACT_<FIELD> per
-# field of vox's EngineContract; see dev.yml.
+# One per field of vox's EngineContract; see dev.yml.
 x-audio-engine-contract: &audio-engine-contract
   ALFRED_AUDIO_ENGINE_CONTRACT_HEALTH:
   ALFRED_AUDIO_ENGINE_CONTRACT_DEVICES:
@@ -143,56 +114,28 @@ services:
       - traefik.http.routers.alfred.tls.certresolver=le
       - traefik.http.routers.alfred.entrypoints=websecure
       - traefik.docker.network=web
-    # Without --reload. The image's default command reloads on file changes,
-    # and docker-compose.yml bind-mounts the repository over /app, so in
-    # production any write under the checkout -- a `git pull`, a stray editor
-    # save -- restarted the server mid-request and ran code nobody had
-    # deployed on purpose. Deploying is now a restart, which is a decision.
+    # No --reload: any write under the checkout would restart the server.
     command:
       ['uvicorn', 'alfred.main:app', '--host', '0.0.0.0', '--port', '80']
     volumes:
-      # The same font mount the renderer has, so a template previewed here and
-      # rendered there draws with the same fonts. Additive; see dev.yml.
+      # The renderer's fonts, so a preview draws as the render will.
       - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
     environment:
       <<: [*alfred-settings, *audio-engine-contract]
-      # The key that signs every session token, from the deploying shell and
-      # nowhere else. docker-compose.yml loads ALFRED_SECRET_KEY from
-      # .secret_key, a development stub committed to this public repository,
-      # and production inherited it -- so unless the server's copy had been
-      # replaced, anyone could read the key and mint a token for any user.
-      # This entry overrides that file, and compose refuses to start the
-      # stack without it.
+      # From the deploying shell only; overrides the committed stub.
       ALFRED_SECRET_KEY: ${ALFRED_SECRET_KEY:?production signs tokens with its own key; export ALFRED_SECRET_KEY before ./al prod}
-      # The directory the renderer writes to, named the same way on both, so
-      # delivery reads the file the worker produced.
+      # Absolute, and the renderer's.
       VIDEO_DIR: /app/videos
-      # Where the engine keeps media it fetched from a URL: hidden in the
-      # library mount the renderer shares, never listed or served (contract
-      # M6). It wrote them under the working directory's `data/`, which was
-      # served publicly at /data. The renderer is given the same directory.
+      # Hidden in the shared library; never listed or served (contract M6).
       OTTO_DOWNLOAD_DIR: ${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
-    # host.docker.internal is the server as a container sees it, so an audio
-    # engine running beside the stack is reached at the address the docs give,
-    # ALFRED_AUDIO_ENGINE_URL=http://host.docker.internal:8010. Docker Desktop
-    # provides the name; a Linux server, where this stack runs, does not. The
-    # engine also has to listen where the Docker bridge reaches it; see
-    # docs/configuration.md. A name in /etc/hosts, and nothing published.
+    # An audio engine beside the stack. See docs/configuration.md#docker-hosts-and-joe.
     extra_hosts:
       - host.docker.internal:host-gateway
 
-  # No ports for the database. It was published on 192.168.192.52:27017,
-  # which put an unauthenticated MongoDB on the LAN; nothing outside this
-  # stack needs it, and the api and renderer reach it as `db` on
-  # alfred_isolated. Attach a GUI through `docker compose exec db mongo`, or a
-  # tunnel, when one is needed.
+  # No database ports: an unauthenticated MongoDB stays off the network.
+  # A GUI goes through `docker compose exec db mongo`, or a tunnel.
 
-  # The Celery worker that turns a queued render into a video. production.yml
-  # had none, so on this stack a render was accepted, queued and never
-  # collected -- unless a worker ran somewhere else, which nothing in the
-  # repository says. This is dev.yml's renderer with ALFRED_PRODUCTION set,
-  # and like it runs from the image's WORKDIR: library clips resolve against
-  # VIDEO_DIR, not the working directory.
+  # dev.yml's renderer, with ALFRED_PRODUCTION.
   renderer:
     build:
       context: .
@@ -203,19 +146,15 @@ services:
       - alfred_isolated
     volumes:
       - ./alfred/:/app/alfred/
-      # Where finished renders are written, and the same host directory the
-      # api serves and delivers from.
+      # Where renders are written; the api reads the same directory.
       - ./videos/:/app/videos/
       - ./alfred/otto/fonts:/usr/share/fonts/truetype/otto
       - ./cred.json:/cred.json
     depends_on:
       - db
-    # The mail settings, which the api has from docker-compose.yml: the worker
-    # is what sends an issue report or an invoice (tasks.mailSupport), so it
-    # needs the server, the sender and the support addresses too.
+    # The worker sends issue reports and invoices.
     env_file:
       - .email
-    # The same settings as the api, from the same list.
     environment:
       <<: [*alfred-settings, *audio-engine-contract]
       CELERY_BROKER: mongodb://db:27017/celery
@@ -223,10 +162,8 @@ services:
       DB_URL: mongodb://db:27017
       DB_NAME: alfred
       GOOGLE_APPLICATION_CREDENTIALS: /cred.json
-      # Absolute, matching the mount above; see dev.yml for what a relative
-      # path did here.
       VIDEO_DIR: /app/videos
       OTTO_DOWNLOAD_DIR: ${ALFRED_REMOTE_CACHE_DIR:-/app/videos/.remote-cache}
-    # The worker transcribes, so it reaches the audio engine too; see the api.
+    # The worker transcribes.
     extra_hosts:
       - host.docker.internal:host-gateway

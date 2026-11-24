@@ -57,8 +57,7 @@ def shown(path):
         return str(path)
 
 
-# 127.0.0.1, not localhost: the stacks publish on IPv4 loopback, and on Windows
-# a client that tries ::1 first waits about two seconds for each refusal.
+# Not localhost: on Windows, trying ::1 first costs ~2 s a request.
 LOOPBACK = '127.0.0.1'
 
 
@@ -295,9 +294,8 @@ def plan(repo, path, full=False, which=tool):
         docker = which('docker')
         if not sh or not docker:
             return [], './al needs a POSIX shell (Git Bash on Windows) and docker'
-        # The test image first: `./al nox` and `./al pytest` run whichever
-        # alfred_test image is there, however old. A build that changes nothing
-        # is a few seconds of cache.
+        # The test image first: `./al nox` runs whatever <prefix>_test is
+        # there, however old. Unchanged, it is seconds of cache.
         image = Step(
             'test image',
             [docker, 'compose', '-f', 'pytest.yml', 'build', 'pytest'],
@@ -309,13 +307,8 @@ def plan(repo, path, full=False, which=tool):
                 Step('pytest', [sh, 'al', 'pytest'], path),
                 Step('browser suite', [sh, 'al', 'test'], path),
             ], None
-        # -r: nox keeps its environments in tests/.nox, on the bind mount, so
-        # a reused one only checks what the lockfiles ask for instead of
-        # installing all of it again -- minutes saved on every run after the
-        # first. --full starts from fresh environments.
-        # `./al nox` runs the test container with --rm, which leaves the
-        # database it started beside it running: take the project down after,
-        # whatever the suite said.
+        # -r reuses tests/.nox's environments; --full starts fresh.
+        # `run --rm` leaves the database up: take the project down regardless.
         tidy = Step(
             'tidy',
             [
@@ -491,7 +484,7 @@ def title_at(base):
 
 def joe_port(env=None):
     env = os.environ if env is None else env
-    return int(env.get('ALFRED_JOE_PORT') or 8010)
+    return int(env.get('ALFRED_JOE_PORT') or 1059)
 
 
 def docker0_address():
@@ -671,7 +664,7 @@ def down(args):
 
 def alfred_base(env=None):
     env = os.environ if env is None else env
-    return f'http://{LOOPBACK}:{env.get("ALFRED_PORT") or 8000}'
+    return f'http://{LOOPBACK}:{env.get("ALFRED_PORT") or 1732}'
 
 
 class Checks:

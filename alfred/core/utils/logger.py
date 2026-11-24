@@ -62,17 +62,13 @@ class DbLogger(ProgressBarLogger):
         self.id = as_object_id(renderId)
 
     def callback(self, **kwargs):
-        # print('task callback', kwargs)
         bar = self.state.get('bars')
-        # print('bars', bar)
         if bar and bar.get('t'):
             t = bar.get('t')
             if t.get('status') == 'uploaded':
                 db.Render.update_one({'_id': self.id}, {'$set': {'progress': 100}})
             elif t.get('index'):
-                # print('t', t)
                 p = max((100 * t['index'] / t['total']) - 1, 0)
-                # print('progress', self.id, p)
                 db.Render.update_one({'_id': self.id}, {'$set': {'progress': p}})
 
         else:
@@ -82,14 +78,8 @@ class DbLogger(ProgressBarLogger):
         db.Render.update_one({'_id': self.id}, {'$set': {'status': status}})
 
     def rendered(self):
-        """The encode finished and the file is on disk.
-
-        Distinct from `uploaded`, which used to be the only way a render could
-        be marked complete -- so a render that encoded perfectly and then
-        failed to reach cloud storage was recorded as failed. With delivery a
-        separate step, "the video exists" is the outcome the render task is
-        responsible for.
-        """
+        """The encode finished and the file is on disk: done, whatever happens
+        to the upload (`uploaded`)."""
         db.Render.update_one(
             {'_id': self.id},
             {'$set': {'progress': 100, 'status': 'RENDERED', 'error': None}},
@@ -101,12 +91,8 @@ class DbLogger(ProgressBarLogger):
         )
 
     def failed(self, exc=None, reason=None, **kwargs):
-        """Mark the render failed, with a short reason (contract C2).
-
-        `reason` if given, else one derived from `exc`. It used to set the
-        status alone, so the reason was printed to the worker's log and
-        nowhere a person waiting on the render could see it.
-        """
+        """Mark the render failed, with a short reason (contract C2): `reason`
+        if given, else one derived from `exc`."""
         if reason is None:
             reason = failure_reason(exc) if exc is not None else 'the render failed'
         print('logging failed render', self.id, reason)

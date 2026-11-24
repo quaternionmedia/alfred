@@ -1,19 +1,7 @@
 """What a clip may point at, and where that is on disk.
 
-A `video`, `image` or `audio` clip names its source in `name`, and the engine
-opens whatever it is handed: a path relative to the process's working
-directory, an absolute path anywhere on the machine, or a URL it downloads.
-That made the name a capability the client held over the server. An EDL could
-have the worker read `/etc/hostname` (it tried, and failed only because that is
-not a video), or fetch any URL the worker can reach.
-
-It also made the library unrenderable. `GET /videos` lists `videos/<file>`,
-which the api resolves against its own working directory (`/app`) and the
-worker against its own (`/app/alfred`), where there is no `videos/`. So a
-clip dragged from the media bin previewed fine and failed every render with
-"the file videos/demo-bars.mp4 could not be found".
-
-The rule now (contract C4):
+otto opens whatever a clip's `name` hands it: a relative path, an absolute
+one, or a URL it downloads. So the rule (contract C4):
 
 - A media name is either a library path exactly as `GET /videos` lists it,
   `videos/<file>`, or an `http(s)` URL whose host is in
@@ -23,10 +11,8 @@ The rule now (contract C4):
 - Library paths are resolved to `join(VIDEO_DIR, <file>)` here, never against a
   working directory, and the engine is handed the resolved path.
 
-The check and the resolution are one function on purpose: the api validates
-with it before queueing, and the worker resolves with it before rendering, so
-the two cannot drift apart. The worker repeating the check also covers EDLs
-that were stored before it existed and are re-queued later.
+The check and the resolution are one function, which the api runs before
+queueing and the worker before rendering, so the two cannot drift apart.
 """
 
 import re
@@ -38,22 +24,16 @@ from urllib.parse import urlsplit
 
 from alfred import config
 
-# The namespace `GET /videos` lists media under. A literal, not VIDEO_DIR's
-# basename: it is part of the API, and moving the directory on disk must not
-# change what names a client sends.
+# Part of the API, not VIDEO_DIR's basename: moving the directory changes no name.
 LIBRARY_PREFIX = 'videos/'
 
 # Clip types whose `name` is media to open, as opposed to a template to call.
 MEDIA_CLIP_TYPES = frozenset({'video', 'image', 'audio'})
 
-# Every clip type the engine renders. Anything else is refused here, when the
-# request arrives; the engine refuses it too, but only once a worker has the
-# job, after the render has been stored and queued.
+# Every clip type the engine renders; anything else is refused on arrival.
 CLIP_TYPES = frozenset({'template'}) | MEDIA_CLIP_TYPES
 
-# What the library offers: files a video, image or audio clip can open, by
-# the kind of clip that opens them. Anything else in the directory is not
-# media, whoever put it there.
+# What the library offers, by the kind of clip that opens each.
 EXTENSIONS_BY_KIND = {
     'video': frozenset(
         {'.mp4', '.m4v', '.mov', '.webm', '.mkv', '.avi', '.mpg', '.mpeg', '.ogv'}
@@ -65,10 +45,8 @@ EXTENSIONS_BY_KIND = {
 }
 MEDIA_EXTENSIONS = frozenset().union(*EXTENSIONS_BY_KIND.values())
 
-# What a library file is served as, where Python's own table does not know
-# the extension (or did not, in some versions). Never the `text/plain` a file
-# response falls back to for an unknown one: a browser will not play that,
-# and it would be compressed on the way out like any text.
+# Types Python's table may not know: never the text/plain fallback, which a
+# browser will not play and the api would compress.
 _MEDIA_TYPES = {
     '.m4a': 'audio/mp4',
     '.aac': 'audio/aac',
@@ -83,10 +61,8 @@ _MEDIA_TYPES = {
     '.webp': 'image/webp',
 }
 
-# Files the engine writes beside an output while it encodes, and removes after:
-# the audio track otto muxes in (`<output>.audio.m4a`), and moviepy's own
-# temporaries. Mid-render they are half-written files with media extensions;
-# listed as media, a clip could pick one up.
+# The encoder's half-written temporaries (`<output>.audio.m4a`, moviepy's
+# TEMP_MPY_), never listed as media.
 _TEMP_MPY = re.compile('TEMP_MPY_', re.IGNORECASE)
 _WORD = re.compile(r'\w*')
 _EXTENSION = re.compile(r'\.\w+')
@@ -177,8 +153,7 @@ def library_file(filename, video_dir=None) -> Optional[str]:
         return None
     root = abspath(video_dir or config.VIDEO_DIR)
     path = normpath(join(root, filename))
-    # Inside the library as written, then as resolved: the first is the form a
-    # path check is recognised in, the second follows symlinks.
+    # Inside the library as written, then as resolved (symlinks followed).
     if not path.startswith(join(root, '')):
         return None
     real_root = realpath(root)
@@ -194,12 +169,9 @@ def library_file(filename, video_dir=None) -> Optional[str]:
 def output_path(filename, render_dir=None, video_dir=None) -> Optional[str]:
     """Where a render's output file is, or None when there is none to serve.
 
-    Renders are written to RENDER_DIR. One finished before that was so is in
-    the media library itself, under the name it was given then, so the library
-    is looked in second. Both with the containment a library file has: a
-    plain name directly inside the directory, for a regular file that exists.
-    A stored name that would leave the directory -- renders stored before
-    output was named by id took theirs from the request -- finds nothing.
+    RENDER_DIR first, then the library, where older renders were written.
+    Either way a plain name directly inside the directory, for a regular file
+    that exists: a stored name that would leave it finds nothing.
     """
     for root in (render_dir or config.RENDER_DIR, video_dir or config.VIDEO_DIR):
         path = library_file(filename, root)

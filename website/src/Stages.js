@@ -332,7 +332,11 @@ export const StageRail = () => ({
           {
             id: `stage-${stage.id}`,
             role: 'tab',
-            class: Flow.stage() === stage.id ? 'active' : '',
+            class: [
+              Flow.stage() === stage.id ? 'active' : '',
+              // Where a first visit begins.
+              stage.id === 'source' && !m.route.param('project') ? 'starthere' : '',
+            ].join(' '),
             // The strings, not a boolean. `aria-selected` is an enumerated
             // attribute, and mithril renders `true` as a bare `aria-selected=""`
             // -- the HTML boolean form -- which conveys no state to a screen

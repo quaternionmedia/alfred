@@ -20,9 +20,9 @@ name: ADR lint
 #
 # Two knobs, both in env: below. Nothing else in this file needs editing.
 #   QM_SUBMODULE -- where this project mounts the governance submodule.
-#                   governance/qm is the documented default; codecartographer
-#                   mounts it at docs/qm, so the path is a project choice and
-#                   is named once here rather than repeated per step.
+#                   `governance/qm` is the documented default. A project that
+#                   mounts it somewhere else sets the path once here rather
+#                   than repeating it in every step.
 #   RECORDS_DIR  -- leave empty for the branch-per-project model. Set it to a
 #                   local path (adr) only if this project keeps adr/ in its
 #                   own working tree instead of on its governance branch.
@@ -31,6 +31,17 @@ on:
   push:
     branches: [main]
   pull_request:
+
+# One run per branch per workflow. A second push supersedes the first: the
+# result of a run whose commit has been replaced is not read, and its minutes
+# are billed.
+#
+# Cancellation applies to pull requests only. On the default branch and on a
+# project branch the run is the record of what that commit reported, and
+# cancelling it would remove the only evidence that the commit was checked.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -45,9 +56,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          # Only the governance submodule, initialised below. `submodules: true`
+          # is all-or-nothing: a project with a private submodule the runner
+          # has no credential for fails the checkout before the lint runs.
+          submodules: false
           # Full history: the append-only check diffs against the base.
           fetch-depth: 0
+
+      # Not `--depth 1`: the append-only check diffs `adr/` between the base
+      # commit's pin and this one's, and a depth-1 clone holds only this pin.
+      # The first pull request that moves a pin would fail with `bad object`.
+      - name: Check out the governance submodule only
+        run: git submodule update --init "$QM_SUBMODULE"
 
       - uses: actions/setup-python@v5
         with:

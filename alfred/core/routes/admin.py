@@ -16,10 +16,7 @@ from .invoicer import generate_invoice
 adminAPI = APIRouter()
 
 
-# A plain function, not a coroutine: FastAPI runs it in its thread pool. The
-# invoice reads renders with the synchronous database client and draws and
-# writes PDFs, and the queue send is a round trip to the broker; as a
-# coroutine each step held the event loop.
+# A plain function, so the sync database, the PDFs and the broker run off the loop.
 @adminAPI.post(
     '/invoice',
     status_code=202,
@@ -45,9 +42,7 @@ def sendInvoice(
     startDate = datetime.combine(startDate, midnight, timezone.utc)
     endDate = datetime.combine(endDate, midnight, timezone.utc)
     invoices = generate_invoice(client, startDate, endDate)
-    # The PDFs travel with the job: the worker cannot see the files the api
-    # wrote. Queued, not sent from here, where a mail server that never
-    # answered held this request for as long as the connection lasted.
+    # The PDFs travel with the job: the worker cannot see the api's files.
     files = []
     for path in invoices:
         with open(path, 'rb') as handle:

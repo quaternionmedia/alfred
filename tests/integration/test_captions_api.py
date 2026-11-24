@@ -46,7 +46,7 @@ def engine(monkeypatch, tmp_path):
     from alfred import config
     from alfred.core.utils import audio_engine
 
-    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:8010')
+    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:1059')
     monkeypatch.setattr(audio_engine, 'problem', lambda: None)
     monkeypatch.setattr(config, 'VIDEO_DIR', str(tmp_path))
     (tmp_path / 'talk.wav').write_bytes(b'RIFF not really')
@@ -181,6 +181,23 @@ class TestTheWords:
         bob = make_account('bob')
         res = api.get(f'/project/{project["_id"]}/captions/words', headers=bob.headers)
         assert res.status_code == 404
+
+    def test_saved_with_their_timeline_in_one_request(self, api, alice, make_project):
+        """As the timeline route stores it: as sent, no defaults written in."""
+        project = make_project(alice)
+        res = api.put(
+            f'/project/{project["_id"]}/captions',
+            json={
+                'captions': [{'start': 0.5, 'end': 1.3, 'text': 'Kept words.'}],
+                'words': WORDS,
+                'timeline': TALK,
+            },
+            headers=alice.headers,
+        )
+        assert res.status_code == 200, res.text
+        whole = api.get(f'/project/{project["_id"]}', headers=alice.headers).json()
+        assert whole['edl']['clips'] == TALK['clips']
+        assert words_of(api, alice, project['_id']) == WORDS
 
 
 class TestTheRestOfTheProject:
@@ -322,7 +339,7 @@ class TestTranscribing:
         body = captions_of(api, alice, project['_id'])
         assert body['job']['state'] == 'done'
         assert body['job']['segments'] == 1
-        assert body['job']['engine'] == 'http://engine.test:8010'
+        assert body['job']['engine'] == 'http://engine.test:1059'
         assert body['captions'] == [{'start': 0.5, 'end': 1.5, 'text': 'Heard'}]
         assert words_of(api, alice, project['_id']) == [
             {'start': 0.5, 'end': 1.5, 'text': 'Heard', 'segment': 0}
@@ -348,7 +365,7 @@ class TestTranscribing:
 
         def unreachable(edl):
             raise audio_engine.AudioEngineFailed(
-                'the audio engine at http://engine.test:8010: connection refused'
+                'the audio engine at http://engine.test:1059: connection refused'
             )
 
         api.put(
@@ -364,7 +381,7 @@ class TestTranscribing:
         assert job['state'] == 'failed'
         assert (
             job['error']
-            == 'the audio engine at http://engine.test:8010: connection refused'
+            == 'the audio engine at http://engine.test:1059: connection refused'
         )
 
     def test_somebody_else_s_is_404(

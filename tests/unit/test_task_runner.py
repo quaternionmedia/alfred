@@ -82,7 +82,7 @@ class TestTheHelp:
 # --- the port guard ---------------------------------------------------------
 
 FAKE_CURL = r"""#!/bin/sh
-# Answers as $FAKE_PORTS says, e.g. "8001=52 27017=0": the exit status curl
+# Answers as $FAKE_PORTS says, e.g. "1733=52 27017=0": the exit status curl
 # gives for a connection to that port. A port not listed refuses (7).
 for arg in "$@"; do
   case "$arg" in
@@ -186,7 +186,7 @@ class TestThePortGuard:
     @pytest.mark.parametrize(
         'port, setting, moved',
         [
-            ('8001', 'ALFRED_HMR_PORT', 'ALFRED_HMR_PORT=8101'),
+            ('1733', 'ALFRED_HMR_PORT', 'ALFRED_HMR_PORT=1833'),
             ('27017', 'ALFRED_DB_PORT', 'ALFRED_DB_PORT=27117'),
         ],
     )
@@ -209,11 +209,11 @@ class TestThePortGuard:
         assert 'the container alfred-y2-db-1' in result.stderr
 
     def test_every_held_port_is_reported_with_one_command_that_moves_them(self, run_al):
-        result = run_al('thin', ports='8000=0 8001=56 27017=0', openapi=OTHER)
+        result = run_al('thin', ports='1732=0 1733=56 27017=0', openapi=OTHER)
         assert result.returncode == 1 and not result.started
         assert 'Apothecary API' in result.stderr
         assert (
-            'ALFRED_PORT=8100 ALFRED_HMR_PORT=8101 ALFRED_DB_PORT=27117 ./al thin'
+            'ALFRED_PORT=1832 ALFRED_HMR_PORT=1833 ALFRED_DB_PORT=27117 ./al thin'
             in result.stderr
         )
 
@@ -229,9 +229,9 @@ class TestThePortGuard:
         with them, so moving only the api beside a running stack is allowed."""
         result = run_al(
             'dev',
-            ports='8001=52 27017=0',
-            publishers='8001=checkout-website-1:checkout 27017=checkout-db-1:checkout',
-            ALFRED_PORT='8100',
+            ports='1733=52 27017=0',
+            publishers='1733=checkout-website-1:checkout 27017=checkout-db-1:checkout',
+            ALFRED_PORT='1832',
         )
         assert result.returncode == 0, result.stderr
         assert result.started
@@ -239,8 +239,8 @@ class TestThePortGuard:
     def test_alfred_already_running_here_is_told_to_stop(self, run_al):
         result = run_al(
             'dev',
-            ports='8000=0',
-            publishers='8000=checkout-api-1:checkout',
+            ports='1732=0',
+            publishers='1732=checkout-api-1:checkout',
             openapi=ALFRED,
         )
         assert result.returncode == 1 and not result.started
@@ -250,13 +250,13 @@ class TestThePortGuard:
     def test_another_alfred_on_the_port_is_named(self, run_al):
         result = run_al(
             'dev',
-            ports='8000=0',
-            publishers='8000=alfred-api-1:alfred',
+            ports='1732=0',
+            publishers='1732=alfred-api-1:alfred',
             openapi=ALFRED,
         )
         assert result.returncode == 1 and not result.started
         assert 'another Alfred stack, the container alfred-api-1' in result.stderr
-        assert 'ALFRED_PORT=8100 ./al dev' in result.stderr
+        assert 'ALFRED_PORT=1832 ./al dev' in result.stderr
 
 
 # --- the development signing key --------------------------------------------

@@ -1,18 +1,9 @@
-"""How a render's `quality` becomes an encoding.
+"""How a render's `quality` becomes an encoding (contract C5).
 
-Clients used to choose the encoding by sending `ffmpeg_params` and `bitrate`,
-and both went onto ffmpeg's command line unexamined -- arbitrary options to a
-program that can read and write files, open network connections and spend as
-much CPU as it is told to. The control-plane record names `ffmpeg_params` as
-an accepted leak that must not widen; this closes it instead.
-
-A client now picks a named quality (`draft`, `standard` or `high`; `standard`
-by default), and the worker asks the engine for its preset of that name:
-`renderMultitrack(..., preset=...)` (contract C5). The client says how good;
-the engine says how. What each preset means to the encoder -- x264's speed
-and constant-rate factor, the sound's bitrate -- is otto's
-(`otto.render.PRESETS`), and none of it is here: the qualities and otto's
-presets share their names, so a quality passes through as it is.
+A client names a quality (`draft`, `standard` or `high`; `standard` by
+default), and the worker asks otto for its preset of that name. What a preset
+means to the encoder is otto's (`otto.render.PRESETS`); no encoder option from
+a client reaches ffmpeg.
 """
 
 from dataclasses import dataclass
@@ -43,9 +34,8 @@ class UnknownQuality(ValueError):
 def preset_for(quality, strict=True) -> Preset:
     """The preset a `quality` names; the default for None or empty.
 
-    `strict=False` falls back to the default instead of raising. That is for
-    renders stored before presets existed -- the form flow saved `web` and
-    `TV` -- which should re-render rather than become unrenderable.
+    `strict=False` falls back to the default instead of raising, for stored
+    renders with an old quality name (`web`, `TV`).
     """
     if quality is None or quality == '':
         return PRESETS[DEFAULT_QUALITY]

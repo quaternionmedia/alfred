@@ -28,14 +28,7 @@ renderer = Celery(
     'renderer',
     backend=config.CELERY_BACKEND,
     broker=config.CELERY_BROKER,
-    # The module that defines the tasks, by its package name.
-    #
-    # This also listed 'core.utils.tasks', which only imports with alfred/ as
-    # the working directory -- the reason the worker was started with
-    # `--workdir /app/alfred`. Importing the same file under a second name
-    # registered every task twice (`core.utils.tasks.renderRemote` beside the
-    # real one), and the working directory it forced is what made a library
-    # path like `videos/x.mp4` resolve to /app/alfred/videos, where nothing is.
+    # By package name only: a second name registers every task twice.
     include=['alfred.core.utils.tasks'],
 )
 
@@ -62,22 +55,12 @@ def pending_count():
 
 @celeryd_init.connect
 def open_the_broadcast_channel(**kwargs):
-    """Make sure this worker will hear pings, and every other broadcast.
+    """Broadcast a ping nobody waits for, so this worker hears broadcasts.
 
-    With MongoDB as the broker, a worker hears broadcasts -- the ping `GET
-    /health` counts workers with, and every other remote-control command --
-    through a tailable cursor on a capped collection. MongoDB kills a
-    tailable cursor at once if nothing in the collection matches when it is
-    opened, and kombu does not reopen it. On a fresh database there is
-    nothing to match, so the first worker ever started heard no broadcast
-    for as long as it ran: it rendered perfectly well, and answered no ping,
-    so a health check reported no renderer at all. Restarting it fixed it,
-    because by then something had been broadcast.
-
-    So before this worker starts consuming, broadcast something harmless: a
-    ping nobody waits for. That leaves a message in the collection for the
-    worker's cursor to start after. Failing here must not stop the worker;
-    it would only be deaf to broadcasts, as it always was.
+    On a MongoDB broker a worker hears them (`/health`'s ping among them)
+    through a tailable cursor, which MongoDB kills at once on an empty
+    collection and kombu never reopens: the first worker on a fresh database
+    would answer no ping. A failure here leaves the worker running, deaf.
     """
     try:
         renderer.control.broadcast('ping', reply=False)
@@ -87,15 +70,8 @@ def open_the_broadcast_channel(**kwargs):
 
 class Renderer(Task):
     def on_failure(self, exc, task_id, args, kwargs, einfo):
-        """Anything that escaped the task: record it on the job's own render.
-
-        This called `self.log.failed()`. The task object is one per worker
-        process, so `self.log` was whichever logger the *previous* job had
-        left there -- a job failing before it made its own marked some other
-        render failed -- and on a fresh process there was none, so the
-        handler raised in turn. The render to mark is the one in this job's
-        arguments.
-        """
+        """Anything that escaped the task: record it on this job's render, the
+        one in its arguments (the task object is shared by every job)."""
         print('failed task', task_id, exc)
         render_id = (kwargs or {}).get('renderId')
         if render_id is None:
@@ -120,41 +96,27 @@ def renderRemote(
 ):
     """Render one EDL to `filename`.
 
-    Arguments arrive as JSON (contract C7): the EDL as a dict, which is parsed
-    back into an `Edl` here, the render id as a string, the size as a list.
-    Encoding is the engine's preset that `quality` names (C5). Any `bitrate`
-    or `ffmpeg_params` in `kwargs` -- from a job queued before presets -- is
-    ignored rather than handed to the engine.
+    Arguments arrive as JSON (contract C7). Encoding is the preset `quality`
+    names (C5); a `bitrate` or `ffmpeg_params` in `kwargs` is ignored.
     """
     # A local, not `self.log`: the task object outlives the job.
     log = DbLogger(self, renderId)
     try:
-        # Only a name `output_filename` could have produced, so the path is
-        # always a file directly inside the output directory. Checked here as
-        # well as decided by the api, because a stored render's filename was
-        # built from its request and could hold `../`.
+        # Only a name `output_filename` makes: checked here too, for jobs
+        # built elsewhere.
         if not is_output_filename(filename):
             raise ValueError(f'refusing to write a render to {filename!r}')
-        # Media names resolved here, against VIDEO_DIR, rather than handed to
-        # the engine as sent. The engine opens a relative name against the
-        # worker's working directory -- /app/alfred, with no `videos/` in it,
-        # until this change -- and an absolute one wherever it points. The api
-        # has already refused anything outside the library; checking again
-        # here covers EDLs stored before that check existed and re-queued now.
+        # Resolved against VIDEO_DIR, not the working directory, and checked
+        # again for stored EDLs the api's check predates.
         timeline = resolve_edl(Edl.model_validate(edl))
-        # A soundtrack is media too, held to the same rule. The engine used to
-        # drop this argument; it honours it now, opening a path or fetching a
-        # URL exactly as it would a clip's name. Nothing the api queues sets
-        # it, so this only ever refuses or resolves a job built elsewhere.
+        # A soundtrack is media too, held to the same rule. The api never sets it.
         soundtrack = None
         if audio is not None:
             try:
                 soundtrack = check_media_name(audio)
             except MediaNameError as exc:
                 raise MediaNameError(f'soundtrack: {exc}') from exc
-        # Into RENDER_DIR, not the media library: written beside the media, a
-        # render was listed by `GET /videos` and served by `/videos/{file}` to
-        # anyone signed in.
+        # RENDER_DIR, which no library route lists or serves.
         makedirs(config.RENDER_DIR, exist_ok=True)
         renderMultitrack(
             edl=timeline,
@@ -170,25 +132,17 @@ def renderRemote(
         log.failed(exc=e)
         return
 
-    # The render is finished and the file exists. Say so before attempting to
-    # put it anywhere, because those are separate outcomes.
+    # Finished, whatever happens to the upload.
     log.rendered()
 
-    # The worker is what fetches most remote media, so it keeps that cache
-    # within its TTL -- at most hourly, and never at the render's expense.
+    # The worker fetches most remote media, so it sweeps the cache too.
     try:
         sweep_remote_cache_now_and_then()
     except Exception as e:  # noqa: BLE001 - housekeeping must not fail a render
         print('could not sweep the remote media cache', e)
 
-    # Uploading is now one destination among several, reachable explicitly via
-    # POST /render/{id}/deliver. Attempt it here for the deployments that
-    # depended on it happening automatically, but do not let it fail the
-    # render: this ran inside the same try as the encode, so a missing
-    # credentials file marked a perfectly good video as a failed render. On a
-    # checkout without GCS credentials that is every render -- docker creates
-    # the absent ./cred.json as a directory, and the upload dies with
-    # IsADirectoryError long after the video is safely on disk.
+    # The automatic bucket upload, best effort: without credentials (Docker
+    # makes a missing ./cred.json a directory) it fails, and the render stands.
     try:
         upload(filename, directory=config.RENDER_DIR)
     except Exception as e:
@@ -211,9 +165,7 @@ _SAID_PLAINLY = (
     RefusedEdl,
     TooManyCaptions,
     TooManyWords,
-    # otto's refusal of a clip it cannot play (contract C8) names the clip by
-    # its place in the timeline and says what is wrong with it -- written for
-    # the person reading it, like the rest of this list.
+    # otto's refusal of an unplayable clip (C8), which names the clip.
     EdlException,
 )
 
@@ -221,9 +173,7 @@ _SAID_PLAINLY = (
 def transcription_failure(exc) -> str:
     """Why a transcription failed, as one line its owner can read."""
     if isinstance(exc, _SAID_PLAINLY):
-        # Shortened, and with library paths shown as clips name them, exactly
-        # as a render's reason is -- but without an exception's name in front,
-        # which `failure_reason` leaves off only the refusals it knows.
+        # As a render's reason, without an exception's name in front.
         return failure_reason(RefusedEdl(str(exc)))
     return failure_reason(exc)
 
@@ -294,8 +244,7 @@ def transcribeCaptions(self, projectId: str, **kwargs):
         print('could not transcribe project', projectId, reason, flush=True)
         record_captions_job(projectId, captions_job('failed', error=reason))
         return
-    # Captions a project had not had: its style now says, if it did not,
-    # that they are not drawn into renders until someone has looked at them.
+    # New captions are not drawn into renders until someone has looked.
     record_captions_job(
         projectId,
         captions_job('done', segments=heard),
@@ -307,10 +256,8 @@ def transcribeCaptions(self, projectId: str, **kwargs):
 
 # --- mail -------------------------------------------------------------------
 
-# How many times a mail that failed in a way that may pass is tried again, and
-# how long the first wait is, in seconds. Each wait doubles the one before:
-# 30 s, 1, 2, 4 and 8 minutes, so the last try is about a quarter of an hour
-# after the first.
+# Retries of a mail that may yet pass, and the first wait in seconds, doubling:
+# 30 s to 8 minutes, the last try about a quarter of an hour after the first.
 MAIL_RETRIES = 5
 MAIL_FIRST_WAIT = 30
 
@@ -353,9 +300,8 @@ def mailSupport(self, about, subject, message, attachments=None, **kwargs):
     else:
         print(f'mailed {about}', flush=True)
         return 'sent'
-    # Raised out here rather than in the `except`, so the exception smtplib
-    # raised -- which can carry addresses -- is not chained to what Celery
-    # logs.
+    # Outside the `except`, so smtplib's exception, which can carry addresses,
+    # is not chained into Celery's log.
     tries = self.request.retries
     if again and tries < MAIL_RETRIES:
         wait = mail_wait(tries)

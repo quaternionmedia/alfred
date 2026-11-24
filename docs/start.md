@@ -38,9 +38,9 @@ serves every request as a development superuser; [Skipping login in
 development](dev-auth.md) says what that opens, and how to use a normal
 account instead.
 
-The app is published on port 8000, on this machine only. If something else
+The app is published on port 1732, on this machine only. If something else
 already holds the port, `./al dev` refuses to start and names it: start on
-another with `ALFRED_PORT=8100 ./al dev`. The [dev-server notes](dev-server.md)
+another with `ALFRED_PORT=1832 ./al dev`. The [dev-server notes](dev-server.md)
 cover this and the other ports, and [Configuration](configuration.md#settings)
 lists them.
 
@@ -48,16 +48,28 @@ lists them.
 
 ## Open the app
 
-Browse to <http://127.0.0.1:8000>. The editor opens at Edit, with the four
+Browse to <http://127.0.0.1:1732>. The editor opens at Edit, with the four
 stages on the rail along the top: Source, Edit, Render and Deliver. On a screen
 1024 pixels wide or more, every panel is open at once: the Source stage's two
 panels on the left, the viewer over the timeline in the middle, and on the
 right the selected clip's settings and the Transcript above the Render,
-Deliver and Captions tabs.
+Deliver and Captions tabs. A panel closed by its ✕ comes back from the
+**Panels** menu.
 Narrower, as on a phone, the editor shows one stage's panels at a time above
-the viewer and the timeline.
+the viewer and the timeline. At Edit that is Captions, or the Transcript once
+the switch at the top of the stage chooses it.
+
+Under the rail, one line says what to do next, with a button to the next
+stage and a **How?** link to the [user journey](journeys.md) that step belongs
+to. With no project open, **Source** is outlined: start there.
 
 ## Make a first video
+
+Four stages, from a project to a file. [User journeys](journeys.md) has this
+walk and the others, from your own footage to an account. [Make a video with
+alfred and the QM family](guide.md) goes on from here: a title, the sound
+transcribed by joe, a cut made by deleting words, and styled captions drawn
+into the render.
 
 ### 1. Source
 
@@ -66,6 +78,7 @@ server seeds into an empty database; choose **Timeline demo**, three template
 clips that need no media: a title, a text box and a colour field. If the list
 is empty, as it is for a newly registered account, press **Generate a demo
 project**, which makes the same three clips as a project called **Demo**.
+**New project** starts an empty one of your own, by name.
 
 The **Media & templates** panel lists the files in the server's library. On a
 fresh install it has none, and **Generate demo media** makes three short clips
@@ -79,12 +92,26 @@ network.
 *The workspace at Edit, with a title chosen on the timeline and its settings on the right.*
 
 Choosing a project opens it at Edit, its clips on the timeline from left to
-right. Choose a clip and the playhead moves to it, and the viewer shows it: for a
-template clip, a frame the server draws, and **Template settings** changes its
-text, length, font and colour. Choose a file under **Material**, or a template under
-**Templates**, to put it on the end of the timeline. The disk icon beside the
-timeline saves the timeline to the project; a render takes the timeline as it
-stands, saved or not.
+right. Press a clip and the playhead moves to that point of it, and the viewer
+shows it: for a template clip, a frame the server draws, and **Template
+settings** changes its text, length, font and colour. Choose a file under
+**Material**, or a template under **Templates**, to put it on the end of the
+timeline.
+
+The tools in the column beside the timeline change the clips. **Time**, chosen
+when the editor opens, moves the playhead; **Trim** drags a clip's end,
+**Move** its place, and **Cut** splits it in two; **Slip**, **Slide** and
+**Dual roller** shift what a clip plays, where it sits and where a cut falls;
+and the magnifiers below them zoom the timeline. [Editing tools](tools.md)
+shows each one. The timeline saves itself a second after each change: the
+indicator beside it says **Saving…**, then **Saved** ([Saving](journeys.md#saving)).
+A render takes the timeline as it is on the screen.
+
+The **Transcript** and **Captions** tabs work on what is said. Once an audio
+engine has transcribed the saved timeline, deleting words from the transcript
+cuts the stretch they were said in out of the video, and the captions can be
+corrected, styled and drawn into renders. The dev stack alone has no audio
+engine; `./al family up` starts joe with it ([Make a video](guide.md#1-start-the-family)).
 
 ### 3. Render
 
@@ -112,10 +139,16 @@ render stays queued until a worker starts; `./al dev` starts one with the stack.
 
 ## Where next
 
+- [User journeys](journeys.md): what you came to do, each walked through the
+  editor, and what to do when something goes wrong.
+- [Make a video with alfred and the QM family](guide.md): one video from
+  nothing to a delivered file, with joe transcribing it, and what each member
+  of the family does for you.
 - [Cookbook](cookbook.md): the journeys through the editor, step by step,
   generated from the browser tests that check them.
-- [Captions](captions.md): typing, importing and transcribing captions, drawing
-  them into renders, and pointing Alfred at joe.
+- [Captions](captions.md): typing, importing and transcribing captions, editing
+  the video by its transcript, drawing captions into renders, and pointing
+  Alfred at joe.
 - [Commands on each system](commands.md): running, testing and looking, on
   Linux, macOS and Windows.
 - [The test loop](loop.md): every suite side by side, and the app left up to
@@ -127,4 +160,4 @@ render stays queued until a worker starts; `./al dev` starts one with the stack.
   renders.
 - [Examples](examples/index.md) and the [API](api/index.md): making videos
   with the API directly, with `curl`. Your own server's interactive reference
-  is at <http://127.0.0.1:8000/api>, linked from the editor's footer.
+  is at <http://127.0.0.1:1732/api>, linked from the editor's footer.

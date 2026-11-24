@@ -10,9 +10,7 @@ permissions:
 jobs:
   e2e:
     name: 🎭 Playwright
-    # Three images built cold and the Playwright image pulled, then about two
-    # minutes of tests. Twenty minutes was set before the stack carried a
-    # site build and a render worker.
+    # Images built cold, then the suite.
     timeout-minutes: 30
     runs-on: ubuntu-latest
 
@@ -20,16 +18,10 @@ jobs:
       - name: 📰 Checkout
         uses: actions/checkout@v7
         with:
-          # The api and renderer images install the vendored engines from
-          # alfred/otto and alfred/vox.
+          # The images install the engines from their submodules.
           submodules: recursive
 
-      # The whole stack comes from test_e2e.yml: it builds the site, starts
-      # the api, a render worker and the database, and runs the suite. The
-      # stack `./al test` runs -- locally under a compose project of its own,
-      # after removing what its last run left, which a fresh runner does not
-      # have -- so a failure here reproduces locally with that command and
-      # nothing else: no `./al init`, no separate site build, no secrets.
+      # The stack `./al test` runs: a failure here reproduces with it alone.
       - name: 🧪 Run E2E suite
         run: docker compose -f test_e2e.yml up --build --exit-code-from e2e
 

@@ -28,7 +28,7 @@ so a test can check what alfred sent. With `--fixture-dir`, it also writes
 `e2e-speech.wav` there at startup: four seconds holding two bursts of tone
 (0.5-1.5 s and 2.0-3.2 s), for a timeline to put somewhere.
 
-    python tests/stubs/audio_engine.py --port 8010 [--fixture-dir videos]
+    python tests/stubs/audio_engine.py --port 1059 [--fixture-dir videos]
 """
 
 import argparse
@@ -434,7 +434,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--host', default='0.0.0.0')
-    parser.add_argument('--port', type=int, default=8010)
+    parser.add_argument('--port', type=int, default=1059)
     parser.add_argument('--fixture-dir')
     options = parser.parse_args()
     if options.fixture_dir:

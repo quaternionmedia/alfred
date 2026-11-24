@@ -97,7 +97,7 @@ def library(tmp_path, monkeypatch):
 @pytest.fixture
 def engine(monkeypatch):
     """An audio engine that is configured and usable."""
-    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:8010')
+    monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:1059')
     monkeypatch.setattr(audio_engine, 'problem', lambda: None)
 
 
@@ -404,6 +404,76 @@ class TestTheWords:
         assert store.writes == []
 
 
+# What the editor sends after an edit: the clips placed, the first now shorter.
+TIMELINE = {
+    'clips': [
+        {
+            'type': 'video',
+            'name': 'videos/talk.mp4',
+            'duration': 3,
+            'start': 0,
+            'inpoint': 0,
+            'outpoint': 3,
+            'fadeIn': 0,
+            'fadeOut': 0,
+        },
+        {
+            'type': 'template',
+            'name': 'makeColor',
+            'duration': 2,
+            'start': 3,
+            'fadeIn': 0,
+            'fadeOut': 0,
+            'data': {'color': '#000000'},
+        },
+    ],
+    'duration': 5,
+}
+
+
+class TestTheTimeline:
+    """An edit moves the timeline, its captions and its words together, and
+    they are saved together: one request, one write."""
+
+    def test_saved_with_the_captions_and_the_words_in_one_write(self, api):
+        mine = project(words=WORDS)
+        client, store, _ = api(OWNER, mine)
+        res = client.put(
+            url(mine),
+            json={
+                'captions': [{'start': 0.5, 'end': 0.9, 'text': 'Hello'}],
+                'words': WORDS[:1],
+                'timeline': TIMELINE,
+            },
+        )
+        assert res.status_code == 200, res.text
+        assert [set(write) for write in store.writes] == [
+            {'captions', 'caption_style', 'words', 'edl'}
+        ]
+        # Stored as sent, as the timeline route stores it: no defaults written in.
+        assert store.projects[mine['_id']]['edl'] == TIMELINE
+        assert 'edl' not in res.json()
+
+    def test_left_out_it_is_kept(self, api):
+        mine = project()
+        client, store, _ = api(OWNER, mine)
+        client.put(url(mine), json={'captions': [], 'words': WORDS})
+        assert store.projects[mine['_id']]['edl'] == project()['edl']
+
+    @pytest.mark.parametrize(
+        'timeline',
+        [{'clips': 'none'}, {'clips': [{'duration': 'long'}]}, {'duration': 4}],
+    )
+    def test_one_otto_cannot_read_is_422_and_nothing_is_written(self, api, timeline):
+        mine = project(words=WORDS)
+        client, store, _ = api(OWNER, mine)
+        res = client.put(
+            url(mine), json={'captions': [], 'words': [], 'timeline': timeline}
+        )
+        assert res.status_code == 422
+        assert store.writes == []
+
+
 class TestImporting:
     SRT = '1\n00:00:01,000 --> 00:00:02,000\nOne\n\n2\n00:00:03,000 --> 00:00:03,000\nNone long\n'
 
@@ -472,7 +542,7 @@ class TestTranscribing:
         assert res.status_code == 202, res.text
         job = res.json()['job']
         assert job['state'] == 'queued'
-        assert job['engine'] == 'http://engine.test:8010'
+        assert job['engine'] == 'http://engine.test:1059'
         assert queue.sent == [{'projectId': str(mine['_id'])}]
         assert store.projects[mine['_id']]['captions_job']['state'] == 'queued'
 
@@ -486,7 +556,7 @@ class TestTranscribing:
         assert queue.sent == []
 
     def test_an_engine_this_build_cannot_reach_is_503(self, api, monkeypatch):
-        monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:8010')
+        monkeypatch.setattr(config, 'AUDIO_ENGINE_URL', 'http://engine.test:1059')
 
         def missing():
             raise ImportError('no vox.media')

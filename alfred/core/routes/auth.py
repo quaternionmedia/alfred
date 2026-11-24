@@ -11,18 +11,11 @@ REGISTRATION_CLOSED = (
 
 
 async def registration_is_open():
-    """Refuse to create accounts unless this server accepts them.
+    """Refuse to create accounts unless this server accepts them: 403.
 
-    A dependency on the register route rather than leaving the route out, for
-    two reasons. Left out, `POST /auth/register` falls through to the static
-    mount and answers 405 -- which says "wrong method", not "closed", and the
-    SPA could not tell a misconfigured client from a deliberate policy. And
-    dependencies resolve before the body is validated, so a closed server
-    answers 403 to any registration attempt without first explaining what a
-    valid one would look like.
-
-    Reads the setting through the module at request time, so the tests can
-    open and close registration without restarting the app.
+    A dependency, not a route left out (which would answer the static mount's
+    405), and resolved before the body is validated. Read at request time, so
+    tests can open and close registration.
     """
     if not config.ALLOW_REGISTRATION:
         raise HTTPException(
@@ -49,14 +42,7 @@ async def refresh_jwt(
 ):
     """Issue a fresh token to a caller whose current one is still valid.
 
-    Still valid is the whole contract: an expired token is refused like any
-    other, so this extends a session and cannot revive one. The SPA therefore
-    renews *before* expiry, while it is in use, rather than after a 401 --
-    which is what it used to do, and why sessions simply ended after an hour:
-    by the time it asked, the token it asked with had already been refused.
-
-    This also called `auth_backend.get_login_response(...)`, which has not
-    existed on AuthenticationBackend for several major versions, so every
-    refresh answered 500 until that was fixed.
+    An expired token is refused like any other, so this extends a session and
+    cannot revive one: the SPA renews *before* expiry, while it is in use.
     """
     return await auth_backend.login(strategy, user)

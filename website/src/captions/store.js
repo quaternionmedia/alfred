@@ -45,6 +45,8 @@ const RUNNING = ['queued', 'transcribing']
 const POLL_MS = 1500
 
 let nextKey = 1
+// Captions.print's last answer.
+const printed = { list: null, text: '' }
 const keyed = caption => ({ ...caption, _key: caption._key || nextKey++ })
 const plain = ({ _key, ...caption }) => caption
 const round = n => Math.round(Number(n) * 1000) / 1000
@@ -90,6 +92,10 @@ export const Captions = {
   timer: null,
   // Called with the project id when a followed transcription is done.
   transcribed: [],
+  // Called with the project id once its captions have loaded, or failed to.
+  arrived: [],
+  // Called before a project's captions are let go, while they are still held.
+  leaving: [],
 
   snapshot: () => JSON.stringify({ list: Captions.list.map(plain), style: Captions.style }),
 
@@ -108,11 +114,10 @@ export const Captions = {
 
   /** Load the captions of `projectId`, unless they are the ones held. */
   ensure: projectId => {
-    if (!projectId) {
-      if (Captions.projectId) Captions.reset()
-      return
-    }
-    if (projectId !== Captions.projectId) Captions.load(projectId)
+    if ((projectId || null) === Captions.projectId) return
+    if (Captions.projectId) Captions.leaving.forEach(listener => listener(Captions.projectId))
+    if (projectId) Captions.load(projectId)
+    else Captions.reset()
   },
 
   reset: () => {
@@ -143,6 +148,10 @@ export const Captions = {
       .catch(err => {
         if (Captions.projectId !== projectId) return
         Captions.error = `Could not load the captions: ${requestProblem(err) || 'no answer'}`
+      })
+      .then(() => {
+        if (Captions.projectId !== projectId) return
+        Captions.arrived.forEach(listener => listener(projectId))
       })
   },
 
@@ -191,17 +200,24 @@ export const Captions = {
 
   problems: () => Captions.list.map(captionProblem),
 
+  /** The list's times and text, as an undo compares them; worked out once per list. */
+  print: () => {
+    if (printed.list !== Captions.list) {
+      printed.list = Captions.list
+      printed.text = JSON.stringify(
+        Captions.list.map(c => [c.start, c.end, c.text].map(v => (v === '' ? v : Number(v) || v)))
+      )
+    }
+    return printed.text
+  },
+
   canSave: () =>
     Captions.loaded && !Captions.busy && Captions.problems().every(problem => !problem),
 
-  /** Save captions and style, and `words` if given, in one request. Resolves to success. */
-  save: ({ words } = {}) => {
-    const projectId = Captions.projectId
-    if (!projectId) return Promise.resolve(false)
+  /** The captions and style as `PUT /project/{id}/captions` takes them. */
+  body: () => {
     Captions.commit()
-    Captions.busy = 'save'
-    Captions.error = null
-    const body = {
+    return {
       captions: Captions.list.map(plain).map(c => ({
         start: Number(c.start),
         end: Number(c.end),
@@ -209,16 +225,28 @@ export const Captions = {
       })),
       style: Captions.style,
     }
+  },
+
+  /** `projectId`'s save was answered: the answer is the state. False if it is not held now. */
+  answered: (projectId, answer) => {
+    if (Captions.projectId !== projectId) return false
+    // The job is not the save's to change; keep the one known.
+    const job = Captions.job
+    Captions.accept(answer)
+    Captions.job = answer.job || job
+    return true
+  },
+
+  /** Save captions and style, and `words` if given, in one request. Resolves to success. */
+  save: ({ words } = {}) => {
+    const projectId = Captions.projectId
+    if (!projectId) return Promise.resolve(false)
+    const body = Captions.body()
+    Captions.busy = 'save'
+    Captions.error = null
     if (words) body.words = words
     return auth(`/project/${projectId}/captions`, { method: 'PUT', body })
-      .then(answer => {
-        if (Captions.projectId !== projectId) return false
-        // The job is not the save's to change; keep the one known.
-        const job = Captions.job
-        Captions.accept(answer)
-        Captions.job = answer.job || job
-        return true
-      })
+      .then(answer => Captions.answered(projectId, answer))
       .catch(err => {
         Captions.error = `Could not save the captions: ${requestProblem(err) || 'no answer'}`
         return false
