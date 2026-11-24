@@ -25,7 +25,7 @@ class Render:
 ## `edl`
 : `#!python Edl`
 
-    The timeline to render; see [Edl](edl.md). It is checked before anything is stored or queued: a clip naming media outside the library, or a template the server does not offer (`GET /templates` lists those it does), is refused with a 422 naming the clip.
+    The timeline to render; see [the timeline](concepts.md#the-timeline). It is checked before anything is stored or queued: a clip naming media outside the library, or a template the server does not offer (`GET /templates` lists those it does), is refused with a 422 naming the clip.
 
 ## `width`, `height`
 : `#!python int = 1920`, `#!python int = 1080`

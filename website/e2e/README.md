@@ -34,7 +34,7 @@ yarn e2e:report      # last HTML report
 The `@recipe` walkthroughs and the `@screens` screenshots run in the `docs`
 project, one worker. `./al recipes` runs it, takes the screenshots the docs
 open with, makes the recipes' GIFs (not committed), and regenerates the
-cookbook;
+cookbook, the suite's index;
 [CONTRIBUTING.md](../../CONTRIBUTING.md#the-docs-are-generated-from-the-tests)
 says what it keeps and what it commits.
 

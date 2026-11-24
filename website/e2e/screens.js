@@ -28,8 +28,8 @@ async function save(page, name) {
     animations: 'disabled',
     caret: 'hide',
     // The notices the test's own login raised, which a person at this
-    // screen would not see.
-    style: '.alertify-notifier { display: none !important; }',
+    // screen would not see, and the pointer a recipe draws for its recording.
+    style: '.alertify-notifier, #recipe-pointer { display: none !important; }',
   })
 }
 

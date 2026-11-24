@@ -84,11 +84,11 @@ Before you change a test:
 
 ## The docs are generated from the tests
 
-The docs' prose and screenshots come from the end-to-end suite, and so do
-the recipes' GIFs:
+The docs' screenshots, the recipes' recordings and the browser suite's index
+come from the end-to-end suite:
 
 ```sh
-./al cookbook      # regenerate docs/cookbook.md from the specs
+./al cookbook      # regenerate docs/cookbook.md, one line per spec, from the specs
 ./al recipes       # take the @screens screenshots, record the @recipe GIFs, then regenerate
 ```
 
@@ -102,15 +102,17 @@ publishes none of your projects. Commit the screenshots;
 stay out of git -- one does not compress against its last version, so every
 refresh would add megabytes to history -- and stay on the machine that
 recorded them; `tests/unit/test_cookbook.py` fails if one is tracked or linked.
-There, `./al docs` plays each recipe's whole recording under its line in the
-cookbook, from the recipe's start (`scripts/docs_recordings.py`, a mkdocs
-hook); the published docs, built without them, show the screenshots only.
+There, `./al docs` plays each recipe's whole recording on the page it walks,
+from the recipe's start: a page places one with `<!-- recipe: <title> -->`
+under its heading (`scripts/docs_recordings.py`, a mkdocs hook, and
+`tests/unit/test_docs_recordings.py`, which fails while a recipe has no
+place). The published docs, built without them, show the screenshots only.
 
-So **do not edit `docs/cookbook.md` by hand**: change the tests and
-regenerate. `tests/unit/test_cookbook.py` fails if the committed file drifts
-from the specs, or regenerating does not produce it byte for byte. Prose
-describing behaviour goes stale silently; a test describing behaviour goes red.
-A recipe that breaks leaves no GIF rather than a misleading one.
+So **do not edit `docs/cookbook.md` by hand**: a spec's line is the first
+sentence of the comment it opens with, so change that and regenerate.
+`tests/unit/test_cookbook.py` fails if the committed file drifts from the
+specs, or regenerating does not produce it byte for byte. A recipe that breaks
+leaves no GIF rather than a misleading one.
 
 ## Before opening a pull request
 

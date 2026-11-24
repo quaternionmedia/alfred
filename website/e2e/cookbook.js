@@ -1,24 +1,21 @@
 #!/usr/bin/env node
 /**
- * Turn the end-to-end suite into the cookbook.
+ * Turn the end-to-end suite into its index, docs/cookbook.md.
  *
- * The docs, the tests and the recipes are meant to be one object rather than
- * three that drift apart. Prose describing behaviour goes stale silently;
- * a test describing behaviour goes red. So the prose is generated from the
- * tests, and the only way to change the documentation is to change something
- * that runs.
- *
- * What it reads:
- *   - the block comment at the top of each spec, as the section's introduction
- *   - each `test.describe(...)` title, as a heading
- *   - each `test(...)` title, as a step
- *   - a test's own leading comment, as the note under that step
+ * One line per spec, from the spec's opening comment, and one per walkthrough
+ * (`@recipe`), with the page that plays it. The specs are the source: their
+ * comments say why each test is there, and the page only points at them, so
+ * it cannot say what the suite does not check.
  *
  * Deliberately a parser rather than a Playwright reporter. A reporter would
- * only describe the tests that ran, on the machine that ran them, so the
- * cookbook would quietly shrink whenever something was skipped -- and the
- * governance question this is meant to answer is "what does this project claim
- * to do", which is a property of the suite, not of one run.
+ * only describe the tests that ran, on the machine that ran them, so the index
+ * would quietly shrink whenever something was skipped -- and the question it
+ * answers, "what does this project claim to do", is a property of the suite,
+ * not of one run.
+ *
+ * A walkthrough is placed by a marker on the page that walks it,
+ * `<!-- recipe: <title> -->` under that page's heading; scripts/docs_recordings.py
+ * puts the recording there in docs served locally.
  *
  * Usage:  node e2e/cookbook.js [outfile]
  * Default outfile: ../docs/cookbook.md
@@ -29,157 +26,141 @@ const path = require('path')
 
 const E2E_DIR = __dirname
 const REPO = path.join(E2E_DIR, '..', '..')
-const DEFAULT_OUT = path.join(REPO, 'docs', 'cookbook.md')
+const DOCS = path.join(REPO, 'docs')
+const DEFAULT_OUT = path.join(DOCS, 'cookbook.md')
+const MARKER = /^<!-- recipe: (.+?) -->$/
 
 /** Strip comment punctuation without touching the prose inside. */
 function cleanBlock(raw) {
   return raw
     .split('\n')
-    .map(line => line.replace(/^\s*\/\*\*?/, '').replace(/\*\/\s*$/, '').replace(/^\s*\*ic?\s?/, '').replace(/^\s*\*\s?/, ''))
+    .map(line => line.replace(/^\s*\/\*\*?/, '').replace(/\*\/\s*$/, '').replace(/^\s*\*\s?/, ''))
     .join('\n')
     .trim()
 }
 
-function cleanLineComments(raw) {
-  return raw
-    .split('\n')
-    .map(line => line.replace(/^\s*\/\/\s?/, ''))
-    .join('\n')
-    .trim()
-}
-
-/** The block comment at the very top of a file, if there is one. */
+/** The first block comment at column 0 before the first test: the spec's own. */
 function fileIntro(source) {
-  const match = source.match(/^\s*\/\*\*([\s\S]*?)\*\//)
+  const first = source.search(/^test(\.describe)?\s*[.(]/m)
+  const head = first === -1 ? source : source.slice(0, first)
+  const match = head.match(/^\/\*\*([\s\S]*?)\*\//m)
   return match ? cleanBlock(match[0]) : ''
 }
 
-/**
- * The comment immediately preceding an offset, whether block or line style.
- * Returns '' when the preceding lines are code.
- */
-function commentBefore(source, offset) {
-  const before = source.slice(0, offset).split('\n')
-  const collected = []
-
-  for (let i = before.length - 1; i >= 0; i--) {
-    const line = before[i].trim()
-    if (line === '') {
-      if (collected.length) break
-      continue
-    }
-    if (line.startsWith('//')) {
-      collected.unshift(line)
-      continue
-    }
-    break
-  }
-  if (collected.length) return cleanLineComments(collected.join('\n'))
-  return ''
-}
-
-/** A test's own leading docblock, which sits inside the callback. */
-function docblockInside(source, offset) {
-  const after = source.slice(offset, offset + 1400)
-  const match = after.match(/=>\s*\{\s*(\/\*\*[\s\S]*?\*\/)/)
-  return match ? cleanBlock(match[1]) : ''
+/** The intro's first sentence, skipping its headings. */
+function summary(intro) {
+  const paragraph = intro
+    .split(/\n\s*\n/)
+    .find(p => p.trim() && !p.trim().startsWith('#'))
+  if (!paragraph) return ''
+  const text = paragraph.replace(/\s+/g, ' ').trim()
+  const sentence = text.match(/^(.+?[.!?])(\s|$)/)
+  return (sentence ? sentence[1] : text).replace(/\|/g, '\\|')
 }
 
 function parseSpec(file) {
   const source = fs.readFileSync(file, 'utf8')
-  const entries = []
   const pattern =
     /(test\.describe|test)\s*(?:\.\w+)?\s*\(\s*(['"`])((?:\\.|(?!\2)[\s\S])*?)\2/g
-
+  const steps = []
   let match
   while ((match = pattern.exec(source)) !== null) {
     const [, kind, , title] = match
-    entries.push({
-      kind: kind === 'test.describe' ? 'group' : 'step',
-      // Parameterised titles carry `${...}` straight from the template
-      // literal. Left raw they read as broken markdown, so the expression
-      // becomes a placeholder naming what varies.
-      title: title.replace(/\\'/g, "'").replace(/\$\{([^}]*)\}/g, (_, expr) => {
-        const name = expr.split('.')[0].trim()
-        return `<${name}>`
-      }),
-      note: docblockInside(source, match.index) || commentBefore(source, match.index),
-    })
+    if (kind === 'test') steps.push(title.replace(/\\'/g, "'"))
   }
-
-  return {
-    name: path.basename(file),
-    intro: fileIntro(source),
-    entries,
-  }
+  return { name: path.basename(file), summary: summary(fileIntro(source)), steps }
 }
 
-function render(specs) {
-  const out = []
-  out.push('# Cookbook')
-  out.push('')
-  out.push(
-    'Generated from the end-to-end suite by `website/e2e/cookbook.js`. Do not',
-    'edit by hand -- change the tests instead, and regenerate.',
-    ''
-  )
-  out.push(
-    'Every recipe below is a test that runs against a real stack: a real',
-    'database, a real render worker, and real files on disk. If a step here is',
-    'wrong, a test is failing. That is the point -- prose describing behaviour',
-    'goes stale silently, and a test describing behaviour goes red.',
-    '',
-    '`./al test` and CI run the `chromium` and `phone` projects. The',
-    'walkthroughs tagged `@recipe` run in the `docs` project, which `./al',
-    'recipes` drives against a dev stack to record them.',
-    ''
-  )
+/** Python-Markdown's default heading id, which mkdocs uses. */
+function slugify(heading) {
+  return heading
+    .normalize('NFKD')
+    .replace(/[^\x00-\x7f]/g, '')
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[-\s]+/g, '-')
+}
 
-  for (const spec of specs) {
-    if (!spec.entries.length) continue
-    out.push(`## ${spec.name.replace(/\.spec\.js$/, '').replace(/[-_]/g, ' ')}`)
-    out.push('')
-    if (spec.intro) {
-      out.push(spec.intro)
-      out.push('')
-    }
-
-    let lastGroupNote = ''
-    for (const entry of spec.entries) {
-      if (entry.kind === 'group') {
-        out.push(`### ${entry.title}`)
-        out.push('')
-        if (entry.note) {
-          out.push(entry.note, '')
+/** Every `<!-- recipe: ... -->` marker in the docs: recipe -> {page, title, heading}. */
+function placements() {
+  const found = {}
+  const walk = dir => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (entry.name.endsWith('.md') && full !== DEFAULT_OUT) {
+        const page = path.relative(DOCS, full).split(path.sep).join('/')
+        let title = page
+        let heading = null
+        for (const line of fs.readFileSync(full, 'utf8').split(/\r?\n/)) {
+          const h = line.match(/^(#{1,6})\s+(.+?)\s*$/)
+          if (h) {
+            const id = h[2].match(/^(.*?)\s*\{\s*#([\w-]+)\s*\}$/)
+            const text = id ? id[1] : h[2]
+            if (h[1] === '#') title = text
+            else heading = { text, anchor: id ? id[2] : slugify(text) }
+            continue
+          }
+          const m = line.match(MARKER)
+          if (m) found[m[1]] = { page, title, heading }
         }
-        lastGroupNote = entry.note
-        continue
-      }
-      out.push(`- **${entry.title}**`)
-      const blocks = []
-      // A describe block and the test that follows it can pick up the same
-      // preceding comment, which printed the paragraph twice.
-      if (entry.note && entry.note !== lastGroupNote) {
-        blocks.push(
-          entry.note
-            .split('\n')
-            .map(line => (line.trim() ? `  ${line}` : ''))
-            .join('\n')
-        )
-      }
-      for (const block of blocks) {
-        out.push('', block)
-      }
-      if (blocks.length) {
-        out.push('')
       }
     }
-    out.push('')
   }
+  walk(DOCS)
+  return found
+}
 
-  out.push('---')
-  out.push('')
-  out.push(`Regenerate with \`node website/e2e/cookbook.js\`.`)
+function render(specs, placed) {
+  const out = []
+  out.push(
+    '# The browser suite',
+    '',
+    'What the editor promises, as the browser suite in `website/e2e/` checks it:',
+    'one spec to a line, and the walkthroughs a person can watch. Each spec opens',
+    'with a comment saying what it holds, and each test with why it is there.',
+    '',
+    'Generated by `website/e2e/cookbook.js` (`./al cookbook`): edit the specs, not',
+    'this page. `tests/unit/test_cookbook.py` fails when the page differs from',
+    'what the specs generate.',
+    '',
+    '## The walkthroughs',
+    '',
+    'Tagged `@recipe` and written to be watched. `./al recipes` records them, and',
+    'the docs served locally play each one on the page it walks.',
+    '',
+    '| Walkthrough | Played on |',
+    '|---|---|'
+  )
+  for (const spec of specs) {
+    for (const title of spec.steps.filter(t => t.startsWith('recipe: '))) {
+      const name = title.replace(/^recipe: /, '')
+      const at = placed[name]
+      const where = !at
+        ? 'no page yet'
+        : at.heading
+        ? `[${at.title}: ${at.heading.text}](${at.page}#${at.heading.anchor})`
+        : `[${at.title}](${at.page})`
+      out.push(`| ${name} | ${where} |`)
+    }
+  }
+  out.push(
+    '',
+    '## The specs',
+    '',
+    '`./al test` and CI run the `chromium` and `phone` projects. The walkthroughs',
+    'and the screenshots (`@screens`) run in the `docs` project, which `./al',
+    'recipes` drives against a dev stack. A test counts once, however many cases',
+    'it loops over.',
+    '',
+    '| Spec | What it holds | Tests |',
+    '|---|---|---|'
+  )
+  for (const spec of specs) {
+    if (!spec.steps.length) continue
+    out.push(`| \`${spec.name}\` | ${spec.summary} | ${spec.steps.length} |`)
+  }
   out.push('')
   return out.join('\n')
 }
@@ -192,15 +173,12 @@ function main() {
     .sort()
     .map(f => parseSpec(path.join(E2E_DIR, f)))
 
-  const markdown = render(specs)
+  const markdown = render(specs, placements())
   fs.mkdirSync(path.dirname(outfile), { recursive: true })
   fs.writeFileSync(outfile, markdown, 'utf8')
 
-  const steps = specs.reduce(
-    (n, s) => n + s.entries.filter(e => e.kind === 'step').length,
-    0
-  )
-  console.log(`${outfile}: ${specs.length} specs, ${steps} recipes`)
+  const steps = specs.reduce((n, s) => n + s.steps.length, 0)
+  console.log(`${outfile}: ${specs.length} specs, ${steps} tests`)
 }
 
 main()

@@ -9,10 +9,11 @@
 
 It reads `website/recipe-videos.json`, which
 `website/e2e/collect-recipe-videos.js` writes: each passing recipe's name,
-and the second its recipe starts at in the recording. For each it turns
-`docs/recipes/<recipe>.webm` into `docs/recipes/<recipe>.gif`:
+and the seconds its recipe starts and ends at in the recording. For each it
+turns `docs/recipes/<recipe>.webm` into `docs/recipes/<recipe>.gif`:
 
-- from the recipe's start, so the login in front of it is cut;
+- from the recipe's start to its end, so the login in front of it and the
+  cleanup after it are cut;
 - 720 pixels wide, 8 frames a second;
 - one palette for the clip, built from what moves, and each frame stored as
   the rectangle that changed.
@@ -51,7 +52,7 @@ def ffmpeg():
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
-def to_gif(binary, source, target, start, fps, colours):
+def to_gif(binary, source, target, start, fps, colours, end=None):
     """Write one GIF, raising CalledProcessError with ffmpeg's reasons."""
     graph = (
         f'fps={fps},scale={WIDTH}:-1:flags=lanczos,split[a][b];'
@@ -61,6 +62,7 @@ def to_gif(binary, source, target, start, fps, colours):
     subprocess.run(
         [binary, '-hide_banner', '-loglevel', 'error', '-y']
         + (['-ss', f'{start:.2f}'] if start > 0 else [])
+        + (['-t', f'{end - start:.2f}'] if end and end > start else [])
         + ['-i', str(source), '-vf', graph, '-loop', '0', str(target)],
         check=True,
         capture_output=True,
@@ -101,7 +103,15 @@ def main():
         target = RECIPES / f'{slug}.gif'
         try:
             for fps, colours in SETTINGS:
-                to_gif(binary, source, target, float(recipe['start']), fps, colours)
+                to_gif(
+                    binary,
+                    source,
+                    target,
+                    float(recipe['start']),
+                    fps,
+                    colours,
+                    end=float(recipe.get('end') or 0),
+                )
                 if target.stat().st_size <= MAX_BYTES:
                     break
         except subprocess.CalledProcessError as exc:

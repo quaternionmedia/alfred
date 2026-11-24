@@ -6,7 +6,7 @@
 
 Render an `Edl` with a single video and download the result when it is finished.
 
-See [about/render](../about/render.md) for every field a render request takes, and [about/edl](../about/edl.md) for the timeline itself.
+See [about/render](../about/render.md) for every field a render request takes, and [the timeline](../about/concepts.md#the-timeline) for the timeline itself.
 
 ## Request
 === "Edl"

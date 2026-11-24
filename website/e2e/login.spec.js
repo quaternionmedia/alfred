@@ -1,5 +1,9 @@
 const { test, expect, login, CREDENTIALS, SELECTORS } = require('./fixtures')
 
+/**
+ * Logging in, registering, and the links the server mails.
+ */
+
 test.describe('login UI', () => {
   test('shows an error for an invalid password', async ({ page }) => {
     await page.goto('/')

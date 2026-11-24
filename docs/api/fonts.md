@@ -1,5 +1,5 @@
 # Fonts
-`GET /fonts` lists the font families this server can set a template's text in, by the names a template's [`font`](../about/template.md#font) takes.
+`GET /fonts` lists the font families this server can set a template's text in, by the names a template's [`font`](../about/template.md#data) takes.
 
 ## `GET /fonts`
 A JSON array of names: each is fontconfig's name for a family, with its spaces as hyphens. It needs a session, and answers `401` without one.

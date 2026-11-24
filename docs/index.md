@@ -11,48 +11,43 @@ made by an Alfred server you run yourself, with cloud storage optional.
 The editor is one page, worked in four stages named on the rail along its top:
 
 1. **Source**: choose a project, and the media and templates for its timeline.
-2. **Edit**: arrange, trim, cut, slip and slide the clips with the tools beside
-   the timeline, and set a title's text, length and colours.
-3. **Render**: choose the output's size and queue a render, which the server
-   makes.
-4. **Deliver**: follow the render until it is finished, then download it or send
-   it to a destination.
+2. **Edit**: arrange, trim and cut the clips, title them, and cut the video by
+   deleting words from its transcript.
+3. **Render**: choose the output's size, and have the server make the video.
+4. **Deliver**: follow the render, then download it or send it on.
 
-Beside them, **Captions** are typed, imported from a subtitle file, or
-transcribed from the timeline's sound, and drawn into renders. Once the sound
-is transcribed, the **Transcript** edits the video by what is said in it:
-delete words, and the stretch they were said in is cut out. On a screen 1024
-pixels wide or more, the panels are a workspace you can rearrange, with a
-Panels menu to bring back a closed one; narrower, as on a phone, the editor
-shows one stage at a time above the viewer and the timeline, and at Edit a
-switch chooses Captions or the Transcript.
+## Where to go
 
-## Start here
-
-1. [Get started](start.md): run Alfred on your own machine and make a first
-   video, from Source to Deliver.
-2. [User journeys](journeys.md): what you came to do, from a first video to
-   captions, a phone and an account, each walked through the editor. The
-   editor's own **How?** links open them.
-3. [Make a video with alfred and the QM family](guide.md): one video from
-   nothing to a delivered file, transcribed by joe and cut by its words, with
-   what each member of the family does for you.
-4. [Cookbook](cookbook.md): every behaviour of the editor, step by step,
-   generated from the browser tests that check them.
-5. [Captions](captions.md) and [Configuration](configuration.md): captions in
-   the editor and through the API, and every setting the server reads.
-6. [Concepts](about/index.md): clips, templates, timelines, projects and
-   renders. [Examples](examples/index.md) and the [API](api/index.md) make
-   videos without the editor, with `curl`.
+- **[Journeys](start.md)**: from a clone to the editor answering, then [what
+  you came to do](journeys.md), from a first video to captions, a phone and an
+  account, and [one video made with the whole family](guide.md). The editor's
+  own **How?** links open them.
+- **[Reference](captions.md)**: [captions](captions.md), [editing by
+  text](editing-by-text.md), the [editing tools](tools.md), and every
+  [setting](configuration.md) the server reads.
+- **[Develop](develop.md)**: the questions a new developer asks, each settled
+  by one command, then the test loop, the family loop and how the stacks are
+  built.
+- **[API](api/index.md)**: what a timeline, a project and a render are, and
+  videos made without the editor, with `curl`.
+- **[History](retrospective-0.3.0.md)**: what earlier rounds taught, and the
+  rules they left.
 
 ## How it is built
 
 A small control plane, `alfred`, owns accounts, projects, renders, captions
-and their orchestration, and hands the media work to two engines: otto draws
-every preview frame and render and mixes the timeline's sound, and vox drives
-an audio engine such as joe over HTTP, which transcribes captions from that
-sound. qmcp, QM's tool server, lets an assistant drive alfred through its
-`alfred_*` tools. [The family dev loop](family.md) runs them together.
+and their orchestration, and hands the media work to the rest of the family,
+each with docs of its own:
+
+| | Its part | Its docs |
+|---|---|---|
+| **otto** | draws every preview frame and render, and mixes the timeline's sound | [otto's docs](https://github.com/quaternionmedia/otto/tree/main/docs) |
+| **vox** | drives an audio engine over HTTP, by a contract | [vox's README](https://github.com/quaternionmedia/vox#readme) |
+| **joe** | the audio engine: hears the sound and times each word | [joe's docs](https://github.com/quaternionmedia/joe/tree/main/docs) |
+| **qmcp** | QM's tool server: an assistant drives alfred through its `alfred_*` tools | [qmcp](https://github.com/quaternionmedia/qmcp) |
+
+Where a page here says what an engine does, the engine's own docs decide.
+[The family dev loop](family.md) runs them together.
 
 !!! quote "Alfred Hitchcock"
     Drama is life with all the dull bits cut out.
