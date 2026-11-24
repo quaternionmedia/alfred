@@ -15,8 +15,7 @@
  * - `POST /preview/` answers with a signed URL for the frame it made.
  * - a render's `download_url`, in its status and in the render list.
  *
- * The frames used to be served from `/data`, a static mount open to anyone;
- * it is gone.
+ * Nothing is served from `/data`: there is no static mount open to anyone.
  */
 
 const { test, expect } = require('./fixtures')

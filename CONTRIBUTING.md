@@ -158,8 +158,9 @@ exists because two other QM projects hit the cryptic version first.
 [Images and stacks](docs/build.md#ci) says more about each, and about
 `publish.yml`, which runs from a version tag.
 
-**REUSE is not blocking yet.** As of 2026-08-08, 0 of 206 files carry
-copyright or licence information, and there is no `LICENSES/` directory;
+**REUSE is not blocking yet.** Few files carry copyright or licence
+information (`reuse-lint.yml` reports how many), and there is no `LICENSES/`
+directory;
 blocking would stop every pull request on a gap none of them introduced.
 Removing the `continue-on-error` line changes that, and the adoption record
 should record the date when it does.
@@ -179,8 +180,8 @@ A draft has no memory: if a decision changes while drafting, rewrite it as
 though the final position were held from the start. `adr-lint.yml` enforces
 that by rejecting revision-narrating vocabulary: "previously", "originally",
 "corrected" and the rest. Retrospectives and other material *for* deciding are
-not decision records; [docs/retrospective-0.3.0.md](docs/retrospective-0.3.0.md)
-is one, and says at the top why it is not in `adr/`.
+not decision records. alfred's are on qm's site, with [its timeline](https://quaternionmedia.github.io/qm/projects/alfred/timeline/):
+the project's docs state what is true, and its dated account lives there.
 
 ## Known gaps
 

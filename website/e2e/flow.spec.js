@@ -37,8 +37,7 @@ async function absentRoutes(request) {
 
 test.describe('the four-stage flow', () => {
   test('the timeline is the entry point', async ({ authedPage }) => {
-    // `/` used to be a marketing homepage. The first thing the app shows is
-    // now the thing it does.
+    // `/` is the editor: the first thing the app shows is the thing it does.
     await authedPage.goto('/')
     await expect(authedPage.locator('#timeline')).toBeVisible()
     await expect(authedPage.locator('.stagerail')).toBeVisible()

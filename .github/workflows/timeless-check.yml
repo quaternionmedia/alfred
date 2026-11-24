@@ -1,0 +1,60 @@
+# Durable text states what is true now, not how it came to be.
+#
+# SEED FILE: copy verbatim into .github/workflows/, the same discipline as
+# leak-check.yml. Only the workflow is copied: it runs check_timeless.py out
+# of the governance submodule, so a pattern added to the rule reaches every
+# project on its next pin bump.
+#
+# The rule is records/DRAFT-durable-text-states-what-is-true.md. The check
+# reads the lines a pull request adds, or a push adds to the default branch,
+# and refuses two shapes in prose: a phrase set in capitals, and a phrase that
+# only narrates. A deliberate exception is declared with `timeless: allow`
+# and a reason on the line or the line above; every allowance is counted.
+#
+# Text already in the repository is measured with
+# `check_timeless.py --all --summary` and swept in its own pull requests.
+# A story told in neutral words passes; the reviewer reads for it.
+
+name: Timeless text
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, edited]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  timeless:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Added durable text states what is true now
+        run: |
+          if [ "${{ github.event_name }}" = 'pull_request' ]; then
+            base="origin/${{ github.base_ref }}"
+          else
+            before='${{ github.event.before }}'
+            if [ -n "$before" ] && [ "$before" != '0000000000000000000000000000000000000000' ] \
+               && git rev-parse --verify -q "$before^{commit}" >/dev/null; then
+              base="$before"
+            else
+              base="HEAD^"
+            fi
+          fi
+          python governance/qm/project-seed/ci/check_timeless.py --base "$base"

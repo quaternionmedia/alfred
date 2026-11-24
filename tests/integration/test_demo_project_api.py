@@ -186,7 +186,7 @@ class TestWhichProjectIsTheDemo:
         assert again['id'] != demo['id']
 
     def test_a_demo_from_before_the_mark_is_kept(self, api, make_account, projects):
-        """Named Demo, unmarked: what the generator made until now."""
+        """Named Demo, unmarked: a demo made without the mark is kept as it is."""
         alice = make_account('alice')
         legacy = projects.insert_one(
             {'name': 'Demo', 'owner': alice.email, 'logic': {}, 'fields': []}

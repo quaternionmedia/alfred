@@ -315,7 +315,7 @@ export const Workspace = {
     // Follow the element's size -- the window, and the draft notice above it
     // -- at once. Golden Layout waits 100ms after the last resize by default,
     // and waits longer while resizes keep coming: for that long every panel
-    // is where it was, and a press lands on whatever used to be under it.
+    // is where it was, and a press lands on what the old layout put there.
     gl.resizeWithContainerAutomatically = true
     gl.resizeDebounceInterval = 0
     gl.resizeDebounceExtendedWhenPossible = false

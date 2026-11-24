@@ -10,8 +10,8 @@
  * and how many wait for a turn; `GET /healthz` answers container health
  * checks with no session and nothing behind it.
  *
- * This stack runs a worker against a database that starts empty, which is
- * also the case where a worker used to be deaf to pings until it restarted.
+ * This stack runs a worker against a database that starts empty, the case
+ * where a worker must still answer pings without a restart.
  */
 
 const { test, expect } = require('./fixtures')

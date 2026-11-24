@@ -33,11 +33,11 @@ import { success, error, message, prompt } from 'alertifyjs'
  * chain of any length. `m.redraw` coalesces on an animation frame, so calling
  * it once per request costs nothing when several are in flight.
  *
- * **Every path settles the promise.** The retry branch used to be the only
- * one: a response that was not a 401 -- a 500, a dropped connection, a CORS
- * refusal -- matched no branch and returned without resolving or rejecting,
- * so the caller waited forever. Nothing timed out and nothing was logged; the
- * button just stayed spinning.
+ * **Every path settles the promise**, not only the retry: a response that is
+ * not a 401 -- a 500, a dropped connection, a CORS refusal -- that matched no
+ * branch would return without resolving or rejecting, and the caller would
+ * wait forever. Nothing would time out and nothing would be logged; the
+ * button would spin on.
  */
 export function auth(url, opts = {}) {
   // Headers merge rather than replace: a caller adding one of its own used to
@@ -73,8 +73,8 @@ export function auth(url, opts = {}) {
 
 /** What to tell someone whose registration was refused.
  *
- * Every failure used to read "error regestering". The one that most needs
- * saying plainly is a server that does not take registrations at all -- closed
+ * Each failure says what it is. The one that most needs saying plainly is a
+ * server that does not take registrations at all -- closed
  * by default in production -- because nothing the person can type will fix it,
  * and a generic error invites them to keep trying. The server's own wording is
  * shown when it gives one, so the message cannot drift from the policy.
@@ -275,10 +275,9 @@ export function linkFailure(err) {
 
 /** The page a mailed link opens: `#!/account/reset` or `#!/account/verify`.
  *
- * A password-reset or confirmation token used to be printed to the server's
- * log and go nowhere else, so outside development nobody could finish either.
- * The server mails them now, as a link here carrying the token, and this page
- * finishes the job: a new password for a reset, which then goes to the login
+ * The server mails a password-reset or confirmation token as a link here
+ * carrying the token, so either can be finished outside development, and this
+ * page finishes the job: a new password for a reset, which then goes to the login
  * screen; the confirmation itself for a verify, as soon as the page opens.
  *
  * Open to anybody -- the person following the link is not logged in, which is

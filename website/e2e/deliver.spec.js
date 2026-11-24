@@ -5,8 +5,8 @@
  *
  * Queue a render and the Deliver stage follows it: the row moves from queued
  * to rendering with a progress bar, then to rendered -- or to failed, with the
- * reason. Nothing needs reloading. It used to be a snapshot of the moment the
- * stage opened, so a render looked queued for as long as you watched it.
+ * reason. Nothing needs reloading: a snapshot of the moment the stage opened
+ * would show a render queued for as long as anyone watched it.
  *
  * The status and download routes are answered here rather than by a worker:
  * what is under test is what the page does with each answer, and a real encode

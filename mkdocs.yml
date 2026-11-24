@@ -5,7 +5,8 @@ site_url: https://alfred.quaternion.media/docs/
 edit_uri: ''
 
 # Six sections, as qm's own site: the journeys a person takes, the reference
-# they look things up in, then developing alfred, the API, and the history.
+# they look things up in, then developing alfred and the API. History links
+# out: the dated account is alfred's subtree on qm's site.
 nav:
   - Home: index.md
   - Journeys:
@@ -55,9 +56,7 @@ nav:
           - api/fonts.md
           - api/render.md
           - api/errors.md
-  - History:
-      - Retrospective (0.3.0): retrospective-0.3.0.md
-      - Retrospective (verification): retrospective-verification-discipline.md
+  - History: https://quaternionmedia.github.io/qm/projects/alfred/timeline/
 
 # Every check mkdocs can make of the pages, as a warning: a page left out of
 # the nav, a link naming no page or file, an anchor no heading makes, and an
