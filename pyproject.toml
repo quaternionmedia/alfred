@@ -1,3 +1,4 @@
+# Why each pin, override and lockfile: docs/dependencies.md.
 [project]
 name = "al"
 dynamic = ["version"]
@@ -7,13 +8,9 @@ dependencies = [
     "al-otto >= 0.2.2",
     "fastapi<1.0.0,>=0.92.0",
     "aiofiles<24.0.0,>=23.1.0",
-    # Before changing this, read alfred/core/utils/passwords.py. alfred carries
-    # copies of the library's password-hashing methods, checked against one
-    # release (10.4.2, the lock's), and the api refuses to start on any other.
+    # Read alfred/core/utils/passwords.py first: the api refuses any release but 10.4.2.
     "fastapi-users<11.0.0,>=10.4.0",
-    # Declared although nothing here imports it: it parses every form the api
-    # accepts, the login form anyone can post included, so this project
-    # depends on its fixes. fastapi-users pins it exactly; see the override.
+    # Parses every form the api takes, login included. Keep it on a release with no open advisory.
     "python-multipart>=0.0.31",
     "motor<4.0.0,>=3.1.1",
     "beanie<2.0.0,>=1.17.0",
@@ -26,46 +23,16 @@ dependencies = [
     "fastapi-users-db-beanie<2.0.0,>=1.1.4",
     "fastapi-crudrouter @ git+https://github.com/quaternionmedia/fastapi-crudrouter.git@motor-reupdate",
     "ujson>=5.7.0",
-    # 9.5 was pinned because Pillow 10 removed Image.ANTIALIAS, which moviepy
-    # 1.0.3 resizes with -- and 9.5 has every advisory since against it,
-    # CVE-2023-4863 and CVE-2024-28219 among them. The engine now restores the
-    # name when Pillow lacks it (alfred/otto/otto/__init__.py), and
-    # tests/pipeline/test_resize.py draws and encodes through that path. 12.3
-    # has no advisory open. Below 13, two days old as this is written, until
-    # it has had the same test.
+    # Below 13 until tests/pipeline/test_resize.py has run on it.
     "pillow>=12.3,<13",
-    # A constraint more than a dependency: nothing here imports numpy, but
-    # moviepy and the engine do, and neither bounds it. The lock held 1.24, the
-    # newest numpy that still installed on Python 3.8; 1.26 is the last 1.x.
-    # Below 2, which removed APIs, until the encode path (moviepy 1.0.3) has
-    # been run on 2.x in the image.
+    # Not imported here; bounds moviepy's and otto's. Below 2 until encoding is tested on 2.x.
     "numpy>=1.26.4,<2",
-    # Capped, not merely floored, and the cap is the load-bearing half.
-    #
-    # `passlib.pwd` imports `pkg_resources` at module scope, and setuptools
-    # removed `pkg_resources` in 81. So on a clean install every module that
-    # touches authentication raises ImportError -- which presented as ten
-    # unrelated test modules failing to collect, naming neither passlib nor
-    # setuptools.
-    #
-    # This buys time; it does not fix anything. passlib's last release was
-    # 2020 and it is not coming back. The exit is fastapi-users >= 13, which
-    # replaced passlib with pwdlib -- a dependency bump with an auth migration
-    # attached, which is its own change and not this one.
+    # The cap matters: passlib needs pkg_resources, which 81 removed. Drop with passlib.
     "setuptools>=75.3.4,<81",
-    # The sound engine's client. vox -- vendored at alfred/vox, as otto is at
-    # alfred/otto -- is installed with --no-deps like everything else here, so
-    # what its core imports has to be declared by this project, and httpx is
-    # the whole of that: the rest of vox's own dependencies (a speech
-    # synthesizer, a CLI) serve parts of it alfred does not load. The floor is
-    # vox's.
+    # vox's one core dependency; vox installs with --no-deps. Floor is vox's.
     "httpx>=0.27.0,<1",
 ]
-# 3.11, and only 3.11: the image, CI, ruff and black all target it, and the
-# engine caps below 3.12 (alfred/otto/pyproject.toml: the newest Python every
-# pydantic 1.10 it admits supports). The floor was 3.8.1, and pdm locks for the
-# whole range, so anything that has since dropped 3.8 sat at its last release
-# that still installed there -- numpy 1.24, anyio 4.5 -- whatever Python ran.
+# 3.11 only: otto's pydantic 1.10 caps it below 3.12.
 requires-python = ">=3.11,<3.12"
 readme = "README.md"
 license = { text = "MIT" }
@@ -81,10 +48,7 @@ build-backend = "pdm.backend"
 
 [tool.pdm.dev-dependencies]
 dev = ["uvicorn >= 0.20.0", "ruff~=0.0", "black"]
-# What `./al docs` runs on the host, `mkdocs serve`, and the docs workflow
-# builds with: the same two ranges as .github/workflows/docs.yml. Below MkDocs
-# 2, which Material for MkDocs does not run on. `./al prod` builds the site
-# with the image of the release pdm.lock holds here.
+# Same ranges as .github/workflows/docs.yml. Locked in pdm.docs.lock, not pdm.lock.
 docs = ["mkdocs>=1.6,<2", "mkdocs-material>=9.7,<10"]
 
 [project.optional-dependencies]
@@ -96,47 +60,19 @@ test = [
     "pytest-timeout>=2.1.0",
     "httpx>=0.24.0",
     "pyyaml>=6.0",
-    # See the cap on setuptools in the runtime dependencies above; the test
-    # environment installs its own copy and needs the same bound.
+    # Same cap as the runtime setuptools.
     "setuptools>=75.3.4,<81",
 ]
-# The engine's own `render` extra, by reference: `al[render]` asks for what
-# the engine says it draws with, so there is no second copy of that list to
-# keep in step. pdm resolves it from the submodule (the override below), so
-# the lock -- and requirements-render.lock, exported from this group, which
-# the image, nox and CI install -- describe the extra of the engine alfred
-# runs, not of the release on PyPI.
+# otto's own render extra, by reference. Raise with al-otto's floor above.
 render = [
     "al-otto[render]>=0.2.2",
 ]
 
-# An override replaces every requirement on a package, its dependents'
-# included. pdm honours it; pip has no such thing, so the image, nox and CI
-# install the exported lockfiles with --no-deps (the Dockerfile says more).
-#
-# Relock with pdm 2.29 or later. pdm 2.22, with this override locked, fails
-# `pdm add`, `pdm update <pkg>` and `pdm lock --update-reuse` with
-# CandidateNotFound for python-multipart, and its full `pdm lock` had not
-# finished after 49 minutes; only `pdm update python-multipart` worked. 2.29
-# relocks everything in under two minutes.
+# pdm only; pip has no overrides, so every install uses --no-deps. Relock with pdm >= 2.29.
 [tool.pdm.resolution.overrides]
-# fastapi-users 10.4 pins python-multipart==0.0.6, which has nine advisories
-# against it (CVE-2024-24762 and CVE-2024-53981 among them). Every
-# fastapi-users before 15.0.4 pins an exact version with some still open --
-# 14.x pins 0.0.20, with seven -- and 15 needs pydantic 2, which the engine
-# cannot take yet. 0.0.31 is the first release with none open. fastapi-users
-# never imports it; FastAPI and Starlette do, and both take this release.
+# Over fastapi-users' exact pin. 0.0.31 is the first release with no open advisory.
 python-multipart = ">=0.0.31"
-# The engine, from where every install path runs it: the submodule. Resolved
-# from PyPI instead, the lock described al-otto 0.2.2 as published, which is
-# older than alfred/otto and whose render extra still names bezier (no wheel
-# for this Python; alfred/otto dropped it). Restating the extra here kept
-# bezier out but left two lists to agree, and the core still came from PyPI.
-#
-# pip ignores tool.pdm, and a published wheel cannot name a path, so the
-# metadata keeps naming al-otto by version. Raise both floors (dependencies
-# and `render`) to otto's next release once it is published; the override
-# stays, because the image runs the submodule either way.
+# Lock the engine every install runs: the submodule, not PyPI.
 al-otto = "file:///${PROJECT_ROOT}/alfred/otto"
 
 [tool.pdm]
@@ -150,47 +86,30 @@ markers = [
     "needs_docker: requires a working Docker daemon; builds or runs containers",
     "needs_imagemagick: requires ImageMagick able to render text with a findable font",
 ]
-# xfail(strict=True) is used to pin defects: the marked test fails if it ever
-# passes, so fixing the defect turns the suite red and prompts removing the
-# marker. Make that the default so a non-strict xfail has to be deliberate.
+# An xfail pins a defect: when the defect is fixed, the test fails, and the marker comes off.
 xfail_strict = true
 
 [tool.black]
 skip-string-normalization = true
-# Pinned, or black infers a target from the syntax it sees and then warns that
-# the running interpreter cannot verify its own output.
+# Pinned, or black infers one and warns.
 target-version = ['py311']
-# `force-exclude`, not `exclude`: plain `exclude` is ignored for paths given
-# explicitly on the command line, and these are submodules with their own
-# repositories and their own formatting gates.
+# force-exclude also covers paths named on the command line.
 force-exclude = '(alfred/otto|alfred/vox|governance|website|tests/\.nox)'
 
 [tool.ruff]
-# Explicit, because the absence of this block was not "ruff defaults" -- the
-# lint session resolved to a very wide implicit rule set and reported 157
-# findings across app and tests, most of them stylistic (62 asked for
-# `from __future__ import annotations` in a project that requires 3.11). A
-# gate nobody can act on is one everybody learns to ignore, and this one was
-# additionally failing on a usage error, so its output was never read at all.
-#
-# This set is the ruff defaults plus import sorting and bugbear: rules that
-# catch mistakes rather than express preferences. Formatting belongs to Black
-# (`-S`), which runs in its own session and is the authority on layout.
 target-version = 'py311'
 extend-exclude = ['alfred/otto', 'alfred/vox', 'governance', 'website', 'tests/.nox']
 
 [tool.ruff.lint]
+# Defaults, plus import order and bugbear. Layout is black's.
 select = ['E4', 'E7', 'E9', 'F', 'I', 'B']
 
 [tool.ruff.lint.per-file-ignores]
-# The env vars have to be set before the app imports read them, so these
-# imports sit below assignments deliberately.
+# Sets the environment before the app's imports read it.
 'tests/conftest.py' = ['E402']
 
 [tool.ruff.lint.flake8-bugbear]
-# FastAPI declares dependencies as default arguments -- `db=Depends(get_db)`
-# is the documented spelling, and evaluating it once at import is the intended
-# behaviour, not the bug B008 describes.
+# FastAPI's dependency defaults are meant to be evaluated once.
 extend-immutable-calls = [
     'fastapi.Depends',
     'fastapi.Query',

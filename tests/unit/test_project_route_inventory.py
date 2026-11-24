@@ -32,6 +32,7 @@ INVENTORY = {
     # Captions (contract K2): routes/captions.py.
     ('GET', '/project/{item_id}/captions'),
     ('PUT', '/project/{item_id}/captions'),
+    ('GET', '/project/{item_id}/captions/words'),
     ('POST', '/project/{item_id}/captions/import'),
     ('POST', '/project/{item_id}/captions/transcribe'),
 }

@@ -1,0 +1,13 @@
+{
+  "edl": {
+    "clips": [
+      {
+        "type": "template",
+        "name": "title",
+        "data": {
+          "text": "asdf"
+        }
+      }
+    ]
+  }
+}

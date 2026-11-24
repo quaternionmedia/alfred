@@ -1,0 +1,18 @@
+{
+  "edl": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/demo-bars.mp4",
+        "duration": 2
+      },
+      {
+        "type": "video",
+        "name": "videos/demo-testcard.mp4",
+        "inpoint": 1,
+        "duration": 2,
+        "start": 2
+      }
+    ]
+  }
+}

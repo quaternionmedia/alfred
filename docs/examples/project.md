@@ -1,14 +1,15 @@
 # Working with Projects
 
-The following is a complete example of a `Project` which makes a 10 second commercial. The desired `Edl` will include a:
+The following is a complete example of a `Project` which makes a 3 second commercial. The desired `Edl` will include a:
 
 - **BaseVideo**
-    - duration: 10 seconds
+    - `videos/demo-colour.mp4`, a plain dark backdrop from the demo media
+    - duration: 3 seconds
 - **ProductImage**
-    - starts at 5 seconds
+    - starts at 1 second, for 2 seconds
     - resized to appear in the center right
 - **ProductName**
-    - starts at 5 seconds
+    - starts at 1 second, for 2 seconds
     - the text color can be changed
 - **Logo**
     - positioned at the bottom right corner

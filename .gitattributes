@@ -1,0 +1,3 @@
+# LF always: Linux sh fails on CRLF (a Windows clone run from WSL).
+al text eol=lf
+*.sh text eol=lf

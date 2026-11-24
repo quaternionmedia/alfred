@@ -1,0 +1,15 @@
+{
+  "edl": {
+    "clips": [
+      {
+        "type": "video",
+        "name": "videos/demo-bars.mp4",
+        "duration": 3
+      }
+    ]
+  },
+  "width": 1920,
+  "height": 1080,
+  "fps": 30,
+  "quality": "standard"
+}

@@ -5,8 +5,8 @@
  *
  * On a screen 1024 pixels wide or more the editor is a workspace of panels:
  * projects and the library on the left, the viewer above the timeline in the
- * middle, the selected clip's settings and the Render, Deliver and Captions
- * tabs on the right. Drag a tab to move a panel, drag the gaps to resize
+ * middle, the selected clip's settings and the transcript over the Render,
+ * Deliver and Captions tabs on the right. Drag a tab to move a panel, drag the gaps to resize
  * them, close what you do not need. The arrangement is kept in this browser
  * and comes back on the next visit. The Panels menu brings back a closed
  * panel, in its place, and Reset layout restores the arrangement above.

@@ -6,18 +6,12 @@ A video or image is first fitted inside the frame, keeping its proportions, and 
 - below 1 shrinks it
 
 ``` json title="data.json"
-{
-  "edl": {
-    "clips": [
-      {
-        "type": "video",
-        "name": "videos/moon.mp4",
-        "resize": 2.5
-      }
-    ]
-  }
-}
+--8<-- "docs/examples/edl/resize.json"
 ```
+
+![The resize example in the editor: one 3-second clip of the colour bars](../assets/screens/examples/resize.png)
+
+*The resize example in the editor: one 3-second clip of the bars. The viewer plays the file as it is; the resize is drawn in a [preview frame](preview.md) or a render.*
 
 ## Position
 A position of numbers places the clip's top left corner, measured from the frame's top left:
@@ -31,45 +25,23 @@ Each example below first shrinks the clip to half the frame, so where it sits sh
 === "Absolute"
     With `"relative": false`, `[x, y]` is pixels from the top left. This places the clip 100 pixels from the left and 50 from the top.
     ``` json title="data.json"
-    {
-      "edl": {
-        "clips": [
-          {
-            "type": "video",
-            "name": "videos/moon.mp4",
-            "resize": 0.5,
-            "relative": false,
-            "position": [
-              100,
-              50
-            ]
-          }
-        ]
-      }
-    }
+    --8<-- "docs/examples/edl/position-absolute.json"
     ```
+
+    ![The absolute position example in the editor: one 3-second clip of the colour bars](../assets/screens/examples/position-absolute.png)
+
+    *The absolute position example in the editor. The viewer plays the file as it is; the size and position are drawn in a preview frame or a render.*
 === "Relative"
     `[x, y]` is in fractions of the frame, where `1` is its width or height. Positions are relative unless the clip says `"relative": false`.
     
     This places the half-size video at the top centre of the frame: its left edge a quarter of the way across.
     ``` json title="data.json"
-    {
-      "edl": {
-        "clips": [
-          {
-            "type": "video",
-            "name": "videos/moon.mp4",
-            "resize": 0.5,
-            "relative": true,
-            "position": [
-              0.25,
-              0
-            ]
-          }
-        ]
-      }
-    }
+    --8<-- "docs/examples/edl/position-relative.json"
     ```
+
+    ![The relative position example in the editor: one 3-second clip of the colour bars](../assets/screens/examples/position-relative.png)
+
+    *The relative position example in the editor. The viewer plays the file as it is; the size and position are drawn in a preview frame or a render.*
 === "Text"
     Place the clip at `[x, y]` with these words:
 
@@ -80,19 +52,9 @@ Each example below first shrinks the clip to half the frame, so where it sits sh
         
     This places it exactly as the relative example does.
     ``` json title="data.json"
-    {
-      "edl": {
-        "clips": [
-          {
-            "type": "video",
-            "name": "videos/moon.mp4",
-            "resize": 0.5,
-            "position": [
-              "center",
-              "top"
-            ]
-          }
-        ]
-      }
-    }
+    --8<-- "docs/examples/edl/position-words.json"
     ```
+
+    ![The words position example in the editor: one 3-second clip of the colour bars](../assets/screens/examples/position-words.png)
+
+    *The words position example in the editor. The viewer plays the file as it is; the size and position are drawn in a preview frame or a render.*

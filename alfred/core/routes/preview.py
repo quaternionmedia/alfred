@@ -1,3 +1,4 @@
+import json
 import os
 import re
 from os import makedirs
@@ -129,7 +130,9 @@ def remove_quietly(path):
 
 # Query parameters that describe the frame, or the clip around the template,
 # rather than the template's own data.
-_FRAME_PARAMS = frozenset({'width', 'height', 't', 'fadeIn', 'fadeOut', 'length'})
+_FRAME_PARAMS = frozenset(
+    {'width', 'height', 't', 'fadeIn', 'fadeOut', 'length', 'data'}
+)
 
 
 # A plain function, not a coroutine, like the template preview below: it runs
@@ -226,6 +229,7 @@ def previewTemplate(
     fadeIn: float = 0,
     fadeOut: float = 0,
     length: Optional[float] = None,
+    data: Optional[str] = None,
 ):
     """# Preview a single template
 
@@ -238,10 +242,8 @@ def previewTemplate(
     POST-and-filename shape of `/preview/` above, because that is what an
     `<img>` can consume.
 
-    Template parameters arrive as query parameters, which the editor already
-    sends. Anything not named here is passed to the template as data; `null`
-    is dropped rather than forwarded, since the editor serialises absent
-    fields that way and the template expects them missing.
+    The template's data is `data`, a JSON object, or one query parameter per
+    plain field (`?text=Hello`). Nulls are dropped.
     """
     # The allowlist, not the engine's registry: the engine refuses anything
     # that is not a template, but it also renders `final`, which this server
@@ -250,11 +252,20 @@ def previewTemplate(
     if name not in TEMPLATE_NAMES:
         raise HTTPException(status_code=404, detail=f'No such template: {name}')
 
-    data = {
-        key: value
+    fields = {}
+    if data:
+        try:
+            fields = json.loads(data)
+        except ValueError:
+            fields = None
+        if not isinstance(fields, dict):
+            raise HTTPException(status_code=422, detail='data must be a JSON object')
+        fields = {key: value for key, value in fields.items() if value is not None}
+    fields.update(
+        (key, value)
         for key, value in request.query_params.items()
         if key not in _FRAME_PARAMS and value not in ('null', 'undefined', '')
-    }
+    )
 
     # No fades unless the request asks for them. A clip fades in over its
     # first second by default, so a preview sampled near the start -- which is
@@ -272,7 +283,7 @@ def previewTemplate(
         type='template',
         name=name,
         duration=duration,
-        data=TemplateData(**data),
+        data=TemplateData(**fields),
         fadeIn=fadeIn,
         fadeOut=fadeOut,
     )

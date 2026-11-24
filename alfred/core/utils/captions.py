@@ -19,7 +19,8 @@ becomes on the way out (contract K2):
   rendered: the size, the margin, how wide the box is.
 - **Transcripts.** `captions_from_transcript` turns what an audio engine heard
   into captions a person can read in the time they are shown for, using the
-  engine's word timings to break long stretches of speech.
+  engine's word timings to break long stretches of speech;
+  `words_from_transcript` keeps the words for editing by text.
 """
 
 import html
@@ -36,6 +37,7 @@ from ..models.captions import (
     MAX_CAPTION_CHARS,
     Caption,
     CaptionStyle,
+    Word,
     clean_caption_text,
 )
 
@@ -49,6 +51,25 @@ MAX_CAPTIONS = 1000
 
 class TooManyCaptions(ValueError):
     pass
+
+
+# Most words a project keeps: above what MAX_CAPTIONS transcript captions
+# can hold (1000 x 42), a few MB of the 16 MB document.
+MAX_WORDS = 50_000
+
+
+class TooManyWords(ValueError):
+    pass
+
+
+def checked_words(words: Optional[Iterable[Word]]) -> List[Word]:
+    """`words` in the order given; TooManyWords past MAX_WORDS."""
+    kept = list(words or [])
+    if len(kept) > MAX_WORDS:
+        raise TooManyWords(
+            f'{len(kept)} words is more than the {MAX_WORDS} a project may keep'
+        )
+    return kept
 
 
 def checked_captions(captions: Optional[Iterable[Caption]]) -> List[Caption]:
@@ -621,3 +642,38 @@ def captions_from_transcript(segments, until=None) -> List[Caption]:
     # More than a project may carry is a failure that says so, not a
     # transcript quietly cut short.
     return checked_captions(captions)
+
+
+def words_from_transcript(segments, until=None) -> List[Word]:
+    """The engine's words in timeline seconds, in order, numbered by segment.
+
+    Same words the captions use: none from non-speech or untimed segments.
+    Clamped to [0, until]; an end before the start is set to the start.
+    """
+    words = []
+    number = 0
+    for segment in segments:
+        heard = [
+            w
+            for w in (segment.words or ())
+            if _finite(w.start, w.end) and w.text.strip()
+        ]
+        if not heard or not is_speech(_spoken(heard)):
+            continue
+        kept = []
+        for word in heard:
+            start = max(0.0, word.start)
+            end = max(start, word.end)
+            if until is not None:
+                if start >= until:
+                    continue
+                end = min(end, until)
+            try:
+                kept.append(Word(start=start, end=end, text=word.text, segment=number))
+            except ValidationError:
+                # Empty once cleaned, or too long.
+                continue
+        if kept:
+            words.extend(kept)
+            number += 1
+    return checked_words(words)

@@ -11,6 +11,7 @@ The single-template preview returns the image itself, so it has no reason to
 leave a file anywhere, and wrote every frame into DATA_DIR for good.
 """
 
+import json
 import os
 import re
 from pathlib import Path
@@ -235,6 +236,33 @@ def built(monkeypatch):
 
     monkeypatch.setattr(preview, 'renderFrame', draw)
     return edls
+
+
+class TestTheTemplatePreviewTakesItsDataAsJson:
+    """`data` carries structured fields; one parameter per field cannot."""
+
+    def test_a_structured_field_arrives_whole(self, client, built):
+        # Mutation: ignore `data` -- fxs never reaches the template.
+        fxs = [{'name': 'bezier2', 'data': {'c1x': 1, 'c1y': 0}}]
+        data = json.dumps({'text': 'Hi', 'fxs': fxs, 'color': None})
+        res = client.get('/preview/template/textBox', params={'data': data, 't': 0})
+        assert res.status_code == 200, res.text
+        (clip,) = built[0].clips
+        assert clip.data.text == 'Hi'
+        assert [fx.name for fx in clip.data.fxs] == ['bezier2']
+        assert clip.data.color is None
+
+    def test_a_plain_parameter_still_works_and_wins(self, client, built):
+        data = json.dumps({'text': 'from data'})
+        client.get('/preview/template/title', params={'data': data, 'text': 'plain'})
+        (clip,) = built[0].clips
+        assert clip.data.text == 'plain'
+
+    def test_data_that_is_not_an_object_is_refused(self, client, built):
+        for bad in ('not json', '[1, 2]', '"text"'):
+            res = client.get('/preview/template/title', params={'data': bad})
+            assert res.status_code == 422, bad
+        assert not built
 
 
 class TestTheTemplatePreviewShowsTheTemplateMidClip:

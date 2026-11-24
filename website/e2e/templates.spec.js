@@ -17,7 +17,7 @@
  * clips only reached a timeline through demo and seed projects.
  */
 
-const { test, expect } = require('./fixtures')
+const { test, expect, templateQuery } = require('./fixtures')
 
 const DEFAULT_TEXT = 'Your text here'
 
@@ -221,7 +221,7 @@ test.describe("changing a template clip's settings", () => {
     const frames = []
     authedPage.on('request', req => {
       const url = new URL(req.url())
-      if (url.pathname === '/preview/template/title') frames.push(url.searchParams)
+      if (url.pathname === '/preview/template/title') frames.push(templateQuery(url))
     })
 
     await authedPage.goto('/#!/?stage=edit')
@@ -285,7 +285,7 @@ test.describe("changing a template clip's settings", () => {
      */
     const reason = 'title could not be rendered from the data supplied.'
     await authedPage.route(
-      url => url.pathname === '/preview/template/title' && url.searchParams.get('color') === 'nope',
+      url => url.pathname === '/preview/template/title' && templateQuery(url).get('color') === 'nope',
       route => route.fulfill({ status: 422, json: { detail: reason } })
     )
 
@@ -327,7 +327,7 @@ test.describe("a template's type and placement", () => {
     const frames = []
     page.on('request', req => {
       const url = new URL(req.url())
-      if (url.pathname.startsWith('/preview/template/')) frames.push(url.searchParams)
+      if (url.pathname.startsWith('/preview/template/')) frames.push(templateQuery(url))
     })
     return frames
   }
@@ -412,7 +412,7 @@ test.describe("a template's type and placement", () => {
     const reason = 'title could not be rendered from the data supplied.'
     await authedPage.route(
       url =>
-        url.pathname === '/preview/template/title' && url.searchParams.get('font') === 'Nimbus-Sans',
+        url.pathname === '/preview/template/title' && templateQuery(url).get('font') === 'Nimbus-Sans',
       route => route.fulfill({ status: 422, json: { detail: reason } })
     )
     await authedPage.goto('/#!/?stage=edit')

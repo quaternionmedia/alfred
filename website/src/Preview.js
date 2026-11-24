@@ -7,10 +7,8 @@ import { Library } from './Library'
 import { isSigned } from './Signed'
 var state = require("./Globals").state
 
-const urlfy = obj => Object
-    .keys(obj || {})
-    .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(obj[k]))
-    .join('&');
+// JSON, so structured fields (an animation's fxs) survive the query.
+const dataParam = obj => 'data=' + encodeURIComponent(JSON.stringify(obj || {}))
 
 /** The length a render builds a template clip to: its outpoint, else its
  * duration. Sent with the preview so the server builds the template the same
@@ -27,7 +25,7 @@ const builtLength = clip => {
 export const templatePreviewUrl = clip => {
   const length = builtLength(clip)
   return (
-    `preview/template/${encodeURIComponent(clip['name'])}?${urlfy(
+    `preview/template/${encodeURIComponent(clip['name'])}?${dataParam(
       clip.data
     )}&width=${state.width()}&height=${state.height()}&t=${Video.time()}` +
     (length ? `&length=${length}` : '')

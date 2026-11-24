@@ -129,7 +129,7 @@ class TestTheCookbookMatchesTheSuite:
         the generator right now produces this byte for byte". Anything else
         and the cookbook is a snapshot of whatever the last person ran.
         """
-        before = COOKBOOK.read_text(encoding='utf-8')
+        before = COOKBOOK.read_bytes()
         result = subprocess.run(
             ['node', str(GENERATOR)],
             cwd=str(REPO / 'website'),
@@ -138,9 +138,10 @@ class TestTheCookbookMatchesTheSuite:
         )
         assert result.returncode == 0, f'generator failed: {result.stderr[-400:]}'
 
-        after = COOKBOOK.read_text(encoding='utf-8')
+        after = COOKBOOK.read_bytes()
         if before != after:
-            COOKBOOK.write_text(before, encoding='utf-8')
+            # Bytes: write_text would restore it with CRLF on Windows.
+            COOKBOOK.write_bytes(before)
             pytest.fail(
                 'docs/cookbook.md is out of date with the e2e specs. '
                 'Regenerate with `node website/e2e/cookbook.js` and commit it.'

@@ -88,6 +88,8 @@ export const Captions = {
   // A transcription asked for while captions exist waits for a yes.
   confirming: false,
   timer: null,
+  // Called with the project id when a followed transcription is done.
+  transcribed: [],
 
   snapshot: () => JSON.stringify({ list: Captions.list.map(plain), style: Captions.style }),
 
@@ -192,9 +194,10 @@ export const Captions = {
   canSave: () =>
     Captions.loaded && !Captions.busy && Captions.problems().every(problem => !problem),
 
-  save: () => {
+  /** Save captions and style, and `words` if given, in one request. Resolves to success. */
+  save: ({ words } = {}) => {
     const projectId = Captions.projectId
-    if (!projectId) return Promise.resolve()
+    if (!projectId) return Promise.resolve(false)
     Captions.commit()
     Captions.busy = 'save'
     Captions.error = null
@@ -206,20 +209,29 @@ export const Captions = {
       })),
       style: Captions.style,
     }
+    if (words) body.words = words
     return auth(`/project/${projectId}/captions`, { method: 'PUT', body })
       .then(answer => {
-        if (Captions.projectId !== projectId) return
+        if (Captions.projectId !== projectId) return false
         // The job is not the save's to change; keep the one known.
         const job = Captions.job
         Captions.accept(answer)
         Captions.job = answer.job || job
+        return true
       })
       .catch(err => {
         Captions.error = `Could not save the captions: ${requestProblem(err) || 'no answer'}`
+        return false
       })
-      .then(() => {
+      .then(saved => {
         Captions.busy = null
+        return saved
       })
+  },
+
+  /** Replace the list (after a cut), keeping keys. Unsaved. */
+  replace: list => {
+    Captions.list = list.map(keyed)
   },
 
   /** Read a subtitle file through the server, for review. */
@@ -307,9 +319,11 @@ export const Captions = {
             Captions.poll()
             return
           }
-          // Settled: done replaced the captions on the server; failed did not.
-          if (job && job.state === 'done') Captions.accept(answer)
-          else Captions.job = job
+          // Settled: done replaced the captions and words on the server; failed did not.
+          if (job && job.state === 'done') {
+            Captions.accept(answer)
+            Captions.transcribed.forEach(listener => listener(projectId))
+          } else Captions.job = job
         })
         .catch(() => {
           if (Captions.projectId === projectId) Captions.poll()

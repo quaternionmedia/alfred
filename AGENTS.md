@@ -124,11 +124,12 @@ arguments prints the full command list.
 
 | Command | What it does |
 |---|---|
-| `./al dev` | Run the dev stack; app on http://localhost:8000 (`ALFRED_PORT` to move it) |
+| `./al dev` | Run the dev stack; app on http://127.0.0.1:8000 (`ALFRED_PORT` to move it) |
 | `./al dev --build` | Rebuild images first |
 | `./al stop` | Stop the dev stack |
 | `./al demo` | Download demo media into `videos/` (needs network; the app can generate its own) |
 | `./al pytest` | Run the API test suite in Docker |
+| `./al loop` | The suites side by side as one named run; several runs at once ([docs/loop.md](docs/loop.md)) |
 | `./al nox -s lint` | Ruff |
 | `./al nox -s blacken` | Black (`-S`, single quotes) |
 | `./al docs` | Serve mkdocs locally on :4000 |

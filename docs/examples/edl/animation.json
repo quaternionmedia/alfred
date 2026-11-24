@@ -1,0 +1,26 @@
+{
+  "edl": {
+    "clips": [
+      {
+        "type": "template",
+        "name": "textBox",
+        "data": {
+          "text": "asdf",
+          "fxs": [
+            {
+              "name": "bezier2",
+              "data": {
+                "c1x": 1,
+                "c1y": 0,
+                "ax": 0,
+                "ay": 0,
+                "c2x": 0,
+                "c2y": 1
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

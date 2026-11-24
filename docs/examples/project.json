@@ -5,14 +5,14 @@
       {
         "eachKey": {
           "type": "video",
-          "name": "videos/moon.mp4",
-          "duration": 10,
-          "inpoint": 4
+          "name": "videos/demo-colour.mp4",
+          "duration": 3
         }
       },
       {
         "eachKey": {
-          "start": 5,
+          "start": 1,
+          "duration": 2,
           "type": "image",
           "name": {
             "var": "ProductImage"
@@ -27,7 +27,8 @@
       },
       {
         "eachKey": {
-          "start": 5,
+          "start": 1,
+          "duration": 2,
           "type": "template",
           "name": "textBox",
           "data": {
@@ -59,7 +60,7 @@
             "bottom"
           ]
         },
-        "duration": 10
+        "duration": 3
       }
     ]
   },

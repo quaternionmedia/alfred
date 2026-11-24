@@ -14,7 +14,8 @@ own origin.
 And the tools that build it are declared and pinned. `./al docs` runs mkdocs
 on the host, which nothing named, so a fresh clone could not know what to
 install; `./al prod` built the site with `squidfunk/mkdocs-material` at
-whatever `latest` meant that day.
+whatever `latest` meant that day. They are locked in pdm.docs.lock, apart
+from pdm.lock (docs/dependencies.md).
 """
 
 import re
@@ -123,9 +124,13 @@ def docs_group():
     }
 
 
+def lockfile(name):
+    return tomllib.loads((REPO / name).read_text(encoding='utf-8'))
+
+
 def locked(name):
-    lock = tomllib.loads((REPO / 'pdm.lock').read_text(encoding='utf-8'))
-    for package in lock['package']:
+    """The docs lock's entry for one package, or None."""
+    for package in lockfile('pdm.docs.lock')['package']:
         if canonicalize_name(package['name']) == name:
             return package
     return None
@@ -153,12 +158,36 @@ class TestTheToolsThatBuildItAreDeclared:
         )
 
     def test_the_docs_group_is_locked(self):
-        lock = tomllib.loads((REPO / 'pdm.lock').read_text(encoding='utf-8'))
-        assert 'docs' in lock['metadata']['groups'], 'pdm.lock has no docs group'
+        groups = lockfile('pdm.docs.lock')['metadata']['groups']
+        assert 'docs' in groups, 'pdm.docs.lock has no docs group'
         for name, requirement in docs_group().items():
             package = locked(name)
             assert package and 'docs' in package['groups'], f'{name} is not locked'
             assert Version(package['version']) in requirement.specifier
+
+    def test_the_docs_lock_holds_the_docs_tools_and_nothing_else(self):
+        """The application's groups belong in pdm.lock, which the exports come from."""
+        groups = lockfile('pdm.docs.lock')['metadata']['groups']
+        assert groups == ['docs'], (
+            f'pdm.docs.lock locks {groups}. Relock it with '
+            '`pdm lock -L pdm.docs.lock -G docs --no-default`.'
+        )
+
+    def test_the_application_lock_holds_no_docs_tool(self):
+        """Locked with the app, Material drops colorama's Windows-only marker
+        from the exports (docs/dependencies.md)."""
+        lock = lockfile('pdm.lock')
+        assert 'docs' not in lock['metadata']['groups'], (
+            'pdm.lock locks the docs group. Relock it without: '
+            '`pdm lock -G dev -G render -G test`, and the docs tools with '
+            '`pdm lock -L pdm.docs.lock -G docs --no-default`.'
+        )
+        for_docs = [
+            package['name']
+            for package in lock['package']
+            if 'docs' in package.get('groups', [])
+        ]
+        assert for_docs == [], f'pdm.lock locks {for_docs} for the docs group'
 
     def test_prod_builds_the_docs_with_the_release_the_lock_holds(self):
         """An image tag is a moving target unless it names a release."""
@@ -172,6 +201,6 @@ class TestTheToolsThatBuildItAreDeclared:
                 'pin it to a release'
             )
             assert material and tag == material['version'], (
-                f'./al prod builds with Material {tag}, and pdm.lock holds '
+                f'./al prod builds with Material {tag}, and pdm.docs.lock holds '
                 f"{material and material['version']} for ./al docs"
             )

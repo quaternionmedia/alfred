@@ -5,7 +5,7 @@ import { PanelRegistry } from './registry'
  *
  *   +------------+------------------------+-------------------+
  *   | Projects   | Viewer                 | Template settings |
- *   |            |                        |                   |
+ *   |            |                        |  | Transcript     |
  *   +------------+                        +-------------------+
  *   | Media &    +------------------------+ Render | Deliver  |
  *   | templates  | Timeline               |  | Captions       |
@@ -13,8 +13,9 @@ import { PanelRegistry } from './registry'
  *
  * The material on the left, the work in the middle -- the picture above the
  * timeline that makes it -- and on the right what is done to the work: the
- * selected clip's settings, and the render, delivery and captions as tabs,
- * Render in front.
+ * selected clip's settings with the transcript, and the render, delivery
+ * and captions as tabs, Render in front. (A fourth tab below would overflow
+ * into its menu at 1200 px.)
  *
  * Every component entry carries `id`, equal to its registry id. A panel is
  * found by `findFirstComponentItemById` -- to bring it forward, or to know it
@@ -91,7 +92,7 @@ export const DEFAULT_LAYOUT = Object.freeze({
       {
         type: 'column',
         size: '28%',
-        content: [stack('42%', ['template']), stack('58%', ['render', 'deliver', 'captions'])],
+        content: [stack('42%', ['template', 'transcript']), stack('58%', ['render', 'deliver', 'captions'])],
       },
     ],
   },
@@ -108,8 +109,9 @@ export const REOPEN = Object.freeze({
   media: { tabs: [], beside: ['projects'], at: 'after' },
   viewer: { tabs: [], beside: ['timeline'], at: 'before' },
   timeline: { tabs: [], beside: ['viewer'], at: 'after' },
-  template: { tabs: [], beside: ['render', 'deliver', 'captions'], at: 'before' },
-  render: { tabs: ['deliver', 'captions'], beside: ['template'], at: 'after' },
-  deliver: { tabs: ['render', 'captions'], beside: ['template'], at: 'after' },
-  captions: { tabs: ['render', 'deliver'], beside: ['template'], at: 'after' },
+  template: { tabs: ['transcript'], beside: ['render', 'deliver', 'captions'], at: 'before' },
+  render: { tabs: ['deliver', 'captions'], beside: ['template', 'transcript'], at: 'after' },
+  deliver: { tabs: ['render', 'captions'], beside: ['template', 'transcript'], at: 'after' },
+  captions: { tabs: ['render', 'deliver'], beside: ['template', 'transcript'], at: 'after' },
+  transcript: { tabs: ['template'], beside: ['render', 'deliver', 'captions'], at: 'before' },
 })

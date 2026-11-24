@@ -1,8 +1,8 @@
 """K2 -- the captions routes, without a database.
 
-`GET`/`PUT /project/{id}/captions`, `POST .../import` and `POST
-.../transcribe`, against an in-memory stand-in for the project collection and
-a queue that records what it would send. The database tier
+`GET`/`PUT /project/{id}/captions`, `GET .../words`, `POST .../import` and
+`POST .../transcribe`, against an in-memory stand-in for the project
+collection and a queue that records what it would send. The database tier
 (`integration/test_captions_api.py`) runs the same routes against MongoDB.
 """
 
@@ -17,7 +17,7 @@ from alfred import config
 from alfred.core.models.captions import RUNNING
 from alfred.core.routes import captions as routes
 from alfred.core.utils import audio_engine
-from alfred.core.utils.captions import MAX_CAPTIONS
+from alfred.core.utils.captions import MAX_CAPTIONS, MAX_WORDS
 from alfred.main import app
 from tests.unit.render_harness import ADMIN, OWNER, STRANGER, FakeQueue, as_user
 
@@ -28,14 +28,22 @@ class FakeCaptionsStore:
     def __init__(self, *projects):
         self.projects = {p['_id']: copy.deepcopy(p) for p in projects}
         self.writes = []
+        self.projections = []
 
-    async def find(self, query):
+    async def find(self, query, projection=routes.PROJECTION):
+        self.projections.append(projection)
         project = self.projects.get(query['_id'])
         if project is None:
             return None
         if 'owner' in query and project.get('owner') != query['owner']:
             return None
-        return copy.deepcopy(project)
+        # The projection's fields, and the id.
+        return copy.deepcopy(
+            {k: v for k, v in project.items() if k == '_id' or k in projection}
+        )
+
+    async def find_words(self, query):
+        return await self.find(query, routes.WORDS)
 
     async def set(self, project_id, fields):
         self.writes.append(copy.deepcopy(fields))
@@ -292,6 +300,107 @@ class TestSaving:
         client, store, _ = api(STRANGER, theirs)
         res = client.put(url(theirs), json={'captions': []})
         assert res.status_code == 404
+        assert store.writes == []
+
+
+WORDS = [
+    {'start': 0.5, 'end': 0.9, 'text': 'Hello', 'segment': 0},
+    {'start': 0.9, 'end': 1.3, 'text': 'there.', 'segment': 0},
+    {'start': 2.0, 'end': 2.0, 'text': 'Oh', 'segment': 1},
+]
+
+
+class TestTheWords:
+    def test_none_until_there_has_been_a_transcription(self, api):
+        mine = project()
+        client, _, _ = api(OWNER, mine)
+        res = client.get(url(mine, '/words'))
+        assert res.status_code == 200, res.text
+        assert res.json() == {'words': []}
+
+    def test_what_is_stored_in_the_order_stored(self, api):
+        mine = project(words=list(reversed(WORDS)))
+        client, store, _ = api(OWNER, mine)
+        assert client.get(url(mine, '/words')).json() == {
+            'words': list(reversed(WORDS))
+        }
+        # Words only.
+        assert store.projections == [routes.WORDS]
+
+    def test_the_captions_route_does_not_carry_them(self, api):
+        """It is polled during a transcription."""
+        mine = project(words=WORDS)
+        client, store, _ = api(OWNER, mine)
+        assert 'words' not in client.get(url(mine)).json()
+        assert 'words' not in store.projections[-1]
+
+    def test_a_stored_word_that_does_not_validate_is_left_out(self, api):
+        mine = project(words=[{'start': 2, 'end': 1, 'text': 'back'}, WORDS[0]])
+        client, _, _ = api(OWNER, mine)
+        assert client.get(url(mine, '/words')).json() == {'words': [WORDS[0]]}
+
+    def test_somebody_else_s_is_404(self, api):
+        theirs = project(words=WORDS)
+        client, _, _ = api(STRANGER, theirs)
+        assert client.get(url(theirs, '/words')).status_code == 404
+
+    def test_a_malformed_id_is_422(self, api):
+        client, _, _ = api(OWNER)
+        assert client.get('/project/nope/captions/words').status_code == 422
+
+    def test_saved_with_the_captions_in_one_write(self, api):
+        mine = project(words=WORDS)
+        client, store, _ = api(OWNER, mine)
+        cut = [{'start': 0.5, 'end': 0.9, 'text': ' Hello ', 'segment': 0}]
+        res = client.put(
+            url(mine),
+            json={
+                'captions': [{'start': 0.5, 'end': 0.9, 'text': 'Hello'}],
+                'words': cut,
+            },
+        )
+        assert res.status_code == 200, res.text
+        assert 'words' not in res.json()
+        assert [set(write) for write in store.writes] == [
+            {'captions', 'caption_style', 'words'}
+        ]
+        assert store.projects[mine['_id']]['words'] == [
+            {'start': 0.5, 'end': 0.9, 'text': 'Hello', 'segment': 0}
+        ]
+        assert client.get(url(mine, '/words')).json()['words'][0]['text'] == 'Hello'
+
+    def test_left_out_they_are_kept_and_sent_empty_they_are_gone(self, api):
+        mine = project(words=WORDS)
+        client, store, _ = api(OWNER, mine)
+        client.put(url(mine), json={'captions': []})
+        assert store.projects[mine['_id']]['words'] == WORDS
+        client.put(url(mine), json={'captions': [], 'words': []})
+        assert store.projects[mine['_id']]['words'] == []
+
+    @pytest.mark.parametrize(
+        'word',
+        [
+            {'start': -1, 'end': 1, 'text': 'x'},
+            {'start': 2, 'end': 1, 'text': 'x'},
+            {'start': 0, 'end': 1, 'text': '  '},
+            {'start': 0, 'end': 1, 'text': 'x' * 101},
+            {'start': 0, 'end': 1, 'text': 'x', 'segment': -1},
+            {'start': 0, 'text': 'x'},
+        ],
+    )
+    def test_a_word_that_is_not_one_is_422(self, api, word):
+        mine = project()
+        client, store, _ = api(OWNER, mine)
+        res = client.put(url(mine), json={'captions': [], 'words': [word]})
+        assert res.status_code == 422
+        assert store.writes == []
+
+    def test_more_than_a_project_keeps_is_422(self, api):
+        mine = project()
+        client, store, _ = api(OWNER, mine)
+        many = [{'start': 0, 'end': 0, 'text': 'x'}] * (MAX_WORDS + 1)
+        res = client.put(url(mine), json={'captions': [], 'words': many})
+        assert res.status_code == 422
         assert store.writes == []
 
 

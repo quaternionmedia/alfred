@@ -197,7 +197,7 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    image: alfred_worker
+    image: ${ALFRED_IMAGES:-alfred}_worker
     entrypoint: celery -A alfred.core.utils.tasks:renderer -b mongodb://db:27017/celery --result-backend mongodb://db:27017/celery worker --loglevel=info
     networks:
       - alfred_isolated

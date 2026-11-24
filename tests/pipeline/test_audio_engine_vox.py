@@ -63,7 +63,7 @@ def test_a_timeline_is_captioned_through_vox(engine, monkeypatch, tmp_path):
     write_talking_video(tmp_path / 'talking.mp4')
     from alfred.core.utils.transcription import transcribe_timeline
 
-    captions, heard = transcribe_timeline(TIMELINE)
+    captions, heard, _ = transcribe_timeline(TIMELINE)
     assert heard == 3
     assert [(round(c.start, 1), round(c.end, 1)) for c in captions] == [
         (1.5, 2.5),

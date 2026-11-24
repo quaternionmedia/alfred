@@ -3,6 +3,11 @@ const { defineConfig, devices } = require('@playwright/test')
 
 const baseURL = process.env.E2E_BASE_URL || 'http://localhost:8000'
 
+// Per-run results and report (./al loop). Relative to website/.
+const output = process.env.E2E_OUTPUT
+const outputDir = output ? `${output}/test-results` : 'test-results'
+const html = ['html', { open: 'never', outputFolder: output ? `${output}/playwright-report` : 'playwright-report' }]
+
 module.exports = defineConfig({
   testDir: './e2e',
   globalSetup: require.resolve('./e2e/global-setup'),
@@ -28,9 +33,8 @@ module.exports = defineConfig({
   // have this problem; the cap costs it little.
   workers: process.env.CI ? 2 : 4,
 
-  reporter: process.env.CI
-    ? [['list'], ['html', { open: 'never' }], ['github']]
-    : [['list'], ['html', { open: 'never' }]],
+  outputDir,
+  reporter: process.env.CI ? [['list'], html, ['github']] : [['list'], html],
 
   timeout: 30_000,
   expect: { timeout: 10_000 },
@@ -71,7 +75,7 @@ module.exports = defineConfig({
       // panel that works in one place and not the other fails here.
       name: 'phone',
       use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } },
-      testMatch: /[\\/](flow|editor|timeline-tools|deliver|stacked)\.spec\.js$/,
+      testMatch: /[\\/](flow|editor|timeline-tools|deliver|stacked|transcript)\.spec\.js$/,
       grepInvert: /@perf|@recipe/,
     },
     {

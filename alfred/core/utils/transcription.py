@@ -5,8 +5,9 @@ what the project's saved timeline sounds like (`otto.render.renderSound`) --
 its video and audio clips, timed exactly as a render times them -- as one
 16 kHz mono WAV in a directory private to this job, removed afterwards. The
 audio engine hears it (`utils.audio_engine`), and what it heard becomes
-captions (`utils.captions`). The file spans the whole timeline from 0, so the
-engine's times are already timeline seconds.
+captions and the words kept for editing by text (`utils.captions`). The
+file spans the whole timeline from 0, so the engine's times are already
+timeline seconds.
 
 alfred chose the codec, the channels and ffmpeg's options here, and had
 moviepy write the file: media encoding in a control plane that is meant to do
@@ -17,13 +18,15 @@ means to the person waiting; the mix and the file are otto's.
 import os
 import shutil
 import tempfile
+from typing import List, NamedTuple
 
 from otto.exceptions import NoSoundException
 from otto.models import Edl
 from otto.render import SOUND_TYPES, renderSound
 
+from ..models.captions import Caption, Word
 from . import audio_engine
-from .captions import captions_from_transcript, timeline_end
+from .captions import captions_from_transcript, timeline_end, words_from_transcript
 from .media import resolve_edl
 
 # What a speech engine listens at: whisper resamples everything to it, so
@@ -33,6 +36,16 @@ SPEECH_RATE = 16000
 
 class NothingToHear(ValueError):
     """The timeline makes no sound. Its message is for the person waiting."""
+
+
+class Heard(NamedTuple):
+    """What a transcription made of a timeline."""
+
+    captions: List[Caption]
+    # How many segments of speech the engine heard.
+    segments: int
+    # In timeline seconds (`words_from_transcript`).
+    words: List[Word]
 
 
 def sounding_clips(edl: Edl) -> list:
@@ -70,17 +83,17 @@ def mix_timeline(edl: Edl, path, rate=SPEECH_RATE) -> float:
         ) from exc
 
 
-def transcribe_timeline(edl_data: dict):
-    """Captions for what the timeline `edl_data` says, and how many segments
-    of speech the engine heard.
+def transcribe_timeline(edl_data: dict) -> Heard:
+    """Captions for what the timeline `edl_data` says, how many segments of
+    speech the engine heard, and the words it heard them in.
 
     Raises what stops it, with a message for the person waiting: a media name
     the library does not hold (MediaNameError), a clip otto cannot play
     (otto's EdlException, naming the clip by its place in the timeline), a
     timeline with nothing to hear, or in which no speech was heard
     (NothingToHear), an engine that is missing, refuses the sound or fails
-    (AudioEngineError), or more captions than a project carries
-    (TooManyCaptions).
+    (AudioEngineError), or more captions or words than a project carries
+    (TooManyCaptions, TooManyWords).
     """
     edl = resolve_edl(Edl.parse_obj(edl_data))
     until = timeline_end(edl)
@@ -96,4 +109,5 @@ def transcribe_timeline(edl_data: dict):
         # Music, silence, or nothing the engine could make out. Said as a
         # failure, so the captions the project has are not replaced by none.
         raise NothingToHear("the audio engine heard no speech in the timeline's sound")
-    return captions, len(transcript.segments)
+    words = words_from_transcript(transcript.segments, until=until)
+    return Heard(captions, len(transcript.segments), words)

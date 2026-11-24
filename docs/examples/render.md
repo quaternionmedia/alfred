@@ -11,20 +11,7 @@ See [about/render](../about/render.md) for every field a render request takes, a
 ## Request
 === "Edl"
     ``` json title="data.json"
-    {
-      "edl": {
-        "clips": [
-          {
-            "type": "video",
-            "name": "videos/moon.mp4"
-          }
-        ]
-      },
-      "width": 1920,
-      "height": 1080,
-      "fps": 30,
-      "quality": "standard"
-    }
+    --8<-- "docs/examples/edl/render.json"
     ```
 
 === "Request"
@@ -34,6 +21,10 @@ See [about/render](../about/render.md) for every field a render request takes, a
       -d @data.json \
       http://127.0.0.1:8000/render
     ```
+
+![The render example's Edl in the editor: one 3-second clip of the colour bars](../assets/screens/examples/render.png)
+
+*The render example's Edl in the editor: one clip, the bars from second 0 to 3.*
 
 !!! note "Render settings go in the body"
     `width`, `height`, `fps` and `quality` are fields of the request body, beside `edl`. Query parameters are ignored: `/render?width=1280` renders at the default 1920x1080. [about/render](../about/render.md) gives each setting's range and the `quality` presets.

@@ -10,6 +10,7 @@ import { Deliver } from '../panels/Deliver'
 // fallback: parcel resolves `CaptionsModule.Captions` at build time and fails
 // the build when the module has no such export, which the real panel does not.
 import Captions from '../panels/Captions'
+import Transcript from '../panels/Transcript'
 
 /**
  * Every panel the editor has, once.
@@ -57,6 +58,8 @@ const PANELS = Object.freeze([
   { id: 'render', title: 'Render', stage: 'render', component: Render, whileShown: true },
   { id: 'deliver', title: 'Deliver', stage: 'deliver', component: Deliver, whileShown: true },
   { id: 'captions', title: 'Captions', stage: 'edit', component: Captions, whileShown: true },
+  // The timeline edited by its words (panels/Transcript.js).
+  { id: 'transcript', title: 'Transcript', stage: 'edit', component: Transcript, whileShown: true },
 ])
 
 export const PanelRegistry = {

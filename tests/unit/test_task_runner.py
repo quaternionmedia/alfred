@@ -485,3 +485,15 @@ class TestTheApiSuiteChecksFormatting:
     def test_blacken_still_formats(self):
         runs = black_runs('blacken')
         assert runs and all('--check' not in run for run in runs), runs
+
+
+class TestLineEndings:
+    """./al must stay LF: Linux sh fails on CRLF."""
+
+    def test_al_and_the_shell_scripts_are_checked_out_lf(self):
+        # Mutation: drop the `al` line from .gitattributes -- this fails.
+        rules = (REPO / '.gitattributes').read_text(encoding='utf-8').splitlines()
+        assert 'al text eol=lf' in rules and '*.sh text eol=lf' in rules, rules
+
+    def test_al_holds_no_carriage_return(self):
+        assert b'\r' not in (REPO / 'al').read_bytes()
