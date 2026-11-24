@@ -2,7 +2,7 @@
 Tokens can be acquired with a `POST` request, with a username (email address) and password as form data.
 
 !!! abstract "Register for new account"
-    Register at [https://alfred.quaternion.media/login](https://alfred.quaternion.media/login), or with an API request:
+    Register at [https://alfred.quaternion.media/#!/login](https://alfred.quaternion.media/#!/login), or with an API request:
     
     ``` bash title="Register"
     curl -X POST \

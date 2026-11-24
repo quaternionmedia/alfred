@@ -4,47 +4,49 @@
 
 *The editor on a wide screen, as a workspace of panels, and on a phone, one stage at a time: Edit, then Render.*
 
-Automatic video tools
+Alfred is a browser video editor for quick editing from anywhere, mobile
+devices included. The browser edits the timeline; every preview and render is
+made by an Alfred server you run yourself, with cloud storage optional.
 
-![Alfred logo](./assets/al-white.svg){ loading=lazy width=200em style="background-color:#2E303E; border-radius: 1em;" }
+The editor is one page, worked in four stages named on the rail along its top:
 
+1. **Source**: choose a project, and the media and templates for its timeline.
+2. **Edit**: arrange, trim and cut the clips on the timeline, and set a title's
+   text, length and colours.
+3. **Render**: choose the output's size and queue a render, which the server
+   makes.
+4. **Deliver**: follow the render until it is finished, then download it or send
+   it to a destination.
 
-## Overview
+Beside them, **Captions** are typed, imported from a subtitle file, or
+transcribed from the timeline's sound, and drawn into renders. On a screen
+1024 pixels wide or more, the panels are a workspace you can rearrange, with a
+Panels menu to bring back a closed one; narrower, as on a phone, the editor
+shows one stage at a time above the viewer and the timeline.
 
-Alfred is a web-based video editing suite that simplifies production with cloud-based tools.
+## Start here
 
-## Features
-### Rendering
-- Server-based rendering
-    - Optional: add an existing physical or virtual server as a rendering node
-- Cloud monitoring of render status
-- Secure file storage and downloads
-### Editing
-- Create and modify edits in any HTML5 browser
-- No powerful editing hardware needed
-- Works on mobile devices
-<!-- - Drag and drop clips to rearrange -->
-- Preview the finished product in the browser
-- Render final videos in the cloud
-- Output to different resolutions and formats
-  <!-- - Advanced (multi-track) -->
-### [Templates](about/template.md)
-- Define dynamic `Templates` for clips
-- Create forms for end users to customize a video from a Template
-- Apply `fx` to clips for text and video animations
-### Forms
-- Design simple forms that put end users' data into templates
-- Define dynamic properties that pull from multiple sources
+1. [Get started](start.md): run Alfred on your own machine and make a first
+   video, from Source to Deliver.
+2. [Cookbook](cookbook.md): the journeys through the editor, step by step,
+   generated from the browser tests that check them.
+3. [Captions](captions.md) and [Configuration](configuration.md): captions in
+   the editor and through the API, and every setting the server reads.
+4. [Concepts](about/index.md): clips, templates, timelines, projects and
+   renders. [Examples](examples/index.md) and the [API](api/index.md) make
+   videos without the editor, with `curl`.
 
+## How it is built
 
-## Origin
-Alfred began as a simple, serverless video client: modern web browsers in front of a powerful, scalable rendering engine. It has grown into a suite of video and editing tools, including rendering, template generation and automations.
-
+A small control plane, `alfred`, owns accounts, projects, renders, captions
+and their orchestration, and hands the media work to two engines: otto draws
+every preview frame and render and mixes the timeline's sound, and vox drives
+an audio engine such as joe over HTTP, which transcribes captions from that
+sound. [The family dev loop](family.md) runs them together.
 
 !!! quote "Alfred Hitchcock"
     Drama is life with all the dull bits cut out.
 
-    
 ## Links
 App: [alfred.quaternion.media](https://alfred.quaternion.media)
 

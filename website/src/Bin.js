@@ -59,6 +59,12 @@ var Bin = {
       })
   },
 
+  /** What the editor calls a template: the server's label, else its name. */
+  labelFor: name => {
+    const template = Bin.templates.find(t => t.name === name)
+    return (template && template.label) || name
+  },
+
   /** The clip a bin entry stands for, built fresh. */
   clipFor: (kind, name) => {
     if (kind === 'template') {
@@ -110,7 +116,9 @@ var Bin = {
           key: `template:${t.name}`,
           kind: 'template',
           name: t.name,
-          label: t.name,
+          // The server's label, "Text box" rather than otto's `textBox`; the
+          // name is still what the clip carries.
+          label: t.label || t.name,
           title: t.description ? t.description.replace(/\*/g, '') : t.name,
         })
       ),

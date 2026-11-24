@@ -52,6 +52,29 @@
   }
 }
 
+// On a phone all four stages fit across the screen. At the rail's own spacing
+// they came to 459 pixels, so on a 375-pixel screen Deliver was cut off at its
+// number, and the rail scrolled sideways under a scrollbar of its own -- the
+// last stage of the flow, out of sight until someone thought to look for it.
+@media only screen and (max-width: 480px) {
+  .stagerail {
+    gap: 0.15rem;
+    padding: 0.4rem 0.5rem;
+
+    .stage {
+      gap: 0.3rem;
+      padding: 0.35rem 0.55rem;
+      font-size: 0.85rem;
+
+      .stagenum {
+        width: 1.05rem;
+        height: 1.05rem;
+        font-size: 0.7rem;
+      }
+    }
+  }
+}
+
 .stagepanel {
   padding: 0.75rem 1rem;
   background: #161616;
@@ -309,10 +332,18 @@
 }
 
 // A template is offered the way a file is, though it is not one.
+//
+// A long file name breaks where it must. The demo clips the editor generates
+// carry a size, a length and a time in their names, and unbroken one ran the
+// Material panel sideways past a phone's edge.
 .mediachoice,
 .templatechoice {
   display: flex;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
   gap: 0.4rem;
   padding: 0.3rem 0.6rem;
   border: 1px solid #2e2e2e;
@@ -338,8 +369,11 @@
     }
   }
 
-  // How long the file runs: secondary to its name.
+  // How long the file runs: secondary to its name, and never broken -- beside
+  // a long name it was squeezed to one character a line.
   .mediaduration {
+    flex: 0 0 auto;
+    white-space: nowrap;
     color: #8f8f8f;
     font-size: 0.75rem;
     font-variant-numeric: tabular-nums;

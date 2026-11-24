@@ -127,7 +127,39 @@ test.describe('adding a template', () => {
     await authedPage.locator('.templatechoice[data-template="textBox"]').click()
 
     await expect(authedPage.locator('#timeline .clip.template[name="textBox"]')).toHaveCount(1)
-    await expect(authedPage.locator('#template-added')).toContainText('textBox')
+    // Said with the server's label, not otto's identifier.
+    await expect(authedPage.locator('#template-added')).toContainText('Text box template')
+  })
+
+  test("every template is offered by the server's label, not otto's name", async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * `textBox` and `makeColor` are otto's identifiers, and the editor showed
+     * them on its buttons as they are. The server sends a label with each
+     * template now, and every place that names one -- the Source stage's
+     * list, the bin, the clip on the timeline and its settings -- says that.
+     *
+     * Mutation: show `t.name` in the Material panel again and this fails.
+     */
+    const offered = await templates(request, token)
+    expect(offered.every(t => t.label && t.label !== t.name)).toBe(true)
+
+    await authedPage.goto('/#!/?stage=source')
+    for (const t of offered) {
+      await expect(authedPage.locator(`.templatechoice[data-template="${t.name}"]`)).toContainText(t.label)
+      await expect(binEntry(authedPage, t.name).locator('.binlabel')).toHaveText(t.label)
+    }
+
+    // A clip with no text of its own is named for its template, and so are
+    // its settings.
+    const colour = offered.find(t => t.name === 'makeColor')
+    await binEntry(authedPage, 'makeColor').locator('.binadd').click()
+    const clip = authedPage.locator('#timeline .clip.template[name="makeColor"]')
+    await expect(clip.locator('.clipname')).toHaveText(colour.label)
+    await expect(authedPage.locator('#template-params h4')).toContainText(colour.label)
   })
 
   test('a template dragged from the bin lands on the timeline', async ({
@@ -360,7 +392,8 @@ test.describe("a template's type and placement", () => {
     await expect(params.locator('#param-align')).toHaveCount(0)
 
     await binEntry(authedPage, 'makeColor').locator('.binadd').click()
-    await expect(params.locator('h4')).toContainText('makeColor')
+    // Named by the server's label, not otto's identifier.
+    await expect(params.locator('h4')).toContainText('Colour')
     await expect(params.locator('#param-position')).toBeVisible()
     for (const field of ['#param-font', '#param-fontsize', '#param-align', '#param-text']) {
       await expect(params.locator(field)).toHaveCount(0)

@@ -4,18 +4,19 @@ site_url: https://alfred.quaternion.media/docs/
 # repo_url: https://github.com/quaternionmedia/alfred
 edit_uri: ''
 
+# In the order a newcomer reads: what Alfred is, running it, using it, then
+# developing it and the reference material, with the history last.
 nav:
   - Home: index.md
+  - Get started: start.md
   - Cookbook: cookbook.md
   - Captions: captions.md
   - Configuration: configuration.md
-  - Family dev loop: family.md
-  - Retrospective (0.3.0): retrospective-0.3.0.md
-  - Retrospective (verification): retrospective-verification-discipline.md
-  - Development:
+  - Develop:
+      - Family dev loop: family.md
       - dev-auth.md
       - ownership.md
-  - About:
+  - Concepts:
       - about/index.md
       - about/concepts.md
       - about/clip.md
@@ -42,6 +43,9 @@ nav:
       - api/otto.md
       - api/render.md
       - api/errors.md
+  - History:
+      - Retrospective (0.3.0): retrospective-0.3.0.md
+      - Retrospective (verification): retrospective-verification-discipline.md
 
 # Every check mkdocs can make of the pages, as a warning: a page left out of
 # the nav, a link naming no page or file, an anchor no heading makes, and an

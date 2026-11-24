@@ -1140,8 +1140,20 @@ it is gone.
 
 ### navigation
 
+Below 1026 pixels the header had a menu button, which opened its links
+as a drawer over the editor -- and once the rail had taken every link,
+it opened an empty one. The only control in a phone's header did
+nothing.
+
 - **the rail exposes every stage**
 - **the header carries no navigation of its own**
+- **the header holds the logo and no control that does nothing**
+- **the session link is in the footer, at the size of the links beside it**
+
+  Styled as the header link it once was: 28 pixels, and below 1026 pixels
+  lifted out of the footer to the page's top right corner, where on a
+  phone it ran into the logo.
+
 - **choosing a stage changes the route**
 - **back and forward move between routes**
 - **serves the SPA shell at the root**
@@ -1612,6 +1624,45 @@ regions under it.
   resolution, where they always were, and nothing at all while no template
   clip is selected.
 
+### the phone flow fits the width of the phone
+
+At the rail's desktop spacing the four stages came to 459 pixels, so on
+a 375-pixel phone Deliver was cut off at its number and the rail
+scrolled sideways: the last stage of the flow, out of sight.
+
+Mutation: drop the rail's narrow-screen spacing (stages.scss) and this
+fails.
+
+- **all four stages sit across the rail**
+- **no stage scrolls sideways**
+
+  The scrubber was the whole row plus its margins, and the transport
+  scrolled sideways by 32 pixels to show them; a generated clip's long
+  file name ran the Material panel past the screen. A phone held upright
+  scrolls one way.
+
+### on a narrower phone
+
+Choosing is the work on Source, so the viewer and the timeline give way
+first, to their floors. Shared in proportion as on the other stages,
+the timeline took 207 pixels at 375x812 and the project list 78: its
+heading, its filter, and not one whole project.
+
+Mutation: drop the Source stage's `flex-shrink` (flow.scss) and the
+timeline keeps more than its floor, and this fails.
+
+- **the rail and every stage still fit**
+### the Source stage
+
+Choosing is the work on Source, so the viewer and the timeline give way
+first, to their floors. Shared in proportion as on the other stages,
+the timeline took 207 pixels at 375x812 and the project list 78: its
+heading, its filter, and not one whole project.
+
+Mutation: drop the Source stage's `flex-shrink` (flow.scss) and the
+timeline keeps more than its floor, and this fails.
+
+- **gives its panels the room the timeline can spare**
 ### the picture keeps its room
 
 In every stage the whole picture is on the screen, and the stage's own
@@ -1675,6 +1726,15 @@ viewer, and that is exactly what a render receives.
 
   Templates are material too, so the Source stage lists them beside the
   media, and says where an added one landed.
+
+- **every template is offered by the server's label, not otto's name**
+
+  `textBox` and `makeColor` are otto's identifiers, and the editor showed
+  them on its buttons as they are. The server sends a label with each
+  template now, and every place that names one -- the Source stage's
+  list, the bin, the clip on the timeline and its settings -- says that.
+
+  Mutation: show `t.name` in the Material panel again and this fails.
 
 - **a template dragged from the bin lands on the timeline**
 

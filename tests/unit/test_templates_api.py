@@ -14,6 +14,7 @@ import pytest
 from otto import templates as otto_templates
 
 from alfred.core.routes.templates import (
+    TEMPLATE_LABELS,
     TEMPLATE_NAMES,
     UNDRIVABLE_TEMPLATES,
     available_templates,
@@ -184,3 +185,24 @@ class TestTheDescription:
                 f'{template.name} advertises no parameters, so the bin would '
                 'render it as a field-less template'
             )
+
+    def test_every_template_has_a_label_of_its_own(self):
+        """The editor shows the label, not otto's identifier.
+
+        A name missing from TEMPLATE_LABELS falls back to the identifier,
+        which is the leak the labels exist to stop; two templates sharing a
+        label could not be told apart in the bin.
+
+        Mutation: drop `textBox` from TEMPLATE_LABELS and this fails.
+        """
+        templates = available_templates()
+        assert set(TEMPLATE_NAMES) <= set(TEMPLATE_LABELS)
+        labels = [t.label for t in templates]
+        assert all(t.label != t.name for t in templates), labels
+        assert len(set(labels)) == len(labels), labels
+
+    def test_every_template_has_a_description(self):
+        """A template button's title is its description; otto gives
+        `makeColor` none, so the server supplies one."""
+        for template in available_templates():
+            assert template.description, template.name

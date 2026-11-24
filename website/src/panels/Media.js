@@ -107,13 +107,13 @@ const MediaPanel = {
                     {
                       'data-template': t.name,
                       title: t.description
-                        ? `Add a ${t.name} clip — ${t.description.replace(/\*/g, '')}`
-                        : `Add a ${t.name} clip to the timeline`,
+                        ? `Add a ${t.label || t.name} clip — ${t.description.replace(/\*/g, '')}`
+                        : `Add a ${t.label || t.name} clip to the timeline`,
                       onclick: () => addTemplate(t),
                     },
                     [
                       m('i.material-icons', 'add'),
-                      t.name,
+                      t.label || t.name,
                       t.deprecated ? m('span.deprecated', 'deprecated') : null,
                     ]
                   )

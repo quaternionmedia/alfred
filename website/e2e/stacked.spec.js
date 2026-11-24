@@ -208,6 +208,119 @@ test.describe('the phone flow', () => {
   })
 })
 
+/** Every region that scrolls sideways because something in it is too wide. */
+const sideways = page =>
+  page.evaluate(() =>
+    [...document.querySelectorAll('body *')]
+      .filter(el => {
+        const style = getComputedStyle(el)
+        return /auto|scroll/.test(style.overflowX) && el.scrollWidth > el.clientWidth + 1
+      })
+      .map(el => `${el.id ? '#' + el.id : el.className}: ${el.scrollWidth} in ${el.clientWidth}`)
+  )
+
+test.describe('the phone flow fits the width of the phone', () => {
+  test('all four stages sit across the rail', async ({ authedPage }) => {
+    /**
+     * At the rail's desktop spacing the four stages came to 459 pixels, so on
+     * a 375-pixel phone Deliver was cut off at its number and the rail
+     * scrolled sideways: the last stage of the flow, out of sight.
+     *
+     * Mutation: drop the rail's narrow-screen spacing (stages.scss) and this
+     * fails.
+     */
+    await authedPage.goto('/')
+    const rail = authedPage.locator('.stagerail')
+    const width = authedPage.viewportSize().width
+    expect(await rail.evaluate(r => r.scrollWidth - r.clientWidth)).toBeLessThanOrEqual(1)
+    for (const stage of ['source', 'edit', 'render', 'deliver']) {
+      const b = await authedPage.locator(`#stage-${stage}`).boundingBox()
+      expect(b.x + b.width, `${stage} runs past the screen`).toBeLessThanOrEqual(width)
+    }
+  })
+
+  test('no stage scrolls sideways', async ({ authedPage, request, token }) => {
+    /**
+     * The scrubber was the whole row plus its margins, and the transport
+     * scrolled sideways by 32 pixels to show them; a generated clip's long
+     * file name ran the Material panel past the screen. A phone held upright
+     * scrolls one way.
+     */
+    // A file name as long as the ones the editor generates, so there is one
+    // to break whatever the library holds.
+    await authedPage.route(
+      url => url.pathname === '/media',
+      async route => {
+        const response = await route.fetch()
+        const items = await response.json()
+        const long = { name: 'videos/Demo_320x180_9.0s_20260809-112440_6a786378bc3b0bdd8e881398.mp4', kind: 'video', duration: 9, size: 1 }
+        await route.fulfill({ response, json: [...items, long] })
+      }
+    )
+    await authedPage.goto('/')
+    for (const stage of ['source', 'edit', 'render', 'deliver']) {
+      await authedPage.locator(`#stage-${stage}`).click()
+      await expect(authedPage.locator(STAGE_PANELS[stage])).toBeVisible()
+      expect(await sideways(authedPage), `${stage} scrolls sideways`).toEqual([])
+    }
+  })
+
+  test.describe('on a narrower phone', () => {
+    test.use({ viewport: { width: 360, height: 740 } })
+
+    test('the rail and every stage still fit', async ({ authedPage }) => {
+      await authedPage.goto('/')
+      const rail = authedPage.locator('.stagerail')
+      expect(await rail.evaluate(r => r.scrollWidth - r.clientWidth)).toBeLessThanOrEqual(1)
+      for (const stage of ['source', 'edit', 'render', 'deliver']) {
+        await authedPage.locator(`#stage-${stage}`).click()
+        await expect(authedPage.locator(STAGE_PANELS[stage])).toBeVisible()
+        expect(await sideways(authedPage), `${stage} scrolls sideways`).toEqual([])
+      }
+    })
+  })
+})
+
+test.describe('the Source stage', () => {
+  test('gives its panels the room the timeline can spare', async ({ authedPage }) => {
+    /**
+     * Choosing is the work on Source, so the viewer and the timeline give way
+     * first, to their floors. Shared in proportion as on the other stages,
+     * the timeline took 207 pixels at 375x812 and the project list 78: its
+     * heading, its filter, and not one whole project.
+     *
+     * Mutation: drop the Source stage's `flex-shrink` (flow.scss) and the
+     * timeline keeps more than its floor, and this fails.
+     */
+    const listed = Array.from({ length: 12 }, (_, i) => ({
+      _id: `${(0xbcd000 + i).toString(16).padStart(24, '0')}`,
+      name: `Listed project ${i + 1}`,
+      edl: { clips: [], duration: 0 },
+    }))
+    await authedPage.route(
+      url => url.pathname === '/project',
+      route => (route.request().method() === 'GET' ? route.fulfill({ json: listed }) : route.fallback())
+    )
+    await authedPage.goto('/#!/?stage=source')
+    await authedPage.reload()
+    await expect(authedPage.locator('.projectrow')).toHaveCount(listed.length)
+
+    const stage = await authedPage.locator('.flowstage').boundingBox()
+    const timeline = await authedPage.locator('section.editor').boundingBox()
+    expect(stage.height, 'the stage panels are smaller than the timeline').toBeGreaterThan(timeline.height)
+
+    const panel = await authedPage.locator('#panel-source').boundingBox()
+    const whole = await authedPage.locator('.projectrow').evaluateAll(
+      (rows, p) => rows.filter(r => {
+        const b = r.getBoundingClientRect()
+        return b.top >= p.y - 1 && b.bottom <= p.y + p.height + 1
+      }).length,
+      panel
+    )
+    expect(whole, 'not one whole project can be seen').toBeGreaterThanOrEqual(2)
+  })
+})
+
 test.describe('the picture keeps its room', () => {
   test("every stage shows the whole picture on one screen at a phone's size", async ({
     authedPage,
