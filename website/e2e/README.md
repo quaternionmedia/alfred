@@ -100,7 +100,7 @@ The suite could not run as configured either: `cypress.json`,
 
 ## Verification status
 
-`./al test` on `integrate/wave-6`: **392 passed**, across the `chromium`
+`./al test` on `feat/close-gaps`: **402 passed**, across the `chromium`
 (workspace) and `phone` (stage flow) projects, including the `@slow` specs
 that wait on a real encode, with no test passed only on retry. The project
 filter test makes the projects it filters, so nothing here skips for want of
@@ -194,8 +194,10 @@ would notice.
    requests itself; the API side, from the request to logging in with the new
    password, runs in `tests/integration/test_password_reset_api.py`.
 2. **Fonts and documents.** The template fields' font list is served by the
-   specs, not read from the fonts the server found; the documents view is
-   exercised only by the views rendering.
+   specs, not read from the fonts the server found; `GET /fonts` itself, from
+   fontconfig through startup to the route, runs in
+   `tests/integration/test_fonts_api.py`. The documents view is exercised
+   only by the views rendering.
 3. **Editing gestures from the keyboard.** The timeline tools are chosen from
    the keyboard, but trim, slip, slide and roll are pointer drags.
 4. **Cross-browser and real devices.** Only chromium runs, at a desktop size

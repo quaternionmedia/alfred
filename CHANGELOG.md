@@ -2,7 +2,7 @@
 
 ## Unreleased — review fixes
 
-Fixes from a review of alfred and otto, landed in seven rounds of parallel
+Fixes from a review of alfred and otto, landed in eight rounds of parallel
 branches:
 
 | Round | Integrated on | What it carried |
@@ -14,6 +14,7 @@ branches:
 | 5 | `integrate/wave-5` | the decisions round 4 stopped at: password hashing off the event loop behind loud safeguards, the media work moved into otto (pinned at 7ddbf10, `feat/engine-media-ops`), a code beside every refusal of the routes qmcp calls, a cap on concurrent previews, support mail sent by the worker, the render extra and the docs build tightened, and `./al family`, which runs alfred with the repositories it works with |
 | 6 | `integrate/wave-6` | the docs: every page this effort touched said in fewer words, across the repositories, and the main pages opening with screenshots that `./al recipes` takes from demo data, its GIFs kept out of git (otto f106775 and vox e630cb0, for their docs); then the docs checked against the code, the font list's parse tested, and the project filter test making the projects it filters |
 | 7 | `feat/journeys-and-onboarding` | the editor's journeys and the way in: the phone flow fitting a phone, templates named in words, the empty viewer saying where to start, and a Get started page with the docs in the order a newcomer reads them |
+| 8 | `feat/close-gaps` | the gaps left open: the Render stage's form and the zoom row on every screen, the tests the review asked for (the recipes' pipeline, `./al`'s dev key, `./al family`, `GET /fonts`) and the three bugs they found, the docs tooling pinned, the dev-server notes on the docs site, the API examples sent to the local stack, and the walkthroughs' recordings played only in docs served locally |
 
 Read **Security** and **Changed** before deploying: several requests that were
 accepted are now refused, and a production stack needs its own signing key.
@@ -82,6 +83,17 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **`./al pytest` checks formatting as CI does** and no longer rewrites the
+  checkout; `./al nox -s blacken` formats.
+- **The docs tooling is declared and pinned**: a pdm `docs` group for
+  `./al docs`, and `./al prod` builds with `squidfunk/mkdocs-material:9.7.7`,
+  the locked version.
+- **The API examples are sent to `http://127.0.0.1:8000`**, the stack a
+  newcomer has running, where they went to production, whose registration
+  may be closed.
+- **Work is delivered into the repository** (`AGENTS.md`, item 9): a report,
+  a demo or a handoff is a committed file, or the dev stack and `./al docs`
+  left running, never a page a chat product hosts.
 - **The engine is otto 7ddbf10**, by way of `fix/engine-contract`,
   `fix/engine-wave2` and `fix/engine-sound`. Renders come out at the requested
   size with media fitted inside and centred; `outpoint` trims; `fps` is
@@ -177,6 +189,20 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Fixed
 
+- **The Render stage shows its whole form on a phone.** Width and height sit
+  side by side, and held upright the stage keeps its form's height while the
+  viewer and the timeline give way; at 375x812 it had 114 pixels, and Queue
+  render was below them.
+- **Zoom in sits in its row.** It was placed `absolute`, over the zoom bar in
+  the workspace's tools column and away from it on a phone, and the bar's
+  thumb ran past the bar's end. In the workspace, where the column has no
+  room for a bar between two buttons, the buttons zoom alone.
+- **`GET /fonts` forgets a family fontconfig no longer lists**; startup only
+  ever added fonts. **`./al family smoke` reads a header** whatever the case
+  of its name. A test of the image's lockfile **skips where git cannot see
+  the repository**, as from a worktree, rather than failing.
+- **The render pipeline spec fails on a failed encode**, where five of its
+  tests skipped themselves and a broken pipeline read as tests left out.
 - **The phone flow fits a phone.** All four stages sit across the rail down to
   360 pixels, where Deliver was cut off and the rail scrolled sideways; no
   stage scrolls sideways (the scrubber's margins and a long media name both
@@ -274,6 +300,17 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Added
 
+- **Docs served locally play each walkthrough's recording** under its line
+  in the cookbook, from the recipe's start (`scripts/docs_recordings.py`, a
+  mkdocs hook). The recordings stay out of git, so the published docs show
+  the screenshots only.
+- **A dev-server page** on the docs site, which includes `AGENTS.md`'s notes
+  rather than copying them, and **a page for `GET /fonts`**.
+- **Tests the review asked for**: the recipes' collector and GIF converter
+  against a report and a stand-in ffmpeg; `./al`'s development key and its
+  network warning, without printing the key; `./al family up`, `smoke` and
+  `down` against a stub server; and `GET /fonts` against the fonts the
+  machine has.
 - **Templates are named in words.** `GET /templates` sends a `label` with each
   (`Text box`, not `textBox`; `Colour`, not `makeColor`) and a description for
   `makeColor`, which otto gives none; the Source stage, the bin, the clip on
@@ -371,9 +408,10 @@ accepted are now refused, and a production stack needs its own signing key.
 - **The docs are held to what the code offers.** `docs/configuration.md` gives
   every setting, its default, what reads it and how to set it, and what a
   Linux Docker host needs to reach joe; `test_docs_accounted.py` fails when it
-  misses an `ALFRED_` or `OTTO_` setting alfred reads, docs/family.md one
-  `./al family` reads, or a
-  document gives an `./al` command that does not exist.
+  misses any name alfred or otto looks up in the environment, whatever its
+  prefix, or one the compose files or `./al` read on the host, when
+  docs/family.md misses one `./al family` reads, or when a document gives an
+  `./al` command that does not exist.
 - **Docs that show first.** `./al recipes` takes the screenshots in
   `docs/assets/screens/` from demo data it builds; the README and the main
   docs pages open with them, and `test_docs_images.py` holds each to a page
@@ -423,6 +461,7 @@ accepted are now refused, and a production stack needs its own signing key.
 | 5 | `integrate/wave-5` | 1810 passed, 2 skipped, 8 xfailed, from a fresh clone | 391 passed, 1 skipped; none passed only on retry | CI's install, emulated: 1619 passed, 193 skipped, none failed. `mkdocs build --strict` without a warning. `./al family loop` against the round's branches of joe, qmcp and vox: every repository's quick suite green, and the live check's nine checks passing against a joe with nothing but its media API turned on |
 | 6 | `integrate/wave-6` | 1831 passed, 2 skipped, 8 xfailed | 392 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning. `./al family loop` against joe#35's branch, with the auth bypass: every repository's quick suite green, and the live check's eight checks passing, the ninth skipped for want of a library file with sound. `./al recipes` against the same joe: all six recipes recorded, and every screenshot unchanged. Against a joe without the media API, the loop warns and captions refuse |
 | 7 | `feat/journeys-and-onboarding` | 1833 passed, 2 skipped, 8 xfailed | 399 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning. The `@screens` retaken against `./al family up` with joe#35's branch: all seven changed, for the phone's header, rail and transport and the templates' labels, the captions still shown with joe connected. The phone flow measured at 375x812 and 390x844: one screen on every stage, nothing scrolling sideways |
+| 8 | `feat/close-gaps` | 1892 passed, 8 skipped, 8 xfailed; black checked, not applied | 402 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning, with the recordings and without them. The `@screens` retaken against `./al family up` with joe#35's branch: seven changed, for the Render stage's form and the zoom row. The Render stage measured at 360x740, 375x812, 390x844 and 812x375: the whole form on the screen upright, and the whole picture held sideways |
 
 ## 0.3.0 — breaking
 

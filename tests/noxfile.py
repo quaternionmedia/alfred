@@ -2,6 +2,13 @@ from os.path import join
 
 import nox
 
+# What `./al pytest` runs: pytest.yml names no session, so nox runs these.
+# Formatting is checked, as CI checks it, and nothing is changed. Without a
+# list nox ran every session, `blacken` first, so the suite rewrote the files
+# it was about to test and passed code CI then failed. `./al nox -s blacken`
+# formats.
+nox.options.sessions = ['formatting', 'lint', 'coverage']
+
 
 # The formatters and linters are pinned deliberately.
 #
@@ -18,6 +25,15 @@ def blacken(session):
     # CONTRIBUTING.md tells contributors it is the formatting gate.
     session.chdir('..')
     session.run('black', '-S', '-v', '.')
+
+
+@nox.session
+def formatting(session):
+    """Black's check, as CI's format job runs it: fails, with the diff, on any
+    file black would change, and changes none."""
+    session.install('black>=24,<26')
+    session.chdir('..')
+    session.run('black', '-S', '--check', '--diff', '.')
 
 
 @nox.session

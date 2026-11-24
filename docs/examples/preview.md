@@ -26,7 +26,7 @@ Preview one frame of an `Edl` without rendering the full video
     curl -H "Content-Type: application/json" \
       -H "Authorization: Bearer $TOKEN" \
       -d @data.json \
-      "https://alfred.quaternion.media/preview/?t=1"
+      "http://127.0.0.1:8000/preview/?t=1"
     ```
 
 The body is a render request, so `width` and `height` beside `edl` set the frame's size, 1920 by 1080 by default. The `Edl` is checked as a render's is: a clip the server will not render is a 422 that names it.
@@ -43,7 +43,7 @@ its `exp` (`ALFRED_MEDIA_URL_TTL`, 15 minutes by default). Frames are kept for
 ```
 
 ``` bash title="Fetch the frame"
-curl -o frame.jpg "https://alfred.quaternion.media$URL"
+curl -o frame.jpg "http://127.0.0.1:8000$URL"
 ```
 
 The frame is a JPEG, over black where nothing is drawn:

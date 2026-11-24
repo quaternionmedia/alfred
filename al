@@ -288,8 +288,11 @@ elif [ $1 = "p" -o $1 = "production" -o $1 = "prod" ]; then
     exit 1
   fi
   echo "Alfred! running production $1"
+  # The docs, with the Material release pdm.lock holds for `./al docs`
+  # (pyproject.toml's docs group). Unpinned, it built production's docs with
+  # whatever `latest` meant on the day: 9.8.0 was a day old as this was pinned.
   docker compose down && \
-  docker run --rm -it -v ${PWD}:/docs -v ${PWD}/alfred/site/:/site/ --user $(id -u):$(id -g) squidfunk/mkdocs-material build -d /site/ && \
+  docker run --rm -it -v ${PWD}:/docs -v ${PWD}/alfred/site/:/site/ --user $(id -u):$(id -g) squidfunk/mkdocs-material:9.7.7 build -d /site/ && \
   docker compose -f docker-compose.yml -f production.yml up --build -d $1
 
 # Installs website dependencies.
@@ -327,7 +330,8 @@ elif [ $1 = "recipes" ]; then
   #   3. turn each into docs/recipes/<recipe>.gif, with ffmpeg in the dev
   #      stack's api container (scripts/recipe_gifs.py);
   #   4. regenerate the cookbook.
-  # docs/recipes/ is git-ignored: the GIFs are published, not committed.
+  # docs/recipes/ is git-ignored: the recordings play in the cookbook of the
+  # docs served locally (`./al docs`), and are not committed.
   # Needs the dev stack up: E2E_BASE_URL if it is not on :8000, and
   # COMPOSE_PROJECT_NAME if it runs under another name. Every step runs, so a
   # recipe that fails loses its GIF rather than keeping a stale one; the

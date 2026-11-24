@@ -156,7 +156,9 @@ test.describe('@slow render pipeline, end to end', () => {
       project: 'e2e download',
     })
     const render = await waitForRender(request, token, id)
-    test.skip(render.state === 'failed', `the encode failed: ${render.error}`)
+    // Asserted, not skipped: a failed encode skipped the rest, and a broken
+    // pipeline read as a run with five tests left out rather than one red.
+    expect(render.state, `the encode failed: ${render.error}`).toBe('rendered')
 
     const whole = await request.get(`/render/${id}/download`, { headers })
     expect(whole.status()).toBe(200)
@@ -192,7 +194,7 @@ test.describe('@slow render pipeline, end to end', () => {
       project: 'e2e signed download',
     })
     const render = await waitForRender(request, token, id)
-    test.skip(render.state === 'failed', `the encode failed: ${render.error}`)
+    expect(render.state, `the encode failed: ${render.error}`).toBe('rendered')
     expect(render.download_url).toMatch(
       new RegExp(`^/render/${id}/download\\?exp=\\d+&sig=[A-Za-z0-9_-]{43}$`)
     )
@@ -229,7 +231,7 @@ test.describe('@slow render pipeline, end to end', () => {
      */
     const id = await queue(request, token, { ...TINY_RENDER, name: 'e2e playback' })
     const render = await waitForRender(request, token, id)
-    test.skip(render.state === 'failed', `the encode failed: ${render.error}`)
+    expect(render.state, `the encode failed: ${render.error}`).toBe('rendered')
 
     await page.goto('/')
     const played = await page.evaluate(
@@ -262,7 +264,7 @@ test.describe('@slow render pipeline, end to end', () => {
     const headers = { Authorization: token }
     const id = await queue(request, token, { ...TINY_RENDER, name: 'e2e delivery' })
     const render = await waitForRender(request, token, id)
-    test.skip(render.state === 'failed', `the encode failed: ${render.error}`)
+    expect(render.state, `the encode failed: ${render.error}`).toBe('rendered')
 
     const delivered = await request.post(`/render/${id}/deliver`, { headers })
     expect(delivered.status()).toBe(200)
@@ -291,7 +293,7 @@ test.describe('@slow render pipeline, end to end', () => {
       name: 'e2e delivery record',
     })
     const render = await waitForRender(request, token, id)
-    test.skip(render.state === 'failed', `the encode failed: ${render.error}`)
+    expect(render.state, `the encode failed: ${render.error}`).toBe('rendered')
 
     await request.post(`/render/${id}/deliver`, { headers })
 
@@ -322,7 +324,7 @@ test.describe('@slow render pipeline, end to end', () => {
       await request.get('/project', { headers: { Authorization: token } })
     ).json()
     const demo = projects.find(p => p.name === 'Timeline demo')
-    test.skip(!demo, 'demo project not seeded')
+    expect(demo, 'the server seeds the Timeline demo project').toBeTruthy()
 
     await authedPage.goto(`/#!/?project=${demo._id}&stage=render`)
     await expect(authedPage.locator('#timeline .clip')).toHaveCount(

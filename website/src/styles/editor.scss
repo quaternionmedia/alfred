@@ -138,6 +138,51 @@ $rule: 1px solid #2e2e2e;
   top: 0;
 }
 
+// Zoom out, the bar, zoom in, in one row. Zoom in was placed `absolute` at
+// the right of whatever box held it: the tools' column in the workspace,
+// where it was drawn over the bar, whose end ran on under the bin beside
+// the column; on a phone, the far end of the row, away from its bar.
+.zoombar {
+  align-items: center;
+  justify-content: space-between;
+
+  #scale {
+    position: relative;
+    flex: 1 1 3rem;
+    width: auto;
+    min-width: 3rem;
+    margin: 0 1.2em;
+
+    // The thumb, centred on its place along the bar (Scale.js).
+    &::before {
+      position: absolute;
+      top: 50%;
+      left: calc(var(--at, 0) * 100%);
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
+// The workspace's tools column is two buttons wide, with no room for a bar
+// between them, and a row of its own under them ran past the bottom of the
+// Timeline panel at 1280x800, where a sticky column cannot be scrolled to.
+// There the buttons zoom alone: before, most of the bar was under the bin
+// beside the column anyway. Contained, so its own width does not widen the
+// column; the column's width, which a toolbar's centring margins
+// (style.css) would keep it from taking; and the two buttons' 92 pixels in
+// the 93 inside its border, with no padding beside them or gap between.
+.workspace .zoombar {
+  contain: inline-size;
+  align-self: stretch;
+  margin-inline: 0;
+  padding-inline: 0;
+  column-gap: 0;
+
+  #scale {
+    display: none;
+  }
+}
+
 .editorsurface {
   min-width: 0;
   display: flex;
@@ -545,6 +590,11 @@ $rule: 1px solid #2e2e2e;
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
+  }
+
+  // The zoom bar takes what is left of its row, not its least width.
+  .zoombar {
+    flex: 1 1 12rem;
   }
 }
 

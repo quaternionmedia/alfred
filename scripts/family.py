@@ -443,17 +443,28 @@ def test(args):
 
 
 def fetch(url, data=None, headers=None, method=None, timeout=10):
-    """(status, body bytes, headers) for a request; status 0 when nothing answers."""
+    """(status, body bytes, headers) for a request; status 0 when nothing answers.
+
+    The headers' names are lower-cased. A header's name has no case, and a
+    plain dict of them kept whichever the server sent: uvicorn sends
+    `content-type`, so the template preview's check of it passed, and a
+    server or a proxy sending `Content-Type` failed it with a 200 and an
+    image.
+    """
     request = urllib.request.Request(
         url, data=data, headers=headers or {}, method=method
     )
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
-            return response.status, response.read(), dict(response.headers)
+            return response.status, response.read(), named(response.headers)
     except urllib.error.HTTPError as exc:
-        return exc.code, exc.read(), dict(exc.headers or {})
+        return exc.code, exc.read(), named(exc.headers or {})
     except (urllib.error.URLError, OSError, ValueError):
         return 0, b'', {}
+
+
+def named(headers):
+    return {name.lower(): value for name, value in headers.items()}
 
 
 def title_at(base):

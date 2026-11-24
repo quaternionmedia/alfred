@@ -105,10 +105,11 @@ data/
 website/recipe-report.json
 website/recipe-videos.json
 
-# Recipe recordings and GIFs. `./al recipes` writes both here, for watching
-# and for publishing beside the docs; neither is committed, because a GIF does
-# not compress against its last version and every refresh would add megabytes
-# to history. The cookbook links none of them.
+# Recipe recordings and GIFs. `./al recipes` writes both here, for watching:
+# the docs served locally play each recording in the cookbook
+# (scripts/docs_recordings.py). Neither is committed, because a GIF does not
+# compress against its last version and every refresh would add megabytes to
+# history. The committed cookbook links none of them.
 docs/recipes/
 
 # The docs' screenshots, which `./al recipes` takes (screens.spec.js), are

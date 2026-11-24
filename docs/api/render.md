@@ -24,7 +24,7 @@ Report an issue with one of your renders with `POST /render/{id}/report`, whose 
 curl -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '"The sound is out of step with the picture."' \
-  https://alfred.quaternion.media/render/$RENDER_ID/report
+  http://127.0.0.1:8000/render/$RENDER_ID/report
 ```
 
 It is mailed to the addresses in `EMAIL_SENDTO`, with the mail settings the rest of the server's mail uses (`EMAIL_SERVER`, `EMAIL_PORT`, `EMAIL_USERNAME`, `EMAIL_PASSWORD`). The route answers `202` once the mail is queued, with the worker's id for the job:

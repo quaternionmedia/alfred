@@ -83,7 +83,7 @@ class TemplateData:
 ### `font`
 : `#!python str`
 
-    A font name as ImageMagick lists it on the server (`convert -list font`), such as `DejaVu-Sans`. An unknown name is drawn in the default font, without an error.
+    A font name as ImageMagick lists it on the server (`convert -list font`), such as `DejaVu-Sans`; [`GET /fonts`](../api/fonts.md) lists the families this server has. An unknown name is drawn in the default font, without an error.
 
 ### `method`
 : `#!python str = 'label'`

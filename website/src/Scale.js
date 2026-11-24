@@ -26,7 +26,11 @@ export function inverseLog(value) {
 export function ScaleBar() {
   return {
     view: (vnode) => {
-      return m('.slider#scale', {min: 1, max: 100, style: {paddingLeft: `${inverseLog(state.scale())*100}%`, 'background-color': '#393939'}})
+      // Where the thumb is, as a fraction of the bar (editor.scss draws it).
+      // It was a `padding-left` percentage, which is of the toolbar's width,
+      // not the bar's: the thumb ran past the bar's end.
+      const at = Math.min(1, Math.max(0, inverseLog(state.scale())))
+      return m('.slider#scale', {min: 1, max: 100, style: {'--at': at, 'background-color': '#393939'}})
     },
     oncreate: (vnode) => {
       const slider = interact(vnode.dom)
@@ -57,7 +61,7 @@ export function ScaleBar() {
 export function Scale() {
   return {
     view: vnode => {
-      return m('.tools.toolbar', {style:{width: 'auto'}}, [
+      return m('.tools.toolbar.zoombar', {style:{width: 'auto'}}, [
         m('i.material-icons', {
           onclick: e => {
             let s = logslider(Math.max(inverseLog(state.scale()) - .05, .01))
@@ -67,7 +71,6 @@ export function Scale() {
         }, 'zoom_out'),
         m(ScaleBar),
         m('i.material-icons', {
-          style: {position: 'absolute', right:0},
           onclick: e => {
             let s = logslider(inverseLog(state.scale()) + .05)
             state.scale(s)

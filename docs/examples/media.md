@@ -8,7 +8,7 @@ All examples here can be previewed or rendered as a full video. A clip's `name` 
       -H "Authorization: Bearer $TOKEN" \
       -H "Content-Type: application/json" \
       -d @data.json \
-      "https://alfred.quaternion.media/preview/?t=1"
+      "http://127.0.0.1:8000/preview/?t=1"
     ```
     This answers a signed URL for the frame; [Preview frame](preview.md) says more.
 
@@ -18,7 +18,7 @@ All examples here can be previewed or rendered as a full video. A clip's `name` 
       -H "Authorization: Bearer $TOKEN" \
       -H "Content-Type: application/json" \
       -d @data.json \
-      https://alfred.quaternion.media/render
+      http://127.0.0.1:8000/render
     ```
     This answers the render's id; see [Render video](render.md).
 

@@ -8,8 +8,9 @@
  * git ignores, and listed in `website/recipe-videos.json` with the second its
  * recipe starts at: the recording opens on the login in front of it, which
  * the recipe notes (recipes.spec.js). `scripts/recipe_gifs.py` then turns
- * each into `docs/recipes/<recipe>.gif`. git ignores both: they are
- * published beside the docs, not committed.
+ * each into `docs/recipes/<recipe>.gif`. git ignores both: the docs served
+ * locally play each recording in the cookbook, from its recipe's start
+ * (scripts/docs_recordings.py), and nothing is committed.
  *
  * Only recipes that passed are listed, and every GIF and recording is cleared
  * first: a recipe that breaks leaves no artefact claiming it works.

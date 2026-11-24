@@ -2,13 +2,13 @@
 Tokens can be acquired with a `POST` request, with a username (email address) and password as form data.
 
 !!! abstract "Register for new account"
-    Register at [https://alfred.quaternion.media/#!/login](https://alfred.quaternion.media/#!/login), or with an API request:
+    Register on the server's login page, <http://127.0.0.1:8000/#!/login> for the dev stack, or with an API request:
     
     ``` bash title="Register"
     curl -X POST \
       -H "Content-Type: application/json" \
       -d '{"email":"your@email","password":"yourpassword","first_name":"yourname"}' \
-      https://alfred.quaternion.media/auth/register
+      http://127.0.0.1:8000/auth/register
     ```
     
     It answers the new user:
@@ -25,7 +25,7 @@ Tokens can be acquired with a `POST` request, with a username (email address) an
 curl -X POST \
   -F "username=user@email" \
   -F "password=yourpassword" \
-  https://alfred.quaternion.media/auth/jwt/login
+  http://127.0.0.1:8000/auth/jwt/login
 ```
 ## Results
 ``` json
@@ -40,7 +40,7 @@ Send the token in the headers of each request:
 export TOKEN=y0UrAPiT0k3N...
 curl \
   -H "Authorization: bearer $TOKEN" \
-  https://alfred.quaternion.media/users/me
+  http://127.0.0.1:8000/users/me
 ```
 
 A token works for an hour. `POST /auth/jwt/refresh`, sent with a token that still works, answers a fresh one in the same shape; an expired token has to log in again.
@@ -52,5 +52,5 @@ A token works for an hour. `POST /auth/jwt/refresh`, sent with a token that stil
     export TOKEN=$(curl -X POST \
       -F "username=your@email" \
       -F "password=yourpassword" \
-      https://alfred.quaternion.media/auth/jwt/login | jq -r '.access_token')
+      http://127.0.0.1:8000/auth/jwt/login | jq -r '.access_token')
     ```

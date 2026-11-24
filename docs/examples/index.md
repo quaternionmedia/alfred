@@ -7,7 +7,7 @@ The following are several examples, demonstrating basic and advanced capabilitie
     
     Every API call needs a valid jwt `TOKEN`; see [Login](login.md).
 
-    The examples are sent to `https://alfred.quaternion.media`. For a server of your own, use its address instead, such as `http://localhost:8000` for `./al dev`. A development stack started with `ALFRED_DEV_SKIP_AUTH=1` serves every request as its development user, token or not; see [Skipping login in development](../dev-auth.md).
+    The examples are sent to `http://127.0.0.1:8000`, the dev stack that `./al dev` starts ([Get started](../start.md)). For another server, such as the production one at `https://alfred.quaternion.media`, use its address instead. A development stack started with `ALFRED_DEV_SKIP_AUTH=1` serves every request as its development user, token or not; see [Skipping login in development](../dev-auth.md).
 
 !!! abstract "Media"
     A `video`, `image` or `audio` clip names a file in the server's media library, as `GET /videos` lists it: `videos/<file>`. The examples use `videos/moon.mp4` and `videos/train.mp4`, which `./al demo` downloads into the library. `POST /demo/media`, the editor's *Generate demo media*, makes three short clips there without the network, `videos/demo-bars.mp4` among them. `GET /media` lists the library with each file's kind, length and size.

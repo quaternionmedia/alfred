@@ -817,3 +817,44 @@ test.describe('on a phone', () => {
     expect(viewport).not.toMatch(/maximum-scale|user-scalable\s*=\s*(no|0)/i)
   })
 })
+
+test.describe('zoom', () => {
+  test('its buttons and its bar sit side by side, none drawn over another', async ({
+    authedPage,
+  }) => {
+    /**
+     * Zoom in was placed `absolute` at the right of whatever box held it: in
+     * the workspace's tools column it was drawn over the bar, whose end ran on
+     * under the bin beside the column; on a phone it sat at the far end of the
+     * row, away from its bar. The workspace's column has no room for a bar
+     * between two buttons, so there the buttons zoom alone (editor.scss).
+     *
+     * Mutation: put back `position: absolute; right: 0` on zoom in (Scale.js)
+     * and on a phone it leaves the bar's box, and this fails.
+     */
+    await authedPage.goto('/')
+    // Each icon is its name in words until the icon font arrives -- `zoom_out`,
+    // wide enough to wrap the row -- so the boxes are read after it.
+    await authedPage.evaluate(() => document.fonts.ready)
+    const bar = authedPage.locator('.zoombar')
+    const box = await bar.boundingBox()
+    const out = await bar.locator('i', { hasText: 'zoom_out' }).boundingBox()
+    const into = await bar.locator('i', { hasText: 'zoom_in' }).boundingBox()
+    for (const [name, b] of [['zoom out', out], ['zoom in', into]]) {
+      expect(b.x, `${name} starts outside the zoom bar`).toBeGreaterThanOrEqual(box.x - 1)
+      expect(b.x + b.width, `${name} ends outside the zoom bar`).toBeLessThanOrEqual(
+        box.x + box.width + 1
+      )
+    }
+    expect(Math.abs(out.y - into.y), 'the buttons share a row').toBeLessThanOrEqual(1)
+
+    const scale = authedPage.locator('#scale')
+    if (await scale.isVisible()) {
+      const s = await scale.boundingBox()
+      expect(out.x + out.width, 'the bar starts under zoom out').toBeLessThanOrEqual(s.x)
+      expect(s.x + s.width, 'the bar runs under zoom in').toBeLessThanOrEqual(into.x)
+    } else {
+      expect(out.x + out.width, 'zoom in is drawn over zoom out').toBeLessThanOrEqual(into.x)
+    }
+  })
+})

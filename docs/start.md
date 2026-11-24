@@ -37,7 +37,7 @@ account instead.
 
 The app is published on port 8000, on this machine only. If something else
 already holds the port, `./al dev` refuses to start and names it: start on
-another with `ALFRED_PORT=8100 ./al dev`. The dev-server notes in `AGENTS.md`
+another with `ALFRED_PORT=8100 ./al dev`. The [dev-server notes](dev-server.md)
 cover this and the other ports, and [Configuration](configuration.md#settings)
 lists them.
 
