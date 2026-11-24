@@ -732,50 +732,42 @@ class TestTheBlockingCallsScan:
     that hashes on the loop again fails the suite there."""
 
     def test_a_password_checked_in_a_coroutine(self):
-        found = scanned(
-            '''
+        found = scanned('''
             async def authenticate(self, credentials, user):
                 self.password_helper.verify_and_update(credentials.password, user)
-            '''
-        )
+            ''')
         assert found == [
             'alfred.made_up:3 authenticate() calls .verify_and_update() '
             '(checks a password, slowly on purpose)'
         ]
 
     def test_a_password_hashed_in_a_coroutine(self):
-        found = scanned(
-            '''
+        found = scanned('''
             async def create(self, password):
                 return self.password_helper.hash(password)
-            '''
-        )
+            ''')
         assert found == [
             'alfred.made_up:3 create() calls .hash() '
             '(hashes a password, slowly on purpose)'
         ]
 
     def test_bcrypt_itself(self):
-        found = scanned(
-            '''
+        found = scanned('''
             import bcrypt
             async def create(password):
                 return bcrypt.hashpw(password, bcrypt.gensalt())
-            '''
-        )
+            ''')
         assert found == [
             'alfred.made_up:4 create() calls bcrypt.hashpw '
             '(hashes a password, slowly on purpose)'
         ]
 
     def test_handed_to_the_thread_pool_it_is_not_counted(self):
-        found = scanned(
-            '''
+        found = scanned('''
             from starlette.concurrency import run_in_threadpool
             async def create(self, password):
                 return await run_in_threadpool(self.password_helper.hash, password)
-            '''
-        )
+            ''')
         assert found == []
 
     def test_the_scan_reads_the_copies(self):
