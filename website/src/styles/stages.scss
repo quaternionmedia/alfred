@@ -133,12 +133,18 @@
   }
 
   input,
-  select {
+  select,
+  textarea {
     padding: 0.3rem 0.4rem;
     background: #101010;
     color: inherit;
     border: 1px solid #3a3a3a;
     border-radius: 3px;
+  }
+
+  // A sans text, as in the inputs beside it, not the browser's monospace.
+  textarea {
+    font-family: inherit;
   }
 
   button {
@@ -335,10 +341,6 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 0.1rem;
-
-  .projectname {
-    font-weight: 600;
-  }
 
   .projectclips {
     font-size: 0.75rem;

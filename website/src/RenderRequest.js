@@ -111,11 +111,11 @@ function chosenFade(value) {
  * A layered EDL, as a form-driven project's logic builds one.
  *
  * Not a single-track timeline: the logic places its clips deliberately -- a
- * background from 0, captions over it from 17.1 -- and recomputing starts
+ * background from 0, the details over it from 1s -- and recomputing starts
  * end to end would undo that. So each clip keeps its own `start`, and one
  * without a start leaves with an explicit 0, which is what a missing start
- * already meant to the renderer, said out loud rather than left to a default.
- * The duration is where the last clip ends.
+ * means to the renderer, said out loud rather than left to a default. The
+ * duration is where the last clip ends.
  */
 export function layeredEdl(clips) {
   const placed = (clips || [])

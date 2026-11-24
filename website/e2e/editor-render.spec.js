@@ -3,10 +3,10 @@
  *
  * The editor plays its timeline as one track, each clip starting where the
  * previous one ends. The renderer places clips by an explicit `start` and
- * layers overlaps, treating a missing `start` as 0. The editor used to send
- * clips with no `start` at all, so three five-second clips rendered stacked at
- * second 0 -- five seconds of overlap, then ten of black -- while the preview
- * played them one after another.
+ * layers overlaps, treating a missing `start` as 0. Sent with no `start` at
+ * all, three five-second clips would render stacked at second 0 -- five
+ * seconds of overlap, then ten of black -- while the preview played them one
+ * after another.
  *
  * These read the request the page actually sends (intercepted and answered
  * here, so nothing is queued) rather than trusting the code that builds it.
@@ -21,8 +21,7 @@ const FAKE_RENDER_ID = 'abcdefabcdefabcdefabcdef'
  * sent.
  *
  * Matched on the path alone, so a request that smuggles its settings into the
- * query string -- which is what the toolbar button used to do -- is caught
- * rather than missed.
+ * query string, as a toolbar button could, is caught rather than missed.
  */
 async function captureRenders(page) {
   const sent = []
@@ -42,12 +41,12 @@ async function captureRenders(page) {
   return sent
 }
 
-async function projectNamed(request, token, name) {
+async function projectNamed(request, token, name, maker = 'global-setup.js creates it') {
   const projects = await (
     await request.get('/project', { headers: { Authorization: token } })
   ).json()
   const project = projects.find(p => p.name === name)
-  expect(project, `${name} is missing; global-setup.js creates it`).toBeTruthy()
+  expect(project, `${name} is missing; ${maker}`).toBeTruthy()
   return project
 }
 
@@ -399,9 +398,8 @@ test.describe('a form-driven project', () => {
    * they keep their own starts, and a clip with none leaves with an explicit
    * 0 rather than relying on the renderer's default.
    *
-   * The form also sent ffmpeg flags of its own and a quality of "web" or
-   * "TV"; the server now picks the encoding from a named preset and refuses
-   * client-supplied ffmpeg parameters, so this asserts neither is sent.
+   * The server picks the encoding from a named preset and refuses ffmpeg
+   * parameters a client sends, so the form sends a preset and no flags.
    */
   let project
 
@@ -528,5 +526,47 @@ test.describe('a form-driven project', () => {
     expect(body.edl.clips[1].data.text).toBe('Hello from the form')
     expect(body.duration).toBe(4)
     expect(body.edl.duration).toBe(4)
+  })
+  test('the seeded Announcement renders from its form as it stands', async ({
+    authedPage,
+    request,
+    token,
+  }) => {
+    /**
+     * The form project an empty database starts with, from
+     * `alfred/examples/announcement.json`, through the editor's own
+     * json-logic: a background, a headline flying
+     * in, and the details and fine print from 1s, for the seconds chosen,
+     * with sizes in proportion to the frame.
+     */
+    const seeded = await projectNamed(
+      request,
+      token,
+      'Announcement',
+      'global-setup.js creates it from alfred/examples/announcement.json'
+    )
+    const sent = await captureRenders(authedPage)
+    await authedPage.goto(`/#!/?project=${seeded._id}&stage=render`)
+    const form = authedPage.locator('#template_form')
+    await expect(form.locator('input[name="headline"]')).toHaveValue('Something new')
+    await expect(authedPage.locator('#next-step')).toContainText('Fill in the form')
+    await form.locator('input[name="headline"]').fill('Open on Saturday')
+    await form.locator('select[name="align"]').selectOption('left')
+    await form.locator('select[name="duration"]').selectOption('10')
+    await form.locator('input[name="save"]').click()
+    await expect.poll(() => sent.length).toBe(1)
+
+    const { body } = sent[0]
+    expect(body.edl.clips.map(c => c.name)).toEqual(['makeColor', 'textBox', 'textBox', 'textBox'])
+    expect(starts(body)).toEqual([0, 0, 1, 1])
+    expect(durations(body)).toEqual([10, 10, 9, 9])
+    expect(body.duration).toBe(10)
+    const [background, headline, details, fineprint] = body.edl.clips
+    expect(background.data.color).toBe('#101820')
+    expect(headline.data.text).toBe('Open on Saturday')
+    expect(headline.data.fontsize).toBeCloseTo(Math.sqrt(1920 * 1080) / 14)
+    expect(headline.data.fxs[0].name).toBe('bezier2')
+    expect(details.data.align).toBe('west')
+    expect(fineprint.data.position).toEqual(['center', 'bottom'])
   })
 })

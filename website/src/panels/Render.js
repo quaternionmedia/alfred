@@ -1,10 +1,10 @@
 import m from 'mithril'
 import { Edl } from '../Video'
-import { Magnussens } from '../Magnussens'
+import { ProjectForm } from '../ProjectForm'
 import { queueRender, renderSize, timelineRender } from '../RenderRequest'
 import { Health, RendererNotice } from '../Health'
 import { requestProblem } from '../Problem'
-import { AsyncButton, Empty, Flow, FlowPanel } from '../Stages'
+import { AsyncButton, Empty, Flow, FlowPanel, madeFromForm } from '../Stages'
 import { state } from '../Globals'
 
 /** Where the size on offer came from. */
@@ -24,16 +24,9 @@ const RenderPanel = {
   view: () => {
     const project = Flow.project()
 
-    // A project drives a render one of two ways, and which one is a property
-    // of the project rather than a choice the person makes.
-    //
-    // Projects with `fields` and `logic` are form-driven: you fill in a form
-    // and the logic compiles it into clips. That lived at #!/form -- a route
-    // with no stage rail, reachable from the project list and unable to get
-    // back to it, and which rendered a submittable form even with no project
-    // at all. It is the Render stage for those projects.
-    const formDriven = project && (project.fields || []).length > 0
-    if (formDriven) {
+    // A project with `fields` renders from its form, which its `logic` turns
+    // into clips; any other renders its timeline. The project decides.
+    if (madeFromForm(project)) {
       return m('.stagepanel#panel-render', [
         m('h3', 'Render from the project form'),
         m(RendererNotice),
@@ -46,7 +39,7 @@ const RenderPanel = {
             'Open the timeline instead'
           ),
         ]),
-        m('.formhost', m(Magnussens)),
+        m('.formhost', m(ProjectForm)),
       ])
     }
 

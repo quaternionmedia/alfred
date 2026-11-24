@@ -675,7 +675,7 @@ test.describe('the frame takes overlays', () => {
 
     const frame = await box(head)
     const picture = await box(head.locator('#preview'))
-    // Inside the frame's 3px border, and the whole of it.
+    // Inside the frame's border, and the whole of it.
     expect(picture.x).toBeGreaterThanOrEqual(frame.x)
     expect(picture.y).toBeGreaterThanOrEqual(frame.y)
     expect(picture.width).toBeGreaterThanOrEqual(frame.width - 8)

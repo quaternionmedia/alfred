@@ -1,0 +1,168 @@
+{
+  "name": "Announcement",
+  "logic": {
+    "merge": [
+      {
+        "eachKey": {
+          "type": "template",
+          "name": "makeColor",
+          "start": 0,
+          "duration": {"+": [{"var": "duration"}]},
+          "data": {"eachKey": {"color": {"var": "background"}}}
+        }
+      },
+      {
+        "eachKey": {
+          "type": "template",
+          "name": "textBox",
+          "start": 0,
+          "duration": {"+": [{"var": "duration"}]},
+          "data": {
+            "eachKey": {
+              "text": {"var": "headline"},
+              "color": {"var": "textcolor"},
+              "method": "caption",
+              "fontsize": {
+                "/": [
+                  {"sqrt": {"*": [{"var": "width"}, {"var": "height"}]}},
+                  14
+                ]
+              },
+              "textsize": [
+                {"floor": {"*": [0.9, {"var": "width"}]}},
+                {"floor": {"*": [0.3, {"var": "height"}]}}
+              ],
+              "position": [
+                "center",
+                {"floor": {"*": [0.08, {"var": "height"}]}}
+              ],
+              "fxs": {
+                "preserve": [
+                  {
+                    "name": "bezier2",
+                    "data": {
+                      "c1x": 1,
+                      "c1y": 0,
+                      "ax": 0,
+                      "ay": 0,
+                      "c2x": 0,
+                      "c2y": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      {
+        "eachKey": {
+          "type": "template",
+          "name": "textBox",
+          "start": 1,
+          "duration": {"-": [{"+": [{"var": "duration"}]}, 1]},
+          "data": {
+            "eachKey": {
+              "text": {"var": "details"},
+              "color": {"var": "textcolor"},
+              "method": "caption",
+              "fontsize": {
+                "/": [
+                  {"sqrt": {"*": [{"var": "width"}, {"var": "height"}]}},
+                  32
+                ]
+              },
+              "textsize": [
+                {"floor": {"*": [0.9, {"var": "width"}]}},
+                {"floor": {"*": [0.4, {"var": "height"}]}}
+              ],
+              "position": "center",
+              "align": {
+                "if": [{"==": [{"var": "align"}, "left"]}, "west", "center"]
+              }
+            }
+          }
+        }
+      },
+      {
+        "eachKey": {
+          "type": "template",
+          "name": "textBox",
+          "start": 1,
+          "duration": {"-": [{"+": [{"var": "duration"}]}, 1]},
+          "data": {
+            "eachKey": {
+              "text": {"var": "fineprint"},
+              "color": {"var": "textcolor"},
+              "method": "caption",
+              "fontsize": {
+                "/": [
+                  {"sqrt": {"*": [{"var": "width"}, {"var": "height"}]}},
+                  60
+                ]
+              },
+              "textsize": [
+                {"floor": {"*": [0.9, {"var": "width"}]}},
+                {"floor": {"*": [0.15, {"var": "height"}]}}
+              ],
+              "position": ["center", "bottom"],
+              "align": "west"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "fields": [
+    {
+      "type": "Text",
+      "attrs": {
+        "name": "headline",
+        "text": "Headline",
+        "defaultValue": "Something new"
+      }
+    },
+    {
+      "type": "Textarea",
+      "attrs": {
+        "name": "details",
+        "text": "Details",
+        "defaultValue": "What it is, where and when. A long line wraps to fit the frame."
+      }
+    },
+    {
+      "type": "Selector",
+      "attrs": {"name": "align", "text": "Details aligned"},
+      "children": ["center", "left"]
+    },
+    {
+      "type": "Textarea",
+      "attrs": {
+        "name": "fineprint",
+        "text": "Fine print",
+        "defaultValue": "Terms, dates and a web address go here."
+      }
+    },
+    {
+      "type": "Selector",
+      "attrs": {"name": "duration", "text": "Seconds"},
+      "children": ["15", "10", "30"]
+    },
+    {
+      "type": "Color",
+      "attrs": {
+        "name": "background",
+        "text": "Background",
+        "defaultValue": "#101820"
+      }
+    },
+    {
+      "type": "Color",
+      "attrs": {
+        "name": "textcolor",
+        "text": "Text",
+        "defaultValue": "#f2f2f2"
+      }
+    }
+  ]
+}

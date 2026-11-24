@@ -38,6 +38,14 @@ html {
   height: 100%;
 }
 
+/* Size and colour set a heading apart; weight stays with the text. */
+h1,
+h2,
+h3,
+h4 {
+  font-weight: normal;
+}
+
 body {
   font-family: Verdana, Geneva, sans-serif;
   background: var(--grey1);
@@ -75,7 +83,7 @@ section:where(:not([class^='lm_'])) {
   object-fit: contain;
   background-size: cover;
   border: solid #aaa;
-  border-width: 3px;
+  border-width: 1px;
 }
 .bkg {
   background-size: contain;
@@ -88,7 +96,7 @@ section:where(:not([class^='lm_'])) {
   /* display: flex; */
   display: -webkit-inline-box;
   overflow: auto;
-  border: 3px solid #46346e;
+  border: 1px solid #46346e;
   border-radius: 1em;
   padding: 1em;
   background-color: #101010;
@@ -130,11 +138,11 @@ section:where(:not([class^='lm_'])) {
   text-align: right;
   min-width: 40vw;
   max-height: 50vh;
-  border: 4px solid #210d4d;
+  border: 1px solid #210d4d;
 }
 
 .project {
-  border: 3px solid #210d4d;
+  border: 1px solid #210d4d;
   padding: 0.5em;
   border-radius: 1em;
   background-color: #292929;
@@ -178,7 +186,7 @@ th {
   display: flex;
   height: 40vh;
   background-color: black;
-  border: 3px #46346e;
+  border: 1px #46346e;
   border-style: solid;
   margin-bottom: 0px;
   margin-left: auto;
@@ -243,8 +251,7 @@ th {
   height: fit-content;
 }
 .tools i {
-  border-style: solid;
-  border-color: #393939;
+  border: 1px solid #393939;
   border-radius: 10px;
   padding: 6px;
   margin: 2px;
@@ -337,7 +344,7 @@ select {
 .resizable .resizers {
   width: 100%;
   height: 100%;
-  border: 3px solid #4286f4;
+  border: 1px solid #4286f4;
   box-sizing: border-box;
 }
 
@@ -346,7 +353,7 @@ select {
   height: 10px;
   border-radius: 50%; /*magic to turn square into circle*/
   background: white;
-  border: 3px solid #4286f4;
+  border: 1px solid #4286f4;
   position: absolute;
 }
 .sortable {
@@ -437,7 +444,7 @@ select {
 
 form {
   padding: 1em;
-  border: 3px solid #46346e;
+  border: 1px solid #46346e;
   border-radius: 1em;
   background-color: #393939;
 }
@@ -516,7 +523,7 @@ form input {
 }
 .subform {
   border: #46346e;
-  border-width: 4px;
+  border-width: 1px;
   border-style: solid;
   border-radius: 10px;
   margin-left: auto;
@@ -569,11 +576,11 @@ form input {
 }
 
 .loader {
-  border: 16px solid #444;
-  border-top: 16px solid #aaa;
+  border: 3px solid #444;
+  border-top: 3px solid #aaa;
   border-radius: 50%;
-  width: 120px;
-  height: 120px;
+  width: 48px;
+  height: 48px;
   animation: spin 2s linear infinite;
 }
 

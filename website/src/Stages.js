@@ -39,6 +39,9 @@ export const DEFAULT_STAGE = 'edit'
 export const stageNamed = requested =>
   STAGES.some(s => s.id === requested) ? requested : DEFAULT_STAGE
 
+/** A project its form makes (`fields` and `logic`), not its timeline. */
+export const madeFromForm = project => !!project && (project.fields || []).length > 0
+
 export const Flow = {
   projects: [],
   renders: [],

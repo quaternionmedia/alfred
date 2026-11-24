@@ -125,6 +125,8 @@ docs/recipes/
 !docs/assets/screens/guide/*.png
 # The docs examples' request bodies, which the pages include and the tests read.
 !docs/examples/edl/*.json
+# The server's example projects, which the seed and the browser suite read.
+!alfred/examples/*.json
 
 # Test-render output moved aside during review prep; regenerable, never shipped.
 videos-test-output/
