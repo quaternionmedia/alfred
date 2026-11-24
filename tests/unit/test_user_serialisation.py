@@ -21,8 +21,9 @@ rather than any one of them:
 import re
 
 from beanie import PydanticObjectId
+from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
-from fastapi.utils import create_cloned_field
+from fastapi.testclient import TestClient
 
 from alfred.core.models.users import UserRead
 
@@ -59,20 +60,18 @@ class TestTheIdSurvivesSerialisation:
         encoded = jsonable_encoder(UserRead(**fields))
         assert encoded['id'] == str(fields['id'])
 
-    def test_it_survives_fastapis_response_model_cloning(self):
-        """The step that defeated the Config-based fix.
+    def test_it_survives_a_response_model(self):
+        """Through a route declared `response_model=UserRead`, as /users/me is."""
+        app = FastAPI()
+        fields = _a_user()
 
-        FastAPI rebuilds a response model into a new class before using it.
-        Config -- and so `json_encoders` -- does not come along. Anything that
-        makes this work has to live on the field, which is why the fix is a
-        validator. Without this test the Config version looks correct in every
-        unit test and still returns `{}` from the running server.
-        """
-        cloned = create_cloned_field(UserRead.__fields__['id'])
-        value, error = cloned.validate(PydanticObjectId(), {}, loc=('id',))
-        assert error is None, f'cloned field rejected an ObjectId: {error}'
-        assert isinstance(value, str)
-        assert OBJECT_ID.match(value)
+        @app.get('/me', response_model=UserRead)
+        def me():
+            return fields
+
+        body = TestClient(app).get('/me').json()
+        assert body['id'] == str(fields['id'])
+        assert OBJECT_ID.match(body['id'])
 
 
 class TestTheDevBypassSerialisesTheSameWay:
@@ -90,4 +89,4 @@ class TestTheDevBypassSerialisesTheSameWay:
         A user without an id is not a user, and an Optional field would let the
         null case come back quietly.
         """
-        assert UserRead.__fields__['id'].required
+        assert UserRead.model_fields['id'].is_required()

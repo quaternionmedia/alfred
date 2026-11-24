@@ -24,7 +24,7 @@ again for a change to take effect.
   one the shell leaves unset stays unset, and the table's default applies.
 - **Empty is unset**, except for `ALFRED_SECRET_KEY`: an empty value, or one of
   spaces, gives the table's default. An empty `ALFRED_SECRET_KEY` is a key
-  anyone can reproduce.
+  PyJWT refuses, so no token can be signed.
 - **Paths are inside the containers.** Both mount this checkout's `videos/` at
   `/app/videos`; only the api mounts the checkout itself at `/app`. A directory
   the renderer writes and the api reads, `ALFRED_RENDER_DIR` above all, must be
@@ -46,7 +46,7 @@ it.
 | Setting | Default | What it does | Read by | Development and production |
 |---|---|---|---|---|
 | `ALFRED_PRODUCTION` | unset: off | Production mode: registration closed by default, single-use tokens kept out of the log, a short signing key reported, and the auth bypass refused at startup. Any non-empty value turns it on, `false` included. | api, renderer | `production.yml` sets it on both services; `dev.yml` never passes it. Production is a property of the stack file, not of the shell. |
-| `ALFRED_SECRET_KEY` | none | Signs every session, password-reset and verification token, and the media URLs the api hands out. Unset, every login fails with a 500; empty, tokens are signed with a key anyone can reproduce; under production, shorter than 32 characters is reported as guessable. | api | Development: `.secret_key.local`, a random key for this checkout that `./al init`, `./al dev` and `./al thin` create, loaded over the committed empty stub `.secret_key`. Exporting it does nothing in development. Production: required; export it before `./al prod`, which refuses to start without it. |
+| `ALFRED_SECRET_KEY` | none | Signs every session, password-reset and verification token, and the media URLs the api hands out. Unset or empty, every login fails with a 500 (PyJWT 2.13 and later refuse an empty key); under production, shorter than 32 characters is reported as guessable. | api | Development: `.secret_key.local`, a random key for this checkout that `./al init`, `./al dev` and `./al thin` create, loaded over the committed empty stub `.secret_key`. Exporting it does nothing in development. Production: required; export it before `./al prod`, which refuses to start without it. |
 | `ALFRED_ALLOW_REGISTRATION` | open in development, closed under `ALFRED_PRODUCTION` | Whether `POST /auth/register` creates accounts. `1`, `true`, `yes` or `on` open it; any other value closes it. | api | The only way to open registration on a production stack: `ALFRED_ALLOW_REGISTRATION=1 ./al prod`. |
 | `ALFRED_DEV_SKIP_AUTH` | off | Serves every request as a fixed superuser, the dev user, and skips the login screen. `1`, `true`, `yes` or `on` turn it on. See [Development auth](dev-auth.md). | api | Development only: `production.yml` does not pass it, and a process that sees it with `ALFRED_PRODUCTION` refuses to start. `./al dev` warns when it meets an `ALFRED_BIND` beyond loopback. |
 | `ALFRED_DEV_USER_EMAIL` | `dev@example.com` | The account the auth bypass acts as. Reserved in every mode: it cannot be registered, logged into or reset. Development seeds belong to it unless `ALFRED_SEED_OWNER` says otherwise. | api | Both. |

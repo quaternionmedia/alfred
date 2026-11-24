@@ -67,9 +67,8 @@ def coverage(session):
     # lockfile was introduced to end, back again one layer down, and a green
     # suite was evidence about versions nothing deployed.
     #
-    # --no-deps because the lock carries an override pip cannot express (see
-    # the Dockerfile): a resolving install refuses it. test_stack_config.py
-    # holds this in place.
+    # --no-deps so pip resolves nothing: the lock carries overrides pip does
+    # not read (see the Dockerfile). test_stack_config.py holds this in place.
     #
     # requirements-render.lock is the engine's `render` extra: optional to pip,
     # not to the templates that draw a box behind their text (title, bullets),

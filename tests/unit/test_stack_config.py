@@ -295,8 +295,8 @@ class TestDependencyPinning:
         )
         assert project is not None, 'no `-e ..` install in the coverage session'
         assert "'--no-deps'" in calls[project], (
-            'install the project with --no-deps: resolving it refuses the '
-            'override the lock carries'
+            'install the project with --no-deps: resolving it ignores the '
+            'overrides the lock carries'
         )
         for export in EXPORTS:
             lock = next(
@@ -683,11 +683,10 @@ class TestDependencyPinning:
 class TestExactInstall:
     """Every install path installs pdm's resolution exactly.
 
-    pyproject.toml overrides fastapi-users' exact pin on python-multipart. pdm
-    honours an override; pip has no such thing, so a resolving install of the
-    lockfile or of the project fails with ResolutionImpossible. The image, the
-    suite and CI all install with --no-deps instead, and TestDependencyPinning
-    makes the check the resolver used to.
+    pdm honours pyproject.toml's overrides; pip reads none, so a resolving
+    install could land on versions nothing tested. The image, the suite and
+    CI all install with --no-deps instead, and TestDependencyPinning makes
+    the check the resolver used to.
     """
 
     def test_the_image_installs_the_lock_and_the_project_with_no_deps(self):
@@ -699,12 +698,12 @@ class TestExactInstall:
             r'^RUN\s+pip3?\s+install\b.*\s-e\s+\.\s*$', dockerfile, re.M
         )
         assert lock and '--no-deps' in lock.group(0).split(), (
-            'install requirements.lock with --no-deps: resolving it refuses the '
-            'override'
+            'install requirements.lock with --no-deps: resolving it ignores the '
+            'overrides'
         )
         assert (
             project and '--no-deps' in project.group(0).split()
-        ), 'install the project with --no-deps: resolving it refuses the override'
+        ), 'install the project with --no-deps: resolving it ignores the overrides'
 
     def test_the_image_draws_with_the_locked_render_extra(self):
         """What the engine draws with is pinned, like everything else.

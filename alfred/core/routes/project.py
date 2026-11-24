@@ -36,8 +36,8 @@ class ProjectSettings(BaseModel):
     render size" from becoming an arbitrary write to the document.
     """
 
-    render_settings: Optional[RenderSettings]
-    destination: Optional[str]
+    render_settings: Optional[RenderSettings] = None
+    destination: Optional[str] = None
 
 
 class ProjectAPI(MotorCRUDRouter):
@@ -107,7 +107,7 @@ class ProjectAPI(MotorCRUDRouter):
             """
             project = await self._owned(item_id, user)
 
-            patch = settings.dict(exclude_none=True)
+            patch = settings.model_dump(exclude_none=True)
             if patch:
                 await project.set(patch)
             return await self._as_stored(project)

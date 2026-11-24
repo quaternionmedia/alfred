@@ -43,7 +43,7 @@ class RendererHealth(BaseModel):
 
 class QueueHealth(BaseModel):
     # Jobs waiting for a worker; null when the broker could not be asked.
-    pending: Optional[int]
+    pending: Optional[int] = None
 
 
 class PreviewHealth(BaseModel):
@@ -60,7 +60,7 @@ class AudioEngineHealth(BaseModel):
     # Whether it answered, from this build: there is one to transcribe with.
     ok: bool
     # Why not, when it is not ok; null when it is.
-    detail: Optional[str]
+    detail: Optional[str] = None
 
 
 class Health(BaseModel):

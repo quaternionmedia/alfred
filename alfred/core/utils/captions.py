@@ -41,6 +41,13 @@ from ..models.captions import (
     clean_caption_text,
 )
 
+
+def first_reason(exc: ValidationError) -> str:
+    """A validation error's first reason, in its validator's own words."""
+    error = exc.errors()[0]
+    return str(error.get('ctx', {}).get('error', error['msg']))
+
+
 # --- lists ------------------------------------------------------------------
 
 # The most captions one project or render may carry. Each is a template clip
@@ -95,7 +102,7 @@ def checked_captions(captions: Optional[Iterable[Caption]]) -> List[Caption]:
 
 def style_document(style: CaptionStyle) -> dict:
     """`style` as MongoDB keeps it: every field, a position pair as a list."""
-    data = style.dict()
+    data = style.model_dump()
     if isinstance(data.get('position'), tuple):
         data['position'] = list(data['position'])
     return data
@@ -107,7 +114,7 @@ def project_style(stored) -> CaptionStyle:
     if data.get('enabled') is None:
         data['enabled'] = False
     try:
-        return CaptionStyle.parse_obj(data)
+        return CaptionStyle.model_validate(data)
     except ValidationError:
         return CaptionStyle(enabled=False)
 
@@ -124,7 +131,7 @@ def style_to_store(sent: Optional[CaptionStyle], stored) -> Optional[dict]:
     stored = stored if isinstance(stored, dict) else {}
     if sent is not None:
         data = style_document(sent)
-        if 'enabled' not in sent.__fields_set__:
+        if 'enabled' not in sent.model_fields_set:
             data['enabled'] = bool(stored.get('enabled') or False)
         return data
     if stored.get('enabled') is not None:
@@ -258,8 +265,7 @@ def _collect(cues) -> Parsed:
         try:
             captions.append(Caption(start=start, end=end, text=text))
         except ValidationError as exc:
-            reason = exc.errors()[0]['msg']
-            raise CaptionFormatError(f'{where}: {reason}') from None
+            raise CaptionFormatError(f'{where}: {first_reason(exc)}') from None
     try:
         return Parsed(captions=checked_captions(captions), skipped=skipped)
     except TooManyCaptions as exc:

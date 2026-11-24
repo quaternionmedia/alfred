@@ -89,8 +89,8 @@ class TestQueueing:
         client.post('/render', json=render_request())
 
         (payload,) = queue.sent
-        sent = Edl.parse_obj(json.loads(json.dumps(payload['edl'])))
-        assert sent == Edl.parse_obj(render_request()['edl'])
+        sent = Edl.model_validate(json.loads(json.dumps(payload['edl'])))
+        assert sent == Edl.model_validate(render_request()['edl'])
 
 
 class TestRequeueing:

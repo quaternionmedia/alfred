@@ -228,14 +228,14 @@ TIMELINE = {
 
 class TestWhatCanBeHeard:
     def test_only_video_and_audio_clips_can_sound(self):
-        sounding = sounding_clips(Edl.parse_obj(TIMELINE))
+        sounding = sounding_clips(Edl.model_validate(TIMELINE))
         assert [(c.type, c.name) for c in sounding] == [
             ('audio', 'videos/a.wav'),
             ('video', 'videos/c.mp4'),
         ]
 
     def test_a_timeline_of_templates_and_images_has_none(self):
-        edl = Edl.parse_obj(
+        edl = Edl.model_validate(
             {
                 'clips': [
                     {'type': 'template', 'name': 'makeColor', 'duration': 1},
@@ -271,7 +271,7 @@ class TestTheMix:
     def test_otto_writes_the_whole_timeline_at_the_speech_rate(self, otto):
         from alfred.core.utils.transcription import SPEECH_RATE, mix_timeline
 
-        edl = Edl.parse_obj(TIMELINE)
+        edl = Edl.model_validate(TIMELINE)
 
         assert mix_timeline(edl, '/tmp/job/timeline.wav') == 7.0
 
@@ -288,7 +288,7 @@ class TestTheMix:
         from alfred.core.utils.transcription import mix_timeline
 
         otto.state['answer'] = NoSoundException('the Edl makes no sound: ...')
-        edl = Edl.parse_obj(
+        edl = Edl.model_validate(
             {'clips': [{'type': 'video', 'name': 'videos/c.mp4', 'duration': 2}]}
         )
 
@@ -299,7 +299,7 @@ class TestTheMix:
     def test_a_timeline_nothing_in_which_can_sound_is_not_handed_to_otto(self, otto):
         from alfred.core.utils.transcription import mix_timeline
 
-        edl = Edl.parse_obj(
+        edl = Edl.model_validate(
             {'clips': [{'type': 'template', 'name': 'makeColor', 'duration': 1}]}
         )
 
@@ -315,7 +315,7 @@ class TestTheMix:
         otto.state['answer'] = EdlException("clip 2 ('videos/a.wav'): inpoint 9")
 
         with pytest.raises(EdlException, match='clip 2'):
-            mix_timeline(Edl.parse_obj(TIMELINE), '/tmp/job/timeline.wav')
+            mix_timeline(Edl.model_validate(TIMELINE), '/tmp/job/timeline.wav')
 
 
 class TestNothingHeard:

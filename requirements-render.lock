@@ -24,6 +24,7 @@
 # Please do not edit it manually.
 
 annotated-doc==0.0.5
+annotated-types==0.8.0
 anyio==4.15.1
 cairocffi==1.7.1
 certifi==2026.7.22
@@ -41,10 +42,12 @@ numpy==1.26.4
 pillow==12.3.0
 proglog==0.1.12
 pycparser==3.11; implementation_name != "PyPy"
-pydantic==1.10.26
+pydantic==2.14.1
+pydantic-core==2.50.1
 requests==2.34.2
 starlette==0.50.0
 tqdm==4.70.1
 typing-extensions==4.16.0
+typing-inspection==0.4.4
 urllib3==2.8.0
 

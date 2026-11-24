@@ -83,11 +83,11 @@ BLOCKING = {
     'alfred.core.utils.tasks.pending_count': 'asks the broker',
     # The database, synchronously: every query on the handle blocks.
     'alfred.core.utils.db.get_sync_db': 'queries the synchronous database client',
-    # A password, hashed or checked: bcrypt is slow on purpose.
+    # A password, hashed or checked: Argon2 and bcrypt are slow on purpose.
     'bcrypt.hashpw': 'hashes a password, slowly on purpose',
     'bcrypt.checkpw': 'checks a password, slowly on purpose',
-    'passlib.hash.bcrypt.hash': 'hashes a password, slowly on purpose',
-    'passlib.hash.bcrypt.verify': 'checks a password, slowly on purpose',
+    'argon2.low_level.hash_secret': 'hashes a password, slowly on purpose',
+    'argon2.low_level.verify_secret': 'checks a password, slowly on purpose',
     # Whole directories and files.
     'os.listdir': 'lists a directory',
     'os.scandir': 'lists a directory',
@@ -113,7 +113,7 @@ BLOCKING_METHODS = {
     'delay': 'sends a job to the broker',
     'apply_async': 'sends a job to the broker',
     'deliver': 'copies or uploads a whole render',
-    # fastapi-users' password helper, and passlib's CryptContext under it.
+    # fastapi-users' password helper, and pwdlib's PasswordHash under it.
     'hash': 'hashes a password, slowly on purpose',
     'verify_and_update': 'checks a password, slowly on purpose',
 }

@@ -51,7 +51,7 @@ def background(duration):
 def render(tmp_path, edl, size=SIZE):
     out = tmp_path / 'captioned.mp4'
     renderMultitrack(
-        Edl.parse_obj(edl),
+        Edl.model_validate(edl),
         filename=str(out),
         moviesize=size,
         fps=10,
@@ -97,7 +97,7 @@ def test_a_caption_is_on_screen_while_it_is_shown_and_only_then(tmp_path):
         captions,
         CaptionStyle(),
         SIZE,
-        until=timeline_end(Edl.parse_obj(timeline)),
+        until=timeline_end(Edl.model_validate(timeline)),
     )
     frames = frames_at(render(tmp_path, edl), [0.2, 0.8, 1.5, 2.2, 2.8])
 
@@ -229,7 +229,7 @@ def test_the_timeline_is_mixed_to_16khz_mono_where_it_sounds(library, tmp_path):
     from alfred.core.utils.media import resolve_edl
 
     out = tmp_path / 'mix.wav'
-    length = mix_timeline(resolve_edl(Edl.parse_obj(TIMELINE)), out)
+    length = mix_timeline(resolve_edl(Edl.model_validate(TIMELINE)), out)
 
     with wave.open(str(out)) as reader:
         assert (
@@ -264,7 +264,7 @@ def test_the_mix_lasts_until_the_timeline_ends_where_a_template_ends_it(
 
     out = tmp_path / 'mix.wav'
     timeline = {'clips': [background(8.0), TIMELINE['clips'][1]]}
-    edl = resolve_edl(Edl.parse_obj(timeline))
+    edl = resolve_edl(Edl.model_validate(timeline))
 
     length = mix_timeline(edl, out)
 
@@ -280,7 +280,9 @@ def test_a_timeline_with_nothing_to_hear_says_so(library, tmp_path):
     from alfred.core.utils.transcription import NothingToHear
 
     with pytest.raises(NothingToHear):
-        mix_timeline(Edl.parse_obj({'clips': [background(1.0)]}), tmp_path / 'x.wav')
+        mix_timeline(
+            Edl.model_validate({'clips': [background(1.0)]}), tmp_path / 'x.wav'
+        )
 
 
 @pytest.mark.needs_ffmpeg
@@ -318,7 +320,7 @@ def test_a_timeline_whose_video_has_no_sound_track_says_so(library, tmp_path):
     }
 
     with pytest.raises(NothingToHear, match='has a sound track'):
-        mix_timeline(resolve_edl(Edl.parse_obj(timeline)), out)
+        mix_timeline(resolve_edl(Edl.model_validate(timeline)), out)
     assert not out.exists()
 
 

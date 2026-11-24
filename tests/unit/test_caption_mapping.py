@@ -140,7 +140,7 @@ class TestTheClips:
         [clip] = caption_clips([cap(1.25, 3.5)], None, self.SIZE)
         assert (clip['start'], clip['duration']) == (1.25, 2.25)
         assert (clip['fadeIn'], clip['fadeOut']) == (0, 0)
-        timing = clipTiming(Edl.parse_obj({'clips': [clip]}).clips[0])
+        timing = clipTiming(Edl.model_validate({'clips': [clip]}).clips[0])
         assert (timing.start, timing.length) == (1.25, 2.25)
 
     def test_the_defaults_are_bottom_centred_white_on_a_box(self):
@@ -212,7 +212,7 @@ class TestTheClips:
             CaptionStyle(position=['right', 'bottom']),
             self.SIZE,
         )
-        edl = Edl.parse_obj({'clips': clips})
+        edl = Edl.model_validate({'clips': clips})
         for clip in edl.clips:
             _check_position(clip.position, 'clip')
             _check_position(clip.data.position, 'data')
@@ -240,10 +240,10 @@ class TestTheBox:
 
 class TestATimeline:
     def test_its_stated_duration(self):
-        assert timeline_end(Edl.parse_obj({'clips': [], 'duration': 9})) == 9
+        assert timeline_end(Edl.model_validate({'clips': [], 'duration': 9})) == 9
 
     def test_where_its_last_clip_ends(self):
-        edl = Edl.parse_obj(
+        edl = Edl.model_validate(
             {
                 'clips': [
                     {'type': 'video', 'start': 2, 'duration': 3},
@@ -254,7 +254,7 @@ class TestATimeline:
         assert timeline_end(edl) == 5
 
     def test_unreadable_timing_is_unknown(self):
-        edl = Edl.parse_obj({'clips': [{'type': 'video', 'duration': -1}]})
+        edl = Edl.model_validate({'clips': [{'type': 'video', 'duration': -1}]})
         assert timeline_end(edl) is None
 
 
@@ -307,4 +307,4 @@ class TestAProjectsStyle:
 
     def test_a_render_request_s_style_draws_unless_it_says_not(self):
         assert CaptionStyle().enabled is True
-        assert CaptionStyle.parse_obj({'color': '#ffffff'}).enabled is True
+        assert CaptionStyle.model_validate({'color': '#ffffff'}).enabled is True

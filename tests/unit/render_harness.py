@@ -171,7 +171,7 @@ def make_render(**fields):
     render_id = fields.pop('id', None) or PydanticObjectId()
     document = {**render_request(), 'username': OWNER.email}
     document.update(fields)
-    render = Render.parse_obj(document)
+    render = Render.model_validate(document)
     render.id = render_id
     return render
 

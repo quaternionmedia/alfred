@@ -34,6 +34,50 @@ def test_a_real_login_reaches_a_real_user(api, make_account):
     assert res.json()['email'] == account.email
 
 
+def test_the_users_email_index_starts_on_a_database_that_holds_it(db):
+    """Built as fastapi-users-db-beanie 1.x left it, before the app starts.
+
+    4.x declares it unique under the same name, which MongoDB will not build
+    over it (docs/dependencies.md#the-users-email-index).
+    """
+    import asyncio
+
+    from beanie import init_beanie
+    from motor.motor_asyncio import AsyncIOMotorClient
+    from pymongo.collation import Collation
+
+    from alfred.config import DB_URL
+    from alfred.core.utils.db import User
+
+    name = f'{db.name}_email_index'
+    held = db.client[name]['User']
+    held.create_index(
+        'email',
+        name='case_insensitive_email_index',
+        collation=Collation('en', strength=2),
+    )
+    before = User.__dict__.get('_document_settings')
+
+    async def start():
+        client = AsyncIOMotorClient(DB_URL)
+        try:
+            await init_beanie(database=client[name], document_models=[User])
+        finally:
+            client.close()
+
+    try:
+        asyncio.run(start())
+        indexes = held.index_information()
+    finally:
+        if before is None:
+            del User._document_settings
+        else:
+            User._document_settings = before
+        db.client.drop_database(name)
+    assert set(indexes) == {'_id_', 'case_insensitive_email_index'}
+    assert not indexes['case_insensitive_email_index'].get('unique')
+
+
 def test_an_anonymous_caller_is_refused(api):
     """The suite runs with auth on; the dev bypass must not be in play here."""
     assert api.get('/users/me').status_code == 401

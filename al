@@ -90,12 +90,10 @@ warnIfExposed() {
 
 # A signing key of this checkout's own, for development.
 #
-# docker-compose.yml loads `.secret_key`, a committed stub that sets
-# ALFRED_SECRET_KEY to nothing. PyJWT signs with an empty key without
-# complaint, so every development token could be forged by anyone who knew
-# that, and the media links the api signs died with each restart because it
-# fell back to a key of its own. dev.yml also loads `.secret_key.local`; this
-# creates it once, with a random key, and git ignores it. Delete it to rotate.
+# `.secret_key` is a committed stub with an empty key: PyJWT refuses it, so no
+# login works, and signed media links die on each restart. dev.yml loads
+# `.secret_key.local` over it; this creates it once, random and git-ignored.
+# Delete it to rotate.
 ensureDevKey() {
   key_file="$(dirname "$0")/.secret_key.local"
   [ -s "$key_file" ] && return

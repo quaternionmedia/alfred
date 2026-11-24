@@ -2,7 +2,7 @@
 
 ## Unreleased — review fixes
 
-Fixes from a review of alfred and otto, landed in nine rounds of parallel
+Fixes from a review of alfred and otto, landed in ten rounds of parallel
 branches:
 
 | Round | Integrated on | What it carried |
@@ -16,6 +16,7 @@ branches:
 | 7 | `feat/journeys-and-onboarding` | the editor's journeys and the way in: the phone flow fitting a phone, templates named in words, the empty viewer saying where to start, and a Get started page with the docs in the order a newcomer reads them |
 | 8 | `feat/close-gaps` | the gaps left open: the Render stage's form and the zoom row on every screen, the tests the review asked for (the recipes' pipeline, `./al`'s dev key, `./al family`, `GET /fonts`) and the three bugs they found, the docs tooling pinned, the dev-server notes on the docs site, the API examples sent to the local stack, and the walkthroughs' recordings played only in docs served locally |
 | 9 | `feat/edit-by-text-and-loop` | edit-by-text on top of the joe and vox loop; `./al loop`, the suites side by side as named runs, and images named per checkout; screenshots of every tool and docs example taken by the suite, the examples on demo media; commands on each system; the docs tools locked on their own; the phone's notices letting taps through; the template preview carrying structured data |
+| 10 | `feat/pydantic-2` | pydantic 2 in alfred and the engine (otto pinned at c82efbd, `feat/pydantic-2`); fastapi-users 15.0.5, with passwords hashed by Argon2 in a pool of their own; passlib and setuptools gone |
 
 Read **Security** and **Changed** before deploying: several requests that were
 accepted are now refused, and a production stack needs its own signing key.
@@ -45,10 +46,9 @@ accepted are now refused, and a production stack needs its own signing key.
 - **Every stack signs with a key of its own.** Production (`production.yml`,
   `./al prod`) requires an exported `ALFRED_SECRET_KEY`, not the committed
   stub, and announces a missing or short key at boot. The `.secret_key` stub
-  leaves the key empty, and an empty key still signs, so anyone could mint a
-  development session: `./al init`, `./al dev` and `./al thin` create a
-  git-ignored `.secret_key.local`, and the banner calls an empty key forgeable
-  rather than claiming logins will fail.
+  leaves the key empty, which PyJWT refuses, so no login works: `./al init`,
+  `./al dev` and `./al thin` create a git-ignored `.secret_key.local`, and the
+  banner says an empty key fails every login.
 - **Nothing listens beyond loopback unless asked.** Production keeps MongoDB
   private and serves without `--reload`; the dev stack, flower and `./al docs`
   listen on 127.0.0.1 unless `ALFRED_BIND` widens them, with a warning when
@@ -75,6 +75,10 @@ accepted are now refused, and a production stack needs its own signing key.
   9.5.0), python-jose, ecdsa and rsa removed, and the lock refreshed within its
   ranges: open advisories in the image's dependencies go from 82 to 20. The
   icon font is served by the app, not fetched from Google.
+- **fastapi-users 15.0.5** (was 10.4.2) clears GHSA-5j53-63w8-8625, in the
+  OAuth router alfred never mounted. **Passwords are hashed with Argon2**,
+  through pwdlib, four at a time in a pool of their own. A bcrypt hash from
+  before still logs in, and becomes Argon2 at that login.
 - **Nothing alfred prints carries a secret.** Reset and verification tokens
   stay out of production logs, and out of development ones once mailed;
   support-mail failures are logged by type and SMTP code, without addresses or
@@ -84,6 +88,15 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Changed
 
+- **alfred and otto run on pydantic 2** (2.14.1 locked; otto needs
+  `pydantic~=2.5` and `fastapi~=0.100`). A client sees three things: a UTC
+  time ends `Z`, not `+00:00`; a 422's details carry pydantic 2's types and
+  messages; and alfred's own models refuse a number where text belongs, where
+  otto's still take it as text.
+- **passlib, setuptools and the bcrypt pin are gone**: nothing installed
+  imports `pkg_resources` now. fastapi-users-db-beanie is 4.0.0, and the users'
+  email index stays as existing databases hold it, so the api still starts on
+  them. Every install stays `--no-deps`.
 - **Images are named after the checkout** (`ALFRED_IMAGES`, set by `./al`).
   Every checkout built the same `alfred_*` images, so two worktrees testing at
   once could run each other's dependencies. A second stack can have its own
@@ -510,6 +523,7 @@ accepted are now refused, and a production stack needs its own signing key.
 | 7 | `feat/journeys-and-onboarding` | 1833 passed, 2 skipped, 8 xfailed | 399 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning. The `@screens` retaken against `./al family up` with joe#35's branch: all seven changed, for the phone's header, rail and transport and the templates' labels, the captions still shown with joe connected. The phone flow measured at 375x812 and 390x844: one screen on every stage, nothing scrolling sideways |
 | 8 | `feat/close-gaps` | 1892 passed, 8 skipped, 8 xfailed; black checked, not applied | 402 passed, none skipped and none passing only on retry | `mkdocs build --strict` without a warning, with the recordings and without them. The `@screens` retaken against `./al family up` with joe#35's branch: seven changed, for the Render stage's form and the zoom row. The Render stage measured at 360x740, 375x812, 390x844 and 812x375: the whole form on the screen upright, and the whole picture held sideways |
 | 9 | `feat/edit-by-text-and-loop` | 1970 passed, 8 skipped, 8 xfailed; black and ruff checked | 442 passed, 1 passed only on retry (the zoom row's measure, since loosened) | Run side by side by `./al loop`, beside a running stack. `mkdocs build --strict` clean; the quick host suite 150 passed. Every screenshot retaken against joe#35's branch, the tools and examples among them |
+| 10 | `feat/pydantic-2` | 1979 passed, 10 skipped, 8 xfailed, from a git worktree, whose `.git` the container cannot follow, so two tests that ask git skip; black and ruff checked; 489 warnings, 429 more than round 9, from beanie and lazy-model reading `model_fields` as pydantic 2.11 deprecates | 443 passed, none passing only on retry | Run by `./al loop`, beside a running stack. `mkdocs build --strict` clean; the quick host suite 150 passed. otto's own suite 361 passed, its model tests on pydantic 2.5.3 too. Live: register, login, refresh, a change and a reset of password, and a 10.4.2 bcrypt account logging in and becoming Argon2 |
 
 ## 0.3.0 — breaking
 

@@ -17,10 +17,10 @@ from alfred.core.routes.project import ProjectSettings
 
 class TestTheSettingsShape:
     def test_a_project_can_carry_render_settings(self):
-        assert 'render_settings' in Project.__fields__
+        assert 'render_settings' in Project.model_fields
 
     def test_a_project_can_carry_a_destination(self):
-        assert 'destination' in Project.__fields__
+        assert 'destination' in Project.model_fields
 
     def test_both_are_optional(self):
         """A project that has never been rendered has no opinion yet.
@@ -28,8 +28,8 @@ class TestTheSettingsShape:
         Requiring them would invalidate every existing project and force the
         stages to invent values before anyone had chosen any.
         """
-        assert not Project.__fields__['render_settings'].required
-        assert not Project.__fields__['destination'].required
+        assert not Project.model_fields['render_settings'].is_required()
+        assert not Project.model_fields['destination'].is_required()
 
     def test_render_settings_default_to_something_renderable(self):
         settings = RenderSettings()
@@ -41,16 +41,16 @@ class TestTheSettingsShape:
         Conflating them would mean a project could not describe how it should
         be rendered until it had been rendered once.
         """
-        assert 'filename' not in RenderSettings.__fields__
-        assert 'progress' not in RenderSettings.__fields__
-        assert 'link' not in RenderSettings.__fields__
+        assert 'filename' not in RenderSettings.model_fields
+        assert 'progress' not in RenderSettings.model_fields
+        assert 'link' not in RenderSettings.model_fields
 
 
 class TestTheWritableSubset:
     """The settings route must not become an arbitrary write to the document."""
 
     def test_it_accepts_only_the_two_flow_fields(self):
-        assert set(ProjectSettings.__fields__) == {'render_settings', 'destination'}
+        assert set(ProjectSettings.model_fields) == {'render_settings', 'destination'}
 
     @pytest.mark.parametrize('protected', ['logic', 'fields', 'edl', 'name'])
     def test_it_cannot_write_the_rest_of_the_project(self, protected):
@@ -60,7 +60,7 @@ class TestTheWritableSubset:
         own path, and letting "remember my render size" also replace the clips
         would make a settings save a way to lose work.
         """
-        assert protected not in ProjectSettings.__fields__
+        assert protected not in ProjectSettings.model_fields
 
     def test_unset_fields_are_dropped_rather_than_written_as_null(self):
         """`exclude_none` is what makes a partial save partial.
@@ -68,7 +68,7 @@ class TestTheWritableSubset:
         Without it, saving only a destination would write
         `render_settings: null` over whatever was there.
         """
-        patch = ProjectSettings(destination='local').dict(exclude_none=True)
+        patch = ProjectSettings(destination='local').model_dump(exclude_none=True)
         assert patch == {'destination': 'local'}
 
 
@@ -84,7 +84,7 @@ class TestWhyThisIsNotAPut:
     """
 
     def test_logic_is_required_so_a_null_write_makes_the_project_unreadable(self):
-        assert Project.__fields__['logic'].required
+        assert Project.model_fields['logic'].is_required()
 
         with pytest.raises(ValidationError) as excinfo:
             Project(logic=None, name='x')
@@ -99,7 +99,7 @@ class TestWhyThisIsNotAPut:
         patch = ProjectSettings(
             render_settings=RenderSettings(width=1280, height=720),
             destination='local',
-        ).dict(exclude_none=True)
+        ).model_dump(exclude_none=True)
 
         with pytest.raises(ValidationError):
             Project(**patch)

@@ -34,14 +34,14 @@ class TestTheHandlerRecognisesIdentifierErrors:
         sees.
         """
         from beanie import PydanticObjectId
-        from pydantic import parse_obj_as
+        from pydantic import TypeAdapter
 
         # pydantic's own API rather than beanie's internal helper: the helper
         # moved between the beanie version installed here and the one in the
         # API image, and a test that pins an internal import path fails on the
         # wrong thing when a dependency reorganises.
         with pytest.raises(ValidationError) as excinfo:
-            parse_obj_as(PydanticObjectId, 'undefined')
+            TypeAdapter(PydanticObjectId).validate_python('undefined')
 
         assert _isIdentifierParseError(excinfo.value)
 
@@ -59,6 +59,19 @@ class TestTheHandlerRecognisesIdentifierErrors:
 
         with pytest.raises(ValidationError) as excinfo:
             Unrelated(count='not a number')
+
+        assert not _isIdentifierParseError(excinfo.value)
+
+    def test_an_id_field_in_a_model_is_not_recognised(self):
+        """A model's bad id is the server's mistake, not the caller's path."""
+        from beanie import PydanticObjectId
+        from pydantic import BaseModel
+
+        class Holder(BaseModel):
+            id: PydanticObjectId
+
+        with pytest.raises(ValidationError) as excinfo:
+            Holder(id='undefined')
 
         assert not _isIdentifierParseError(excinfo.value)
 

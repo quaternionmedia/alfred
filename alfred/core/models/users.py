@@ -3,7 +3,7 @@ from typing import Optional
 
 from beanie import PydanticObjectId
 from fastapi_users import schemas
-from pydantic import validator
+from pydantic import field_validator
 
 
 class UserRead(schemas.BaseUser[PydanticObjectId]):
@@ -18,10 +18,11 @@ class UserRead(schemas.BaseUser[PydanticObjectId]):
     # real ObjectId in both cases; nothing downstream could read it.
     id: str
     first_name: str
-    birthdate: Optional[datetime]
-    address: Optional[str]
+    birthdate: Optional[datetime] = None
+    address: Optional[str] = None
 
-    @validator('id', pre=True)
+    @field_validator('id', mode='before')
+    @classmethod
     def _identifier_as_string(cls, value):
         """Carry the id out as a string, on the field itself.
 
@@ -34,7 +35,7 @@ class UserRead(schemas.BaseUser[PydanticObjectId]):
         isolation and changed nothing on the route, because FastAPI clones a
         response model into a fresh class and the clone does not carry Config.
 
-        A pre-validator is part of the field, so it survives the cloning. The
+        A before-validator is part of the field, so it survives the cloning. The
         wire format is unchanged from what callers should always have seen: a
         24-character hex string.
         """
@@ -43,11 +44,11 @@ class UserRead(schemas.BaseUser[PydanticObjectId]):
 
 class UserCreate(schemas.BaseUserCreate):
     first_name: str
-    birthdate: Optional[datetime]
-    address: Optional[str]
+    birthdate: Optional[datetime] = None
+    address: Optional[str] = None
 
 
 class UserUpdate(schemas.BaseUserUpdate):
-    first_name: Optional[str]
-    birthdate: Optional[datetime]
-    address: Optional[str]
+    first_name: Optional[str] = None
+    birthdate: Optional[datetime] = None
+    address: Optional[str] = None

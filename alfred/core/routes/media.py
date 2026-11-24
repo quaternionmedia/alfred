@@ -87,13 +87,13 @@ class MediaItem(BaseModel):
     name: str
     kind: Literal['video', 'image', 'audio']
     # Seconds; null for an image, and for anything ffmpeg could not read.
-    duration: Optional[float]
+    duration: Optional[float] = None
     # The picture's size as shown, a quarter-turn rotation applied; null for
     # audio.
-    width: Optional[int]
-    height: Optional[int]
+    width: Optional[int] = None
+    height: Optional[int] = None
     # Frames a second; null for images and audio.
-    fps: Optional[float]
+    fps: Optional[float] = None
     # Bytes on disk.
     size: int
     # A signed URL for the file, which a `<video>` or `<img>` can use as its

@@ -86,21 +86,21 @@ SESSION_IDS = [name for name, _ in SESSION]
 @pytest.mark.parametrize('payload', [p for _, p in SESSION], ids=SESSION_IDS)
 def test_every_editor_state_is_a_valid_edl(payload):
     """Each state the editor passes through validates as an Edl."""
-    edl = Edl.parse_obj(payload)
+    edl = Edl.model_validate(payload)
     assert len(edl.clips) == len(payload['clips'])
 
 
 @pytest.mark.parametrize('payload', [p for _, p in SESSION], ids=SESSION_IDS)
 def test_every_editor_state_round_trips(payload):
     """Serialising and reparsing an Edl is lossless."""
-    edl = Edl.parse_obj(payload)
-    assert Edl.parse_obj(edl.dict()) == edl
+    edl = Edl.model_validate(payload)
+    assert Edl.model_validate(edl.model_dump()) == edl
 
 
 def test_final_state_is_a_valid_render_request():
     """The end of the session validates as a full render request."""
     _, final = SESSION[-1]
-    render = OttoRender.parse_obj({'edl': final})
+    render = OttoRender.model_validate({'edl': final})
 
     assert len(render.edl.clips) == 3
     assert render.width == 1920 and render.height == 1080
@@ -126,7 +126,7 @@ def test_clip_defaults_are_what_the_api_promises():
 
 
 def test_render_defaults_are_what_the_api_promises():
-    render = OttoRender.parse_obj({'edl': edl_dict()})
+    render = OttoRender.model_validate({'edl': edl_dict()})
     assert (render.width, render.height, render.fps) == (1920, 1080, 30.0)
 
 
@@ -136,7 +136,7 @@ def test_render_document_declares_the_same_defaults():
     Read off the schema rather than an instance, because the document cannot
     be instantiated without a database — see below.
     """
-    fields = RenderDoc.__fields__
+    fields = RenderDoc.model_fields
     assert fields['width'].default == 1920
     assert fields['height'].default == 1080
     assert fields['fps'].default == 30.0
@@ -145,7 +145,7 @@ def test_render_document_declares_the_same_defaults():
 def test_nested_edl_is_validated_not_passed_through():
     """A malformed nested edl is rejected, not stored as an opaque blob."""
     with pytest.raises(ValidationError):
-        OttoRender.parse_obj({'edl': {'clips': 'not-a-list'}})
+        OttoRender.model_validate({'edl': {'clips': 'not-a-list'}})
 
 
 # --- validation is coupled to the database --------------------------------
@@ -164,12 +164,12 @@ def test_render_document_cannot_be_validated_without_a_database():
     a database, and a validation-only code path pays a connection's cost.
     """
     with pytest.raises(CollectionWasNotInitialized):
-        RenderDoc.parse_obj(render_dict())
+        RenderDoc.model_validate(render_dict())
 
 
 @pytest.mark.xfail(reason='request validation should not require a database connection')
 def test_render_document_should_validate_standalone():
-    render = RenderDoc.parse_obj(render_dict())
+    render = RenderDoc.model_validate(render_dict())
     assert render.width == 1920
 
 
@@ -179,55 +179,55 @@ def test_render_document_should_validate_standalone():
 
 
 def test_inverted_in_out_point_is_accepted_today():
-    clip = Clip.parse_obj(clip_dict(inpoint=5.0, outpoint=1.0))
+    clip = Clip.model_validate(clip_dict(inpoint=5.0, outpoint=1.0))
     assert clip.inpoint == 5.0 and clip.outpoint == 1.0
 
 
 @pytest.mark.xfail(reason='model does not enforce outpoint > inpoint')
 def test_inverted_in_out_point_should_be_rejected():
     with pytest.raises(ValidationError):
-        Clip.parse_obj(clip_dict(inpoint=5.0, outpoint=1.0))
+        Clip.model_validate(clip_dict(inpoint=5.0, outpoint=1.0))
 
 
 def test_negative_inpoint_is_accepted_today():
-    assert Clip.parse_obj(clip_dict(inpoint=-3.0)).inpoint == -3.0
+    assert Clip.model_validate(clip_dict(inpoint=-3.0)).inpoint == -3.0
 
 
 @pytest.mark.xfail(reason='model does not enforce inpoint >= 0')
 def test_negative_inpoint_should_be_rejected():
     with pytest.raises(ValidationError):
-        Clip.parse_obj(clip_dict(inpoint=-3.0))
+        Clip.model_validate(clip_dict(inpoint=-3.0))
 
 
 def test_non_positive_duration_is_accepted_today():
-    assert Clip.parse_obj(clip_dict(duration=-5.0)).duration == -5.0
-    assert Clip.parse_obj(clip_dict(duration=0.0)).duration == 0.0
+    assert Clip.model_validate(clip_dict(duration=-5.0)).duration == -5.0
+    assert Clip.model_validate(clip_dict(duration=0.0)).duration == 0.0
 
 
 @pytest.mark.xfail(reason='model does not enforce duration > 0')
 def test_non_positive_duration_should_be_rejected():
     with pytest.raises(ValidationError):
-        Clip.parse_obj(clip_dict(duration=-5.0))
+        Clip.model_validate(clip_dict(duration=-5.0))
 
 
 def test_out_of_range_opacity_is_accepted_today():
-    assert Clip.parse_obj(clip_dict(opacity=4.2)).opacity == 4.2
+    assert Clip.model_validate(clip_dict(opacity=4.2)).opacity == 4.2
 
 
 @pytest.mark.xfail(reason='model does not constrain opacity to 0..1')
 def test_out_of_range_opacity_should_be_rejected():
     with pytest.raises(ValidationError):
-        Clip.parse_obj(clip_dict(opacity=4.2))
+        Clip.model_validate(clip_dict(opacity=4.2))
 
 
 def test_non_positive_resize_is_accepted_today():
-    assert Clip.parse_obj(clip_dict(resize=0.0)).resize == 0.0
+    assert Clip.model_validate(clip_dict(resize=0.0)).resize == 0.0
 
 
 @pytest.mark.xfail(reason='model does not enforce resize > 0')
 def test_non_positive_resize_should_be_rejected():
     with pytest.raises(ValidationError):
-        Clip.parse_obj(clip_dict(resize=0.0))
+        Clip.model_validate(clip_dict(resize=0.0))
 
 
 # --- the empty-EDL case, which fails late ---------------------------------
@@ -235,8 +235,8 @@ def test_non_positive_resize_should_be_rejected():
 
 def test_empty_edl_is_accepted_by_the_model():
     """Accepted at the API boundary..."""
-    assert Edl.parse_obj(edl_dict(clips=[])).clips == []
-    assert OttoRender.parse_obj({'edl': edl_dict(clips=[])}).edl.clips == []
+    assert Edl.model_validate(edl_dict(clips=[])).clips == []
+    assert OttoRender.model_validate({'edl': edl_dict(clips=[])}).edl.clips == []
 
 
 def test_empty_edl_is_only_rejected_at_render_time():
@@ -269,7 +269,7 @@ def test_what_the_model_accepts_the_engine_refuses_at_render_time(overrides, fie
     engine checks things in.
     """
     template = dict(type='template', name='makeColor', data={'color': '#000000'})
-    clip = Clip.parse_obj(clip_dict(**template, **overrides))
+    clip = Clip.model_validate(clip_dict(**template, **overrides))
     with pytest.raises(EdlException, match=rf"clip 1 \('makeColor'\): .*{field}"):
         generateEdl(Edl(clips=[clip]), moviesize=(64, 48))
 
@@ -277,4 +277,4 @@ def test_what_the_model_accepts_the_engine_refuses_at_render_time(overrides, fie
 @pytest.mark.xfail(reason='an empty clip list should be rejected at validation')
 def test_empty_edl_should_be_rejected_at_validation():
     with pytest.raises(ValidationError):
-        Edl.parse_obj(edl_dict(clips=[]))
+        Edl.model_validate(edl_dict(clips=[]))

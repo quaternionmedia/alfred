@@ -3,9 +3,13 @@ from functools import lru_cache
 from weakref import WeakKeyDictionary
 
 import motor.motor_asyncio
-from beanie import PydanticObjectId
-from fastapi_users.db import BeanieBaseUser, BeanieUserDatabase
+from fastapi_users_db_beanie import (
+    BeanieBaseUser,
+    BeanieBaseUserDocument,
+    BeanieUserDatabase,
+)
 from pydantic import Field
+from pymongo import IndexModel
 
 from alfred.config import DB_NAME, DB_URL
 
@@ -60,8 +64,19 @@ def get_sync_db(database=DB_NAME, db_url=DB_URL):
     return _sync_client(db_url)[database]
 
 
-class User(BeanieBaseUser[PydanticObjectId]):
+class User(BeanieBaseUserDocument):
     first_name: str = Field(...)
+
+    class Settings(BeanieBaseUser.Settings):
+        # The email index as adapter 1.x built it, not unique: 4.x's unique one
+        # will not build over it. docs/dependencies.md#the-users-email-index.
+        indexes = [
+            IndexModel(
+                'email',
+                name='case_insensitive_email_index',
+                collation=BeanieBaseUser.Settings.email_collation,
+            ),
+        ]
 
 
 async def get_user_db():

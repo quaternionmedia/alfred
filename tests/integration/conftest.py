@@ -167,7 +167,7 @@ class Account:
 
 @pytest.fixture(scope='session')
 def _password_hash():
-    """Hashed once: bcrypt is deliberately slow, and every account shares it."""
+    """Hashed once: Argon2 is deliberately slow, and every account shares it."""
     from fastapi_users.password import PasswordHelper
 
     return PasswordHelper().hash(PASSWORD)
