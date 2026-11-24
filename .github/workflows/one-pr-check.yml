@@ -1,31 +1,23 @@
-# No pull request is marked ready while it is stacked on another open one.
+# A pull request speaks as its contributor, to the world.
 #
 # SEED FILE: copy verbatim into .github/workflows/, the same discipline as
-# adr-lint.yml. Only the workflow is copied -- it runs check_one_pr.py out of
-# the governance submodule, so a fix to the rule reaches every project on its
-# next pin bump instead of needing N copies updated. The file, script and job
-# names are kept as they are, so a pin bump needs no re-copy and a required
-# `slot` context keeps reporting.
+# adr-lint.yml. Only the workflow is copied -- it runs its script out of the
+# governance submodule, so a fix to the rule reaches every project on its next
+# pin bump instead of needing N copies updated. The file and job names are
+# kept as they are, so a required `slot` context keeps reporting.
 #
-# The rule and the reasoning are handbook/async-contract.md §1: one change per
-# pull request, parallel when independent, stacked when dependent. A stacked
-# pull request's base is its parent's branch, and it stays a draft until the
-# parent merges.
-#
-# What this fails, and who can fix it
-#
-# Every ready pull request of this author whose base is another open pull
-# request's branch. The remedy is `gh pr ready <n> --undo`, which re-runs this.
-# Automation authors are not judged.
+# Nothing here reads a stack: a stacked pull request is marked ready when its
+# work is finished (handbook/async-contract.md §1). A copy of this file that
+# still runs check_one_pr.py as a step gets a list of the stacks from it and
+# no failure; re-copying this file drops the step.
 
-name: Stacked PRs are drafts
+name: Pull requests speak as their contributor
 
 on:
   pull_request:
-    # `edited` fires on a base change -- the retarget when the pull request
-    # beneath merges -- and `converted_to_draft` is the remedy this check
-    # names, so both must re-run it.
-    types: [opened, reopened, synchronize, ready_for_review, converted_to_draft, edited]
+    # `edited` fires on a change to the body, which the voice step reads, and
+    # on a change of base.
+    types: [opened, reopened, synchronize, edited]
 
 # One run per branch per workflow. A second push supersedes the first: the
 # result of a run whose commit has been replaced is not read, and its minutes
@@ -40,7 +32,6 @@ concurrency:
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   slot:
@@ -59,18 +50,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: No pull request of this contributor is ready while stacked
-        run: |
-          python governance/qm/project-seed/ci/check_one_pr.py \
-            --repo "$GITHUB_REPOSITORY" \
-            --contributor "$PR_AUTHOR"
-        env:
-          # The token is what lets `gh api` read the list at all. Without it the
-          # script exits non-zero rather than reporting a repository it could
-          # not read as compliant.
-          GH_TOKEN: ${{ github.token }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
 
       # The body is posted under the contributor's account and is their statement
       # of the change; a sentence addressed to them is a tool talking to its
