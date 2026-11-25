@@ -84,6 +84,7 @@ variable in front of a command is set for that command only; in PowerShell,
 | ... and the joe it started | `./al family down` | `al family down` |
 | Start the app without Docker | `ALFRED_DEV_SKIP_AUTH=1 ./al host up` | `$env:ALFRED_DEV_SKIP_AUTH = '1'; al host up` |
 | ... see what answers, and stop it | `./al host`, `./al host down` | `al host`, `al host down` |
+| Share the family with invited devices | `./al share up`, `./al share` | `al share up`, `al share` |
 | Follow its logs | `./al logs` | `al logs` |
 | A shell in the api | `./al sh` | `al sh` |
 | Tidy renders, orphans and fetched media | `./al storage migrate`, `orphans` or `cache`: a dry run, until `--apply` | `al storage ...`, the same |
