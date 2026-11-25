@@ -35,6 +35,7 @@ n | nox                 a nox session in the test container: ./al nox -s lint
 cookbook                regenerate docs/cookbook.md from the browser specs
 family                  alfred with otto, vox, joe, qmcp and the rest: status, test, up, smoke, down, loop
 host                    alfred as processes on this machine, no Docker: status, up, down
+share                   the family shared to invited devices: status, init, move, up, down, snapshot, restore, account
 recipes                 record the recipes as GIFs, take the docs' screenshots (needs a dev stack)
 docs | doc              serve the docs on http://127.0.0.1:4000
 flower                  Celery monitoring on http://127.0.0.1:5555
@@ -319,6 +320,12 @@ elif [ $1 = "host" ]; then
   ensureDevKey
   py=$(hostPython) || exit 1
   "$py" "$(dirname "$0")/scripts/host.py" "$@"
+
+elif [ $1 = "share" ]; then
+  shift
+  # See docs/share.md.
+  py=$(hostPython) || exit 1
+  "$py" "$(dirname "$0")/scripts/share.py" "$@"
 
 elif [ $1 = "flower" ]; then
   shift
