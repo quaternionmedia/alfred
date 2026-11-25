@@ -52,6 +52,7 @@ def document(made, tmp_path, env=None):
 # --- the compose file ---------------------------------------------------------
 
 
+# Mutation: publish the api on 0.0.0.0, or the database on loopback -- this fails.
 def test_the_api_is_published_on_the_manifests_addresses_and_nowhere_else(tmp_path):
     services = document(manifest('10.9.8.7'), tmp_path)['services']
     assert services['api']['ports'] == ['127.0.0.1:17320:80', '10.9.8.7:17320:80']
@@ -59,12 +60,14 @@ def test_the_api_is_published_on_the_manifests_addresses_and_nowhere_else(tmp_pa
         assert 'ports' not in services[name], f'{name} is published'
 
 
+# Mutation: leave ALFRED_ALLOW_REGISTRATION true -- this fails.
 def test_alfred_runs_in_production_with_registration_closed(tmp_path):
     settings = document(manifest(), tmp_path)['services']['api']['environment']
     assert settings['ALFRED_PRODUCTION'] == 'true'
     assert settings['ALFRED_ALLOW_REGISTRATION'] == 'false'
 
 
+# Mutation: pass the member's settings through unfiltered -- this fails.
 def test_the_login_bypass_never_reaches_a_share(tmp_path, monkeypatch):
     made = manifest()
     made['members']['alfred']['env'] = {'ALFRED_DEV_SKIP_AUTH': '1'}
@@ -74,6 +77,7 @@ def test_the_login_bypass_never_reaches_a_share(tmp_path, monkeypatch):
         assert 'ALFRED_DEV_SKIP_AUTH' not in services[name]['environment']
 
 
+# Mutation: mount the share's clone at /app -- this fails.
 def test_the_code_is_the_images_and_nothing_is_mounted_over_it(tmp_path):
     services = document(manifest(), tmp_path)['services']
     for name in ('api', 'renderer'):
@@ -130,6 +134,7 @@ def test_the_database_has_no_way_out(tmp_path):
 # --- addresses and ports ------------------------------------------------------
 
 
+# Mutation: drop the check of 0.0.0.0 and :: -- this fails.
 @pytest.mark.parametrize('address', ['0.0.0.0', '::'])
 def test_every_interface_is_refused(tmp_path, address):
     args = SimpleNamespace(address=[address], members=[])
@@ -220,6 +225,7 @@ def test_a_branch_of_origin_resolves_to_its_commit(tmp_path):
     assert share.resolve(clone, 'feature') == expected
 
 
+# Mutation: skip the check that origin holds the commit -- this fails.
 def test_a_commit_no_branch_of_origin_holds_is_refused(tmp_path):
     _, clone = repository(tmp_path)
     for setting in (('user.email', 'test@example.org'), ('user.name', 'Test')):
@@ -254,6 +260,7 @@ def seeded(tmp_path, monkeypatch):
     return tmp_path
 
 
+# Mutation: copy the fetched-media cache too -- this fails.
 def test_a_snapshot_holds_the_database_the_media_and_the_manifest(tmp_path, monkeypatch):
     state = seeded(tmp_path, monkeypatch)
     assert share.snapshot(SimpleNamespace(name='first'), state) == 0
@@ -272,12 +279,14 @@ def test_a_snapshot_name_is_taken_once(tmp_path, monkeypatch):
         share.snapshot(SimpleNamespace(name='first'), state)
 
 
+# Mutation: skip the name's check -- this fails.
 @pytest.mark.parametrize('name', ['../out', '', '.hidden', 'a b'])
 def test_a_snapshot_name_stays_inside_the_snapshots(tmp_path, name):
     with pytest.raises(share.Refused, match='not a snapshot name'):
         share.snapshot_dir(tmp_path, name)
 
 
+# Mutation: copy the snapshot over what is there -- this fails.
 def test_a_restore_replaces_the_state_whole(tmp_path, monkeypatch):
     state = seeded(tmp_path, monkeypatch)
     share.snapshot(SimpleNamespace(name='first'), state)
@@ -300,6 +309,7 @@ def test_a_restore_without_yes_changes_nothing(tmp_path, monkeypatch):
 # --- accounts -----------------------------------------------------------------
 
 
+# Mutation: pass the password as an argument -- this fails.
 def test_a_password_goes_to_the_container_on_standard_input(tmp_path, monkeypatch):
     share.save(tmp_path, manifest())
     secret = 'correct horse battery staple'
@@ -324,3 +334,101 @@ def test_an_account_needs_alfred_running(tmp_path, monkeypatch):
     args = SimpleNamespace(email='friend@example.org', name='Friend', superuser=False)
     with pytest.raises(share.Refused, match='not running'):
         share.account(args, tmp_path)
+
+
+# --- the private network ------------------------------------------------------
+
+
+class Controller:
+    """ZeroTier One's local API, as far as the share asks it."""
+
+    def __init__(self, node='abcdef0123', network='abcdef0123f00d42'):
+        self.node = node
+        self.network = network
+        self.posted = []
+        self.members = {node: {'authorized': False, 'ipAssignments': []}}
+
+    def __call__(self, path, body=None):
+        if body is not None:
+            self.posted.append((path, body))
+        if path == '/status':
+            return 200, {'address': self.node}
+        if path == f'/controller/network/{self.node}______':
+            return 200, {'id': self.network, **body}
+        if path.startswith(f'/controller/network/{self.network}/member/'):
+            node = path.rsplit('/', 1)[1]
+            self.members.setdefault(node, {}).update(body or {})
+            return 200, self.members[node]
+        if path == f'/controller/network/{self.network}/member':
+            return 200, {node: 1 for node in self.members}
+        if path == f'/network/{self.network}':
+            granted = self.members[self.node].get('ipAssignments') or []
+            return 200, {'assignedAddresses': [f'{address}/24' for address in granted]}
+        return 404, {}
+
+
+# Mutation: make the network public -- this fails.
+def test_the_network_is_private_and_this_host_is_on_it_at_its_own_address(tmp_path, monkeypatch):
+    controller = Controller()
+    monkeypatch.setattr(share, 'zerotier', controller)
+    assert share.network_create(SimpleNamespace(name='alfred-share'), tmp_path) == 0
+    config = dict(controller.posted)[f'/controller/network/{controller.node}______']
+    assert config['private'] is True
+    assert controller.members[controller.node] == {
+        'authorized': True,
+        'ipAssignments': [share.NETWORK_HOST],
+    }
+    made = share.load(tmp_path)
+    assert made['network']['id'] == controller.network
+    assert made['bind'] == ['127.0.0.1', share.NETWORK_HOST]
+
+
+def test_a_device_is_let_in_by_its_node_id_and_named(tmp_path, monkeypatch):
+    controller = Controller()
+    monkeypatch.setattr(share, 'zerotier', controller)
+    share.network_create(SimpleNamespace(name='alfred-share'), tmp_path)
+    args = SimpleNamespace(node='0123456789', name='a maintainer')
+    assert share.network_authorize(args, tmp_path) == 0
+    assert controller.members['0123456789']['authorized'] is True
+    assert share.load(tmp_path)['network']['names']['0123456789'] == 'a maintainer'
+
+
+@pytest.mark.parametrize('node', ['0123', 'not-a-node', '0123456789ab'])
+def test_a_node_id_is_ten_hex_digits(tmp_path, monkeypatch, node):
+    controller = Controller()
+    monkeypatch.setattr(share, 'zerotier', controller)
+    share.network_create(SimpleNamespace(name='alfred-share'), tmp_path)
+    with pytest.raises(share.Refused, match='not a ZeroTier node id'):
+        share.network_authorize(SimpleNamespace(node=node, name='x'), tmp_path)
+
+
+# Mutation: let the controller revoke itself -- this fails.
+def test_the_share_host_cannot_be_shut_out_of_its_own_network(tmp_path, monkeypatch):
+    controller = Controller()
+    monkeypatch.setattr(share, 'zerotier', controller)
+    share.network_create(SimpleNamespace(name='alfred-share'), tmp_path)
+    with pytest.raises(share.Refused, match='stays on its own network'):
+        share.network_authorize(
+            SimpleNamespace(node=controller.node, name='x'), tmp_path, authorized=False
+        )
+
+
+# Mutation: stop at the first token refused -- this fails.
+def test_the_token_is_sent_and_never_printed(tmp_path, monkeypatch, capsys):
+    stale, current = tmp_path / 'stale', tmp_path / 'current'
+    stale.write_text('stale-token-0000')
+    current.write_text('current-token-1111')
+    sent = []
+
+    def fetch(url, data=None, headers=None, method=None, timeout=10):
+        sent.append(headers['X-ZT1-Auth'])
+        if headers['X-ZT1-Auth'] == 'stale-token-0000':
+            return 401, b'', {}
+        return 200, b'{"address": "abcdef0123"}', {}
+
+    monkeypatch.setattr(share, 'zerotier_tokens', lambda env=None: [tmp_path / 'absent', stale, current])
+    monkeypatch.setattr(share, 'fetch', fetch)
+    assert share.zerotier('/status') == (200, {'address': 'abcdef0123'})
+    assert sent == ['stale-token-0000', 'current-token-1111']
+    printed = capsys.readouterr()
+    assert 'token-' not in printed.out + printed.err

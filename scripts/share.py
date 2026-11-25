@@ -12,6 +12,9 @@ docs/share.md says how to run one and what it cannot do.
     ./al share init ADDRESS [MEMBER=REF ...]   the state directory, its key and its manifest
     ./al share move MEMBER=REF ...     members pointed at new commits, and brought up there
     ./al share env MEMBER NAME=VALUE   a setting one member is started with, kept in the manifest
+    ./al share bind ADDRESS ...        the private-network addresses alfred is published on
+    ./al share network [create | authorize NODE --name WHO | revoke NODE]
+                                       the share's own private network, on this host's controller
     ./al share up                      every member at its commit
     ./al share down                    every member stopped; the state stays
     ./al share snapshot NAME           the database, the media and the manifest, kept as NAME
@@ -20,7 +23,10 @@ docs/share.md says how to run one and what it cannot do.
     ./al share account EMAIL --name FIRST [--superuser]   an account; the password is asked for
 
 ADDRESS is this host's address on the private network. alfred is published
-there and on loopback, and nowhere else. joe and the other members alfred
+there and on loopback, and nowhere else. `network create` makes that network
+on this host's own ZeroTier controller and puts this host on it; it and
+`network authorize` read ZeroTier One's token, which an administrator can
+read, so they run from a shell started as administrator. joe and the other members alfred
 drives ask no login, so they are bound to loopback (docker0 on a Linux host)
 and reached only through alfred.
 
@@ -728,12 +734,7 @@ def status(args, state):
 def init(args, state):
     if manifest_path(state).exists():
         raise Refused(f'a share is already kept at {state}; ./al share move changes what it serves')
-    for address in args.address:
-        if address in ('0.0.0.0', '::'):
-            raise Refused(
-                f'{address} is every interface; a share is published on its private '
-                'network\'s address alone (docs/share.md)'
-            )
+    refuse_every_interface(args.address)
     manifest = new_manifest(args.address)
     save(state, manifest)
     ensure_key(state)
@@ -942,6 +943,193 @@ def restore(args, state):
     return 0
 
 
+def bind(args, state):
+    manifest = load(state)
+    refuse_every_interface(args.address)
+    manifest['bind'] = new_manifest(args.address)['bind']
+    save(state, manifest)
+    say(f'share: published on {", ".join(manifest["bind"])}')
+    if docker_up() and api_container():
+        return up(argparse.Namespace(), state)
+    return 0
+
+
+def refuse_every_interface(addresses):
+    for address in addresses:
+        if address in ('0.0.0.0', '::'):
+            raise Refused(
+                f'{address} is every interface; a share is published on its private '
+                'network\'s address alone (docs/share.md)'
+            )
+
+
+# --- the private network, on this host's own ZeroTier controller ---------------
+
+ZEROTIER = 'http://127.0.0.1:9993'
+# This host's address on the share's network, and the addresses invited
+# devices are given, in 10.173.20.0/24: root three again, as the ports are.
+NETWORK_HOST = '10.173.20.1'
+NETWORK_ROUTE = '10.173.20.0/24'
+NETWORK_POOL = ('10.173.20.10', '10.173.20.250')
+NODE = re.compile(r'^[0-9a-f]{10}$')
+
+
+def zerotier_tokens(env=None):
+    """Where ZeroTier One keeps the token its local API asks for: the
+    service's own, which an administrator can read, then the copy its tray
+    app keeps for the user."""
+    env = os.environ if env is None else env
+    if os.name == 'nt':
+        bases = [env.get('ProgramData'), env.get('LOCALAPPDATA')]
+        return [Path(base) / 'ZeroTier' / 'One' / 'authtoken.secret' for base in bases if base]
+    if sys.platform == 'darwin':
+        system = Path('/Library/Application Support/ZeroTier/One/authtoken.secret')
+    else:
+        system = Path('/var/lib/zerotier-one/authtoken.secret')
+    return [system, Path.home() / '.zeroTierOneAuthToken']
+
+
+def zerotier(path, body=None):
+    """(status, answer) from ZeroTier One's local API: a POST of `body` when
+    one is given. The token is read for each call and never printed."""
+    data = None if body is None else json.dumps(body).encode('utf-8')
+    for candidate in zerotier_tokens():
+        try:
+            token = candidate.read_text(encoding='utf-8').strip()
+        except OSError:
+            continue
+        if not token:
+            continue
+        headers = {'X-ZT1-Auth': token}
+        if data is not None:
+            headers['Content-Type'] = 'application/json'
+        status, answer, _ = fetch(ZEROTIER + path, data=data, headers=headers)
+        if status == 401:
+            continue
+        if status == 0:
+            raise Refused('ZeroTier One does not answer on 127.0.0.1:9993; is its service running?')
+        try:
+            return status, json.loads(answer) if answer else {}
+        except ValueError:
+            return status, {}
+    raise Refused(
+        "ZeroTier One's token could not be read, or was refused: run this from a "
+        'shell started as administrator, where the service\'s own token is readable'
+    )
+
+
+def answered(status, answer, what):
+    if status != 200:
+        raise Refused(f'ZeroTier One answered {status} to {what}')
+    return answer
+
+
+def network_of(manifest):
+    network = manifest.get('network')
+    if not network:
+        raise Refused('this share has no network of its own: ./al share network create')
+    return network
+
+
+def network_create(args, state):
+    try:
+        manifest = load(state)
+    except Refused:
+        manifest = None
+    if manifest and manifest.get('network'):
+        raise Refused(f'this share already has its network, {manifest["network"]["id"]}')
+    node = answered(*zerotier('/status'), 'its status')['address']
+    config = {
+        'name': args.name,
+        'private': True,
+        'v4AssignMode': {'zt': True},
+        'ipAssignmentPools': [{'ipRangeStart': NETWORK_POOL[0], 'ipRangeEnd': NETWORK_POOL[1]}],
+        'routes': [{'target': NETWORK_ROUTE, 'via': None}],
+    }
+    made = answered(*zerotier(f'/controller/network/{node}______', config), 'making a network')
+    network = made.get('id') or made.get('nwid')
+    if not network:
+        raise Refused('ZeroTier One made a network and did not say its id')
+    say(f'network {network}: made on this host\'s controller ({args.name}, private)')
+    answered(
+        *zerotier(
+            f'/controller/network/{network}/member/{node}',
+            {'authorized': True, 'ipAssignments': [NETWORK_HOST]},
+        ),
+        'authorizing this host',
+    )
+    answered(*zerotier(f'/network/{network}', {}), 'joining it')
+    joined = family.wait_for(
+        lambda: any(
+            address.split('/')[0] == NETWORK_HOST
+            for address in zerotier(f'/network/{network}')[1].get('assignedAddresses') or []
+        ),
+        60,
+        every=2,
+    )
+    if not joined:
+        raise Refused(
+            f'this host joined {network} and has not been given {NETWORK_HOST} yet; '
+            './al share network says where it stands'
+        )
+    if manifest is None:
+        manifest = new_manifest([NETWORK_HOST])
+        ensure_key(state)
+    elif NETWORK_HOST not in manifest['bind']:
+        manifest['bind'].append(NETWORK_HOST)
+    manifest['network'] = {'id': network, 'controller': node, 'address': NETWORK_HOST, 'names': {}}
+    save(state, manifest)
+    say(f'this host is {NETWORK_HOST} on it, and the share is published there')
+    say(f'an invited device joins {network}, then: ./al share network authorize NODE --name WHO')
+    return 0
+
+
+def network_status(args, state):
+    network = network_of(load(state))
+    say(f'network {network["id"]}, controlled by this host ({network["controller"]})')
+    listed = answered(*zerotier(f'/controller/network/{network["id"]}/member'), 'listing members')
+    for node in sorted(listed):
+        member = answered(
+            *zerotier(f'/controller/network/{network["id"]}/member/{node}'), f'member {node}'
+        )
+        who = 'this host' if node == network['controller'] else network['names'].get(node, '?')
+        state_said = 'authorized' if member.get('authorized') else 'asking to join'
+        addresses = ', '.join(member.get('ipAssignments') or []) or 'no address'
+        say(f'  {node}  {state_said:<14} {addresses:<16} {who}')
+    return 0
+
+
+def network_authorize(args, state, authorized=True):
+    manifest = load(state)
+    network = network_of(manifest)
+    node = args.node.strip().lower()
+    if not NODE.match(node):
+        raise Refused(f'{args.node!r} is not a ZeroTier node id: ten hex digits')
+    if node == network['controller'] and not authorized:
+        raise Refused('this host is the share; it stays on its own network')
+    answered(
+        *zerotier(
+            f'/controller/network/{network["id"]}/member/{node}', {'authorized': authorized}
+        ),
+        f'{"authorizing" if authorized else "revoking"} {node}',
+    )
+    if authorized:
+        network['names'][node] = args.name
+    say(f'{node} ({network["names"].get(node, "?")}): {"authorized" if authorized else "revoked"}')
+    save(state, manifest)
+    return 0
+
+
+def network(args, state):
+    actions = {
+        None: network_status,
+        'create': network_create,
+        'authorize': network_authorize,
+        'revoke': lambda args, state: network_authorize(args, state, authorized=False),
+    }
+    return actions[args.action](args, state)
+
+
 ACCOUNT = r'''
 import asyncio, sys
 from beanie import init_beanie
@@ -1022,6 +1210,17 @@ def main(argv=None):
     setting = commands.add_parser('env', help='a setting one member is started with')
     setting.add_argument('member')
     setting.add_argument('setting', help='NAME=VALUE; NAME= removes it')
+    published = commands.add_parser('bind', help='the private-network addresses alfred is published on')
+    published.add_argument('address', nargs='+')
+    private = commands.add_parser('network', help="the share's own private network, on this host's controller")
+    actions = private.add_subparsers(dest='action')
+    created = actions.add_parser('create', help='a private network, with this host on it')
+    created.add_argument('--name', default='alfred-share')
+    allowed = actions.add_parser('authorize', help='an invited device let in')
+    allowed.add_argument('node', help="the device's ZeroTier node id")
+    allowed.add_argument('--name', required=True, help='who the device is')
+    revoked = actions.add_parser('revoke', help='a device shut out')
+    revoked.add_argument('node')
     commands.add_parser('up', help='every member at its commit')
     commands.add_parser('down', help='every member stopped; the state stays')
     taken = commands.add_parser('snapshot', help='the database, the media and the manifest, kept by name')
@@ -1048,6 +1247,8 @@ def main(argv=None):
         'init': init,
         'move': move,
         'env': set_env,
+        'bind': bind,
+        'network': network,
         'up': up,
         'down': down,
         'snapshot': snapshot,
