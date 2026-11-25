@@ -332,9 +332,13 @@ def resolve(path, ref):
 
 
 def check_out(path, member, commit):
-    """`path` at `commit`, its vendored engines at the commit's pins."""
-    if head(path) != commit:
-        git(path, 'checkout', '--quiet', '--detach', commit)
+    """`path` at `commit`, its vendored engines at the commit's pins.
+
+    Always checked out, and by force: a clone made without a checkout already
+    has HEAD at its origin's default branch, so HEAD can name the commit while
+    the tree holds nothing. Nobody edits the share's clone, so force discards
+    nothing; what git does not track, an environment or a built site, stays."""
+    git(path, 'checkout', '--quiet', '--force', '--detach', commit)
     if member.vendored:
         git(path, 'submodule', 'update', '--init', '--quiet', '--', *member.vendored)
 
