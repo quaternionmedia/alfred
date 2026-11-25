@@ -432,3 +432,24 @@ def test_the_token_is_sent_and_never_printed(tmp_path, monkeypatch, capsys):
     assert sent == ['stale-token-0000', 'current-token-1111']
     printed = capsys.readouterr()
     assert 'token-' not in printed.out + printed.err
+
+
+# Mutation: check out only when HEAD differs from the commit -- this fails.
+def test_a_clone_at_its_default_branch_is_checked_out_all_the_same(tmp_path):
+    """A clone made without a checkout has HEAD at origin's default branch, so
+    a member served at that branch must still get its files."""
+    work, _ = repository(tmp_path)
+    git(work, 'push', '--quiet', 'origin', 'HEAD:refs/heads/main')
+    subprocess.run(
+        ['git', '-C', str(tmp_path / 'origin.git'), 'symbolic-ref', 'HEAD', 'refs/heads/main'],
+        check=True,
+    )
+    clone = tmp_path / 'share-clone'
+    subprocess.run(
+        ['git', 'clone', '--quiet', '--no-checkout', str(tmp_path / 'origin.git'), str(clone)],
+        check=True,
+    )
+    commit = share.resolve(clone, 'main')
+    assert share.head(clone) == commit
+    share.check_out(clone, share.BY_NAME['joe'], commit)
+    assert (clone / 'file').read_text() == 'one\n'
