@@ -13,7 +13,7 @@ is the rule it keeps; this page is how alfred keeps it.
 
 | Member | How | Port | Reached from |
 |---|---|---|---|
-| alfred | containers built from its commit: the api, a render worker, MongoDB, and the site, built once | 17320 | loopback, and the host's address on the share's network |
+| alfred | containers built from its commit: the api, a render worker, MongoDB, and the site and its docs, each built once | 17320 | loopback, and the host's address on the share's network |
 | joe | a process, from its commit's own environment | 10594 | loopback only, through alfred |
 | looksatwords | a process, from its commit's own environment | 14142 | loopback only, through alfred |
 
@@ -105,14 +105,25 @@ the database, the media and the snapshots take.
 
 ## Let someone in
 
-1. They install ZeroTier One and join the network's id. Their device shows
-   its node id, ten hex digits.
-2. From a shell started as administrator:
-   `python scripts/share.py network authorize NODE --name "who they are"`.
-3. `./al share account their@address --name First` makes their account; the
-   password is asked for twice and given to them by a channel of your own.
-   `--superuser` sees every project, the seeded ones included.
-4. They open <http://10.173.20.1:17320>.
+[Joining a shared alfred](join.md) is the page for the person invited, in
+plain words, for a phone, a tablet or a computer on any system ZeroTier runs
+on. The share serves it at `/docs/join/`, so it opens once their device is on
+the network; what they need before that goes in the invitation.
+
+1. `./al share invite --name Sam` prints the invitation: the network's id,
+   the link, and the four steps, ready to paste into a message.
+2. They join, and send their device's id: ten hex digits.
+3. From a shell started as administrator:
+   `python scripts/share.py network authorize NODE --name "Sam"`.
+4. `./al share account their@address --name Sam` makes their account; the
+   password is asked for twice. Send it in a message of its own, apart from
+   the invitation. `--superuser` sees every project, the seeded ones
+   included.
+5. Tell them they are in.
+
+alfred's login page offers **Create an account** and **Forgot password**
+whatever the server's settings; on a share the first is refused and the
+second mails nothing, and the joining page says so.
 
 `python scripts/share.py network` lists every device and whether it is let
 in, and `network revoke NODE` shuts one out.
