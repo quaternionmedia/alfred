@@ -15,6 +15,7 @@ docs/share.md says how to run one and what it cannot do.
     ./al share bind ADDRESS ...        the private-network addresses alfred is published on
     ./al share network [create | authorize NODE --name WHO | revoke NODE]
                                        the share's own private network, on this host's controller
+    ./al share invite [--name WHO]     the message to send a person invited to the share
     ./al share up                      every member at its commit
     ./al share down                    every member stopped; the state stays
     ./al share snapshot NAME           the database, the media and the manifest, kept as NAME
@@ -58,6 +59,8 @@ from family import LOOPBACK, fetch, kill_tree, say, tail, title_at, tool  # noqa
 from host import alive  # noqa: E402
 
 PROJECT = 'alfred-share'
+# The image `./al prod` builds the docs with; test_share.py holds the two equal.
+DOCS_IMAGE = 'squidfunk/mkdocs-material:9.7.7'
 SCHEMA = 1
 NAME = re.compile(r'^[A-Za-z0-9][A-Za-z0-9._-]*$')
 # Seconds each member is given to answer after it starts.
@@ -400,6 +403,18 @@ def compose_document(manifest, state, env=None):
                 'labels': labels,
                 'restart': 'no',
             },
+            # The docs, built once from the same commit, where the app's
+            # footer links: /docs/, as mkdocs.yml's site_url has it.
+            'docs': {
+                'image': DOCS_IMAGE,
+                'command': ['build', '-d', '/site/'],
+                'volumes': [
+                    f'{posix(source)}:/docs',
+                    f'{posix(source / "alfred" / "site")}:/site',
+                ],
+                'labels': labels,
+                'restart': 'no',
+            },
             'api': {
                 'build': {
                     'context': posix(source),
@@ -411,11 +426,13 @@ def compose_document(manifest, state, env=None):
                 'depends_on': {
                     'db': {'condition': 'service_started'},
                     'site': {'condition': 'service_completed_successfully'},
+                    'docs': {'condition': 'service_completed_successfully'},
                 },
                 'ports': [f'{address}:{port}:80' for address in manifest['bind']],
                 'volumes': [
                     videos,
                     f'{posix(source / "website" / "dist")}:/app/dist',
+                    f'{posix(source / "alfred" / "site")}:/app/dist/docs',
                     fonts,
                 ],
                 'env_file': env_files,
@@ -1124,6 +1141,43 @@ def network_authorize(args, state, authorized=True):
     return 0
 
 
+def invitation(manifest, name=None):
+    """The message an invited person is sent: plain words, every code they
+    type or paste written out, and no password, which goes separately."""
+    network = network_of(manifest)
+    link = f'http://{network["address"]}:{manifest["ports"]["alfred"]}'
+    return '\n'.join(
+        [
+            f'Hi {name},' if name else 'Hi,',
+            '',
+            'You are invited to try alfred, a video editor in your browser. It runs on a',
+            'private network, so your phone or computer joins that network first.',
+            '',
+            '1. Install the free ZeroTier One app: from the App Store on an iPhone or iPad,',
+            '   from Google Play on Android, or from https://www.zerotier.com/download/ on',
+            '   Windows, a Mac or Linux.',
+            '2. In ZeroTier One, join this network (copy and paste it):',
+            '',
+            f'   {network["id"]}',
+            '',
+            '   On a phone, allow the VPN when it asks.',
+            '3. Send me your device ID: the ten letters and numbers ZeroTier shows as your',
+            '   address, device ID or node ID.',
+            '4. When I tell you that you are in, open this link, and log in with the email',
+            '   and password I send you in a separate message:',
+            '',
+            f'   {link}',
+            '',
+            f'Once you are in, the guide to every step is at {link}/docs/join/',
+        ]
+    )
+
+
+def invite(args, state):
+    print(invitation(load(state), args.name))
+    return 0
+
+
 def network(args, state):
     actions = {
         None: network_status,
@@ -1225,6 +1279,8 @@ def main(argv=None):
     allowed.add_argument('--name', required=True, help='who the device is')
     revoked = actions.add_parser('revoke', help='a device shut out')
     revoked.add_argument('node')
+    invited = commands.add_parser('invite', help='the message to send a person invited to the share')
+    invited.add_argument('--name', help='who it greets')
     commands.add_parser('up', help='every member at its commit')
     commands.add_parser('down', help='every member stopped; the state stays')
     taken = commands.add_parser('snapshot', help='the database, the media and the manifest, kept by name')
@@ -1253,6 +1309,7 @@ def main(argv=None):
         'env': set_env,
         'bind': bind,
         'network': network,
+        'invite': invite,
         'up': up,
         'down': down,
         'snapshot': snapshot,

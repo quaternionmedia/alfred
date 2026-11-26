@@ -453,3 +453,40 @@ def test_a_clone_at_its_default_branch_is_checked_out_all_the_same(tmp_path):
     assert share.head(clone) == commit
     share.check_out(clone, share.BY_NAME['joe'], commit)
     assert (clone / 'file').read_text() == 'one\n'
+
+
+# --- what an invited person is sent, and what the share serves them ------------
+
+
+def test_an_invitation_carries_the_network_and_the_link_and_no_password(tmp_path, monkeypatch):
+    controller = Controller()
+    monkeypatch.setattr(share, 'zerotier', controller)
+    share.network_create(SimpleNamespace(name='alfred-share'), tmp_path)
+    message = share.invitation(share.load(tmp_path), 'Sam')
+    assert message.startswith('Hi Sam,')
+    assert controller.network in message
+    assert f'http://{share.NETWORK_HOST}:17320' in message
+    assert f'http://{share.NETWORK_HOST}:17320/docs/join/' in message
+    assert (tmp_path / 'secret_key').read_text().split('=', 1)[1].strip() not in message
+
+
+def test_an_invitation_needs_the_shares_network(tmp_path):
+    share.save(tmp_path, manifest())
+    with pytest.raises(share.Refused, match='no network of its own'):
+        share.invitation(share.load(tmp_path))
+
+
+# Mutation: build the docs and leave them unmounted -- this fails.
+def test_the_docs_the_app_links_to_are_built_from_the_commit_and_served(tmp_path):
+    services = document(manifest(), tmp_path)['services']
+    root = (tmp_path / 'src' / 'alfred').resolve().as_posix()
+    assert f'{root}:/docs' in services['docs']['volumes']
+    assert f'{root}/alfred/site:/app/dist/docs' in services['api']['volumes']
+    assert services['api']['depends_on']['docs'] == {'condition': 'service_completed_successfully'}
+    assert 'ports' not in services['docs']
+
+
+# Mutation: build the docs with another image than ./al prod's -- this fails.
+def test_the_docs_are_built_with_the_image_production_uses():
+    al = (REPO / 'al').read_text(encoding='utf-8')
+    assert share.DOCS_IMAGE in al, f'./al prod no longer builds the docs with {share.DOCS_IMAGE}'
