@@ -22,6 +22,7 @@ the journey it walks.
 | Cut a long recording into drafts to refine | [From a long recording](#from-a-long-recording) | a transcribed recording; an audio engine, for the sound |
 | Edit on a phone | [On a phone](#on-a-phone) | |
 | Pick up where you left off | [Coming back](#coming-back) | |
+| Use an alfred someone shared with you | [Joining a shared alfred](join.md) | their invitation, and an account they made |
 | Make an account and log in | [An account](#an-account) | a server that takes registrations |
 | Have an assistant do it | [With an assistant](#with-an-assistant) | qmcp |
 

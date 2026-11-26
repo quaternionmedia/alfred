@@ -446,6 +446,16 @@ accepted are now refused, and a production stack needs its own signing key.
 
 ### Added
 
+- **Sharing the family** (`./al share`, `docs/share.md`): one standing copy of
+  alfred, joe and looksatwords on one host, reached only from devices invited
+  onto a private network on the host's own ZeroTier controller, with alfred's
+  own login and no bypass. Each member runs from the share's own clone at a
+  commit a machine-scoped manifest names, on ports apart from the dev
+  stack's; the database and the media are the share's, and are snapshotted
+  and restored by name. `./al share` says what each member serves, and
+  serves the docs at `/docs/`. `./al share invite` writes the invitation, and
+  `docs/join.md` walks an invited person through joining from a phone, a
+  tablet or a computer.
 - **Running on the host** (`./al host up`, `docs/host-run.md`): the api, a
   render worker and the site's watcher as processes on this machine, against
   a MongoDB and joe, with what that run lacks beside the stack. `./al host`
